@@ -1,0 +1,7 @@
+{
+  "schema": 1,
+  "slice": "jade-pdf2docx.slice",
+  "total_memory_mib": 4096,
+  "job_memory_mib": 2048,
+  "slots": 2
+}

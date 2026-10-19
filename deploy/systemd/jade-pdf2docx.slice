@@ -1,0 +1,7 @@
+[Unit]
+Description=Shared memory budget for jade-pdf2docx conversion jobs
+
+[Slice]
+MemoryAccounting=yes
+MemoryMax=4G
+MemorySwapMax=0

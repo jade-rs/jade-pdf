@@ -1,0 +1,116 @@
+name: PDF to DOCX
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  rust:
+    name: Rust formatting and WASM build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+          targets: wasm32-unknown-unknown
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Check WASM build
+        run: cargo check -p jade-pdf2docx-wasm --target wasm32-unknown-unknown --locked
+
+  native:
+    name: Rust ${{ matrix.feature }} on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        feature: [default, render, ocr]
+    env:
+      RUST_TEST_THREADS: 1
+      RUST_BACKTRACE: 1
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Python for verified Pdfium
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+
+      - name: Prepare verified offline Pdfium
+        run: |
+          pdfium_url=$(python -c 'import sys; sys.path.insert(0, "scripts"); import pdfium_bundle as p, json; print(json.loads(p.LOCK_PATH.read_text())["platforms"][p.host_platform()]["url"])')
+          curl --fail --location --retry 3 --max-time 120 "$pdfium_url" --output "$RUNNER_TEMP/pdfium.tgz"
+          python scripts/pdfium_bundle.py install --archive "$RUNNER_TEMP/pdfium.tgz" --destination "$RUNNER_TEMP/jade-pdf2docx-pdfium"
+          pdfium_library=$(python scripts/pdfium_bundle.py verify --bundle "$RUNNER_TEMP/jade-pdf2docx-pdfium")
+          printf 'PDFIUM_LIB_PATH=%s\n' "$pdfium_library" >> "$GITHUB_ENV"
+
+      - name: Install Japanese fallback fonts
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends fonts-noto-cjk
+
+      - name: Check feature and run tests
+        run: sh scripts/check_rust_features.sh '${{ matrix.feature }}'
+
+      - name: Upload Pdfium and upstream notices
+        if: matrix.feature == 'default'
+        uses: actions/upload-artifact@v4
+        with:
+          name: pdfium-${{ matrix.os }}
+          path: ${{ runner.temp }}/jade-pdf2docx-pdfium
+          if-no-files-found: error
+
+      - name: Test delegated cgroup memory limits as runner user
+        if: runner.os == 'Linux' && matrix.feature == 'default'
+        run: sh scripts/check_cgroup_memory.sh
+
+  python:
+    name: Python harness on ${{ matrix.python }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.14']
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+
+      - name: Run harness tests
+        run: python -m unittest discover -s tests -p 'test_*.py'

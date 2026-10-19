@@ -1,0 +1,21 @@
+[package]
+name = "jade-pdf2docx-docx"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[dependencies]
+docx-rs = "0.4.19"
+jade-pdf2docx-ocr = { version = "0.1.0", path = "../jade-pdf2docx-ocr" }
+jade-pdf2docx-parser = { version = "0.1.0", path = "../jade-pdf2docx-parser" }
+scraper = "0.22"
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+tempfile = "3"
+same-file = "1"
+
+[dev-dependencies]
+fax = "0.2.7"
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+proptest = "1"

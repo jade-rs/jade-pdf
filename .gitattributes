@@ -1,0 +1,2 @@
+# 公開PDFのxref固定長レコードとstreamのバイト列をそのまま保持する。
+*.pdf binary

@@ -1,0 +1,43 @@
+{
+  "license": "CC-BY-SA-4.0",
+  "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
+  "text_extraction": "Poppler pdftotext 26.10.0 -layout",
+  "cases": [
+    {
+      "name": "pdflatex-text",
+      "input": "input/pdflatex-text.pdf",
+      "expected": "expected/pdflatex-text.txt",
+      "pages": 1,
+      "attribution": "py-pdf/sample-files contributors",
+      "modifications": "none",
+      "revision": "02b8203bf416db3dbdb03438bc8278dfcb0555f3",
+      "source": "https://raw.githubusercontent.com/py-pdf/sample-files/02b8203bf416db3dbdb03438bc8278dfcb0555f3/001-trivial/minimal-document.pdf",
+      "sha256": "f723638db6e763cf4ccadad38a3d38a02d9ecab95dab1f0bbf00e801991b5f92",
+      "expected_sha256": "baec2bb5e6ed06c520f10cc849b051202c737e330b52a9694116c21b2a317a13"
+    },
+    {
+      "name": "libreoffice-text",
+      "input": "input/libreoffice-text.pdf",
+      "expected": "expected/libreoffice-text.txt",
+      "pages": 1,
+      "attribution": "py-pdf/sample-files contributors",
+      "modifications": "none",
+      "revision": "02b8203bf416db3dbdb03438bc8278dfcb0555f3",
+      "source": "https://raw.githubusercontent.com/py-pdf/sample-files/02b8203bf416db3dbdb03438bc8278dfcb0555f3/002-trivial-libre-office-writer/002-trivial-libre-office-writer.pdf",
+      "sha256": "fc67ce4f76ffb44e818ebe4f673dbeb6002ad93a59f3856ff14fb1d3625f10a5",
+      "expected_sha256": "21de96590ea56e3720c3fdb432cab53e7ec43ee25976f5ab64885b4625c998a9"
+    },
+    {
+      "name": "pdflatex-four-pages",
+      "input": "input/pdflatex-four-pages.pdf",
+      "expected": "expected/pdflatex-four-pages.txt",
+      "pages": 4,
+      "attribution": "py-pdf/sample-files contributors",
+      "modifications": "none",
+      "revision": "02b8203bf416db3dbdb03438bc8278dfcb0555f3",
+      "source": "https://raw.githubusercontent.com/py-pdf/sample-files/02b8203bf416db3dbdb03438bc8278dfcb0555f3/004-pdflatex-4-pages/pdflatex-4-pages.pdf",
+      "sha256": "f17a09190ad8a04964d78115d8ba7fc7a298557274fa14932ba58612342b7dec",
+      "expected_sha256": "57d78a90161cca7b4fff81fb5bc266a48b4237d7e3e44ddfeb7f290981142e2b"
+    }
+  ]
+}

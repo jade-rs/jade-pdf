@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>jade-pdf2docx PDF to DOCX Playground</title>
+    <script type="module" src="/src/main.js"></script>
+  </head>
+  <body>
+    <main class="app">
+      <section class="toolbar">
+        <div>
+          <h1>jade-pdf2docx PDF to DOCX Playground</h1>
+          <p>PDF を選択して、ブラウザ内の WASM で最小 DOCX に変換します。</p>
+        </div>
+        <label class="file-control">
+          <span>PDF</span>
+          <input id="pdf-input" type="file" accept="application/pdf,.pdf" />
+        </label>
+      </section>
+      <section class="status-grid">
+        <div class="panel">
+          <h2>解析</h2>
+          <pre id="inspect-output">PDF を選択してください。</pre>
+        </div>
+        <div class="panel actions">
+          <h2>出力</h2>
+          <button id="convert-button" type="button" disabled>DOCX に変換</button>
+          <a id="download-link" class="download" hidden download="jade-pdf2docx-output.docx">DOCX を保存</a>
+          <p id="status-text"></p>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

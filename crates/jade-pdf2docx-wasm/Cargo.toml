@@ -1,0 +1,14 @@
+[package]
+name = "jade-pdf2docx-wasm"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+jade-pdf2docx-docx = { path = "../jade-pdf2docx-docx" }
+jade-pdf2docx-parser = { path = "../jade-pdf2docx-parser" }
+js-sys = "0.3"
+wasm-bindgen = "0.2"

@@ -1,0 +1,34 @@
+minimum_pdf_to_docx_with_ocr
+  最小 PDF -> DOCX 変換に、任意で OCR 結果を合成します。
+
+usage:
+  cargo run --example minimum_pdf_to_docx_with_ocr -- <input.pdf> <output.docx> [options]
+
+options:
+  --ocr-mock <line1|line2|...>      OCR の代替入力行（'|'区切り）
+  --ocr-image <image_path>           OCR 入力画像（ppm など）
+  --ocr-from-pdf                     入力 PDF を pdftoppm で PNG にし、ページごとに OCR（poppler 必須）
+  --ocr-auto                         画像あり・抽出テキストほぼ無しのページだけ自動で OCR
+  --ocr-pdf-dpi <dpi>                --ocr-from-pdf 時の解像度（既定: 150）
+  --clean-output                     OCR 本文のみの DOCX（デバッグ用段落を省略）
+  --ocr-table-json <path>            Phase1: 外部表パイプライン JSON（html フィールド）から表を取り込む
+  --ocr-table-geometry-json <path>   Phase2: 幾何 JSON（cells 省略時はテキストのみから投影）
+  --ocr-table-pipeline <executable>  外部コマンド（stdout が JSON）。--ocr-image または --ocr-from-pdf と併用
+  --ocr-parseq-model <model.onnx>    PARSeq モデルパス
+  --ocr-charset <charset.yaml>       PARSeq 文字セットパス
+  --ocr-parseq-failure-policy <fail-fast|fallback>
+                                     PARSeq 失敗時の扱い（既定: fail-fast、fallback の診断は本文に使用不可）
+  --ocr-min-confidence <0.0..1.0>    PARSeq 最低信頼度
+  -h, --help                         ヘルプ表示
+
+notes:
+  - --ocr-parseq-model と --ocr-charset は必ず同時指定
+  - 画像/PDFの本文認識には --features ocr-onnx とモデル・文字セットが必要
+  - OCR失敗・診断だけの結果は保存前に失敗。明示 --ocr-mock があれば警告付きで代替する
+  - --ocr-image が成功した場合は --ocr-from-pdf / --ocr-mock より優先
+  - --ocr-auto は画像あり・抽出テキスト 8 文字未満のページだけ --ocr-from-pdf 相当を実行
+  - CJK OCR の文中改行は DOCX 段落化前に連結
+  - --ocr-from-pdf は PATH 上に pdftoppm（poppler）が必要
+  - --ocr-table-json / --ocr-table-geometry-json / --ocr-table-pipeline は同時指定不可
+  - --ocr-table-pipeline は --ocr-image または --ocr-from-pdf と併用（コマンドの最後に画像パスを付与）
+  - モデル未指定の --ocr-table-pipeline では画像/PDF入力を表処理専用として扱う

@@ -1,0 +1,20 @@
+{
+  "name": "jade-pdf2docx-playground",
+  "version": "0.1.0",
+  "private": true,
+  "license": "PolyForm-Noncommercial-1.0.0",
+  "type": "module",
+  "scripts": {
+    "build:wasm": "wasm-pack build ../crates/jade-pdf2docx-wasm --target web --out-dir ../../playground/pkg",
+    "copy:pdfjs-assets": "mkdir -p public/cmaps public/standard_fonts && cp node_modules/pdfjs-dist/cmaps/*.bcmap public/cmaps/ && cp node_modules/pdfjs-dist/standard_fonts/* public/standard_fonts/",
+    "predev": "npm run copy:pdfjs-assets",
+    "prebuild": "npm run copy:pdfjs-assets",
+    "dev": "vite --host 127.0.0.1",
+    "build": "npm run build:wasm && vite build",
+    "preview": "vite preview --host 127.0.0.1"
+  },
+  "devDependencies": {
+    "pdfjs-dist": "^4.10.38",
+    "vite": "^5.0.0"
+  }
+}

@@ -1,0 +1,33 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy,rustfmt
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy -p jade-pdf-diff --all-targets --locked -- -D warnings
+
+  # Pdfium を触るテストは、Linux のランナーでは同梱の実体を読めずに SIGBUS で
+  # 落ちる (コードの問題ではない)。テストは macOS で走らせる。
+  test:
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - run: cargo test -p jade-pdf-diff --locked

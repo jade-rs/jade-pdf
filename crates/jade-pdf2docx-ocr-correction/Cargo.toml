@@ -1,0 +1,8 @@
+[package]
+name = "jade-pdf2docx-ocr-correction"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[dev-dependencies]
+proptest = "1"

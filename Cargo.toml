@@ -1,0 +1,49 @@
+[package]
+name = "jade-pdf2docx"
+version = "0.1.0"
+edition = "2024"
+license.workspace = true
+
+[features]
+default = []
+render = ["dep:jade-pdf2docx-pdf-raster"]
+ocr = [
+    "render",
+    "dep:jade-pdf2docx-ocr",
+    "jade-pdf2docx-ocr/ndlocr-lite",
+    "jade-pdf2docx-ocr/table-ppstructure",
+]
+ocr-onnx = ["ocr", "jade-pdf2docx-ocr/onnx"]
+
+[workspace]
+resolver = "2"
+members = [
+    "crates/jade-pdf-diff",
+    "crates/jade-pdf2docx-parser",
+    "crates/jade-pdf2docx-docx",
+    "crates/jade-pdf2docx-ocr",
+    "crates/jade-pdf2docx-ocr-correction",
+    "crates/jade-pdf2docx-pdf-raster",
+    "crates/jade-pdf2docx-wasm",
+]
+
+[workspace.package]
+license = "PolyForm-Noncommercial-1.0.0"
+
+[dependencies]
+hmac-sha256 = "1.1.15"
+ctrlc = { version = "3.5", features = ["termination"] }
+tempfile = "3"
+jade-pdf2docx-docx = { path = "crates/jade-pdf2docx-docx" }
+jade-pdf2docx-ocr = { path = "crates/jade-pdf2docx-ocr", optional = true }
+jade-pdf2docx-pdf-raster = { path = "crates/jade-pdf2docx-pdf-raster", optional = true }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[dev-dependencies]
+quick-xml = "0.41"
+flate2 = "1"
+tempfile = "3"
+jade-pdf2docx-parser = { path = "crates/jade-pdf2docx-parser" }
+zip = { version = "0.6", default-features = false, features = ["deflate"] }
