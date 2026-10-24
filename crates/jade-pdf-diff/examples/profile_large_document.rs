@@ -35,6 +35,15 @@ fn document(sentences: &[String]) -> DocumentIr {
             width: 595.0,
             height: 842.0,
             rotation: 0,
+            view_box: None,
+            user_unit: Some(1.0),
+            sdk_unicode_mapping_errors: 0,
+            sdk_text_objects_without_characters: 0,
+            source_text_characters_missing: 0,
+            source_text_accounting_unavailable: false,
+            source_unicode_scalars_unmatched: 0,
+            source_unicode_accounting_unavailable: false,
+            reading_order_requires_review: false,
             blocks: sentences
                 .chunks(SENTENCES_PER_BLOCK)
                 .enumerate()

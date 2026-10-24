@@ -1,0 +1,177 @@
+{
+  "date": "2026-10-23",
+  "platform": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)"
+  },
+  "corpus": {
+    "documents": 17,
+    "pages": 396,
+    "manifest_sha256": "cf439fc7a1e396d617e01c030398f9f01e166157a45ade501a0211deec88b831"
+  },
+  "methodology": "143 controlled PDF transformation cases and 5 selected checks on the official IRS 2024/2025 revision pair. This is not general precision/recall.",
+  "baseline": {
+    "source_commit": "15eff40f48d6829872025841bf2d5f7e51ff2cca",
+    "binary_sha256": "44dae4a0466adee4dab8d3a6586f372818e7afde3030eee59c5cd5857222b0b4",
+    "passed": 108,
+    "total": 148
+  },
+  "current": {
+    "binary_sha256": "5bae23462276d4684d0ecbc484298c525f1bb56aed306a9a1a0a7638b80f169c",
+    "passed": 148,
+    "total": 148
+  },
+  "case_groups": [
+    {
+      "case": "14,600-to-15,000",
+      "total": 1,
+      "baseline_passed": 1,
+      "current_passed": 1
+    },
+    {
+      "case": "2024-to-2025",
+      "total": 1,
+      "baseline_passed": 1,
+      "current_passed": 1
+    },
+    {
+      "case": "21,900-to-22,500",
+      "total": 1,
+      "baseline_passed": 1,
+      "current_passed": 1
+    },
+    {
+      "case": "29,200-to-30,000",
+      "total": 1,
+      "baseline_passed": 1,
+      "current_passed": 1
+    },
+    {
+      "case": "delete",
+      "total": 17,
+      "baseline_passed": 17,
+      "current_passed": 17
+    },
+    {
+      "case": "font-size",
+      "total": 17,
+      "baseline_passed": 17,
+      "current_passed": 17
+    },
+    {
+      "case": "footer-amount",
+      "total": 17,
+      "baseline_passed": 1,
+      "current_passed": 17
+    },
+    {
+      "case": "identity",
+      "total": 17,
+      "baseline_passed": 17,
+      "current_passed": 17
+    },
+    {
+      "case": "insert",
+      "total": 17,
+      "baseline_passed": 17,
+      "current_passed": 17
+    },
+    {
+      "case": "page-alignment",
+      "total": 1,
+      "baseline_passed": 1,
+      "current_passed": 1
+    },
+    {
+      "case": "reorder",
+      "total": 7,
+      "baseline_passed": 1,
+      "current_passed": 7
+    },
+    {
+      "case": "rewrite",
+      "total": 17,
+      "baseline_passed": 17,
+      "current_passed": 17
+    },
+    {
+      "case": "rotate",
+      "total": 17,
+      "baseline_passed": 14,
+      "current_passed": 17
+    },
+    {
+      "case": "same-font",
+      "total": 17,
+      "baseline_passed": 2,
+      "current_passed": 17
+    }
+  ],
+  "corrected_cases": [
+    "rotated/footer-amount",
+    "rotated/same-font",
+    "arabic/footer-amount",
+    "arabic/same-font",
+    "ligatures/footer-amount",
+    "ligatures/same-font",
+    "vertical/reorder",
+    "vertical/footer-amount",
+    "empty/footer-amount",
+    "empty/same-font",
+    "scanned/footer-amount",
+    "scanned/same-font",
+    "form/footer-amount",
+    "form/same-font",
+    "type3/footer-amount",
+    "type3/same-font",
+    "cjk/footer-amount",
+    "cjk/same-font",
+    "tracemonkey/reorder",
+    "tracemonkey/footer-amount",
+    "tracemonkey/same-font",
+    "freeculture/reorder",
+    "freeculture/footer-amount",
+    "freeculture/same-font",
+    "w3c-word/footer-amount",
+    "w3c-word/same-font",
+    "w3c-openoffice/rotate",
+    "w3c-openoffice/footer-amount",
+    "w3c-openoffice/same-font",
+    "mhlw-employment/reorder",
+    "mhlw-employment/footer-amount",
+    "mhlw-employment/same-font",
+    "irs-w4/reorder",
+    "irs-w4/rotate",
+    "irs-w4/footer-amount",
+    "irs-w4/same-font",
+    "irs-w4-2024/reorder",
+    "irs-w4-2024/rotate",
+    "irs-w4-2024/footer-amount",
+    "irs-w4-2024/same-font"
+  ],
+  "checks": {
+    "rust_unit_integration_and_doctests": "passed (62)",
+    "public_corpus_tests": "passed (2, all 396 pages)",
+    "downloader_tests": "passed (4)",
+    "clippy_all_targets": "passed with -D warnings",
+    "rustfmt": "passed",
+    "wasm32_unknown_unknown_library": "compile check passed; runtime not exercised",
+    "representative_pdf_rendering": "Japanese form, IRS form with edited amount, rotated W3C columns visually inspected"
+  },
+  "source_sha256": {
+    "crates/jade-pdf-diff/src/diff.rs": "534da70203918bd116d0923710e7d3f793211d8a59ff7e9de08268d930cbdb78",
+    "crates/jade-pdf-diff/src/main.rs": "6335336122d62ff8b706af4383fd6438bcb40bdbc99ae2d2b21b0c71d98357b9",
+    "crates/jade-pdf-diff/src/scan.rs": "9867e89fae24133fd003cfc863bd51d25ad112da4611148873c076e188a10202",
+    "crates/jade-pdf-diff/src/render.rs": "ee671bc22c4a3587a200da97f295c2335ccf7ffaab1d8ab4120ad64e1a87b1e2",
+    "tools/evaluate_pdf_corpus.py": "1ac9cc8bef510c163f17e3ffa6ba4fdd834bc45b4a92d81052ec73db2ad0b69e",
+    "tools/pdf_corpus.py": "d5c0b9d07df075f8fb70bb65e12c53a422b72e15a52a0921a59af316fe5c5032"
+  },
+  "limitations": [
+    "Text, extracted font size and geometry comparisons only; no image, drawing, font face/color, annotation or interactive field-value diff.",
+    "No built-in OCR; textless pages trigger CLI exit 3, and partially scanned pages can still require human review.",
+    "Native runtime evaluated on macOS arm64; Linux and browser WASM runtimes were not tested.",
+    "The official revision pair checks selected changes, not an exhaustive manually labeled natural-revision benchmark.",
+    "Remote CI has been configured but was not dispatched from this session."
+  ]
+}

@@ -1,0 +1,135 @@
+{
+  "version": 18,
+  "status": "open",
+  "date": "2026-10-24",
+  "manifest_sha256": "8308154f3ad5f3bd5da302d1855bac02063fee88d45f98198cfcf13075f50bc0",
+  "native_binary_sha256": "0ac5b85e802001c103f6ac64b5bb9e64eb1e1fb6be155da77051088dd3add8cb",
+  "issues": [
+    {
+      "id": "invisible-field-value-and-second-export",
+      "status": "fixed-for-basic-acroforms",
+      "sources": [
+        "pdfium-text-form-multiline",
+        "pdfium-listbox-form"
+      ],
+      "evidence": "results-canonical-regressions.json: prior release reports zero widget/text/raster changes in both controlled public cases; current code reports one document-level field change. pypdf independently confirms saved values, export/display mapping and absence of widgets in the unplaced case.",
+      "limits": "Document-level records coexist with widget records; counts are not additive. Changed-source interactive documents still require review."
+    },
+    {
+      "id": "hybrid-xfa-acroform-analysis",
+      "status": "fixed-for-available-acroform-records",
+      "priority": "high",
+      "sources": [
+        "irs-w4",
+        "irs-w4-2024",
+        "irs-w4-2022",
+        "irs-w4-2023",
+        "irs-w4-2026",
+        "pdfjs-annotation-text-widget",
+        "irs-w9-2018",
+        "irs-w9-2024"
+      ],
+      "evidence": "results-form-orphan.json:17matching fieldinventories/135savedvalues,eightXFAhybrids retained.OriginalmixedAPKeyError retained;newApache220pagefields areindependentlyrawenumerated despite0catalogfields.",
+      "limits": "XFA XML semantics remain unverified and produce a separate review diagnostic. This is AcroForm inventory/value coverage, not proof of full form behavior."
+    },
+    {
+      "id": "unsupported-property-granularity",
+      "status": "fixed-for-property-availability-and-supported-text-streams",
+      "priority": "high",
+      "evidence": "Native and shared Chrome/WASM fixtures preserve known changes despite an unreadable V, compare literal and compressed text/JavaScript streams, and reject corrupt/truncated/trailing or overexpanded encodings. Each unreadable property is retained in unavailable_properties and counted in comparison.canonical_properties_unavailable.",
+      "limits": "Only identity, FlateDecode and ASCIIHexDecode text/JavaScript streams with supported dictionary keys and no-op parameters are decoded. Unsupported property values remain unknown, not absent. Tree/identity errors still disable the source snapshot to avoid false additions/removals; exhausted work budgets fail the complete snapshot."
+    },
+    {
+      "id": "orphan-signature-action-and-appearance-semantics",
+      "status": "open",
+      "evidence": "Unreferenced orphan fields, signature verification, full action semantics, rich-text/default-appearance/resource normalization and AcroForm-level flags/calculation order are not fully modeled. Raw binary signature values are not signature verification.",
+      "required": "Extend independently checked coverage without marking changed-source interactive documents complete prematurely."
+    },
+    {
+      "id": "parser-process-resource-isolation",
+      "status": "partial-native-cli-and-byte-supervision",
+      "evidence": "v27:69supervisedIRsources/775typedbyteoperations;189tests/configuration,bothcoldprofiles.ChromeWorker844+113;delayedretirement andsampled/hardhostlimits remainexplicit.",
+      "required": "Qualify hard memory limits beyond sampled monitoring, execute Linux/Windows backends and other-browser termination/background-timer behavior. Direct APIs remain in-process; this is not a filesystem/network sandbox or aggregate host resource bound."
+    },
+    {
+      "id": "deep-canonical-record-byte-transport",
+      "status": "fixed-for-bounded-typed-byte-transport",
+      "evidence": "A valid 60-action AA/K chain exceeds the default 128-level JSON decoder. The typed client checks a 256-level lexical budget before decoding. Native and Chrome/WASM form_deep_property fixtures detect the leaf edit with unchanged painting and no canonical unavailability reasons. Float roundtrip parsing preserves exact finite coordinates.",
+      "limits": "Transport fidelity is not complete action semantics; changed interactive sources still require review."
+    },
+    {
+      "id": "empty-acroform-shell-forces-review",
+      "status": "fixed_for_bounded_supported_empty_shells",
+      "sources": [
+        "w3c-complex-table",
+        "w3c-rowspan-table"
+      ],
+      "evidence": "results-empty-forms-discovery.json:twoW3Cproofs retained;modernrewritecomplete,legacyreadingreview.67shared fixtures;48adversarialside combinations/16positivecontextindirection conditions after nullXFA corrected toabsence.",
+      "required": "Retain rejection for orphan/malformed/unsupported/dynamic forms and all unrelated diagnostics. Extend independent proof scope/default support without claiming fullinteractive semantics."
+    },
+    {
+      "id": "sdk-absence-and-repeated-unnamed-widget",
+      "status": "fixed_for_bounded_literal_records",
+      "sources": [
+        "pdfium-multiple-form-types"
+      ],
+      "evidence": "results-form-record-discovery.json:13/13. Five declared fields restored after redundant unnamed child FT caused duplicate-name snapshot loss. Baseline unplaced second-export edit reports0,current1canonicalchange without invented pagebounds. SDKtype0 malformed non-null catalogs nowrequire review.",
+      "limits": "Null optional dictionary entries/nonexistent refs are absent perISO7.3.9;arraynull retained,cyclesreview. pypdf convenienceKeyError '/AP' retained;missingAP/fullinteraction stillunverified."
+    },
+    {
+      "id": "missing-catalog-orphan-widget-value-recovery",
+      "status": "fixed_for_bounded_known_page_parent_records_inventory_still_incomplete",
+      "evidence": "results-orphan-forms.json:original220pageWidgets/0catalogFields/71savedvalues.TenhiddenV/DVeditcontrols havebaselineall-zero/currentonecanonicalchange,zero widgets/rasterdifferences.Byte/file/CLI Parent/missingbacklink/null/missing/partialprofiles verified;incompleteabsence neverinventsadditions/removals.",
+      "required": "Extend malformed catalog/property/identity partialrecovery andbroader originalsource gold.Full scripts/appearance/signatures/XFA semantics remainunverified."
+    }
+  ],
+  "implementation_profile": {
+    "parser": "lopdf 0.46.0, default features disabled",
+    "source_archive_sha256": "d43f64cb8c0d673ff84245a6de9e0172c0cc05dc5dd9d263660b5b4a02b6c4ae",
+    "source_analysis_max_bytes": 67108864,
+    "single_decompressed_stream_max_bytes": 8388608,
+    "reference_and_value_depth": 64,
+    "work_items": 200000,
+    "field_records": 100000,
+    "text_utf16_units_per_string": 2000000,
+    "text_output_budget": "min(max_input_mb MiB,64MiB), conservative charge for JSON escaping and repeated qualified name components",
+    "inherited_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "DA",
+      "Q",
+      "MaxLen"
+    ],
+    "literal_comparison_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "Opt",
+      "I",
+      "TU",
+      "TM",
+      "MaxLen",
+      "Q",
+      "DA",
+      "A",
+      "AA"
+    ],
+    "default_values": {
+      "Ff": 0,
+      "Q": 0
+    },
+    "normalization": "Strict BOM-marked UTF-16BE and UTF-8; one-byte PDFDocEncoding rejects undefined scalars. Dictionary and field order normalized; reference identities resolved. Stored values retain literal Unicode/array order. Optional dictionary null values/nonexistent indirect targets are absent;array null retained. Cycles/deep references stay review.",
+    "reference_specification": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+    "text_stream_filters": [
+      "identity",
+      "FlateDecode",
+      "ASCIIHexDecode"
+    ],
+    "text_stream_integrity": "Complete stream, checksum, end marker and trailing-data checks. At most 16 filters, 8MiB per decoded layer, and aggregate reserved work including failed attempts. Unsupported filter/parameter/dictionary semantics remain unavailable.",
+    "orphan_inventory": "ActualpageWidget/Parentdiscovery shares existinglimits.Matchedknownfields compare;absence onincomplete oppositeinventory cannotproveaddition/removal.Ambiguousnames/cyclic/deep identities retainreview."
+  },
+  "current_qualification": "v29:630/631selectedassertions,228complete/403review;oneunresolvedsurveyrotationfailure.17forminventories/135values;201tests/configuration;Worker876+125;typedbytes803. W3Cemptyforms remainseparatelyverified;bothnowreviewforsource-textobjectomissions. Fullform/XFA/signature/action/appearance limitsremain."
+}

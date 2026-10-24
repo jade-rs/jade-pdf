@@ -18,20 +18,43 @@ diff-align = { package = "jade-diff-align", git = "https://github.com/jade-rs/ja
 diff_support = { package = "jade-diff-support", git = "https://github.com/jade-rs/jade-core", tag = "0.1.0" }
 image = { version = "0.25", default-features = false, features = ["png"] }
 serde = { version = "1", features = ["derive"] }
-serde_json = "1"
+serde_json = { version = "1", features = ["float_roundtrip", "unbounded_depth"] }
+flate2 = "1"
+lopdf = { version = "=0.46.0", default-features = false }
 unicode-segmentation = "1"
 unicode-normalization = "0.1"
 
-# ネイティブでは Pdfium の実体を pdfium-auto が用意する。
+# ネイティブでは同梱の検証処理で固定版Pdfiumを取得する。
 # WASM では Pdfium を JS 側で読み込んだ Emscripten モジュールにつなぐので要らない。
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-pdfium-auto = "0.3"
-pdfium-render = { version = "0.8", default-features = false, features = ["thread_safe", "bindings", "pdfium_latest", "image_latest"] }
-
-# `bindings` はビルド時に bindgen を回すので wasm32 では通らない (time.h が
-# 無い)。同梱の生成済みバインディングで足りる。
-[target.'cfg(target_arch = "wasm32")'.dependencies]
+dirs = "5"
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"] }
+sha2 = "0.10"
+tar = "0.4"
+tempfile = "3"
 pdfium-render = { version = "0.8", default-features = false, features = ["thread_safe", "pdfium_latest", "image_latest"] }
+
+[target.'cfg(unix)'.dependencies]
+libc = "0.2"
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.61", features = ["Win32_Foundation", "Win32_System_ProcessStatus", "Win32_System_Threading"] }
+
+[build-dependencies]
+anyhow = "1"
+dirs = { version = "5", optional = true }
+flate2 = { version = "1", optional = true }
+reqwest = { version = "0.12", default-features = false, features = ["blocking", "rustls-tls"], optional = true }
+sha2 = { version = "0.10", optional = true }
+tar = { version = "0.4", optional = true }
+tempfile = { version = "3", optional = true }
+
+# 両ターゲットで上流同梱の生成済みCバインディングを使う。
+# `bindings` によるソース内の再生成と、ビルド時のlibclang依存を避ける。
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+getrandom = { version = "0.4", features = ["wasm_js"] }
+# wasm/pdfium_adapter.mjs corrects this version's GetCharBox output-slot order.
+pdfium-render = { version = "=0.8.37", default-features = false, features = ["thread_safe", "pdfium_latest", "image_latest"] }
 
 [features]
 # Pdfium の実体を実行ファイルへ埋め込む。
@@ -40,7 +63,7 @@ pdfium-render = { version = "0.8", default-features = false, features = ["thread
 # 速い。配布する実行ファイルではこちらを有効にする (`ellisii` は既定で付ける)。
 # 署名した実行ファイルの外から未署名の DLL を落としてくることになると、
 # 署名の意味が薄れるし、初回の PDF 表示に通信が要る。
-bundled-pdfium = ["pdfium-auto/bundled"]
+bundled-pdfium = ["dep:dirs", "dep:flate2", "dep:reqwest", "dep:sha2", "dep:tar", "dep:tempfile"]
 
 [dev-dependencies]
 proptest = "1"

@@ -34,9 +34,11 @@ cargo run -p jade-pdf-diff -- old.pdf new.pdf
 cargo run -p jade-pdf-diff -- --ir input.pdf
 ```
 
-The comparison command writes JSON to stdout and exits with `0` when there are no changes or `1` when changes are found. See the [PDF comparison guide](docs/pdf_diff.md) for rendering and text-layer commands.
+The comparison command writes JSON to stdout and exits with `0` when there are no changes, `1` when changes are found, `2` on errors, or `3` when source or comparison coverage requires review. See the [PDF comparison guide](docs/pdf_diff.md) for rendering and text-layer commands.
 
 Native extraction and rendering use Pdfium where required. For a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
+
+PDF comparison qualification uses 80 collected public PDFs (69 regular documents, 10 robustness inputs, and one specification reference). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 
 ## Development
 

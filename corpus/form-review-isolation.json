@@ -1,0 +1,103 @@
+{
+  "version": 4,
+  "status": "open",
+  "date": "2026-10-23",
+  "manifest_sha256": "b77fb9802671618f66244270a50daf9f9780a6133b7f8b4d37f03b4a3586b100",
+  "native_binary_sha256": "31a9040feaf21ffd1dbff64399caae4c4a7c4749d3d3c697376b6d615067029d",
+  "issues": [
+    {
+      "id": "invisible-field-value-and-second-export",
+      "status": "fixed-for-basic-acroforms",
+      "sources": [
+        "pdfium-text-form-multiline",
+        "pdfium-listbox-form"
+      ],
+      "evidence": "results-canonical-regressions.json: prior release reports zero widget/text/raster changes in both controlled public cases; current code reports one document-level field change. pypdf independently confirms saved values, export/display mapping and absence of widgets in the unplaced case.",
+      "limits": "Document-level records coexist with widget records; counts are not additive. Changed-source interactive documents still require review."
+    },
+    {
+      "id": "hybrid-xfa-acroform-analysis",
+      "status": "fixed-for-available-acroform-records",
+      "priority": "high",
+      "sources": [
+        "irs-w4",
+        "irs-w4-2024",
+        "irs-w4-2022",
+        "irs-w4-2023",
+        "irs-w4-2026",
+        "pdfjs-annotation-text-widget",
+        "irs-w9-2018",
+        "irs-w9-2024"
+      ],
+      "evidence": "results-form-isolation.json: all 14 public form inventories match pypdf, including eight XFA hybrids; 47 supported declared values checked. results-hybrid-regressions.json reproduces the prior missed AcroForm value change and verifies one current document-level change with unchanged painting and no placed widgets.",
+      "limits": "XFA XML semantics remain unverified and produce a separate review diagnostic. This is AcroForm inventory/value coverage, not proof of full form behavior."
+    },
+    {
+      "id": "unsupported-property-granularity",
+      "status": "fixed-for-property-availability-and-supported-text-streams",
+      "priority": "high",
+      "evidence": "Native and shared Chrome/WASM fixtures preserve known changes despite an unreadable V, compare literal and compressed text/JavaScript streams, and reject corrupt/truncated/trailing or overexpanded encodings. Each unreadable property is retained in unavailable_properties and counted in comparison.canonical_properties_unavailable.",
+      "limits": "Only identity, FlateDecode and ASCIIHexDecode text/JavaScript streams with supported dictionary keys and no-op parameters are decoded. Unsupported property values remain unknown, not absent. Tree/identity errors still disable the source snapshot to avoid false additions/removals; exhausted work budgets fail the complete snapshot."
+    },
+    {
+      "id": "orphan-signature-action-and-appearance-semantics",
+      "status": "open",
+      "evidence": "Unreferenced orphan fields, signature verification, full action semantics, rich-text/default-appearance/resource normalization and AcroForm-level flags/calculation order are not fully modeled. Raw binary signature values are not signature verification.",
+      "required": "Extend independently checked coverage without marking changed-source interactive documents complete prematurely."
+    },
+    {
+      "id": "parser-process-resource-isolation",
+      "status": "partial-native-cli-supervision",
+      "evidence": "CLI and isolation::run_pdf_worker execute SDK parsing, additional parsers, rendering and serialization in a disposable worker. All 59 pinned sources pass the supervised IR audit; Rust tests inject time, memory, output and crash failures, verify reaping and parent-death termination, and preserve existing PNGs on failure. Default and bundled full 132-test suites plus concurrent cold startup/cache repair pass on macOS arm64.",
+      "required": "Complete hard memory enforcement/qualification beyond sampled macOS/Windows monitoring, execute Linux/Windows backends, and add isolation for existing direct in-process and WASM routes. Current memory sampling can overshoot; this is not a filesystem/network sandbox."
+    }
+  ],
+  "implementation_profile": {
+    "parser": "lopdf 0.46.0, default features disabled",
+    "source_archive_sha256": "d43f64cb8c0d673ff84245a6de9e0172c0cc05dc5dd9d263660b5b4a02b6c4ae",
+    "source_analysis_max_bytes": 67108864,
+    "single_decompressed_stream_max_bytes": 8388608,
+    "reference_and_value_depth": 64,
+    "work_items": 200000,
+    "field_records": 100000,
+    "text_utf16_units_per_string": 2000000,
+    "text_output_budget": "min(max_input_mb MiB,64MiB), conservative charge for JSON escaping and repeated qualified name components",
+    "inherited_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "DA",
+      "Q",
+      "MaxLen"
+    ],
+    "literal_comparison_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "Opt",
+      "I",
+      "TU",
+      "TM",
+      "MaxLen",
+      "Q",
+      "DA",
+      "A",
+      "AA"
+    ],
+    "default_values": {
+      "Ff": 0,
+      "Q": 0
+    },
+    "normalization": "Strict BOM-marked UTF-16BE and UTF-8; one-byte PDFDocEncoding rejects undefined scalars. Dictionary and field order normalized; reference identities resolved. Stored values retain literal Unicode/array order.",
+    "reference_specification": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+    "text_stream_filters": [
+      "identity",
+      "FlateDecode",
+      "ASCIIHexDecode"
+    ],
+    "text_stream_integrity": "Complete stream, checksum, end marker and trailing-data checks. At most 16 filters, 8MiB per decoded layer, and aggregate reserved work including failed attempts. Unsupported filter/parameter/dictionary semantics remain unavailable."
+  },
+  "current_qualification": "results-isolation.json reexecutes all three public canonical mutations through the supervised CLI. results-isolation-parity.json confirms exact summary/diagnostic/exit-code parity on all 499 prior cases. Historical before/after reports retain their original hashes."
+}

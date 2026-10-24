@@ -1,0 +1,106 @@
+{
+  "version": 2,
+  "date": "2026-10-23",
+  "goal_status": "in_progress",
+  "platform": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)"
+  },
+  "corpus": {
+    "documents": 40,
+    "pages": 433,
+    "revision_pairs": 4,
+    "manifest_sha256": "86b74de947b52ddbe0c4f9f7b27546b2c21798f699998931b63b9805dab13259"
+  },
+  "native_evaluation": {
+    "passed": 358,
+    "cases": 358,
+    "controlled_transformations": 333,
+    "selected_natural_revision_checks": 25,
+    "binary_sha256": "e2132b6fc968a5e53df0e0c2eca03a7feee61f90f65568ff00c5a86a20b6e777",
+    "details": "results-expanded.json",
+    "methodology": "Controlled PDF edits plus selected positive/unchanged checks on four official IRS revisions. Not exhaustive natural-revision precision/recall."
+  },
+  "character_conservation": {
+    "characters": 750475,
+    "missing": 0,
+    "excess": 0,
+    "legacy_rectangle_missing": 86,
+    "legacy_rectangle_excess": 953,
+    "methodology": "Multiset comparison with Pdfium character stream after NFC, explicit ligature expansion, and whitespace/control/soft-hyphen filtering. Legacy rectangle queries are reproduced by the audit example; this is not independent Unicode ground truth.",
+    "details": "results-extraction-current.jsonl"
+  },
+  "browser_runtime": {
+    "passed": 42,
+    "cases": 42,
+    "browser": "155.0.8059.85",
+    "pdfium": "8046d",
+    "wasm_sha256": "8fa465884cf0d8f98e587240caf2f688abb618c6e8962e23f7454656a557cbc2",
+    "full_document_text_and_geometry": 40,
+    "first_page_png_renderings": 40,
+    "methodology": "Every page compared to native for character order after whitespace removal and page geometry. First page PNG signature/width, known diff pair, malformed input/argument rejection and recovery. No native/WASM pixel-equivalence claim.",
+    "details": "results-wasm-runtime.json"
+  },
+  "checks": {
+    "rust_unit_integration_doctests": "passed: 67",
+    "public_corpus_tests": "passed: 3",
+    "downloader_tests": "passed: 4",
+    "clippy": "passed: all targets with -D warnings",
+    "rustfmt": "passed",
+    "wasm_build": "release WASM probe built and run in actual Chrome",
+    "runtime_bootstrap": "checksum verification, archive extraction and build tested",
+    "npm_lockfile": "npm ci tested",
+    "workflow_yaml": "parsed with Ruby Psych; native matrix and browser gate verified",
+    "remote_ci": "not dispatched; Linux gate remains unverified"
+  },
+  "readiness": [
+    {
+      "id": "linux_runtime",
+      "status": "unverified",
+      "evidence": "Ubuntu native test gate with fontconfig and CJK fallback fonts added; not executed in this macOS session."
+    },
+    {
+      "id": "natural_revision_oracle",
+      "status": "partial",
+      "evidence": "Four edition pairs with 25 selected checks; exhaustive labels and precision/recall on broader natural revisions are missing."
+    },
+    {
+      "id": "nontext_changes",
+      "status": "incomplete",
+      "evidence": "Current IR and comparison do not cover images, drawings, font face/color, interactive field values or annotations. Partial scans can contain only a logo text layer."
+    },
+    {
+      "id": "highlight_projection",
+      "status": "unverified",
+      "evidence": "Nonzero CropBox/MediaBox origins and overlay projection need explicit validation; current IR does not expose the crop origin."
+    },
+    {
+      "id": "configuration_contract",
+      "status": "incomplete",
+      "evidence": "Public option effectiveness audit remains; text_change_score is still declared/defaulted without a matching use."
+    },
+    {
+      "id": "malformed_encrypted_resource_extremes",
+      "status": "partial",
+      "evidence": "Invalid bytes/arguments and ordinary resource limits tested; broader encrypted, damaged and decompression-bomb corpus coverage remains."
+    }
+  ],
+  "historical_validation": "validation-initial.json",
+  "source_sha256": {
+    "crates/jade-pdf-diff/src/text.rs": "d70bd455957f31a8a28d411abc9ff4b9a6a9a8084108f447c544ec4a6a3c42c9",
+    "crates/jade-pdf-diff/src/scan.rs": "d64be4e3eb33d4f5fcacb3d74700695fc75950325625200506983d714d443437",
+    "crates/jade-pdf-diff/src/diff.rs": "fcd103f6ca1c207c24fe2dfccbe1c9e71c5c8a31957ffcc7b137e4721f19c559",
+    "crates/jade-pdf-diff/src/render.rs": "8c96df38ad494ab09a261631d82038a4089fa41069452eaa4ad5dd3ec1374ce1",
+    "crates/jade-pdf-diff/src/main.rs": "e03cabcd41d5c50408342aecde1212182f3484d865f47000f06c366219c1557e",
+    "crates/jade-pdf-diff/tests/extraction.rs": "d33693c9e85c801ba6d09228a04b82ac6d3c9d3bd83fcf49fc6211cedf942465",
+    "crates/jade-pdf-diff/tests/public_corpus.rs": "4baad948fa528c9cce548b40269b585deb560183893af2ee938834d968310897",
+    "tools/evaluate_pdf_corpus.py": "b02408e69c14b568f4c7bed614c300c52dffdde8308443fd8b6254fd9b467c5b",
+    "tools/wasm-smoke/Cargo.lock": "8143b5e1135b449d8db29e677b3a763213a18df53c573f5bd6f6982e5a131739",
+    "tools/wasm-smoke/package-lock.json": "c8a0e71d59fbb3853756e9cab7bcc6516f8fd4178b4de794c2563e1d84b63942",
+    "tools/wasm-smoke/runtime.json": "6da5645adf2105c243e81640f45b22356398b801b75f6dade7b8300457f7acf9",
+    "tools/wasm-smoke/browser_smoke.mjs": "7d38492d286b79f9677df4e0477faa52193145c39a3f7aa9958b14a092ec13c2",
+    "tools/wasm-smoke/prepare_runtime.py": "7e5cedea295ccd625292410445fdf07267a02d97ddb976e78aa426c83c0a03c6",
+    ".github/workflows/ci.yml": "ff276f2e5e346a6fe14b305e8726c0d640c6af779bd0cb8c7423579218ca5bce"
+  }
+}

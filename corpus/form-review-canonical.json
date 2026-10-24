@@ -1,0 +1,96 @@
+{
+  "version": 1,
+  "status": "open",
+  "date": "2026-10-23",
+  "manifest_sha256": "2372db4fc37f4232d9eb68c8b108701f10d3b7fef248fce6b187fee38999a1ca",
+  "native_binary_sha256": "4e9582d0dc0b569f9d2036f23813044bb380662c2c2a573f6f64c815989bc198",
+  "issues": [
+    {
+      "id": "invisible-field-value-and-second-export",
+      "status": "fixed-for-basic-acroforms",
+      "sources": [
+        "pdfium-text-form-multiline",
+        "pdfium-listbox-form"
+      ],
+      "evidence": "results-canonical-regressions.json: prior release reports zero widget/text/raster changes in both controlled public cases; current code reports one document-level field change. pypdf independently confirms saved values, export/display mapping and absence of widgets in the unplaced case.",
+      "limits": "Document-level records coexist with widget records; counts are not additive. Changed-source interactive documents still require review."
+    },
+    {
+      "id": "hybrid-xfa-acroform-analysis",
+      "status": "open",
+      "priority": "high",
+      "sources": [
+        "irs-w4",
+        "irs-w4-2024",
+        "irs-w4-2022",
+        "irs-w4-2023",
+        "irs-w4-2026",
+        "pdfjs-annotation-text-widget",
+        "irs-w9-2018",
+        "irs-w9-2024"
+      ],
+      "evidence": "Six of 14 public form documents match the independent field inventory. Eight hybrid XFA documents explicitly return a canonical-analysis review reason and no canonical snapshots. SDK widget comparisons remain available.",
+      "required": "Compare the available AcroForm tree while separately reporting unverified XFA semantics; do not discard all ordinary fields solely because XFA is present."
+    },
+    {
+      "id": "unsupported-property-granularity",
+      "status": "open",
+      "priority": "high",
+      "evidence": "A malformed tree/string or unsupported stream-valued property currently prevents all canonical snapshots for that source, avoiding false deletions but reducing usable coverage.",
+      "required": "Add per-property/field availability and bounded text/action stream decoding so unrelated valid fields can still be compared; retain explicit uncertainty."
+    },
+    {
+      "id": "orphan-signature-action-and-appearance-semantics",
+      "status": "open",
+      "evidence": "Unreferenced orphan fields, signature verification, full action semantics, rich-text/default-appearance/resource normalization and AcroForm-level flags/calculation order are not fully modeled. Raw binary signature values are not signature verification.",
+      "required": "Extend independently checked coverage without marking changed-source interactive documents complete prematurely."
+    },
+    {
+      "id": "parser-process-resource-isolation",
+      "status": "open",
+      "evidence": "lopdf 0.46.0 limits individual object/xref stream expansion to 8MiB, and the application limits source size, traversal depth/items and output work. These do not bound every internal parser allocation or total elapsed time.",
+      "required": "Add aggregate/process memory and time isolation for untrusted parsing/decoding; retain recoverable diagnostics and native/WASM parity."
+    }
+  ],
+  "implementation_profile": {
+    "parser": "lopdf 0.46.0, default features disabled",
+    "source_archive_sha256": "d43f64cb8c0d673ff84245a6de9e0172c0cc05dc5dd9d263660b5b4a02b6c4ae",
+    "source_analysis_max_bytes": 67108864,
+    "single_decompressed_stream_max_bytes": 8388608,
+    "reference_and_value_depth": 64,
+    "work_items": 200000,
+    "field_records": 100000,
+    "text_utf16_units_per_string": 2000000,
+    "text_output_budget": "min(max_input_mb MiB,64MiB), conservative charge for JSON escaping and repeated qualified name components",
+    "inherited_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "DA",
+      "Q",
+      "MaxLen"
+    ],
+    "literal_comparison_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "Opt",
+      "I",
+      "TU",
+      "TM",
+      "MaxLen",
+      "Q",
+      "DA",
+      "A",
+      "AA"
+    ],
+    "default_values": {
+      "Ff": 0,
+      "Q": 0
+    },
+    "normalization": "Strict BOM-marked UTF-16BE and UTF-8; one-byte PDFDocEncoding rejects undefined scalars. Dictionary and field order normalized; reference identities resolved. Stored values retain literal Unicode/array order.",
+    "reference_specification": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf"
+  }
+}
