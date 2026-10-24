@@ -382,6 +382,17 @@ fn source_anchors_recover_zero_ink_text_and_invalid_unicode_stays_reviewable() {
     }
 }
 
+/// 抽出処理を通さず、ホストの代替フォントが SDK に文字を供給するか確認する。
+fn sdk_has_character_records(bytes: &[u8]) -> bool {
+    use pdfium_render::prelude::Pdfium;
+    let pdfium =
+        Pdfium::new(Pdfium::bind_to_library(pdf_diff::pdfium_library_path().unwrap()).unwrap());
+    let document = pdfium.load_pdf_from_byte_slice(bytes, None).unwrap();
+    let page = document.pages().get(0).unwrap();
+    let text = page.text().unwrap();
+    !text.chars().is_empty()
+}
+
 #[test]
 fn original_adobe_names_precede_uni_u_prefixes_and_unknown_names_stay_uncertain() {
     for (mode, known) in [
@@ -397,6 +408,7 @@ fn original_adobe_names_precede_uni_u_prefixes_and_unknown_names_stay_uncertain(
         ("mixed_unknown", false),
     ] {
         let bytes = fixture::glyph_named_text(mode, true);
+        let observed = sdk_has_character_records(&bytes);
         let ir = pdf_diff::load_document_from_bytes(&bytes, &pdf_diff::Limits::default()).unwrap();
         assert_eq!(
             !ir.pages[0].source_unicode_accounting_unavailable, known,
@@ -410,15 +422,36 @@ fn original_adobe_names_precede_uni_u_prefixes_and_unknown_names_stay_uncertain(
             "nonbmp" => Some("𐐌"),
             _ => None,
         };
-        if let Some(expected) = expected {
+        if let Some(expected) = expected.filter(|_| observed) {
             assert_eq!(ir.pages[0].text(), expected, "{mode}");
             assert_eq!(ir.pages[0].source_unicode_scalars_unmatched, 0, "{mode}");
             assert_eq!(ir.pages[0].sdk_unicode_mapping_errors, 0, "{mode}");
         }
-        if mode == "multicomponent" {
+        if mode == "multicomponent" && observed {
             assert_eq!(ir.pages[0].source_unicode_scalars_unmatched, 6);
         }
-        if !known {
+        if !observed {
+            let page = &ir.pages[0];
+            assert_eq!(page.text(), "", "{mode}");
+            assert_eq!(page.sdk_unicode_mapping_errors, 0, "{mode}");
+            assert_eq!(page.sdk_text_objects_without_characters, 1, "{mode}");
+            assert_eq!(page.source_text_characters_missing, 1, "{mode}");
+            assert_eq!(
+                page.source_unicode_scalars_unmatched,
+                if mode == "multicomponent" {
+                    5
+                } else {
+                    usize::from(known)
+                },
+                "{mode}"
+            );
+            let error = pdf_diff::text_layer_from_bytes(&bytes, 1).unwrap_err();
+            assert!(
+                error.to_string().contains("no character records"),
+                "{mode}: {error}"
+            );
+        }
+        if !known || !observed {
             let old = fixture::glyph_named_text(mode, false);
             let result = pdf_diff::diff_bytes(
                 "a",
@@ -431,9 +464,20 @@ fn original_adobe_names_precede_uni_u_prefixes_and_unknown_names_stay_uncertain(
             .unwrap();
             assert!(!result.is_comparison_complete(), "{mode}");
             assert_eq!(
-                result.diagnostics.new_pages_with_unavailable_source_unicode, 1,
+                result.diagnostics.new_pages_with_unavailable_source_unicode,
+                usize::from(!known),
                 "{mode}"
             );
+            if !observed {
+                assert_eq!(
+                    result.diagnostics.new_pages_with_unobserved_text_objects, 1,
+                    "{mode}"
+                );
+                assert_eq!(
+                    result.diagnostics.new_pages_with_missing_source_characters, 1,
+                    "{mode}"
+                );
+            }
         }
     }
 }
