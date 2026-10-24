@@ -213,6 +213,38 @@ impl Worker {
     }
 }
 
+/// 終了時に先行して消えたメモリ情報を、期限内の終了状態と最終 RSS で補う。
+fn poll_after_memory_error(
+    error: &anyhow::Error,
+    remaining: Duration,
+    mut poll: impl FnMut() -> Result<Option<(ExitStatus, u64)>>,
+) -> Result<Option<(ExitStatus, u64)>> {
+    let missing = error.downcast_ref::<std::io::Error>().is_some_and(|error| {
+        #[cfg(unix)]
+        if error.raw_os_error() == Some(libc::ESRCH) {
+            return true;
+        }
+        error.kind() == std::io::ErrorKind::NotFound
+    });
+    let budget = if missing {
+        remaining.min(Duration::from_millis(100))
+    } else {
+        Duration::ZERO
+    };
+    let deadline = Instant::now() + budget;
+    loop {
+        let status = poll()?;
+        if status.is_some() || Instant::now() >= deadline {
+            return Ok(status);
+        }
+        std::thread::sleep(
+            deadline
+                .saturating_duration_since(Instant::now())
+                .min(Duration::from_millis(1)),
+        );
+    }
+}
+
 fn supervise(
     command: Command,
     limits: &ProcessLimits,
@@ -275,8 +307,14 @@ fn supervise_in(
             match memory_usage(&worker.child) {
                 Ok(bytes) => peak = peak.max(bytes),
                 Err(error) => {
-                    // A process may exit between wait4 and the statistics call.
-                    if let Some((status, rss)) = worker.poll()? {
+                    // Linux can discard the memory map before wait4 can reap
+                    // the last thread. Only missing-process errors get a short,
+                    // deadline-bounded grace period; other monitor failures stop.
+                    if let Some((status, rss)) = poll_after_memory_error(
+                        &error,
+                        limits.timeout.saturating_sub(started.elapsed()),
+                        || worker.poll(),
+                    )? {
                         peak = peak.max(rss);
                         ensure!(
                             peak <= limits.max_memory_bytes,
@@ -656,6 +694,48 @@ mod tests {
             std::io::Error::last_os_error().raw_os_error(),
             Some(libc::ESRCH)
         );
+    }
+
+    /// メモリ情報の消失から wait4 の完了までの間も最終 RSS を保持する。
+    #[cfg(unix)]
+    #[test]
+    fn disappearing_monitor_waits_for_exit_and_preserves_peak_rss() {
+        use std::os::unix::process::ExitStatusExt;
+        let missing = anyhow::Error::from(std::io::Error::from_raw_os_error(libc::ESRCH));
+        let mut calls = 0;
+        let result = poll_after_memory_error(&missing, Duration::from_millis(100), || {
+            calls += 1;
+            Ok((calls == 4).then(|| (ExitStatus::from_raw(0), 987_654)))
+        })
+        .unwrap()
+        .unwrap();
+        assert!(result.0.success());
+        assert_eq!(result.1, 987_654);
+        assert_eq!(calls, 4);
+    }
+
+    /// 実行中の監視障害は成功に変えず、再確認の待ち時間にも上限を置く。
+    #[cfg(unix)]
+    #[test]
+    fn missing_monitor_retry_is_bounded_and_permission_failures_are_not_retried() {
+        let missing = anyhow::Error::from(std::io::Error::from_raw_os_error(libc::ESRCH));
+        let started = Instant::now();
+        let result =
+            poll_after_memory_error(&missing, Duration::from_millis(3), || Ok(None)).unwrap();
+        assert!(result.is_none());
+        assert!(started.elapsed() < Duration::from_secs(1));
+        let denied =
+            anyhow::Error::from(std::io::Error::from(std::io::ErrorKind::PermissionDenied));
+        let mut calls = 0;
+        assert!(
+            poll_after_memory_error(&denied, Duration::from_millis(100), || {
+                calls += 1;
+                Ok(None)
+            })
+            .unwrap()
+            .is_none()
+        );
+        assert_eq!(calls, 1);
     }
 
     #[test]
