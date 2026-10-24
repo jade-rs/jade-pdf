@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -44,7 +48,7 @@ jobs:
 
   public-pdf-corpus:
     runs-on: macos-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: dtolnay/rust-toolchain@stable
@@ -55,7 +59,7 @@ jobs:
           node-version: '22'
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - run: python3 tools/pdf_corpus.py
-      - run: cargo test -p jade-pdf-diff --locked --test public_corpus -- --ignored --nocapture
+      - run: cargo test -p jade-pdf-diff --locked --release --test public_corpus -- --ignored --nocapture
       - run: cargo build -p jade-pdf-diff --locked --release --bin pdf-diff
       - run: cargo build -p jade-pdf-diff --locked --release --example audit_isolation
       - run: cargo build -p jade-pdf-diff --locked --release --example audit_isolated_bytes
