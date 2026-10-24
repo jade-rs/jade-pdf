@@ -1,0 +1,65 @@
+{
+  "version": 1,
+  "date": "2026-10-23",
+  "status": "open",
+  "manifest_sha256": "ee100c215c97125389b8a4352785a36b1a8ebd267299daf31130df08870a98ae",
+  "native_binary_sha256": "92d833639562c9b65f2b752c56721958a36f74318980e359e65b96e07e843f38",
+  "independent_parser": "PDF.js 6.4.299",
+  "details": "results-independent-text-hyphen.json",
+  "issues": [
+    {
+      "id": "sdk-unicode-map-error-not-propagated",
+      "priority": "high",
+      "status": "open",
+      "sources": [
+        "cjk",
+        "tracemonkey"
+      ],
+      "evidence": "Direct calls to the loaded Pdfium 7961 SDK: cjk characters 0..3 return FPDFText_HasUnicodeMapError=1 despite printable fallback scalars. Tracemonkey page 1 character 2603 returns U+000D with mapping_error=1; independent extraction has a copyright glyph. Current library does not propagate this SDK flag.",
+      "required": "Propagate SDK mapping errors in scan/diff/text-layer routes; preserve visibility of unmapped glyphs; verify native and WASM. Do not treat a printable fallback as proof of a correct Unicode mapping."
+    },
+    {
+      "id": "overlapping-tounicode-maps",
+      "priority": "high",
+      "status": "open",
+      "sources": [
+        "pdfjs-nonembedded-type1-tounicode"
+      ],
+      "expected_full_page_unicode": "óº€íºXABéê",
+      "evidence": "The original font ToUnicode stream defines a broad identity bfrange, then eight overriding bfchar entries, then p/q -> é/ê. PDF.js and pypdf independently return the declared text. Native Pdfium returns ABCU, U+009B, XABpq with mapping_error=0; current library drops U+009B. Existing text-fragment tests only establish SDK stability, not Unicode correctness.",
+      "required": "Honor declared CMap overrides or provide a verified alternate extraction path; add a full-page Unicode gold assertion."
+    },
+    {
+      "id": "arabic-presentation-forms",
+      "priority": "normal",
+      "status": "compatibility-equivalent",
+      "sources": [
+        "arabic"
+      ],
+      "evidence": "Strict inventories differ, but full-page sample inventories are equal after NFKC. The two engines choose presentation forms vs ordinary Arabic scalars.",
+      "required": "Keep compatibility equivalence separate from literal Unicode equality and reading-order validation."
+    },
+    {
+      "id": "clipped-and-off-page-content",
+      "priority": "normal",
+      "status": "needs-scope-adjudication",
+      "sources": [
+        "freeculture",
+        "pdfium-cropped-text",
+        "pdfjs-showtext-shadingpattern"
+      ],
+      "evidence": "Native extraction includes content not included by PDF.js. Freeculture includes printer filenames, timestamps and margin numbers; the cropped fixture places portions of strings outside its view box. Shading-pattern discrepancy still needs visual/source inspection.",
+      "required": "Define and test both source-content and visible-page extraction scopes; do not silently discard hidden/off-page content to force agreement."
+    },
+    {
+      "id": "independent-cmap-resource-limit",
+      "priority": "normal",
+      "status": "resource-limited",
+      "sources": [
+        "pdfjs-issue-cmap12"
+      ],
+      "evidence": "The independent worker exceeds its configured 512MiB V8 old-space limit and is terminated. The coordinator continues and records resource_limited; no agreement is claimed.",
+      "required": "Keep process/time/memory limits. Investigate upstream CMap expansion without relaxing limits to hide the failure."
+    }
+  ]
+}

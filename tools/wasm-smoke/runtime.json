@@ -1,0 +1,58 @@
+{
+  "pdfium": {
+    "version": "8111",
+    "url": "https://github.com/bblanchon/pdfium-binaries/releases/download/chromium/8111/pdfium-wasm.tgz",
+    "sha256": "ed8ee2e70c628a4bd261fade8e381079aca250aeb5b1f3192c59682f8441fdcd",
+    "bytes": 2637606,
+    "members": {
+      "lib/pdfium.js": {
+        "bytes": 165418,
+        "sha256": "9bdac90c5714c50187d5a96ce04b2dd9b01c5a8e6ded68978536ee3820f6e218"
+      },
+      "lib/pdfium.wasm": {
+        "bytes": 5457970,
+        "sha256": "bf6edcba65565259103e2fd655faea698b2a0b28800de8b81fe09ebb21ff263d"
+      }
+    }
+  },
+  "bindgen": {
+    "version": "0.2.129",
+    "platforms": {
+      "aarch64-apple-darwin": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz",
+        "sha256": "81d4a23d56b3c3eb8187658329116d50e0b228a93b343825fb71f70179051cd1",
+        "filename": "wasm-bindgen-0.2.129-aarch64-apple-darwin.tar.gz"
+      },
+      "aarch64-unknown-linux-gnu": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-gnu.tar.gz",
+        "sha256": "1797c349a0f45d30946e8986b184135e12839ab576c9a04203e85febfc5dcb35",
+        "filename": "wasm-bindgen-0.2.129-aarch64-unknown-linux-gnu.tar.gz"
+      },
+      "aarch64-unknown-linux-musl": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-aarch64-unknown-linux-musl.tar.gz",
+        "sha256": "2ed4351c35dd9440308bbb02767d47ea278efe851a52465300f3c94f5b6c2a87",
+        "filename": "wasm-bindgen-0.2.129-aarch64-unknown-linux-musl.tar.gz"
+      },
+      "riscv64gc-unknown-linux-gnu": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-riscv64gc-unknown-linux-gnu.tar.gz",
+        "sha256": "413833a52d93c207418bc4d52d72cf1e785efbffb382a127f8fb8bc0ea0ad8cd",
+        "filename": "wasm-bindgen-0.2.129-riscv64gc-unknown-linux-gnu.tar.gz"
+      },
+      "x86_64-apple-darwin": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz",
+        "sha256": "7e028879a68ec53dae14048b55cc5215f6df75b17a9c1426fac8fa086d3202fd",
+        "filename": "wasm-bindgen-0.2.129-x86_64-apple-darwin.tar.gz"
+      },
+      "x86_64-pc-windows-msvc": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz",
+        "sha256": "79e348c169d0c10c0b287647f1e753d0985353ca96800bc29be8f4261baf13e6",
+        "filename": "wasm-bindgen-0.2.129-x86_64-pc-windows-msvc.tar.gz"
+      },
+      "x86_64-unknown-linux-musl": {
+        "url": "https://github.com/wasm-bindgen/wasm-bindgen/releases/download/0.2.129/wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz",
+        "sha256": "82d12bb940e2d4e72e0d5605387fc1b8ca179044e012b620f0ce4e7440e8320e",
+        "filename": "wasm-bindgen-0.2.129-x86_64-unknown-linux-musl.tar.gz"
+      }
+    }
+  }
+}

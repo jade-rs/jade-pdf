@@ -1,0 +1,119 @@
+{
+  "version": 12,
+  "status": "open",
+  "date": "2026-10-24",
+  "manifest_sha256": "3f6d5f6cd146d2c74211d593fe6b9a471cac7058fa66508353bb8609c5559ec4",
+  "native_binary_sha256": "19b5038bfea0768993ae1c4e98484c0be2d616ad2ffb33133e585dac5f83460e",
+  "issues": [
+    {
+      "id": "invisible-field-value-and-second-export",
+      "status": "fixed-for-basic-acroforms",
+      "sources": [
+        "pdfium-text-form-multiline",
+        "pdfium-listbox-form"
+      ],
+      "evidence": "results-canonical-regressions.json: prior release reports zero widget/text/raster changes in both controlled public cases; current code reports one document-level field change. pypdf independently confirms saved values, export/display mapping and absence of widgets in the unplaced case.",
+      "limits": "Document-level records coexist with widget records; counts are not additive. Changed-source interactive documents still require review."
+    },
+    {
+      "id": "hybrid-xfa-acroform-analysis",
+      "status": "fixed-for-available-acroform-records",
+      "priority": "high",
+      "sources": [
+        "irs-w4",
+        "irs-w4-2024",
+        "irs-w4-2022",
+        "irs-w4-2023",
+        "irs-w4-2026",
+        "pdfjs-annotation-text-widget",
+        "irs-w9-2018",
+        "irs-w9-2024"
+      ],
+      "evidence": "results-form-layout.json: all 15 public form inventories match pypdf, including eight XFA hybrids and the new membership form; 62 supported saved values checked. Historical hybrid before/after mutation evidence remains in results-hybrid-regressions.json.",
+      "limits": "XFA XML semantics remain unverified and produce a separate review diagnostic. This is AcroForm inventory/value coverage, not proof of full form behavior."
+    },
+    {
+      "id": "unsupported-property-granularity",
+      "status": "fixed-for-property-availability-and-supported-text-streams",
+      "priority": "high",
+      "evidence": "Native and shared Chrome/WASM fixtures preserve known changes despite an unreadable V, compare literal and compressed text/JavaScript streams, and reject corrupt/truncated/trailing or overexpanded encodings. Each unreadable property is retained in unavailable_properties and counted in comparison.canonical_properties_unavailable.",
+      "limits": "Only identity, FlateDecode and ASCIIHexDecode text/JavaScript streams with supported dictionary keys and no-op parameters are decoded. Unsupported property values remain unknown, not absent. Tree/identity errors still disable the source snapshot to avoid false additions/removals; exhausted work budgets fail the complete snapshot."
+    },
+    {
+      "id": "orphan-signature-action-and-appearance-semantics",
+      "status": "open",
+      "evidence": "Unreferenced orphan fields, signature verification, full action semantics, rich-text/default-appearance/resource normalization and AcroForm-level flags/calculation order are not fully modeled. Raw binary signature values are not signature verification.",
+      "required": "Extend independently checked coverage without marking changed-source interactive documents complete prematurely."
+    },
+    {
+      "id": "parser-process-resource-isolation",
+      "status": "partial-native-cli-and-byte-supervision",
+      "evidence": "Current CLI passes 64 pinned IR cases; native byte client matches 747 operations (701 successes/46 rejections), and operation directories empty afterward. Default and bundled regular suites each pass 159; both cold SDK concurrent-startup/same-size corruption-repair profiles rerun. Chrome Worker matches 811 operations plus 87 additional cases; delayed retirement remains explicit.",
+      "required": "Qualify hard memory limits beyond sampled monitoring, execute Linux/Windows backends and other-browser termination/background-timer behavior. Direct APIs remain in-process; this is not a filesystem/network sandbox or aggregate host resource bound."
+    },
+    {
+      "id": "deep-canonical-record-byte-transport",
+      "status": "fixed-for-bounded-typed-byte-transport",
+      "evidence": "A valid 60-action AA/K chain exceeds the default 128-level JSON decoder. The typed client checks a 256-level lexical budget before decoding. Native and Chrome/WASM form_deep_property fixtures detect the leaf edit with unchanged painting and no canonical unavailability reasons. Float roundtrip parsing preserves exact finite coordinates.",
+      "limits": "Transport fidelity is not complete action semantics; changed interactive sources still require review."
+    },
+    {
+      "id": "empty-acroform-shell-forces-review",
+      "status": "requires_bounded_emptiness_proof",
+      "sources": [
+        "w3c-complex-table",
+        "w3c-rowspan-table"
+      ],
+      "evidence": "Independent pypdf inspection: both root AcroForm dictionaries contain DA, DR font/encoding defaults and Fields []; both pages have no Annots and neither form has XFA. Harmless-rewrite CLI comparisons return exit 3 with interactive_pages_requiring_review=1, zero widget/canonical fields, no canonical review reasons and zero changed raster pixels. comparison.rs currently sets has_form from SDK form presence.",
+      "required": "Do not relax genuine/orphan widgets, XFA, malformed or missing field trees, or unsupported form behavior. First establish a bounded empty-shell proof and retain the independent table-order failure separately."
+    }
+  ],
+  "implementation_profile": {
+    "parser": "lopdf 0.46.0, default features disabled",
+    "source_archive_sha256": "d43f64cb8c0d673ff84245a6de9e0172c0cc05dc5dd9d263660b5b4a02b6c4ae",
+    "source_analysis_max_bytes": 67108864,
+    "single_decompressed_stream_max_bytes": 8388608,
+    "reference_and_value_depth": 64,
+    "work_items": 200000,
+    "field_records": 100000,
+    "text_utf16_units_per_string": 2000000,
+    "text_output_budget": "min(max_input_mb MiB,64MiB), conservative charge for JSON escaping and repeated qualified name components",
+    "inherited_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "DA",
+      "Q",
+      "MaxLen"
+    ],
+    "literal_comparison_properties": [
+      "FT",
+      "Ff",
+      "V",
+      "DV",
+      "Opt",
+      "I",
+      "TU",
+      "TM",
+      "MaxLen",
+      "Q",
+      "DA",
+      "A",
+      "AA"
+    ],
+    "default_values": {
+      "Ff": 0,
+      "Q": 0
+    },
+    "normalization": "Strict BOM-marked UTF-16BE and UTF-8; one-byte PDFDocEncoding rejects undefined scalars. Dictionary and field order normalized; reference identities resolved. Stored values retain literal Unicode/array order.",
+    "reference_specification": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+    "text_stream_filters": [
+      "identity",
+      "FlateDecode",
+      "ASCIIHexDecode"
+    ],
+    "text_stream_integrity": "Complete stream, checksum, end marker and trailing-data checks. At most 16 filters, 8MiB per decoded layer, and aggregate reserved work including failed attempts. Unsupported filter/parameter/dictionary semantics remain unavailable."
+  },
+  "current_qualification": "v23 selected comparisons 574/574: 289 complete and 285 review. Typed bytes 67 sources/762 operations; Worker 829+95. Form inventories remain 15/15 and 62 values. Both new W3C sources carry empty AcroForm shells and trigger interactive review despite zero fields. Three rebased appearances and full XFA semantics remain review. Table visual gold is separately 2/3. Linux/Windows/cross-browser hard isolation unverified."
+}

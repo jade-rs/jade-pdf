@@ -8,6 +8,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   lint:
     runs-on: ubuntu-latest
@@ -17,17 +21,116 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: clippy,rustfmt
+          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
       - run: cargo fmt --all -- --check
-      - run: cargo clippy -p jade-pdf-diff --all-targets --locked -- -D warnings
+      - run: cargo clippy -p jade-pdf-diff --all-targets -- -D warnings
+      - run: cargo check -p jade-pdf-diff --locked --lib --target wasm32-unknown-unknown
+      - run: python3 -m unittest discover -s tools -p 'test_*.py'
 
-  # Pdfium を触るテストは、Linux のランナーでは同梱の実体を読めずに SIGBUS で
-  # 落ちる (コードの問題ではない)。テストは macOS で走らせる。
+  # Linux の Pdfium ランタイムと CJK 代替フォントも検証する。
   test:
-    runs-on: macos-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: dtolnay/rust-toolchain@stable
+      - if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libfontconfig1 fonts-noto-cjk
       - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
-      - run: cargo test -p jade-pdf-diff --locked
+      - run: cargo test -p jade-pdf-diff
+      - run: cargo test -p jade-pdf-diff --locked --test runtime -- --ignored --nocapture
+      - run: cargo test -p jade-pdf-diff --locked --features bundled-pdfium --test runtime
+
+  public-pdf-corpus:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - run: python3 tools/pdf_corpus.py
+      - run: cargo test -p jade-pdf-diff --locked --release --test public_corpus -- --ignored --nocapture
+      - run: cargo build -p jade-pdf-diff --locked --release --bin pdf-diff
+      - run: cargo build -p jade-pdf-diff --locked --release --example audit_isolation
+      - run: cargo build -p jade-pdf-diff --locked --release --example audit_isolated_bytes
+      - run: python3 tools/audit_process_isolation.py --binary target/release/pdf-diff
+      - run: python3 tools/audit_isolated_bytes.py --binary target/release/pdf-diff
+      - run: python3 tools/audit_reading_order.py --binary target/release/pdf-diff
+      - run: |
+          python3 -m venv .venv-corpus
+          .venv-corpus/bin/pip install -r tools/requirements-corpus.txt
+          .venv-corpus/bin/python tools/evaluate_pdf_corpus.py --binary target/release/pdf-diff
+          .venv-corpus/bin/python tools/audit_pdf_structure.py --binary target/release/pdf-diff
+          .venv-corpus/bin/python tools/audit_form_fields.py --binary target/release/pdf-diff
+          .venv-corpus/bin/python tools/audit_form_discovery.py --binary target/release/pdf-diff
+          .venv-corpus/bin/python tools/audit_orphan_forms.py --binary target/release/pdf-diff
+          .venv-corpus/bin/python tools/audit_empty_forms.py --binary target/release/pdf-diff
+          python3 tools/audit_sdk_cache_contention.py --binary target/release/pdf-diff
+      - name: Independent table gold (incomplete source tags retained)
+        run: |
+          audit_exit_code=0
+          .venv-corpus/bin/python tools/audit_table_order.py --binary target/release/pdf-diff || audit_exit_code=$?
+          if [ "$audit_exit_code" -ne 0 ] && [ "$audit_exit_code" -ne 3 ]; then
+            exit "$audit_exit_code"
+          fi
+          if [ "$audit_exit_code" -eq 3 ]; then
+            echo "Table order or cell association requires review; inspect results-table-order.json."
+          fi
+      - name: Coordinate-unit covariance (appearance review retained)
+        run: |
+          audit_exit_code=0
+          .venv-corpus/bin/python tools/audit_coordinate_units.py --binary target/release/pdf-diff || audit_exit_code=$?
+          if [ "$audit_exit_code" -ne 0 ] && [ "$audit_exit_code" -ne 3 ]; then
+            exit "$audit_exit_code"
+          fi
+          if [ "$audit_exit_code" -eq 3 ]; then
+            echo "Rebased annotation appearance requires review; inspect results-coordinate-units.json."
+          fi
+      - run: python3 tools/wasm-smoke/prepare_runtime.py --build
+      - run: npm ci && npx playwright install chromium
+        working-directory: tools/wasm-smoke
+      - run: node tools/wasm-smoke/browser_smoke.mjs
+        env:
+          JADE_PDF_BINARY: target/release/pdf-diff
+      - run: node tools/wasm-smoke/worker_smoke.mjs
+      - name: Independent text inventory (review outcomes retained)
+        run: |
+          audit_exit_code=0
+          node tools/wasm-smoke/audit_text.mjs --binary target/release/pdf-diff || audit_exit_code=$?
+          if [ "$audit_exit_code" -ne 0 ] && [ "$audit_exit_code" -ne 3 ]; then
+            exit "$audit_exit_code"
+          fi
+          if [ "$audit_exit_code" -eq 3 ]; then
+            echo "Independent text audit requires review; inspect results-independent-text.json."
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: public-pdf-evaluation
+          path: |
+            corpus/results.json
+            corpus/results-structure.json
+            corpus/results-form-fields.json
+            corpus/results-form-discovery.json
+            corpus/results-orphan-forms.json
+            corpus/results-empty-forms.json
+            corpus/results-sdk-cache-contention.json
+            corpus/results-process-isolation.json
+            corpus/results-isolated-bytes.json
+            corpus/results-reading-order.json
+            corpus/results-wasm-runtime.json
+            corpus/results-browser-workers.json
+            corpus/results-independent-text.json
+            corpus/results-coordinate-units.json
+            corpus/results-table-order.json
+          if-no-files-found: ignore

@@ -2,9 +2,9 @@
 //!
 //! 差分計算と、UI 側でハイライトを重ねるための座標の両方に使う。
 //!
-//! 座標は **PDF ユーザ空間** (単位 pt、原点はページ左下、y は上向き) のまま
-//! 持つ。pdf.js の viewport 変換に素直に渡せる形にしておきたいので、ここで
-//! 画面座標へは直さない。
+//! 座標は回転前の **PDF ユーザ空間** (y は上向き) のまま持つ。
+//! 表示領域の左下が (0, 0) とは限らない。画像への投影には
+//! [`crate::PageViewport`] を使う。
 
 use serde::{Deserialize, Serialize};
 use unicode_normalization::UnicodeNormalization;
@@ -19,6 +19,14 @@ pub struct Bounds {
 }
 
 impl Bounds {
+    pub(crate) fn scaled(self, scale: f64) -> Self {
+        Self {
+            x0: self.x0 * scale,
+            y0: self.y0 * scale,
+            x1: self.x1 * scale,
+            y1: self.y1 * scale,
+        }
+    }
     /// pdf-parser のテキスト要素の `Bounds` は `[x, y, width, height]`。
     ///
     /// Adobe Extract の schema は [left, bottom, right, top] だが、取り込んだ
@@ -47,7 +55,7 @@ impl Bounds {
     }
 
     pub fn center(&self) -> (f64, f64) {
-        ((self.x0 + self.x1) / 2.0, (self.y0 + self.y1) / 2.0)
+        (self.x0 / 2.0 + self.x1 / 2.0, self.y0 / 2.0 + self.y1 / 2.0)
     }
 }
 
@@ -61,7 +69,7 @@ pub struct BlockIr {
     pub index: usize,
     pub text: String,
     pub bounds: Bounds,
-    /// 文字サイズ (pt)。分かれば。
+    /// 文字サイズ (PDFユーザ空間の単位)。分かれば。
     pub size: Option<f64>,
 }
 
@@ -69,15 +77,96 @@ pub struct BlockIr {
 pub struct PageIr {
     /// 1 始まりのページ番号。
     pub index: usize,
-    /// ページの大きさ (pt)。
+    /// 回転後のページの大きさ (PDFユーザ空間の単位)。
     pub width: f64,
     pub height: f64,
+    /// 1ユーザ単位に相当するポイント数。Noneは解析不能。旧IRでは1とする。
+    #[serde(default = "crate::page_units::default_unit")]
+    pub user_unit: Option<f64>,
     /// 表示時の回転角 (0 / 90 / 180 / 270)。
     pub rotation: u64,
+    /// 回転前の表示領域 (MediaBox と CropBox の交差)。
+    /// 旧JSON/OCRで省略した場合は原点 (0, 0) と回転前のページ寸法を使う。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub view_box: Option<Bounds>,
+    /// Characters whose Unicode mapping Pdfium reported as invalid. Printable
+    /// fallback scalars are retained as best-effort text, not verified Unicode.
+    #[serde(default)]
+    pub sdk_unicode_mapping_errors: usize,
+    /// SDK text objects without any character record. They may be whitespace,
+    /// but the SDK character APIs cannot prove that their source text is empty.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub sdk_text_objects_without_characters: usize,
+    /// Lower bound on encoded source glyphs absent from nongenerated SDK records.
+    /// Zero is not proof of source exhaustiveness: Unicode expansion can mask loss.
+    #[serde(default, skip_serializing_if = "crate::ir::is_zero")]
+    pub source_text_characters_missing: usize,
+    /// Source text accounting could not finish within supported syntax/budgets.
+    #[serde(default, skip_serializing_if = "crate::ir::is_false")]
+    pub source_text_accounting_unavailable: bool,
+    /// Non-whitespace Unicode multiset discrepancy against verified source mappings.
+    /// Includes excess SDK scalars only when every source mapping was available.
+    #[serde(default, skip_serializing_if = "crate::ir::is_zero")]
+    pub source_unicode_scalars_unmatched: usize,
+    /// Source font/ActualText Unicode mapping could not be fully verified.
+    #[serde(default, skip_serializing_if = "crate::ir::is_false")]
+    pub source_unicode_accounting_unavailable: bool,
+
+    /// Tagged structure was inconsistent/unsupported, or a missing table cell
+    /// was assigned geometrically. Text remains best effort and needs review.
+    #[serde(default, skip_serializing_if = "is_false")]
+    pub reading_order_requires_review: bool,
     pub blocks: Vec<BlockIr>,
 }
 
+pub(crate) fn is_zero(value: &usize) -> bool {
+    *value == 0
+}
+
+pub(crate) fn is_false(value: &bool) -> bool {
+    !value
+}
+
 impl PageIr {
+    pub fn has_unmapped_text(&self) -> bool {
+        self.sdk_unicode_mapping_errors > 0
+            || self.blocks.iter().any(|b| b.text.contains('\u{fffd}'))
+    }
+
+    pub fn effective_view_box(&self) -> Bounds {
+        self.view_box.unwrap_or_else(|| {
+            let (width, height) = if self.rotation == 90 || self.rotation == 270 {
+                (self.height, self.width)
+            } else {
+                (self.width, self.height)
+            };
+            Bounds {
+                x0: 0.0,
+                y0: 0.0,
+                x1: width,
+                y1: height,
+            }
+        })
+    }
+
+    /// 指定した画像サイズに合う PDF→ピクセル変換。描画API利用時は
+    /// [`crate::RenderedPage::viewport`] が実際の出力サイズを持つ。
+    pub fn viewport(&self, width: u32, height: u32) -> anyhow::Result<crate::PageViewport> {
+        if let Some(unit) = self.user_unit {
+            crate::page_units::validate(unit)?;
+        }
+        let mut viewport =
+            crate::PageViewport::new(self.effective_view_box(), self.rotation, width, height)?;
+        viewport.user_unit = self.user_unit;
+        Ok(viewport)
+    }
+
+    /// 回転後の物理寸法 (1ポイント = 1/72インチ)。倍率が未知ならNone。
+    pub fn physical_size_points(&self) -> Option<(f64, f64)> {
+        self.user_unit
+            .map(|unit| (self.width * unit, self.height * unit))
+    }
+
     /// ページの全テキスト。対応付けのスコアに使う。
     pub fn text(&self) -> String {
         self.blocks
@@ -104,16 +193,13 @@ impl PageIr {
     /// ページの上端 / 下端にある短い要素か (ページ番号・柱・透かしなど)。
     pub fn is_furniture(&self, block: &BlockIr) -> bool {
         // Pdfiumの寸法は回転後、文字座標は回転前。柱の判定も同じ空間で行う。
-        let height = if self.rotation == 90 || self.rotation == 270 {
-            self.width
-        } else {
-            self.height
-        };
+        let view_box = self.effective_view_box();
+        let height = view_box.height();
         if height <= 0.0 || block.text.chars().count() > FURNITURE_MAX_CHARS {
             return false;
         }
-        let top = block.bounds.y0 > height * (1.0 - FURNITURE_BAND);
-        let bottom = block.bounds.y1 < height * FURNITURE_BAND;
+        let top = block.bounds.y0 > view_box.y1 - height * FURNITURE_BAND;
+        let bottom = block.bounds.y1 < view_box.y0 + height * FURNITURE_BAND;
         top || bottom
     }
 }
@@ -134,6 +220,7 @@ pub struct DocumentIr {
 impl DocumentIr {
     /// OCRなど、外部から受け取る中間表現も部分比較や不正座標を許さない。
     pub fn validate(&self, limits: &crate::Limits) -> anyhow::Result<()> {
+        limits.validate()?;
         anyhow::ensure!(
             !self.pages.is_empty() && self.pages.len() <= limits.max_pages,
             "OCR IR exceeds max_pages or has no pages"
@@ -157,6 +244,15 @@ impl DocumentIr {
                 [0, 90, 180, 270].contains(&page.rotation),
                 "Invalid OCR page rotation"
             );
+            crate::geometry::validate_view_box(page.effective_view_box())?;
+            if let Some(unit) = page.user_unit {
+                crate::page_units::validate(unit)?;
+                crate::geometry::validate_view_box(page.effective_view_box().scaled(unit))?;
+                anyhow::ensure!(
+                    (page.width * unit).is_finite() && (page.height * unit).is_finite(),
+                    "Invalid physical OCR page dimensions"
+                );
+            }
             anyhow::ensure!(
                 page.blocks.len() <= limits.max_blocks_per_page,
                 "OCR IR exceeds max_blocks_per_page"
@@ -169,6 +265,8 @@ impl DocumentIr {
                 let b = block.bounds;
                 anyhow::ensure!(
                     [b.x0, b.y0, b.x1, b.y1].into_iter().all(f64::is_finite)
+                        && b.width().is_finite()
+                        && b.height().is_finite()
                         && b.x1 >= b.x0
                         && b.y1 >= b.y0,
                     "Invalid OCR block bounds"
@@ -176,6 +274,24 @@ impl DocumentIr {
                 anyhow::ensure!(
                     block.size.is_none_or(|size| size.is_finite() && size > 0.0),
                     "Invalid OCR font size"
+                );
+                let unit = page.user_unit.unwrap_or(1.0);
+                let physical = b.scaled(unit);
+                anyhow::ensure!(
+                    [
+                        physical.x0,
+                        physical.y0,
+                        physical.x1,
+                        physical.y1,
+                        physical.width(),
+                        physical.height()
+                    ]
+                    .into_iter()
+                    .all(f64::is_finite)
+                        && block
+                            .size
+                            .is_none_or(|size| (size * unit).is_finite() && size * unit > 0.0),
+                    "Invalid physical OCR block dimensions"
                 );
                 text_bytes = text_bytes
                     .checked_add(block.text.len() as u64)
@@ -211,6 +327,8 @@ pub(crate) fn normalize(text: &str) -> String {
             'ﬃ' => out.push_str("ffi"),
             'ﬄ' => out.push_str("ffl"),
             'ﬅ' | 'ﬆ' => out.push_str("st"),
+            // Pdfium can expand the same st ligature to long-s + t first.
+            'ſ' => out.push('s'),
             other => out.push(other),
         }
     }
@@ -244,6 +362,15 @@ mod tests {
             width: 595.0,
             height: 842.0,
             rotation: 0,
+            view_box: None,
+            user_unit: Some(1.0),
+            sdk_unicode_mapping_errors: 0,
+            sdk_text_objects_without_characters: 0,
+            source_text_characters_missing: 0,
+            source_text_accounting_unavailable: false,
+            source_unicode_scalars_unmatched: 0,
+            source_unicode_accounting_unavailable: false,
+            reading_order_requires_review: false,
             blocks: blocks
                 .into_iter()
                 .enumerate()
@@ -306,5 +433,6 @@ mod tests {
         assert_eq!(normalize("Cafe\u{301}"), "Café");
         assert_eq!(normalize("of\u{ad}fice"), "office");
         assert_eq!(normalize("oﬃce ﬆaff"), "office staff");
+        assert_eq!(normalize("ﬅaff ſtaff"), "staff staff");
     }
 }

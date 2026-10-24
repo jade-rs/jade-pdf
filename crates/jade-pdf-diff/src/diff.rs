@@ -3,11 +3,14 @@
 //! ページを先に対応付けるので、途中に 1 ページ挟まっても以降が全部差分に
 //! なることはない。ページ内はブロックを対応付けてから中身を比べる。
 
+use std::borrow::Cow;
 use std::cell::OnceCell;
+use std::collections::{HashMap, HashSet};
+use std::hash::{BuildHasher, Hash, Hasher};
 
 use diff_align::{pair_with_anchors, Pairing, Step};
 use diff_support::{trimmed_lcs_diff, TextProfile};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use unicode_segmentation::UnicodeSegmentation;
 
 use crate::ir::{BlockIr, Bounds, DocumentIr, PageIr};
@@ -15,13 +18,121 @@ use crate::ir::{BlockIr, Bounds, DocumentIr, PageIr};
 /// 出力 JSON の契約バージョン。
 pub const DIFF_SCHEMA_VERSION: u32 = 1;
 
-#[derive(Debug, Clone)]
+/// Intern complete ordered block text without copying page strings. A crop can
+/// change furniture classification while every text block stays identical.
+/// Hashes only select candidate classes; actual strings establish equality.
+fn complete_text_classes<'a>(pages: impl Iterator<Item = &'a PageIr>) -> Vec<Option<usize>> {
+    let state = std::collections::hash_map::RandomState::new();
+    complete_text_classes_by(pages, |page| {
+        let mut hasher = state.build_hasher();
+        page.blocks.len().hash(&mut hasher);
+        for block in &page.blocks {
+            block.text.hash(&mut hasher);
+        }
+        hasher.finish()
+    })
+}
+
+fn complete_text_classes_by<'a>(
+    pages: impl Iterator<Item = &'a PageIr>,
+    fingerprint: impl Fn(&PageIr) -> u64,
+) -> Vec<Option<usize>> {
+    let mut classes: HashMap<u64, Vec<(&PageIr, usize)>> = HashMap::new();
+    let mut next = 0;
+    pages
+        .map(|page| {
+            if page.blocks.iter().all(|b| b.text.trim().is_empty()) {
+                return None;
+            }
+            let candidates = classes.entry(fingerprint(page)).or_default();
+            if let Some((_, id)) = candidates.iter().find(|(other, _)| {
+                other
+                    .blocks
+                    .iter()
+                    .map(|b| b.text.as_str())
+                    .eq(page.blocks.iter().map(|b| b.text.as_str()))
+            }) {
+                return Some(*id);
+            }
+            let id = next;
+            next += 1;
+            candidates.push((page, id));
+            Some(id)
+        })
+        .collect()
+}
+
+/// Bounded bottom-k samples of ordered character shingles. Character bigrams
+/// alone overvalue unrelated worksheets that repeat the same short vocabulary.
+struct OrderedTextProfile {
+    shingles: Box<[u64]>,
+}
+
+impl OrderedTextProfile {
+    const SAMPLE: usize = 1024;
+
+    fn new(text: &str) -> Self {
+        let chars: Vec<_> = text.chars().filter(|c| !c.is_whitespace()).collect();
+        let mut shingles: Vec<u64> = chars
+            .windows(8)
+            .map(|window| {
+                window.iter().fold(0xcbf29ce484222325u64, |hash, c| {
+                    (hash ^ u64::from(u32::from(*c))).wrapping_mul(0x100000001b3)
+                })
+            })
+            .collect();
+        shingles.sort_unstable();
+        shingles.dedup();
+        shingles.truncate(Self::SAMPLE);
+        // Do not retain the full page-sized Vec capacity in the lazy cache.
+        Self {
+            shingles: shingles.into_boxed_slice(),
+        }
+    }
+
+    fn similarity(&self, other: &Self) -> Option<f64> {
+        if self.shingles.is_empty() || other.shingles.is_empty() {
+            return None;
+        }
+        let (mut a, mut b, mut union, mut common) = (0, 0, 0, 0);
+        while union < Self::SAMPLE && (a < self.shingles.len() || b < other.shingles.len()) {
+            match (self.shingles.get(a), other.shingles.get(b)) {
+                (Some(x), Some(y)) if x == y => {
+                    a += 1;
+                    b += 1;
+                    common += 1;
+                }
+                (Some(x), Some(y)) if x < y => a += 1,
+                (Some(_), Some(_)) => b += 1,
+                (Some(_), None) => a += 1,
+                (None, Some(_)) => b += 1,
+                (None, None) => break,
+            }
+            union += 1;
+        }
+        let jaccard = common as f64 / union as f64;
+        Some(2.0 * jaccard / (1.0 + jaccard))
+    }
+}
+
+fn ordered_page_score(bigram: f64, old: &OrderedTextProfile, new: &OrderedTextProfile) -> f64 {
+    // Prefer retained phrases over shared short-word vocabulary. Otherwise a
+    // newly inserted worksheet can steal a page split across two editions.
+    old.similarity(new)
+        .map_or(bigram, |ordered| 0.2 * bigram + 0.8 * ordered)
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DiffOptions {
+    /// File/byte APIs additionally compare rendered pages. None requests only
+    /// structured text and widget values. Pure-IR APIs cannot render appearances.
+    pub visual: Option<crate::VisualDiffOptions>,
     /// ページ同士を同じページとみなす最小スコア。
     pub page_match_score: f64,
     /// ブロック同士を同じブロックとみなす最小スコア。
     pub block_match_score: f64,
-    /// 削除 + 追加を「変更」に畳む最小スコア。
+    /// 初回の対応付けに残った削除 + 追加を「変更」に畳む最小の文字類似度。
+    /// 同じ位置の置換は position_overlap による別経路でも回収する。
     pub text_change_score: f64,
     /// 位置の変化をこの pt 以下なら無視する (既定 = 1pt)。
     pub position_tolerance: f64,
@@ -33,13 +144,15 @@ pub struct DiffOptions {
     ///
     /// 内容が一致するページ / ブロックは先に錨として固定するので、総当たりに
     /// なるのは変更のあった区間だけ。それでも巨大な文書では効いてくるため
-    /// 上限を設ける (超えた区間は出現順で対応付ける)。
+    /// 上限を設ける。超えた区間の一致を証明できない組は削除/追加のまま残し、
+    /// diagnostics に対応付けが不完全なことを記録する。0 は総当たりを無効にする。
     pub max_pairwise: usize,
 }
 
 impl Default for DiffOptions {
     fn default() -> Self {
         Self {
+            visual: Some(crate::VisualDiffOptions::default()),
             page_match_score: 0.34,
             block_match_score: 0.34,
             text_change_score: 0.34,
@@ -51,7 +164,66 @@ impl Default for DiffOptions {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+impl DiffOptions {
+    pub fn validate(&self) -> anyhow::Result<()> {
+        if let Some(visual) = &self.visual {
+            visual.validate()?;
+        }
+        for (name, score) in [
+            ("page_match_score", self.page_match_score),
+            ("block_match_score", self.block_match_score),
+            ("text_change_score", self.text_change_score),
+            ("position_overlap", self.position_overlap),
+        ] {
+            anyhow::ensure!(
+                score.is_finite() && (0.0..=1.0).contains(&score),
+                "{name} must be finite and between 0 and 1"
+            );
+        }
+        for (name, tolerance) in [
+            ("position_tolerance", self.position_tolerance),
+            ("font_size_tolerance", self.font_size_tolerance),
+        ] {
+            anyhow::ensure!(
+                tolerance.is_finite() && tolerance >= 0.0,
+                "{name} must be finite and non-negative"
+            );
+        }
+        Ok(())
+    }
+}
+
+// The shared aligner pairs by ordinal position when its work budget is exceeded.
+// Never present those unscored pairs as proven associations. Exact keys remain
+// valid evidence, including anchors that need no similarity calculation.
+fn verified_pairings<K: Hash + Eq>(
+    old: &[K],
+    new: &[K],
+    threshold: f64,
+    budget: usize,
+    mut score: impl FnMut(usize, usize) -> f64,
+) -> (Vec<Pairing>, bool) {
+    let mut scored_old = vec![false; old.len()];
+    let pairs = pair_with_anchors(old, new, threshold, budget, |i, j| {
+        scored_old[i] = true;
+        score(i, j)
+    });
+    let mut limited = false;
+    let mut verified = Vec::with_capacity(pairs.len());
+    for pair in pairs {
+        if let Pairing::Matched { old: i, new: j, .. } = pair {
+            if !scored_old[i] && old[i] != new[j] {
+                limited = true;
+                verified.extend([Pairing::Removed(i), Pairing::Added(j)]);
+                continue;
+            }
+        }
+        verified.push(pair);
+    }
+    (verified, limited)
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Status {
     Added,
@@ -61,7 +233,7 @@ pub enum Status {
     Unchanged,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum ChangeKind {
     Added,
@@ -73,7 +245,7 @@ pub enum ChangeKind {
     Unchanged,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum SegmentKind {
     Equal,
@@ -81,13 +253,13 @@ pub enum SegmentKind {
     Delete,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Segment {
     pub kind: SegmentKind,
     pub text: String,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct BlockChange {
     pub kind: ChangeKind,
     pub old_index: Option<usize>,
@@ -115,14 +287,16 @@ pub struct BlockChange {
     pub segments: Vec<Segment>,
 }
 
-#[derive(Debug, Clone, Copy, Serialize)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct PageSize {
     pub width: f64,
     pub height: f64,
+    pub user_unit: Option<f64>,
     pub rotation: u64,
+    pub view_box: Bounds,
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PageDiff {
     /// 1 始まりのページ番号。
     pub old_index: Option<usize>,
@@ -131,13 +305,22 @@ pub struct PageDiff {
     pub match_confidence: Option<f64>,
     pub old_size: Option<PageSize>,
     pub new_size: Option<PageSize>,
-    /// 用紙の幅・高さ・表示回転が変わったか。
+    /// 用紙の幅・高さ・表示回転・表示領域が変わったか。
     pub geometry_changed: bool,
+    /// ブロックの対応付けが計算予算に制限されたか。
+    pub block_alignment_limited: bool,
+    pub visual: Option<crate::VisualPageDiff>,
+    pub form_changes: Vec<crate::FormFieldChange>,
     pub blocks: Vec<BlockChange>,
 }
 
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct DiffSummary {
+    /// Logical field records, including named parent nodes; separate from widgets.
+    pub canonical_form_fields_changed: usize,
+    pub pages_visual_changed: usize,
+    /// Added, removed or modified widget field records.
+    pub form_fields_changed: usize,
     pub pages_added: usize,
     pub pages_removed: usize,
     pub pages_moved: usize,
@@ -158,16 +341,85 @@ pub struct DiffSummary {
 /// PDF は「文字が入っていない」ことがあり (スキャンしただけのものなど)、
 /// そのときは差分が出ないのが正しい動作になってしまう。黙って「差分なし」と
 /// 出すと誤読につながるので、取り出せたかどうかを添えて返す。
-#[derive(Debug, Clone, Default, Serialize)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Diagnostics {
     pub old_pages: usize,
     pub new_pages: usize,
     /// テキストが 1 つも取り出せなかったページ数。
     pub old_pages_without_text: usize,
     pub new_pages_without_text: usize,
+    /// SDK mapping flags or Unicode replacement characters indicate unmapped text.
+    /// Intentional replacement characters also require review conservatively.
+    pub old_pages_with_unmapped_text: usize,
+    pub new_pages_with_unmapped_text: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_uncertain_reading_order: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_uncertain_reading_order: usize,
+    /// SDK text objects were not represented in the extracted character stream.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_unobserved_text_objects: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_unobserved_text_objects: usize,
+    /// Encoded source glyph lower bound exceeds nongenerated SDK records.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_missing_source_characters: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_missing_source_characters: usize,
+    /// Independent source analysis was unsupported, malformed or over budget.
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_unavailable_source_accounting: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_unavailable_source_accounting: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_source_unicode_mismatch: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_source_unicode_mismatch: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_unavailable_source_unicode: usize,
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_unavailable_source_unicode: usize,
+    pub old_pages_with_unknown_units: usize,
+    pub new_pages_with_unknown_units: usize,
+    pub page_alignment_limited: bool,
+    pub block_alignment_limited_pages: usize,
+}
+
+fn is_zero(value: &usize) -> bool {
+    *value == 0
 }
 
 impl Diagnostics {
+    pub fn alignment_limited(&self) -> bool {
+        self.page_alignment_limited || self.block_alignment_limited_pages > 0
+    }
+    pub fn has_unmapped_text(&self) -> bool {
+        self.old_pages_with_unmapped_text > 0 || self.new_pages_with_unmapped_text > 0
+    }
+    pub fn has_unobserved_text_objects(&self) -> bool {
+        self.old_pages_with_unobserved_text_objects > 0
+            || self.new_pages_with_unobserved_text_objects > 0
+    }
+    pub fn has_incomplete_source_text(&self) -> bool {
+        self.old_pages_with_missing_source_characters > 0
+            || self.new_pages_with_missing_source_characters > 0
+            || self.old_pages_with_unavailable_source_accounting > 0
+            || self.new_pages_with_unavailable_source_accounting > 0
+            || self.old_pages_with_source_unicode_mismatch > 0
+            || self.new_pages_with_source_unicode_mismatch > 0
+            || self.old_pages_with_unavailable_source_unicode > 0
+            || self.new_pages_with_unavailable_source_unicode > 0
+    }
+    pub fn has_uncertain_reading_order(&self) -> bool {
+        self.old_pages_with_uncertain_reading_order > 0
+            || self.new_pages_with_uncertain_reading_order > 0
+    }
+    /// 一部のページでも文字を比較できていないか。空白ページも含むため、
+    /// 呼び出し側で描画確認または OCR の必要性を判断する。
+    pub fn has_pages_without_text(&self) -> bool {
+        self.old_pages_without_text > 0 || self.new_pages_without_text > 0
+    }
+
     /// 片側でもテキストが全く取れていないか。
     pub fn text_missing(&self) -> bool {
         (self.old_pages > 0 && self.old_pages_without_text == self.old_pages)
@@ -175,27 +427,82 @@ impl Diagnostics {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+// The decoder accepts a known constant instead of borrowing from input JSON.
+type CoordinateSystem = &'static str;
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DocumentDiff {
+    /// Document-level changes, including fields without any page widget.
+    pub canonical_form_changes: Vec<crate::CanonicalFormChange>,
     pub schema_version: u32,
-    /// 座標系の明示。PDF ユーザ空間 (原点は左下、単位 pt)。
-    pub coordinate_system: &'static str,
+    /// 座標系の明示。PDFユーザ空間 (原点は左下、物理倍率は各ページのuser_unit)。
+    #[serde(deserialize_with = "deserialize_coordinate_system")]
+    pub coordinate_system: CoordinateSystem,
     pub old_file: String,
     pub new_file: String,
     pub summary: DiffSummary,
     pub diagnostics: Diagnostics,
+    pub comparison: Option<crate::ComparisonCoverage>,
     pub pages: Vec<PageDiff>,
 }
 
-impl DocumentDiff {
-    pub fn has_changes(&self) -> bool {
-        self.pages
-            .iter()
-            .any(|page| page.status != Status::Unchanged)
+fn deserialize_coordinate_system<'de, D: serde::Deserializer<'de>>(
+    deserializer: D,
+) -> Result<&'static str, D::Error> {
+    let value = String::deserialize(deserializer)?;
+    if value == "pdf_user_space" {
+        Ok("pdf_user_space")
+    } else {
+        Err(serde::de::Error::custom(
+            "Unsupported PDF coordinate system",
+        ))
     }
 }
 
-/// 2 つの PDF を比較する。
+impl DocumentDiff {
+    /// All requested layers completed at the configured raster resolution.
+    /// This is not mathematical equivalence of arbitrary PDF objects. Interactive
+    /// semantics not covered by widget reads require review unless source bytes
+    /// are identical. Pure-IR comparisons do not supply appearance coverage.
+    pub fn is_comparison_complete(&self) -> bool {
+        let Some(coverage) = &self.comparison else {
+            return false;
+        };
+        !self.diagnostics.alignment_limited()
+            && (coverage.identical_source
+                || (coverage.visual_dpi.is_some()
+                    && coverage.skipped_page_pairs == 0
+                    && coverage.interactive_pages_requiring_review == 0
+                    && coverage.canonical_form_review_reasons.is_empty()
+                    && self.diagnostics.old_pages_with_unknown_units == 0
+                    && self.diagnostics.new_pages_with_unknown_units == 0
+                    && !self.diagnostics.has_unmapped_text()
+                    && !self.diagnostics.has_unobserved_text_objects()
+                    && !self.diagnostics.has_incomplete_source_text()
+                    && !self.diagnostics.has_uncertain_reading_order()))
+    }
+    /// Whether all pages supplied extractable text without replacement glyphs,
+    /// and alignment completed within the configured work budget.
+    /// This does not establish image, drawing or annotation equivalence.
+    pub fn is_text_comparison_complete(&self) -> bool {
+        !self.diagnostics.has_pages_without_text()
+            && !self.diagnostics.has_unmapped_text()
+            && !self.diagnostics.has_unobserved_text_objects()
+            && !self.diagnostics.has_incomplete_source_text()
+            && !self.diagnostics.has_uncertain_reading_order()
+            && !self.diagnostics.alignment_limited()
+    }
+    pub fn has_changes(&self) -> bool {
+        !self.canonical_form_changes.is_empty()
+            || self
+                .pages
+                .iter()
+                .any(|page| page.status != Status::Unchanged)
+    }
+}
+
+/// 事前に検証したIRとオプションを比較する。
+/// 外部入力には [`crate::try_diff_documents`] を使う。
 pub fn diff_documents(
     old_file: &str,
     new_file: &str,
@@ -206,26 +513,143 @@ pub fn diff_documents(
     // ページ本文を錨の鍵にする。変わっていないページは総当たりに回さずに
     // 固定できるので、1000 ページ級でも現実的な時間で終わる。
     // ページ番号は鍵から外す (1 枚挟むと以降が全部ずれて錨が消えるため)。
-    let old_text: Vec<String> = old.pages.iter().map(|page| page.body_text()).collect();
-    let new_text: Vec<String> = new.pages.iter().map(|page| page.body_text()).collect();
+    let old_body: Vec<String> = old.pages.iter().map(PageIr::body_text).collect();
+    let new_body: Vec<String> = new.pages.iter().map(PageIr::body_text).collect();
+    let mut repeated = HashSet::new();
+    for texts in [&old_body, &new_body] {
+        let mut seen = HashSet::new();
+        for text in texts {
+            if !seen.insert(text.as_str()) {
+                repeated.insert(text.as_str());
+            }
+        }
+    }
+    // Use the same text for anchors AND similarity. Pages with only short
+    // headers must still match after a crop or rotation changes their key.
+    let matching_text = |pages: &[PageIr], texts: &[String]| {
+        pages
+            .iter()
+            .zip(texts)
+            .map(|(page, text)| {
+                if text.is_empty() || repeated.contains(text.as_str()) {
+                    page.text()
+                } else {
+                    text.clone()
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    let old_text = matching_text(&old.pages, &old_body);
+    let new_text = matching_text(&new.pages, &new_body);
+    // 同じ本文のページを並べ替えた場合も、表示回転や用紙寸法が同じものを
+    // 錨として優先する。形状だけを編集した場合は本文のスコアで対応できる。
+    let keys = |pages: &[PageIr], texts: &[String]| {
+        pages
+            .iter()
+            .zip(texts)
+            .map(|(page, text)| {
+                (
+                    // 同じ本文の扉や白紙は、柱・ページ番号で識別する。一意な本文
+                    // のページでは番号を外し、挿入による改番に耐える錨を保つ。
+                    text.clone(),
+                    (page.width * 100.0).round() as i64,
+                    (page.height * 100.0).round() as i64,
+                    page.rotation % 360,
+                    page.user_unit.map(f64::to_bits),
+                    {
+                        let b = page.effective_view_box();
+                        [b.x0, b.y0, b.x1, b.y1].map(|v| (v * 100.0).round() as i64)
+                    },
+                )
+            })
+            .collect::<Vec<_>>()
+    };
+    let old_keys = keys(&old.pages, &old_text);
+    let new_keys = keys(&new.pages, &new_text);
+    let complete = complete_text_classes(old.pages.iter().chain(&new.pages));
+    let (old_complete, new_complete) = complete.split_at(old.pages.len());
     // 錨の無い区間は総当たりになる。ページ本文の bigram は組ごとに作り直さず
     // 1 回だけ作る。錨になったページは比べないので、比べるときに初めて作る。
     let old_profiles: Vec<OnceCell<TextProfile>> =
         old_text.iter().map(|_| OnceCell::new()).collect();
     let new_profiles: Vec<OnceCell<TextProfile>> =
         new_text.iter().map(|_| OnceCell::new()).collect();
+    let old_ordered: Vec<OnceCell<OrderedTextProfile>> =
+        old_text.iter().map(|_| OnceCell::new()).collect();
+    let new_ordered: Vec<OnceCell<OrderedTextProfile>> =
+        new_text.iter().map(|_| OnceCell::new()).collect();
     let threshold = options.page_match_score;
-    let pairings = pair_with_anchors(
-        &old_text,
-        &new_text,
-        threshold,
+    let (mut pairings, page_alignment_limited) = verified_pairings(
+        &old_keys,
+        &new_keys,
+        // Reserve 1% for exact keys to break ties between duplicate pages with
+        // identical text but different geometry. Scale the threshold equally so
+        // geometry edits still qualify at the caller's original text threshold.
+        threshold * 0.99,
         options.max_pairwise,
         |i, j| {
+            if old_keys[i] == new_keys[j] {
+                return 1.0;
+            }
+            if old_complete[i].is_some() && old_complete[i] == new_complete[j] {
+                // Exact geometry keys still win ties between repeated pages.
+                // Equal full text survives shifts of the furniture bands.
+                return 0.99;
+            }
             let old_profile = old_profiles[i].get_or_init(|| TextProfile::new(&old_text[i]));
             let new_profile = new_profiles[j].get_or_init(|| TextProfile::new(&new_text[j]));
-            old_profile.similarity_at_least(new_profile, threshold)
+            let bigram_score = old_profile.similarity_at_least(new_profile, threshold);
+            let text_score = if bigram_score > 0.0 {
+                ordered_page_score(
+                    bigram_score,
+                    old_ordered[i].get_or_init(|| OrderedTextProfile::new(&old_text[i])),
+                    new_ordered[j].get_or_init(|| OrderedTextProfile::new(&new_text[j])),
+                )
+            } else {
+                bigram_score
+            };
+            // A sparse page can consist entirely of the changed number or word.
+            // Retain a weak, geometry-based candidate instead of automatically
+            // reporting a deletion and an insertion. Strict text thresholds > .5
+            // intentionally disable this fallback.
+            if text_score < threshold
+                && threshold <= 0.5
+                && i.abs_diff(j) <= old.pages.len().abs_diff(new.pages.len()) + 1
+                && (same_page_layout(&old.pages[i], &new.pages[j], options)
+                    // No text evidence exists for these pages. With equal page
+                    // counts, retain the positional geometry edit, but keep
+                    // match_confidence=None and the incomplete-text diagnostic.
+                    || (i == j && old.pages.len() == new.pages.len()
+                        && old.pages[i].blocks.is_empty() && new.pages[j].blocks.is_empty()))
+            {
+                0.5 * 0.99
+            } else {
+                text_score * 0.99
+            }
         },
     );
+    // 錨の外へ移った完全一致ページは、共有 aligner から削除/追加として返る。
+    // 区間をまたいで同じ鍵を回収し、本文を再比較せず移動として報告する。
+    let mut removed_by_key: HashMap<_, Vec<usize>> = HashMap::new();
+    for pair in pairings.iter().rev() {
+        if let Pairing::Removed(i) = *pair {
+            removed_by_key.entry(&old_keys[i]).or_default().push(i);
+        }
+    }
+    let mut recovered_old = vec![false; old.pages.len()];
+    for pair in &mut pairings {
+        if let Pairing::Added(j) = *pair {
+            if let Some(i) = removed_by_key.get_mut(&new_keys[j]).and_then(Vec::pop) {
+                recovered_old[i] = true;
+                *pair = Pairing::Matched {
+                    old: i,
+                    new: j,
+                    moved: true,
+                };
+            }
+        }
+    }
+    pairings.retain(|pair| !matches!(pair, Pairing::Removed(i) if recovered_old[*i]));
 
     let mut pages: Vec<PageDiff> = Vec::new();
     for pairing in &pairings {
@@ -255,21 +679,103 @@ pub fn diff_documents(
     }
 
     let diagnostics = Diagnostics {
+        page_alignment_limited,
+        block_alignment_limited_pages: pages.iter().filter(|p| p.block_alignment_limited).count(),
         old_pages: old.pages.len(),
         new_pages: new.pages.len(),
         old_pages_without_text: old.pages.iter().filter(|p| p.blocks.is_empty()).count(),
         new_pages_without_text: new.pages.iter().filter(|p| p.blocks.is_empty()).count(),
+        old_pages_with_unmapped_text: old.pages.iter().filter(|p| p.has_unmapped_text()).count(),
+        new_pages_with_unmapped_text: new.pages.iter().filter(|p| p.has_unmapped_text()).count(),
+        old_pages_with_uncertain_reading_order: old
+            .pages
+            .iter()
+            .filter(|p| p.reading_order_requires_review)
+            .count(),
+        new_pages_with_uncertain_reading_order: new
+            .pages
+            .iter()
+            .filter(|p| p.reading_order_requires_review)
+            .count(),
+        old_pages_with_unobserved_text_objects: old
+            .pages
+            .iter()
+            .filter(|p| p.sdk_text_objects_without_characters > 0)
+            .count(),
+        new_pages_with_unobserved_text_objects: new
+            .pages
+            .iter()
+            .filter(|p| p.sdk_text_objects_without_characters > 0)
+            .count(),
+        old_pages_with_missing_source_characters: old
+            .pages
+            .iter()
+            .filter(|p| p.source_text_characters_missing > 0)
+            .count(),
+        new_pages_with_missing_source_characters: new
+            .pages
+            .iter()
+            .filter(|p| p.source_text_characters_missing > 0)
+            .count(),
+        old_pages_with_unavailable_source_accounting: old
+            .pages
+            .iter()
+            .filter(|p| p.source_text_accounting_unavailable)
+            .count(),
+        new_pages_with_unavailable_source_accounting: new
+            .pages
+            .iter()
+            .filter(|p| p.source_text_accounting_unavailable)
+            .count(),
+        old_pages_with_source_unicode_mismatch: old
+            .pages
+            .iter()
+            .filter(|p| p.source_unicode_scalars_unmatched > 0)
+            .count(),
+        new_pages_with_source_unicode_mismatch: new
+            .pages
+            .iter()
+            .filter(|p| p.source_unicode_scalars_unmatched > 0)
+            .count(),
+        old_pages_with_unavailable_source_unicode: old
+            .pages
+            .iter()
+            .filter(|p| p.source_unicode_accounting_unavailable)
+            .count(),
+        new_pages_with_unavailable_source_unicode: new
+            .pages
+            .iter()
+            .filter(|p| p.source_unicode_accounting_unavailable)
+            .count(),
+        old_pages_with_unknown_units: old.pages.iter().filter(|p| p.user_unit.is_none()).count(),
+        new_pages_with_unknown_units: new.pages.iter().filter(|p| p.user_unit.is_none()).count(),
     };
 
     DocumentDiff {
+        canonical_form_changes: Vec::new(),
         schema_version: DIFF_SCHEMA_VERSION,
         coordinate_system: "pdf_user_space",
         old_file: old_file.to_string(),
         new_file: new_file.to_string(),
         summary,
         diagnostics,
+        comparison: None,
         pages,
     }
+}
+
+fn same_page_layout(old: &PageIr, new: &PageIr, options: &DiffOptions) -> bool {
+    !physical_frame_changed(old, new, options.position_tolerance)
+        && !old.blocks.is_empty()
+        && old.blocks.len() <= 64
+        && old.blocks.len() == new.blocks.len()
+        && old.blocks.iter().zip(&new.blocks).all(|(a, b)| {
+            position_overlap_score(
+                &a.bounds.scaled(old.user_unit.unwrap_or(1.0)),
+                &b.bounds.scaled(new.user_unit.unwrap_or(1.0)),
+                options.position_tolerance,
+            ) >= options.position_overlap
+        })
 }
 
 fn reposition_removed(pages: &mut Vec<PageDiff>) {
@@ -312,9 +818,11 @@ fn reposition_removed(pages: &mut Vec<PageDiff>) {
 
 fn page_size(page: &PageIr) -> PageSize {
     PageSize {
+        user_unit: page.user_unit,
         width: page.width,
         height: page.height,
         rotation: page.rotation,
+        view_box: page.effective_view_box(),
     }
 }
 
@@ -356,6 +864,9 @@ fn one_sided_page(page: &PageIr, removed: bool) -> PageDiff {
         old_size: removed.then(|| page_size(page)),
         new_size: (!removed).then(|| page_size(page)),
         geometry_changed: false,
+        block_alignment_limited: false,
+        visual: None,
+        form_changes: Vec::new(),
         blocks,
     }
 }
@@ -367,29 +878,65 @@ fn is_minor_change(
     old_block: &BlockIr,
     new_block: &BlockIr,
 ) -> bool {
-    old_page.is_furniture(old_block)
+    // 金額・日付・文書番号もページ端にある。数字が変わっただけでは隠さず、
+    // 実際のページ挿入/削除に伴ってページ番号が変わったと確認できる場合に限る。
+    old_page.index != new_page.index
+        && pagination_number(&old_block.text) == Some(old_page.index)
+        && pagination_number(&new_block.text) == Some(new_page.index)
+        && old_page.is_furniture(old_block)
         && new_page.is_furniture(new_block)
         && old_block.text != new_block.text
         && digit_skeleton(&old_block.text) == digit_skeleton(&new_block.text)
 }
 
+/// 保守的に認識するページ番号。金額の区切り、日付、型番は認識しない。
+fn pagination_number(text: &str) -> Option<usize> {
+    let text = text.trim();
+    let text = text
+        .strip_prefix("Page ")
+        .or_else(|| text.strip_prefix("page "))
+        .unwrap_or(text);
+    let text = text.trim_matches(|c: char| c.is_whitespace() || c == '-' || c == '–' || c == '—');
+    let text = text
+        .strip_suffix('頁')
+        .or_else(|| text.strip_suffix("ページ"))
+        .unwrap_or(text)
+        .trim();
+    (!text.is_empty() && text.chars().all(|c| c.is_ascii_digit()))
+        .then(|| text.parse().ok())
+        .flatten()
+}
+
 fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> PageDiff {
-    let old_text: Vec<&str> = old.blocks.iter().map(|block| block.text.as_str()).collect();
-    let new_text: Vec<&str> = new.blocks.iter().map(|block| block.text.as_str()).collect();
+    let (raw_old, raw_new) = (old, new);
+    let old_physical = physical_page(old);
+    let new_physical = physical_page(new);
+    let (old, new) = (&*old_physical, &*new_physical);
+    // PDF の表示回転や保存し直しで抽出順が変わることがある。同じ本文・同じ
+    // 場所の要素を先に確定し、繰り返す表セルや多段組みの行を取り違えない。
+    let (mut matched, remaining_old, remaining_new) = stationary_blocks(old, new, options);
+    let old_text: Vec<&str> = remaining_old
+        .iter()
+        .map(|&i| old.blocks[i].text.as_str())
+        .collect();
+    let new_text: Vec<&str> = remaining_new
+        .iter()
+        .map(|&i| new.blocks[i].text.as_str())
+        .collect();
     let old_profiles: Vec<TextProfile> =
         old_text.iter().map(|text| TextProfile::new(text)).collect();
     let new_profiles: Vec<TextProfile> =
         new_text.iter().map(|text| TextProfile::new(text)).collect();
     let threshold = options.block_match_score;
-    let pairings = pair_with_anchors(
+    let (pairings, mut block_alignment_limited) = verified_pairings(
         &old_text,
         &new_text,
         threshold,
         options.max_pairwise,
         |i, j| {
             block_score(
-                &old.blocks[i],
-                &new.blocks[j],
+                &old.blocks[remaining_old[i]],
+                &new.blocks[remaining_new[j]],
                 &old_profiles[i],
                 &new_profiles[j],
                 threshold,
@@ -397,16 +944,25 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         },
     );
 
-    let mut matched: Vec<(usize, usize)> = Vec::new();
     let mut leftover_old: Vec<usize> = Vec::new();
     let mut leftover_new: Vec<usize> = Vec::new();
     for pairing in &pairings {
         match *pairing {
-            Pairing::Matched { old: o, new: n, .. } => matched.push((o, n)),
-            Pairing::Removed(o) => leftover_old.push(o),
-            Pairing::Added(n) => leftover_new.push(n),
+            Pairing::Matched { old: o, new: n, .. } => {
+                matched.push((remaining_old[o], remaining_new[n]))
+            }
+            Pairing::Removed(o) => leftover_old.push(remaining_old[o]),
+            Pairing::Added(n) => leftover_new.push(remaining_new[n]),
         }
     }
+    block_alignment_limited |= recover_text_changes(
+        old,
+        new,
+        &mut matched,
+        &mut leftover_old,
+        &mut leftover_new,
+        options,
+    );
     // 文字が似ていなくても、同じ場所に残っているものは同じブロックとみなす。
     // ページ番号 ("- 5 -" → "- 6 -") のように短い文字列は、書き換えでも
     // 類似度が 0 になってしまい、このひと押しが無いと削除 + 追加に割れる。
@@ -422,14 +978,26 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
     let mut blocks: Vec<BlockChange> = Vec::new();
     for (o, n) in matched {
         let mut change = diff_block(&old.blocks[o], &new.blocks[n], options);
-        change.minor = is_minor_change(old, new, &old.blocks[o], &new.blocks[n]);
+        // Compute decisions in physical points; public geometry stays in each
+        // source's raw PDF coordinate system for projection/highlighting.
+        change.old_bounds = Some(raw_old.blocks[o].bounds);
+        change.new_bounds = Some(raw_new.blocks[n].bounds);
+        change.old_font_size = raw_old.blocks[o].size;
+        change.new_font_size = raw_new.blocks[n].size;
+        change.minor = !change.format_changed
+            && !numeric_changed(
+                old.blocks[o].bounds.y0,
+                new.blocks[n].bounds.y0,
+                options.position_tolerance,
+            )
+            && is_minor_change(old, new, &old.blocks[o], &new.blocks[n]);
         blocks.push(change);
     }
     for o in leftover_old {
-        blocks.push(one_sided_block(&old.blocks[o], true));
+        blocks.push(one_sided_block(&raw_old.blocks[o], true));
     }
     for n in leftover_new {
-        blocks.push(one_sided_block(&new.blocks[n], false));
+        blocks.push(one_sided_block(&raw_new.blocks[n], false));
     }
     blocks.sort_by_key(|block| {
         (
@@ -438,7 +1006,7 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         )
     });
 
-    let geometry_changed = page_geometry_changed(old, new, options.position_tolerance);
+    let geometry_changed = page_geometry_changed(raw_old, raw_new, options.position_tolerance);
     let changed = geometry_changed
         || blocks
             .iter()
@@ -454,20 +1022,171 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         } else {
             Status::Unchanged
         },
-        match_confidence: Some(
-            TextProfile::new(&old.text()).similarity(&TextProfile::new(&new.text())),
-        ),
-        old_size: Some(page_size(old)),
-        new_size: Some(page_size(new)),
+        match_confidence: if old.blocks.is_empty() || new.blocks.is_empty() {
+            None
+        } else {
+            let a = old.text();
+            let b = new.text();
+            Some(if a == b {
+                1.0
+            } else {
+                ordered_page_score(
+                    TextProfile::new(&a).similarity(&TextProfile::new(&b)),
+                    &OrderedTextProfile::new(&a),
+                    &OrderedTextProfile::new(&b),
+                )
+            })
+        },
+        old_size: Some(page_size(raw_old)),
+        new_size: Some(page_size(raw_new)),
         geometry_changed,
+        block_alignment_limited,
+        visual: None,
+        form_changes: Vec::new(),
         blocks,
     }
 }
 
+fn recover_text_changes(
+    old: &PageIr,
+    new: &PageIr,
+    matched: &mut Vec<(usize, usize)>,
+    left_old: &mut Vec<usize>,
+    left_new: &mut Vec<usize>,
+    options: &DiffOptions,
+) -> bool {
+    if left_old.is_empty() || left_new.is_empty() {
+        return false;
+    }
+    if left_old.len().saturating_mul(left_new.len()) > options.max_pairwise {
+        return true;
+    }
+    let old_profiles: Vec<_> = left_old
+        .iter()
+        .map(|&i| TextProfile::new(&old.blocks[i].text))
+        .collect();
+    let new_profiles: Vec<_> = left_new
+        .iter()
+        .map(|&i| TextProfile::new(&new.blocks[i].text))
+        .collect();
+    let pairs = diff_align::pair_by_score(
+        left_old.len(),
+        left_new.len(),
+        options.text_change_score,
+        |i, j| old_profiles[i].similarity_at_least(&new_profiles[j], options.text_change_score),
+    );
+    let mut removed = Vec::new();
+    let mut added = Vec::new();
+    for pair in pairs {
+        match pair {
+            Pairing::Matched { old: i, new: j, .. } => matched.push((left_old[i], left_new[j])),
+            Pairing::Removed(i) => removed.push(left_old[i]),
+            Pairing::Added(j) => added.push(left_new[j]),
+        }
+    }
+    *left_old = removed;
+    *left_new = added;
+    false
+}
+
+type BlockPairs = (Vec<(usize, usize)>, Vec<usize>, Vec<usize>);
+
+fn stationary_blocks(old: &PageIr, new: &PageIr, options: &DiffOptions) -> BlockPairs {
+    // 1pt の格子を用いて近傍だけを探索する。繰り返しの多い帳票でも本文ごとの
+    // 全組合せにはしない。厳しい許容値を指定した呼び出し側の意図も守る。
+    let tolerance = if options.position_tolerance.is_finite() {
+        options.position_tolerance.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
+    let cell = |b: &BlockIr| (b.bounds.x0.floor() as i64, b.bounds.y0.floor() as i64);
+    let mut buckets: HashMap<(&str, i64, i64), Vec<usize>> = HashMap::new();
+    for (i, block) in new.blocks.iter().enumerate() {
+        let (x, y) = cell(block);
+        buckets.entry((&block.text, x, y)).or_default().push(i);
+    }
+    let mut paired = Vec::new();
+    let mut remaining_old = Vec::new();
+    let mut used_new = vec![false; new.blocks.len()];
+    let mut work = 0usize;
+    for (i, block) in old.blocks.iter().enumerate() {
+        if work >= options.max_pairwise {
+            remaining_old.extend(i..old.blocks.len());
+            break;
+        }
+        let (x, y) = cell(block);
+        let mut best: Option<(usize, f64)> = None;
+        for dx in -1i64..=1 {
+            for dy in -1i64..=1 {
+                let key = (
+                    block.text.as_str(),
+                    x.saturating_add(dx),
+                    y.saturating_add(dy),
+                );
+                if let Some(candidates) = buckets.get(&key) {
+                    for &j in candidates {
+                        if work >= options.max_pairwise {
+                            break;
+                        }
+                        work += 1;
+                        let b = &new.blocks[j];
+                        let distance_x = (block.bounds.x0 - b.bounds.x0).abs();
+                        let distance_y = (block.bounds.y0 - b.bounds.y0).abs();
+                        if !used_new[j] && distance_x <= tolerance && distance_y <= tolerance {
+                            let distance = distance_x + distance_y;
+                            if best.is_none_or(|(index, score)| {
+                                distance < score || (distance == score && j < index)
+                            }) {
+                                best = Some((j, distance));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if let Some((j, _)) = best {
+            paired.push((i, j));
+            used_new[j] = true;
+        } else {
+            remaining_old.push(i);
+        }
+    }
+    let remaining_new = (0..new.blocks.len()).filter(|&j| !used_new[j]).collect();
+    (paired, remaining_old, remaining_new)
+}
+
+fn physical_page(page: &PageIr) -> Cow<'_, PageIr> {
+    let unit = page.user_unit.unwrap_or(1.0);
+    if unit == 1.0 {
+        return Cow::Borrowed(page);
+    }
+    let mut physical = page.clone();
+    physical.width *= unit;
+    physical.height *= unit;
+    physical.view_box = Some(page.effective_view_box().scaled(unit));
+    physical.user_unit = Some(1.0);
+    for block in &mut physical.blocks {
+        block.bounds = block.bounds.scaled(unit);
+        block.size = block.size.map(|size| size * unit);
+    }
+    Cow::Owned(physical)
+}
+
 fn page_geometry_changed(old: &PageIr, new: &PageIr, tolerance: f64) -> bool {
-    numeric_changed(old.width, new.width, tolerance)
-        || numeric_changed(old.height, new.height, tolerance)
+    matches!((old.user_unit,new.user_unit),(Some(a),Some(b)) if a != b)
+        || physical_frame_changed(old, new, tolerance)
+}
+
+fn physical_frame_changed(old: &PageIr, new: &PageIr, tolerance: f64) -> bool {
+    let (au, bu) = (old.user_unit.unwrap_or(1.0), new.user_unit.unwrap_or(1.0));
+    let a = old.effective_view_box().scaled(au);
+    let b = new.effective_view_box().scaled(bu);
+    numeric_changed(old.width * au, new.width * bu, tolerance)
+        || numeric_changed(old.height * au, new.height * bu, tolerance)
         || old.rotation % 360 != new.rotation % 360
+        || [(a.x0, b.x0), (a.y0, b.y0), (a.x1, b.x1), (a.y1, b.y1)]
+            .into_iter()
+            .any(|(x, y)| numeric_changed(x, y, tolerance))
 }
 
 fn numeric_changed(old: f64, new: f64, tolerance: f64) -> bool {
@@ -494,6 +1213,11 @@ fn pair_leftovers_by_position(
     if leftover_old.is_empty() || leftover_new.is_empty() {
         return;
     }
+    // 錨による対応付けと同じ予算を守る。全く異なる巨大ページで候補行列を
+    // 無制限に作らず、対応が不明なブロックを削除/追加として残す。
+    if leftover_old.len().saturating_mul(leftover_new.len()) > options.max_pairwise {
+        return;
+    }
     let candidates: Vec<Vec<usize>> = leftover_old
         .iter()
         .map(|o| {
@@ -501,7 +1225,16 @@ fn pair_leftovers_by_position(
             let mut choices: Vec<(usize, f64)> = leftover_new
                 .iter()
                 .enumerate()
-                .map(|(position, n)| (position, overlap_ratio(source, &new.blocks[*n].bounds)))
+                .map(|(position, n)| {
+                    (
+                        position,
+                        position_overlap_score(
+                            source,
+                            &new.blocks[*n].bounds,
+                            options.position_tolerance,
+                        ),
+                    )
+                })
                 .filter(|(_, ratio)| *ratio >= options.position_overlap)
                 .collect();
             choices.sort_by(|a, b| {
@@ -592,15 +1325,36 @@ fn augment_position_match(
 }
 
 /// 2 つの矩形の重なりを、小さいほうの面積に対する割合で返す。
+// Zero-area source regions are anchors, so area overlap supplies no evidence.
+// Permit only matching degeneracy and nearly identical physical coordinates.
+// Positive rectangles retain the existing overlap criterion unchanged.
+fn position_overlap_score(a: &Bounds, b: &Bounds, tolerance: f64) -> f64 {
+    let zero_a = (a.width() == 0.0, a.height() == 0.0);
+    let zero_b = (b.width() == 0.0, b.height() == 0.0);
+    if (zero_a.0 || zero_a.1) && zero_a == zero_b {
+        let tolerance = if tolerance.is_finite() {
+            tolerance.clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
+        if [(a.x0, b.x0), (a.y0, b.y0), (a.x1, b.x1), (a.y1, b.y1)]
+            .into_iter()
+            .all(|(a, b)| !numeric_changed(a, b, tolerance))
+        {
+            return 1.0;
+        }
+    }
+    overlap_ratio(a, b)
+}
+
 fn overlap_ratio(a: &Bounds, b: &Bounds) -> f64 {
     let width = (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0);
     let height = (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
-    let overlap = width * height;
-    let smaller = (a.width() * a.height()).min(b.width() * b.height());
-    if smaller <= 0.0 {
+    if a.width() <= 0.0 || a.height() <= 0.0 || b.width() <= 0.0 || b.height() <= 0.0 {
         return 0.0;
     }
-    overlap / smaller
+    // Dividing before multiplying avoids overflow for large external OCR bounds.
+    ((width / a.width()) * (height / a.height())).max((width / b.width()) * (height / b.height()))
 }
 
 /// ブロック同士の近さ。文字の一致に、同じ位置にあるかを少し足す。
@@ -750,7 +1504,23 @@ pub fn segment_text(old: &str, new: &str) -> Vec<Segment> {
     out
 }
 
+pub(crate) fn refresh_summary(diff: &mut DocumentDiff) {
+    let mut summary = DiffSummary::default();
+    for page in &diff.pages {
+        accumulate(&mut summary, page);
+    }
+    diff.summary = summary;
+}
+
 fn accumulate(summary: &mut DiffSummary, page: &PageDiff) {
+    summary.form_fields_changed += page.form_changes.len();
+    if page
+        .visual
+        .as_ref()
+        .is_some_and(|v| v.status == crate::VisualStatus::Changed)
+    {
+        summary.pages_visual_changed += 1;
+    }
     match page.status {
         Status::Added => summary.pages_added += 1,
         Status::Removed => summary.pages_removed += 1,
@@ -853,14 +1623,159 @@ mod tests {
         }
     }
 
+    #[test]
+    fn anchor_matching_requires_identical_degeneracy_and_bounded_positions() {
+        let point = Bounds {
+            x0: 30.,
+            y0: 150.,
+            x1: 30.,
+            y1: 150.,
+        };
+        let shifted = Bounds {
+            x0: 30.5,
+            y0: 150.,
+            x1: 30.5,
+            y1: 150.,
+        };
+        assert_eq!(position_overlap_score(&point, &point, 0.), 1.);
+        assert_eq!(position_overlap_score(&point, &shifted, 1.), 1.);
+        assert_eq!(position_overlap_score(&point, &shifted, 0.), 0.);
+        let far = Bounds {
+            x0: 40.,
+            x1: 40.,
+            ..point
+        };
+        assert_eq!(position_overlap_score(&point, &far, 100.), 0.);
+        let line = Bounds { x1: 45., ..point };
+        assert_eq!(position_overlap_score(&point, &line, 1.), 0.);
+        assert_eq!(position_overlap_score(&line, &line, 0.), 1.);
+        let rectangle = Bounds { y1: 160., ..line };
+        assert_eq!(position_overlap_score(&line, &rectangle, 1.), 0.);
+        assert_eq!(
+            position_overlap_score(&rectangle, &rectangle, 0.),
+            overlap_ratio(&rectangle, &rectangle)
+        );
+    }
+
     fn page(blocks: Vec<BlockIr>) -> PageIr {
         PageIr {
             index: 1,
             width: 595.0,
             height: 842.0,
             rotation: 0,
+            view_box: None,
+            user_unit: Some(1.0),
+            sdk_unicode_mapping_errors: 0,
+            sdk_text_objects_without_characters: 0,
+            source_text_characters_missing: 0,
+            source_text_accounting_unavailable: false,
+            source_unicode_scalars_unmatched: 0,
+            source_unicode_accounting_unavailable: false,
+            reading_order_requires_review: false,
             blocks,
         }
+    }
+
+    #[test]
+    fn reading_order_uncertainty_roundtrips_and_gates_both_completion_methods() {
+        let old = DocumentIr {
+            pages: vec![page(vec![block(1, 100.0, 112.0, "kept")])],
+        };
+        let mut new = old.clone();
+        new.pages[0].reading_order_requires_review = true;
+        let mut diff = diff_documents("old", "new", &old, &new, &DiffOptions::default());
+        assert_eq!(diff.diagnostics.old_pages_with_uncertain_reading_order, 0);
+        assert_eq!(diff.diagnostics.new_pages_with_uncertain_reading_order, 1);
+        diff.comparison = Some(crate::ComparisonCoverage {
+            visual_dpi: Some(144),
+            ..Default::default()
+        });
+        assert!(!diff.is_comparison_complete());
+        assert!(!diff.is_text_comparison_complete());
+        let decoded: DocumentDiff =
+            serde_json::from_slice(&serde_json::to_vec(&diff).unwrap()).unwrap();
+        assert!(decoded.diagnostics.has_uncertain_reading_order());
+        diff.comparison.as_mut().unwrap().identical_source = true;
+        assert!(diff.is_comparison_complete());
+        assert!(!diff.is_text_comparison_complete());
+        let mut clean = diff_documents("old", "same", &old, &old, &DiffOptions::default());
+        clean.comparison = Some(crate::ComparisonCoverage {
+            visual_dpi: Some(144),
+            ..Default::default()
+        });
+        assert!(clean.is_comparison_complete());
+        assert!(clean.is_text_comparison_complete());
+        let legacy_page: PageIr = serde_json::from_value(serde_json::json!({
+            "index":1,"width":612,"height":792,"rotation":0,"blocks":[]
+        }))
+        .unwrap();
+        assert!(!legacy_page.reading_order_requires_review);
+        let legacy_layer: crate::TextRun = serde_json::from_value(serde_json::json!({
+            "text":"x","sdk_unicode_mapping_errors":0,"size":12,
+            "bounds":{"x0":1,"y0":1,"x1":2,"y1":2},"chars":[{"x0":1,"x1":2}]
+        }))
+        .unwrap();
+        assert!(!legacy_layer.reading_order_requires_review);
+        assert_eq!(legacy_layer.sdk_text_objects_without_characters, 0);
+    }
+
+    #[test]
+    fn source_accounting_diagnostics_roundtrip_and_gate_pure_ir_text_completion() {
+        let old = DocumentIr {
+            pages: vec![page(vec![block(1, 10.0, 20.0, "C")])],
+        };
+        for unavailable in [false, true] {
+            let mut new = old.clone();
+            new.pages[0].source_text_characters_missing = usize::from(!unavailable);
+            new.pages[0].source_text_accounting_unavailable = unavailable;
+            let result = diff_documents("old", "new", &old, &new, &DiffOptions::default());
+            assert!(!result.is_text_comparison_complete());
+            assert!(result.diagnostics.has_incomplete_source_text());
+            let decoded: DocumentDiff =
+                serde_json::from_value(serde_json::to_value(result).unwrap()).unwrap();
+            assert!(decoded.diagnostics.has_incomplete_source_text());
+        }
+        let value = serde_json::to_value(&old.pages[0]).unwrap();
+        assert!(value.get("source_text_characters_missing").is_none());
+        assert!(value.get("source_text_accounting_unavailable").is_none());
+    }
+
+    #[test]
+    fn unobserved_text_objects_roundtrip_and_gate_completion() {
+        let old = DocumentIr {
+            pages: vec![page(vec![block(1, 100.0, 112.0, "kept")])],
+        };
+        let mut new = old.clone();
+        new.pages[0].sdk_text_objects_without_characters = 2;
+        let mut diff = diff_documents("old", "new", &old, &new, &DiffOptions::default());
+        diff.comparison = Some(crate::ComparisonCoverage {
+            visual_dpi: Some(144),
+            ..Default::default()
+        });
+        assert!(!diff.is_comparison_complete());
+        assert!(!diff.is_text_comparison_complete());
+        let decoded: DocumentDiff =
+            serde_json::from_slice(&serde_json::to_vec(&diff).unwrap()).unwrap();
+        assert_eq!(
+            decoded.diagnostics.new_pages_with_unobserved_text_objects,
+            1
+        );
+        let page: PageIr =
+            serde_json::from_slice(&serde_json::to_vec(&new.pages[0]).unwrap()).unwrap();
+        assert_eq!(page.sdk_text_objects_without_characters, 2);
+        diff.comparison.as_mut().unwrap().identical_source = true;
+        assert!(diff.is_comparison_complete());
+        assert!(!diff.is_text_comparison_complete());
+        let clean = diff_documents("old", "old", &old, &old, &DiffOptions::default());
+        assert!(clean.is_text_comparison_complete());
+        let value = serde_json::to_value(&old.pages[0]).unwrap();
+        assert!(value.get("sdk_text_objects_without_characters").is_none());
+        assert_eq!(
+            serde_json::from_value::<PageIr>(value)
+                .unwrap()
+                .sdk_text_objects_without_characters,
+            0
+        );
     }
 
     fn indexed_page(index: usize, text: &str) -> PageIr {
@@ -1061,8 +1976,10 @@ mod tests {
 
     #[test]
     fn a_shifted_page_number_is_minor() {
-        let old = page(vec![block(1, 40.0, 55.0, "- 9 -")]);
+        let mut old = page(vec![block(1, 40.0, 55.0, "- 9 -")]);
         let mut new = page(vec![block(1, 40.0, 55.0, "- 10 -")]);
+        old.index = 9;
+        new.index = 10;
         // 桁が増えると文字領域も自然に広がりうる。
         new.blocks[0].bounds.x1 += 10.0;
         let diff = diff_page(&old, &new, false, &DiffOptions::default());
@@ -1072,6 +1989,211 @@ mod tests {
         assert!(diff.blocks[0].minor, "ページ番号の繰り上がりのはず");
         // 数字が動いただけのページを「変更あり」にはしない。
         assert_eq!(diff.status, Status::Unchanged);
+    }
+
+    #[test]
+    fn footer_amounts_dates_and_identifiers_are_substantive_changes() {
+        for (before, after) in [
+            ("2,970", "3,970"),
+            ("100", "200"),
+            ("(2025)", "(2026)"),
+            ("2/10/04", "2/11/04"),
+            ("OMB No. 1545-0074", "OMB No. 1545-0075"),
+            ("第 3 条", "第 4 条"),
+        ] {
+            let old = page(vec![block(1, 30.0, 45.0, before)]);
+            let new = page(vec![block(1, 30.0, 45.0, after)]);
+            let diff = diff_page(&old, &new, false, &DiffOptions::default());
+            assert_eq!(diff.status, Status::Modified, "{before} -> {after}");
+            assert!(!diff.blocks[0].minor);
+        }
+    }
+
+    #[test]
+    fn pagination_does_not_hide_font_or_vertical_position_changes() {
+        let mut old = page(vec![block(1, 30.0, 45.0, "9")]);
+        let mut new = page(vec![block(1, 30.0, 45.0, "10")]);
+        old.index = 9;
+        new.index = 10;
+        new.blocks[0].size = Some(20.0);
+        assert_eq!(
+            diff_page(&old, &new, false, &DiffOptions::default()).status,
+            Status::Modified
+        );
+        new.blocks[0].size = old.blocks[0].size;
+        new.blocks[0].bounds.y0 += 5.0;
+        new.blocks[0].bounds.y1 += 5.0;
+        assert_eq!(
+            diff_page(&old, &new, false, &DiffOptions::default()).status,
+            Status::Modified
+        );
+    }
+
+    #[test]
+    fn position_recovery_respects_the_pairwise_budget() {
+        let old = page(vec![block(1, 300.0, 315.0, "old")]);
+        let new = page(vec![block(1, 300.0, 315.0, "new")]);
+        let mut matched = Vec::new();
+        let mut left_old = vec![0];
+        let mut left_new = vec![0];
+        pair_leftovers_by_position(
+            &old,
+            &new,
+            &mut matched,
+            &mut left_old,
+            &mut left_new,
+            &DiffOptions {
+                max_pairwise: 0,
+                ..DiffOptions::default()
+            },
+        );
+        assert!(matched.is_empty());
+        assert_eq!(left_old, vec![0]);
+        assert_eq!(left_new, vec![0]);
+    }
+
+    #[test]
+    fn repeated_text_matches_its_position_when_extraction_order_changes() {
+        let old = page(vec![
+            block_at(1, 40.0, 100.0, "Other"),
+            block_at(2, 200.0, 260.0, "Other"),
+            block_at(3, 380.0, 440.0, "Other"),
+        ]);
+        let mut new = old.clone();
+        new.blocks.reverse();
+        for (i, block) in new.blocks.iter_mut().enumerate() {
+            block.index = i + 1;
+        }
+        let result = diff_page(&old, &new, false, &DiffOptions::default());
+        assert_eq!(result.status, Status::Unchanged, "{result:?}");
+        assert_eq!(result.blocks.len(), 3);
+        assert!(result.blocks.iter().all(|b| b.old_bounds == b.new_bounds));
+    }
+
+    #[test]
+    fn repeated_page_text_uses_geometry_to_identify_reordered_pages() {
+        let a = page(vec![block(1, 300.0, 315.0, "Same text")]);
+        let mut b = a.clone();
+        b.index = 2;
+        b.rotation = 90;
+        let old = DocumentIr { pages: vec![a, b] };
+        let mut new = old.clone();
+        new.pages.reverse();
+        for (i, p) in new.pages.iter_mut().enumerate() {
+            p.index = i + 1;
+        }
+        let result = diff_documents("a", "b", &old, &new, &DiffOptions::default());
+        assert_eq!(result.summary.pages_modified, 0, "{result:?}");
+        assert_eq!(result.summary.pages_geometry_changed, 0);
+        assert_eq!(result.pages[0].old_index, Some(2));
+        assert_eq!(result.pages[1].old_index, Some(1));
+    }
+
+    #[test]
+    fn identical_complete_text_matches_across_changed_furniture_bands() {
+        for include_body in [false, true] {
+            let mut blocks = vec![
+                block(1, 610.0, 625.0, "Cells"),
+                block(2, 675.0, 690.0, "Header"),
+            ];
+            if include_body {
+                blocks.insert(0, block(3, 300.0, 315.0, "Body"));
+            }
+            for (index, block) in blocks.iter_mut().enumerate() {
+                block.index = index + 1;
+            }
+            let mut old = page(blocks);
+            old.height = 700.0;
+            old.view_box = Some(Bounds {
+                x0: 0.0,
+                y0: 0.0,
+                x1: old.width,
+                y1: 700.0,
+            });
+            let mut new = old.clone();
+            new.height = 640.0;
+            new.view_box.as_mut().unwrap().y1 = 640.0;
+            assert_ne!(old.body_text(), new.body_text());
+            assert_eq!(old.text(), new.text());
+            let options = DiffOptions {
+                page_match_score: 1.0,
+                ..DiffOptions::default()
+            };
+            let result = diff_documents(
+                "old",
+                "new",
+                &DocumentIr {
+                    pages: vec![old.clone()],
+                },
+                &DocumentIr {
+                    pages: vec![new.clone()],
+                },
+                &options,
+            );
+            assert_eq!(result.summary.pages_added, 0);
+            assert_eq!(result.summary.pages_removed, 0);
+            assert_eq!(result.summary.pages_geometry_changed, 1);
+            assert_eq!(result.summary.blocks_changed, 0);
+            new.blocks.last_mut().unwrap().text = "Different header".into();
+            let result = diff_documents(
+                "old",
+                "new",
+                &DocumentIr { pages: vec![old] },
+                &DocumentIr { pages: vec![new] },
+                &options,
+            );
+            assert_eq!(result.summary.pages_added, 1);
+            assert_eq!(result.summary.pages_removed, 1);
+        }
+    }
+
+    #[test]
+    fn complete_text_classes_keep_order_and_verify_actual_strings() {
+        let a = page(vec![
+            block(1, 100.0, 110.0, "A"),
+            block(2, 200.0, 210.0, "B"),
+        ]);
+        let mut b = a.clone();
+        b.rotation = 90;
+        b.blocks[0].bounds.x0 += 50.0;
+        let mut reversed = a.clone();
+        reversed.blocks.reverse();
+        for (index, block) in reversed.blocks.iter_mut().enumerate() {
+            block.index = index + 1;
+        }
+        let blank = page(vec![]);
+        let classes = complete_text_classes([&a, &b, &reversed, &blank].into_iter());
+        assert_eq!(classes[0], classes[1]);
+        assert_ne!(classes[0], classes[2]);
+        assert_eq!(classes[3], None);
+        let collisions = complete_text_classes_by([&a, &b, &reversed, &blank].into_iter(), |_| 0);
+        assert_eq!(
+            collisions, classes,
+            "A fingerprint collision must still compare every actual string"
+        );
+    }
+
+    #[test]
+    fn repeated_page_bodies_use_furniture_to_disambiguate_reordering() {
+        let a = page(vec![
+            block(1, 300.0, 315.0, "Same body"),
+            block(2, 30.0, 45.0, "i"),
+        ]);
+        let mut b = a.clone();
+        b.index = 2;
+        b.blocks[1].text = "xvii".into();
+        let old = DocumentIr { pages: vec![a, b] };
+        let mut new = old.clone();
+        new.pages.reverse();
+        for (i, p) in new.pages.iter_mut().enumerate() {
+            p.index = i + 1;
+        }
+        let result = diff_documents("a", "b", &old, &new, &DiffOptions::default());
+        assert_eq!(result.summary.pages_modified, 0, "{result:?}");
+        assert_eq!(result.summary.pages_added, 0);
+        assert_eq!(result.summary.pages_removed, 0);
+        assert_eq!(result.pages[0].old_index, Some(2));
+        assert_eq!(result.pages[1].old_index, Some(1));
     }
 
     #[test]

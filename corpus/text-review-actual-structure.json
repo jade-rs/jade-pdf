@@ -1,0 +1,310 @@
+{
+  "version": 27,
+  "date": "2026-10-24",
+  "status": "open",
+  "manifest_sha256": "010b7495d2c0d73127e4f5bd602ea14dbb9ddbf040d473bd3ba1edafe27f1b86",
+  "native_binary_sha256": "8ac0dab77e01381476f17b4d47ef573d609e850987bb32bde95c1f45163fd781",
+  "independent_parser": "PDF.js 6.4.299",
+  "details": "results-independent-text-actual-structure.json",
+  "issues": [
+    {
+      "id": "sdk-unicode-map-error-not-propagated",
+      "priority": "high",
+      "status": "fixed-diagnostic-propagation",
+      "sources": [
+        "cjk",
+        "tracemonkey"
+      ],
+      "evidence": "IR PageIr.sdk_unicode_mapping_errors and TextRun.sdk_unicode_mapping_errors now propagate bounded raw SDK flags. Character count and scalar fingerprints guard correspondence with the extraction pass. Printable fallbacks are retained; invalid control/whitespace fallbacks become U+FFFD. Native and Chrome/WASM with Pdfium 8111 verify three printable/control/mixed-run fixtures, public cjk/tracemonkey diagnostics, and all-page native/WASM diagnostic parity. This exposes uncertainty; it does not recover the original Unicode.",
+      "required": "Keep diagnostics across IR serialization, text layers and checked comparisons. A changed-source comparison with these flags requires review, while equal bytes retain their stronger identity proof."
+    },
+    {
+      "id": "overlapping-tounicode-maps",
+      "priority": "high",
+      "status": "fixed-default-runtime",
+      "sources": [
+        "pdfjs-nonembedded-type1-tounicode"
+      ],
+      "expected_full_page_unicode": "óº€íºXABéê",
+      "required": "Retain full-page declared-Unicode and mapping-only-edit regression checks for future SDK updates. Caller-provided SDK overrides remain outside the default runtime qualification.",
+      "upstream_specification": "https://adobe-type-tools.github.io/font-tech-notes/pdfs/5014.CIDFont_Spec.pdf",
+      "upstream_implementation": "https://pdfium.googlesource.com/pdfium/+/refs/heads/main/core/fpdfapi/font/cpdf_tounicodemap.cpp",
+      "runtime_experiment": {
+        "native_version": "8111",
+        "native_library_sha256": "baf7fdfd71c887c268224dd9fe102818ace962339875d78c2fcb0a55ba29d967",
+        "wasm_archive_sha256": "ed8ee2e70c628a4bd261fade8e381079aca250aeb5b1f3192c59682f8441fdcd",
+        "result": "Official chromium/8111 native and bblanchon WASM builds both return the declared full-page string, and the experimental full browser matrix passes. The SDKs are not the production default; native default/bundled provisioning and reproducible WASM loading still need integration.",
+        "full_browser_matrix": {
+          "cases": 115,
+          "passed": 115,
+          "details": "results-wasm-8111-experiment.json",
+          "scope": "All-page native/WASM text, geometry and SDK diagnostic parity for 48 public PDFs; 28 appearance fixtures and geometry/robustness/limit checks. Native Pdfium 8111 supplied via explicit PDFIUM_LIB_PATH; browser uses same official SDK version with a named initialization alias."
+        }
+      },
+      "resolution": "Default runtime and bundled native provisioning now use SHA-256-pinned Pdfium 8111, with the same verifier. The pinned bblanchon WASM SDK is adapted to an isolated ES-module factory. The public source has a full-page Unicode gold assertion in native and browser tests; shared independent fixtures assert full-page text and detection of Unicode-only edits with identical painting.",
+      "previous_default_evidence": "The original font ToUnicode stream defines a broad identity bfrange, then eight overriding bfchar entries, then p/q -> é/ê. PDF.js and pypdf independently return the declared text. Native Pdfium returns ABCU, U+009B, XABpq with mapping_error=0; current library drops U+009B. Existing text-fragment tests only establish SDK stability, not Unicode correctness.",
+      "evidence": "Default native SDK loaded from the verified jade-pdf cache (actual dylib confirmed with DYLD_PRINT_LIBRARIES). The public PDF now returns the full declared text, and the native/WASM full regression matrix uses 8111. Independent PDF.js inventory agrees on this document."
+    },
+    {
+      "id": "arabic-presentation-forms",
+      "priority": "normal",
+      "status": "compatibility-equivalent",
+      "sources": [
+        "arabic"
+      ],
+      "evidence": "Strict inventories differ, but full-page sample inventories are equal after NFKC. The two engines choose presentation forms vs ordinary Arabic scalars.",
+      "required": "Keep compatibility equivalence separate from literal Unicode equality and reading-order validation."
+    },
+    {
+      "id": "clipped-and-off-page-content",
+      "priority": "normal",
+      "status": "needs-scope-adjudication",
+      "sources": [
+        "freeculture",
+        "pdfium-cropped-text",
+        "pdfjs-showtext-shadingpattern"
+      ],
+      "evidence": "Native extraction includes content not included by PDF.js. Freeculture includes printer filenames, timestamps and margin numbers; the cropped fixture places portions of strings outside its view box. Shading-pattern discrepancy still needs visual/source inspection.",
+      "required": "Define and test both source-content and visible-page extraction scopes; do not silently discard hidden/off-page content to force agreement."
+    },
+    {
+      "id": "independent-cmap-resource-limit",
+      "priority": "normal",
+      "status": "resource-limited",
+      "sources": [
+        "pdfjs-issue-cmap12"
+      ],
+      "evidence": "The independent worker exceeds its configured 512MiB V8 old-space limit and is terminated. The coordinator continues and records resource_limited; no agreement is claimed.",
+      "required": "Keep process/time/memory limits. Investigate upstream CMap expansion without relaxing limits to hide the failure."
+    },
+    {
+      "id": "sdk-error-fallback-adjudication",
+      "priority": "normal",
+      "status": "requires-adjudication",
+      "sources": [
+        "type3",
+        "pdfjs-type3wordspacing",
+        "pdfjs-issue-cff-unsigned-bbox",
+        "pdfjs-french-diacritics"
+      ],
+      "evidence": "SDK flags Type3 sample (6), Type3 wordspacing (66), unsigned CFF bounds (11) and French diacritics (29). Printable fallbacks remain intact. Retaining previously dropped control fallbacks as U+FFFD makes the Type3 wordspacing and CFF documents disagree with PDF.js inventories. Other readable fallbacks can agree with the independent inventory despite the SDK flag. Diagnostics expose uncertainty; they do not establish that every flagged scalar is wrong.",
+      "required": "Adjudicate each flagged glyph using declared font mappings, source strings and painting; keep readable fallbacks and mapping uncertainty separate."
+    },
+    {
+      "id": "spanning-headings-and-mixed-column-order",
+      "priority": "high",
+      "status": "fixed-for-declared-geometric-regressions",
+      "sources": [
+        "tracemonkey",
+        "acl-bleu-2002",
+        "pdfjs-membership-mixed-columns"
+      ],
+      "evidence": "results-reading-order.json: three visually annotated pages, 20 selected ordered anchors, all passing in current file IR and text layers; v14 fails all three. All-page scalar inventories are unchanged versus v14. Native byte/file parity and Chrome/WASM also enforce these declared orders. Five network-free PDF regressions cover spanning headings/footers, multiple regions, narrow gutters, encoded word spacing and rotation-stable form dot leaders.",
+      "limits": "Geometric horizontal order, not full tagged-PDF/table/bidi/vertical order. Short centered headings and unusual physical coordinate/font scales require further gold."
+    },
+    {
+      "id": "split-page-natural-revision-alignment",
+      "priority": "high",
+      "status": "fixed-for-declared-revision-pairs",
+      "sources": [
+        "irs-w4",
+        "irs-w4-2026"
+      ],
+      "evidence": "Local character-bigram vocabulary overvalued the new deductions worksheet after geometric ordering changed. Longer eight-character phrase context now supplies 80% of page similarity when available. All five declared revision page-pair sequences and the full 518-assertion evaluation pass, including the manually annotated 4-to-5-page edition split.",
+      "limits": "Selected independent alignment gold, not exhaustive page-matching precision/recall."
+    },
+    {
+      "id": "scientific-symbol-and-figure-unicode-fallbacks",
+      "priority": "high",
+      "status": "requires-original-mapping-adjudication",
+      "sources": [
+        "acl-bleu-2002"
+      ],
+      "evidence": "ACL contributes 593 SDK flags and 588 replacements. Targeted independent font inspection finds 586 flags across 16 embedded TrueType fonts without ToUnicode or Unicode cmap and with post 3.0 (no glyph names). Seven CFF math flags include four prime and three large-delimiter candidates; effective PDF Encoding/character association is not yet proven. See results-font-adjudication-grid.json. Current corpus: 714 flags, eight documents/15 pages, 621 replacements. No production substitutions or source exclusions were made.",
+      "required": "Adjudicate embedded font mappings and painted math/figure glyphs; preserve readable fallback scalars, replacements and review diagnostics. PDF.js control-character output is not a Unicode oracle."
+    },
+    {
+      "id": "physical-coordinate-covariance-and-diagonal-order",
+      "priority": "high",
+      "status": "fixed-for-declared-regressions",
+      "sources": [
+        "pdfium-font-matrix",
+        "arabic"
+      ],
+      "evidence": "Historical v16 qualification: Four public pages/23 anchors pass; v15 fails the new diagonal-label source. All 52 first-page physical text/character geometries remain equal after independent inverse coordinate/UserUnit rebasing; v15 fails 22 documents. Generated/empty blank boxes use adjacent real ink and local direction. Three annotation-appearance differences remain separately reviewed.",
+      "limits": "Selected horizontal/RTL blank geometry and coordinate covariance, not full logical bidi/table/vertical/Unicode semantics.",
+      "current_evidence": "Current 53/54 text/geometry covariance checks pass; the new BIPM source fails with unflagged raw-SDK construction-scalar loss. The current six-source/seven-page selected order matrix passes 45 anchors."
+    },
+    {
+      "id": "wasm-character-box-output-order",
+      "priority": "high",
+      "status": "fixed-and-live-contract-checked",
+      "sources": [
+        "arabic"
+      ],
+      "evidence": "The pinned wrapper output-slot defect remains corrected by the companion adapter. Current Chrome matrix passes 142/142, including exact asymmetric Type3 bounds and real Arabic char-box parity. All five public byte routes reject both first-use and reinitialized unprepared SDKs; v16 returned results for all ten calls. After preparation/reinitialization all five routes recover. SDK call telemetry sees only five 855-byte probes, five document/text-page closes and zero bitmap creation calls in each rejected phase. See results-wasm-bootstrap-regression.json.",
+      "required": "Keep prepared adapter and per-bind live coordinate contract.CurrentWorker829operations+99cases,57fixtures;otherbrowsers/hardmemory/broadergold remain open."
+    },
+    {
+      "id": "changing-author-column-grids",
+      "priority": "high",
+      "status": "fixed-for-selected-geometric-gold",
+      "sources": [
+        "neurips-attention-2017"
+      ],
+      "evidence": "Historical v19: results-reading-grid.json: current five pages/33 anchors pass; v18 fails the new author order. Changing four/three-column grids split before column ordering when a sufficiently large horizontal gap separates distinct grids. Continuing columns and ordinary line/paragraph leading retain column-major order. Three independent layouts at four rotations pass; all 527 shared comparison summaries/diagnostics/exits remain exact.",
+      "limits": "Selected geometric gold only. Inline math, table structure and full logical/tagged order remain incomplete.",
+      "current_evidence": "Current six-source/seven-page/45-anchor matrix includes the same author order plus inline scripts. Shared native exits/diagnostics remain equal; 13 natural summary records now differ and are separately reviewed."
+    },
+    {
+      "id": "neurips-math-mapping-and-inline-order",
+      "priority": "high",
+      "status": "partially-fixed-inline-order-mapping-still-open",
+      "sources": [
+        "neurips-attention-2017"
+      ],
+      "evidence": "Four selected page-four prose subscript fragments now pass; root/fraction/stacked-limit/full math structure remains open. SDK flags four glyphs and retains three replacements. Independent PDF.js differs by one missing/four extra. No font/Unicode substitution was added; historical targeted font evidence remains in results-font-adjudication-grid.json.",
+      "required": "Keep uncertainty/replacements and changed-source review. Build independent source-level math order/mapping labels before changing extraction; do not substitute from PDF.js agreement alone."
+    },
+    {
+      "id": "inline-scripts-bullets-and-ltr-object-order",
+      "priority": "high",
+      "status": "fixed-for-declared-geometric-profile",
+      "sources": [
+        "neurips-attention-2017",
+        "bipm-si-concise",
+        "irs-w9-2018"
+      ],
+      "evidence": "results-reading-inline.json passes 45 selected anchors. Source order cannot bake backward LTR object jumps into a run; relative object boundaries make inferred spacing rotation-stable. Nearby long body text and same-size lines remain separate. results-inline-transition.json separately adjudicates five W-9 footnote improvements and leaves 13 natural summary shifts reviewed.",
+      "limits": "Geometric order and the declared spacing/covariance profile, not arbitrary original Unicode, full fractions/roots/limits, tables, bidi/vertical/tagged order or complete natural-revision labels."
+    },
+    {
+      "id": "sdk-small-coordinate-construction-glyph-loss",
+      "priority": "high",
+      "status": "fixed-declared-native-wasm-coordinate-profile",
+      "sources": [
+        "bipm-si-concise"
+      ],
+      "evidence": "results-coordinate-physical.json: 54/54 text/geometry, 51 exact PNGs, three form-appearance review cases. Explicit || gold proves old loss/current retention; original BIPM source and rebased layer now match exactly. Two rejection routes verify no partial output when normalization would lose an exposed glyph.",
+      "required": "Retain source and strict covariance gate. Extend coordinate/precision/Unicode gold; no blanket PDF semantic claim."
+    },
+    {
+      "id": "tagged-table-row-order",
+      "status": "fixed-for-declared-horizontal-grid-profile",
+      "evidence": "results-tagged-tables.json: W3C 25/25 independent MCID-cell gold, exact TextRun multiset retained. Original W-9 2018 table lists rows 4-7 before its header and rows 1-3; independent row geometry and inspected original page confirm corrected order. 40 positive conditions and 64 whole-IR/layer untagged fallback controls pass.",
+      "limits": "Complex spans, nested/form-scoped/custom-role/vertical/bidi tables remain incomplete. Changed W-9 natural summaries are recorded, not certified as exhaustive semantic improvements."
+    },
+    {
+      "id": "crop-band-page-identity",
+      "status": "fixed-for-exact-ordered-block-equality",
+      "evidence": "New W3C crop case fails v21 and table-only preview. Complete ordered text equality retains page identity across furniture-band reclassification; changed-header, hash-collision, order and empty-text negative tests pass. Native/WASM preserve geometry/visual change reporting without page additions/removals.",
+      "limits": "No generalized fuzzy matching or complete natural-revision oracle."
+    },
+    {
+      "id": "spanning-table-headers-and-stale-mcids",
+      "status": "visual_order_fixed_inference_explicitly_requires_review",
+      "evidence": "results-table-order-repair.json:3/3 full selected visual golds/87cells.Original associations remain86;legacyheader recovered from oneoutsideMCID147 using explicit spans/tworeference rows/bounded vacancy.RawSDK span evidence and all57source484pageIR retention in results-tagged-repair-adjudication.json.Onlyone page reorders;allpreexisting blockpayloadmultisets(excludingordinalindex) and pagefields unchanged.",
+      "required": "Preserve reading-order review for inference and unsupported/inconsistent fallback;expand nested/forms/math/bidi/spans and fullnatural revision gold.Eight original-source pages currently require review."
+    },
+    {
+      "id": "shear-angle-and-supplementary-utf16",
+      "status": "fixed_for_bounded_returned_sdk_records",
+      "sources": [
+        "bipm-si-concise",
+        "bipm-si-concise-2026",
+        "bipm-si-concise-fr-2026",
+        "freeculture"
+      ],
+      "evidence": "results-text-direction.json and195celltableaudit:baseline(a,b) separatesx-shearfromactualrotation.ValidcoincidentSDKUTF16units decodewithoutlosinggeometry orrawdiagnostics.SourceToUnicode/pdfplumber confirmsdeclared10Frenchscalars;invalidunitsretainunknown.",
+      "required": "Do notdeduplicate erroneoussource mappings orclaimfullmath/originalUnicodefromSDKconservation."
+    },
+    {
+      "id": "source-text-objects-omitted-by-sdk",
+      "status": "whole-object-review-fixed-source-recovery-open",
+      "priority": "high",
+      "evidence": "results-text-objects.json:3738SDKobjectswithoutchars/197pages;all63IRpayloadsotherwiseexact.Fourmixed/nestedsourceToUnicodeprobes nowreview. Emptylayersfail explicitly;noinventedtext/positions.",
+      "required": "Exposeuncertaintyorrecover omittedsource text,withwhitespace/emptyglyph controls and allentrypointcoverage.",
+      "limits": "Ordinarywhitespace also reviewable;partialobjectomissions andpre-tree discardedcontent remainoutside detector."
+    },
+    {
+      "id": "partial-sdk-object-character-omission",
+      "priority": "high",
+      "status": "expansion_masking_reviewed_structure_actualtext_open",
+      "evidence": "results-source-unicode.json:12independentC/CCmaskingconditions nowexit3withoneUnicode discrepancy,includingbfchar/bfrangearray,units androtations. ThreeActualTextcontrols coverdirect/named/empty;emptytextstillnotrecovered.",
+      "limits": "Source-exhaustivenesscontrol,not a natural-revision semanticgold.",
+      "required": "BoundedstructureActualText/MCIDcorrespondence andposition-preservingreplacement recovery."
+    },
+    {
+      "id": "survey-label-display-rotation-invariance",
+      "priority": "high",
+      "status": "fixed_declared_display_rotation_profile",
+      "sources": [
+        "pdfjs-issue14497"
+      ],
+      "evidence": "results-text-rotation.json:65originalIRsexact;2012page-rotationand260first-pagelayerconditions exact.Onepriorcasefalsechangesfixed;65original+12selectedrotatedPNGpairsretained.",
+      "limits": "Presentationrotationinvariance,not originalarbitrary-anglelogicalreadingorder. PartialSDKsourceexhaustiveness staysopen."
+    },
+    {
+      "id": "oblique-word-grouping-and-order",
+      "priority": "high",
+      "status": "selected_word_grouping_fixed_full_page_order_open",
+      "sources": [
+        "pdfium-rotated-text",
+        "pdfium-rotated-text-90",
+        "pdfjs-issue14497"
+      ],
+      "evidence": "results-oblique-source.json:threechanged sources/fivepages retain everyglyphxspan/font andPNG. Reducedmap71→17blocks with16source-declarednumericlabels;SDK45data20→4groups. Four sourcegolds/28groups,36affinepositives/12negativecontrols and16Arabic/Japaneseconditions pass.",
+      "limits": "Loose-cell spacing isgeometricinference. Full-pagelogicalorder,arbitraryfontmetricsandbidi remainopen;originalsourcepartialomissions unaffected."
+    },
+    {
+      "id": "structure-element-actualtext-omission",
+      "priority": "high",
+      "status": "resolved_selected_ownership_profile",
+      "evidence": "results-actual-text-actual-structure.json: A/B structure edit recovered and detected; original PDF Association paragraph. recovered. Page/Form namespaces, unique source MCIDs, ParentTree back-pointers and ancestry are required.",
+      "required": "Continue unsupported/colliding/reused-Form/cross-page cases as explicit review; individual glyph geometry is not inferred."
+    },
+    {
+      "id": "nonempty-marked-actualtext-multiple-source-scopes",
+      "priority": "high",
+      "status": "open",
+      "evidence": "Original ESET page2 retains238 Unicode multiset discrepancies. Repeated ActualText declarations such as space-dot share paragraph MCIDs; no unique per-declaration source/SDK correspondence is established.",
+      "required": "Recover nonempty marked replacements from independently proven source scopes without ordinal SDK matching or invented character positions."
+    },
+    {
+      "id": "wasm-actualtext-raw-blob-bridge",
+      "priority": "high",
+      "status": "resolved_pinned_runtime_profile",
+      "evidence": "Pinned pdfium-render0.8.37 BlobValue calls GetParamKey and copies the required size without a capacity guard. Reserved-key companion adapter now routes public BlobValue and rejects oversize reads. Live odd-UTF16 raw-byte probe and Chrome empty/large/invalid ActualText controls pass.",
+      "required": "Retain pinned dependency/adapter contract and qualify additional browsers."
+    }
+  ],
+  "current_qualification": {
+    "documents": 68,
+    "pages": 533,
+    "independent_agreement": 49,
+    "independent_disagreement": 18,
+    "independent_resource_limited": 1,
+    "reading_order_documents": 12,
+    "reading_order_pages": 14,
+    "reading_order_anchors": 189,
+    "raw_sdk_characters": 979939,
+    "raw_sdk_missing": 0,
+    "raw_sdk_excess": 10,
+    "source_declared_recovered_characters": 10,
+    "semantic_characters": 979949,
+    "coordinate_failed_documents": 0,
+    "natural_summary_records_changed": 0,
+    "original_source_reading_review_pages": 10,
+    "source_omission_review_pages": 215,
+    "unobserved_text_objects": 6135,
+    "selected_comparison_passed": 678,
+    "selected_comparison_failed": 0,
+    "display_rotation_page_checks": 2132,
+    "display_rotation_first_page_layer_checks": 272,
+    "word_group_gold_documents": 4,
+    "word_group_gold_checks": 28,
+    "notes": "67 original text/geometry/order payloads retained; 65 entire IRs exact. Public PDF Association vector word paragraph. recovered using source ActualText. SDK extra10 adjudicated separately, not hidden as conservation. Mixed reading order and unrelated omitted whitespace remain reviewable."
+  },
+  "source_accounting_details": "results-actual-text-actual-structure.json",
+  "source_unicode_details": "results-unicode-diagnostics-actual-structure.json"
+}

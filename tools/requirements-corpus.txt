@@ -1,0 +1,4 @@
+# Offline controlled edits, structure and independent tagged-cell audits.
+# Fetching and SHA verification use only the Python standard library.
+pypdf==6.10.0
+pdfplumber==0.11.9

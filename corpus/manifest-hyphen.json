@@ -1,0 +1,922 @@
+{
+  "version": 1,
+  "retrieved": "2026-10-23",
+  "documents": [
+    {
+      "id": "hello",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/examples/learning/helloworld.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/examples/learning/helloworld.pdf",
+      "category": "simple text",
+      "sha256": "c9efcaa374939ff19fc37974131f1db6d457eb942700c02a63fc9dda983e1400",
+      "bytes": 678,
+      "pages": 1,
+      "text_fragments": [
+        "Hello, world!"
+      ]
+    },
+    {
+      "id": "rotated",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/hello_world_rotated.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/hello_world_rotated.pdf",
+      "category": "page rotation",
+      "sha256": "ab0cb700cd5e5338fd676dfca25becae800acd2be03a4e57856485b8cfd2d28b",
+      "bytes": 1324,
+      "pages": 5,
+      "text_fragments": [
+        "Hello world"
+      ]
+    },
+    {
+      "id": "arabic",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ArabicCIDTrueType.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ArabicCIDTrueType.pdf",
+      "category": "Arabic CID",
+      "sha256": "1cad1de912ba29f89a6d8b08bc5b0f84382874ffedab2c8f9e05ef608c265bb1",
+      "bytes": 39370,
+      "pages": 1,
+      "text_fragments": [
+        "انواع",
+        "الخطوط"
+      ]
+    },
+    {
+      "id": "ligatures",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/copy_paste_ligatures.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/copy_paste_ligatures.pdf",
+      "category": "ligatures",
+      "sha256": "3a6948ca33558a0f1c9dabf70902e14e263e814b6a12da44ba8ec9439c0bafdd",
+      "bytes": 32408,
+      "pages": 1,
+      "text_fragments": [
+        "abcdefff",
+        "ghijklmno"
+      ]
+    },
+    {
+      "id": "vertical",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/vertical.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/vertical.pdf",
+      "category": "vertical text",
+      "sha256": "514511143db12309893fb69cdf98c76f2361c20da394f79fdff2c119ed7a4393",
+      "bytes": 6905,
+      "pages": 3,
+      "text_fragments": [
+        "日本語",
+        "あいうえお"
+      ]
+    },
+    {
+      "id": "empty",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/empty.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/empty.pdf",
+      "category": "blank page",
+      "sha256": "fcee6184c0d776126782cd2799797b106373278c8ea0a4354ee4e33cd8663d51",
+      "bytes": 4920,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "scanned",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/scan-bad.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/scan-bad.pdf",
+      "category": "scanned image",
+      "sha256": "d40f31f182cf254ab134826d379875acacb1f7b48bf1a57bce2e30b38d16628e",
+      "bytes": 29832,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "form",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/file_pdfjs_form.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/file_pdfjs_form.pdf",
+      "category": "AcroForm",
+      "sha256": "808af1e794952475e8af824ad1ee6ac41d6646de122e5ac91975e75b0951c80b",
+      "bytes": 8586,
+      "pages": 1,
+      "text_fragments": [
+        "AcroForm",
+        "TextField:"
+      ]
+    },
+    {
+      "id": "type3",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/simpletype3font.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/simpletype3font.pdf",
+      "category": "Type3 font",
+      "sha256": "a5697cbc51c19816944658b91e3a41f86e98ae63fbd1007798994b073385aef1",
+      "bytes": 1624,
+      "pages": 1,
+      "text_fragments": [
+        "ababab"
+      ]
+    },
+    {
+      "id": "cjk",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "category": "CID font",
+      "sha256": "049a4330710d8470896061acf7ee486735e94cef2769f6cc13fec3cb13bb65aa",
+      "bytes": 13110,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "tracemonkey",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/tracemonkey.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/tracemonkey.pdf",
+      "category": "two-column research paper",
+      "sha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113",
+      "bytes": 1016315,
+      "pages": 14,
+      "text_fragments": [
+        "Trace-based Just-in-Time",
+        "Dynamic Languages"
+      ]
+    },
+    {
+      "id": "freeculture",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/freeculture.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/freeculture.pdf",
+      "category": "long book",
+      "sha256": "753441c619c529c8d0fc3e7e470f07c9547838fc7229bea8c1dcf854acee03b4",
+      "bytes": 2598727,
+      "pages": 352,
+      "text_fragments": [
+        "Free Culture"
+      ]
+    },
+    {
+      "id": "w3c-word",
+      "url": "https://www.w3.org/WAI/WCAG21/working-examples/pdf-reading-order/reading-order-2cols-word.pdf",
+      "source": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF3",
+      "category": "two columns (Word)",
+      "sha256": "9a3a38c444fa165d2b33af41fb2c90502c52def5c560f5d543afe01d937d6e80",
+      "bytes": 68781,
+      "pages": 1,
+      "text_fragments": [
+        "Application for this and that"
+      ]
+    },
+    {
+      "id": "w3c-openoffice",
+      "url": "https://www.w3.org/WAI/WCAG21/working-examples/pdf-reading-order/reading-order-2cols-oo.pdf",
+      "source": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF3",
+      "category": "two columns (OpenOffice)",
+      "sha256": "0c8cd5c891e4b39f85f3f3ebea00c8aa56db35ce1f6d04f1ff263dac43e1ff3a",
+      "bytes": 75402,
+      "pages": 1,
+      "text_fragments": [
+        "Application for this and that"
+      ]
+    },
+    {
+      "id": "mhlw-employment",
+      "url": "https://www.mhlw.go.jp/seisakunitsuite/bunya/koyou_roudou/roudoukijun/keiyaku/kaisei/dl/youshiki_01a.pdf",
+      "source": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/roudoukijunkankei.html",
+      "category": "Japanese employment form",
+      "sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "bytes": 163435,
+      "pages": 4,
+      "text_fragments": [
+        "労働条件通知書",
+        "契約期間"
+      ]
+    },
+    {
+      "id": "irs-w4",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2025.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "tax form and numeric tables",
+      "sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+      "bytes": 192528,
+      "pages": 4,
+      "text_fragments": [
+        "Employee’s Withholding Certificate",
+        "1545-0074"
+      ]
+    },
+    {
+      "id": "irs-w4-2024",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2024.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: 2024 tax form",
+      "sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "bytes": 189925,
+      "pages": 4,
+      "text_fragments": [
+        "Employee’s Withholding Certificate",
+        "2024",
+        "29,200",
+        "21,900",
+        "14,600"
+      ]
+    },
+    {
+      "id": "pdfjs-truetype-without-cmap",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/TrueType_without_cmap.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/TrueType_without_cmap.pdf",
+      "category": "extraction regression: TrueType_without_cmap",
+      "sha256": "3e111eef52ce9c0d0b1da043290df4b49a5670c89891fcb3db6962edb12e35aa",
+      "bytes": 3989,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-type3wordspacing",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/Type3WordSpacing.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/Type3WordSpacing.pdf",
+      "category": "extraction regression: Type3WordSpacing",
+      "sha256": "8ac40dc49d40af8b5a50b442ced56b8db962c961a779a0284cd3a6207adc0bb7",
+      "bytes": 2693,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-identitytounicodemap-charcodeof",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/IdentityToUnicodeMap_charCodeOf.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/IdentityToUnicodeMap_charCodeOf.pdf",
+      "category": "extraction regression: IdentityToUnicodeMap_charCodeOf",
+      "sha256": "81243ff4cca5f7898688008224247d88534cd03e76ac3cbbdc38f925cfbee18f",
+      "bytes": 651,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-arial-unicode-en-cidfont",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_en_cidfont.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_en_cidfont.pdf",
+      "category": "extraction regression: arial_unicode_en_cidfont",
+      "sha256": "1c4a08108d8074f543c04e9b2ea2b93a842e2b29eb05ee9d99766f430fd365ab",
+      "bytes": 15779,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-french-diacritics",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/french_diacritics.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/french_diacritics.pdf",
+      "category": "extraction regression: french_diacritics",
+      "sha256": "eb6af7155988924ca0ba75cd95d21a93ea730b77b111dacb5d6599fa00867194",
+      "bytes": 10500,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-glyph-accent",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/glyph_accent.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/glyph_accent.pdf",
+      "category": "extraction regression: glyph_accent",
+      "sha256": "556da20f31754bcfabd6821b39e4d97ea569fd91363a19ef9b16cdec0f95a68e",
+      "bytes": 5490,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/nonembedded_type1_tounicode.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/nonembedded_type1_tounicode.pdf",
+      "category": "extraction regression: nonembedded_type1_tounicode",
+      "sha256": "95ef7cc7e6c80b3ce6e884407b0b695898a6f47a30b339d7472657406f041a82",
+      "bytes": 1175,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-rotation",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/rotation.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/rotation.pdf",
+      "category": "extraction regression: rotation",
+      "sha256": "5087c2afe763d145537d652bb3bc6c321ace3a267b2679ae2c178add3ba7f1d9",
+      "bytes": 6605,
+      "pages": 2,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-text-rise-eol-bug",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_rise_eol_bug.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_rise_eol_bug.pdf",
+      "category": "extraction regression: text_rise_eol_bug",
+      "sha256": "0d3cb608bbcdc3da823f2955fb026d9760a20be7802c7ca6e1a34632f87d0127",
+      "bytes": 670,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-multiline",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/multiline.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/multiline.pdf",
+      "category": "extraction regression: multiline",
+      "sha256": "a320198cf4bf28eaeb99080afcd92e5c2f864af1620b1b394a7bea44fb01c93c",
+      "bytes": 6455,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-basicapi",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/basicapi.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/basicapi.pdf",
+      "category": "extraction regression: basicapi",
+      "sha256": "925853d98d67d5dae7473c635f932958e1695ce1029d23b2ecd2531cb65f1f14",
+      "bytes": 105779,
+      "pages": 3,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-cid-cff",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/cid_cff.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/cid_cff.pdf",
+      "category": "extraction regression: cid_cff",
+      "sha256": "d894d356411217414fd9040d3d038612e1f4a1598936b2385a76458dd6d64d38",
+      "bytes": 19970,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-text-clip-cff-cid",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_clip_cff_cid.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_clip_cff_cid.pdf",
+      "category": "extraction regression: text_clip_cff_cid",
+      "sha256": "81aaf48f55c659d29d7a533cd913bd9d028ffad183b46580a2122eebe5187506",
+      "bytes": 7393,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-bug1947248-text",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1947248_text.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1947248_text.pdf",
+      "category": "extraction regression: bug1947248_text",
+      "sha256": "249c09e9e76ab30f11aa0ca9d06bfc3fef40499810d6790134a43ee3bf838790",
+      "bytes": 14504,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-pattern-text-embedded-font",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/pattern_text_embedded_font.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/pattern_text_embedded_font.pdf",
+      "category": "extraction regression: pattern_text_embedded_font",
+      "sha256": "0d87537cfba850b7501db8010801bebe62b9cc19776ae387f9dafc61e00b1699",
+      "bytes": 2662,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-showtext-shadingpattern",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ShowText-ShadingPattern.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ShowText-ShadingPattern.pdf",
+      "category": "extraction regression: ShowText-ShadingPattern",
+      "sha256": "13ac785e8445fbf01d5a8200e0e899daa204cdbe723b02f38f8af61ac48707bb",
+      "bytes": 4671,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-image-rotated-black-white-ratio",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/image-rotated-black-white-ratio.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/image-rotated-black-white-ratio.pdf",
+      "category": "extraction regression: image-rotated-black-white-ratio",
+      "sha256": "dd884a5f5676d5e32cd70590f793238faddedbd6d135918735c0c99b89e28279",
+      "bytes": 1954,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-form-two-pages",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/form_two_pages.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/form_two_pages.pdf",
+      "category": "extraction regression: form_two_pages",
+      "sha256": "6d7c608d0102fa1e1b3cbc2c3b0a989783e90f84ff1a7fe7cbdb6dc2a1b60fbd",
+      "bytes": 23136,
+      "pages": 2,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-annotation-text-widget",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/annotation-text-widget.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/annotation-text-widget.pdf",
+      "category": "extraction regression: annotation-text-widget",
+      "sha256": "9f091ceb368ad0406094efaa6c50d5033735ee52f383e0973dc53a7467089d7c",
+      "bytes": 93171,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-issue-cmap12",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cmap12.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cmap12.pdf",
+      "category": "extraction regression: issue_cmap12",
+      "sha256": "c9938b41e3b93b0bc36073f50714319fa3c1d805be5f53e55b3d23f2e86e143a",
+      "bytes": 2162,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2022",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2022.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "8b4c3d8fe967fb1ed3c5fca54b34a44c72efea239cd395bd6bfeac84937c7a15",
+      "bytes": 175956,
+      "pages": 4,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2023",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2023.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "bytes": 188715,
+      "pages": 4,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2026",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw4.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "bytes": 208845,
+      "pages": 5,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-bigboundingbox",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bigboundingbox.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bigboundingbox.pdf",
+      "category": "page geometry regression: bigboundingbox",
+      "sha256": "6cd3d57b85891021af2de75ac304a6efc2894793dab7594968b0b5efcd1d0013",
+      "bytes": 76044,
+      "text_fragments": [],
+      "pages": 1
+    },
+    {
+      "id": "pdfjs-issue-cff-unsigned-bbox",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cff_unsigned_bbox.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cff_unsigned_bbox.pdf",
+      "category": "page geometry regression: issue_cff_unsigned_bbox",
+      "sha256": "f91dc7dc6d4d9488f8c3d0dd37bc97b3eb0c5cccc28aa179df4ba486147994af",
+      "bytes": 2796,
+      "text_fragments": [],
+      "pages": 1
+    },
+    {
+      "id": "pdfium-cropped-text",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_text.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_text.pdf",
+      "category": "CropBox regression: cropped_text",
+      "sha256": "1e2a6b5f13c77d8c0611ac7fcde88cd28352c7c0eb8a36bc593e2d91ef3c4ccc",
+      "bytes": 1855,
+      "text_fragments": [],
+      "pages": 4
+    },
+    {
+      "id": "pdfium-combobox-form",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/combobox_form.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/combobox_form.pdf",
+      "category": "AcroForm regression: combobox_form",
+      "sha256": "e96064f079baf65b1ebd23b152c2037eba68345a48e7b845a3c0bc3620cd7d26",
+      "bytes": 1738,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfium-listbox-form",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/listbox_form.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/listbox_form.pdf",
+      "category": "AcroForm regression: listbox_form",
+      "sha256": "4dd3b8b958eb56cb49afbb6b60b14b6d6ecba788181e088aa68be459fed10b49",
+      "bytes": 3012,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfium-text-form-multiline",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/text_form_multiline.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/text_form_multiline.pdf",
+      "category": "AcroForm regression: text_form_multiline",
+      "sha256": "414dfebc2d5541659daaf65197e3bb02d4741487eba7680c184a7bbdffcf9814",
+      "bytes": 955,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w9-2018",
+      "url": "https://www.irs.gov/pub/irs-prior/fw9--2018.pdf",
+      "source": "https://www.irs.gov/pub/irs-prior/fw9--2018.pdf",
+      "category": "official natural revision: fillable W-9 form and multi-column instructions",
+      "sha256": "78366390cd4e3db89e06009fce54df272bee0d3b34003f3a786c4835239bfdff",
+      "bytes": 132144,
+      "pages": 6,
+      "text_fragments": [
+        "Request for Taxpayer",
+        "Identification Number and Certification"
+      ]
+    },
+    {
+      "id": "irs-w9-2024",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "source": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "category": "official natural revision: fillable W-9 form and multi-column instructions",
+      "sha256": "2d420cbb4123dcf1fb82595b2359cfbb5d81f00b9df9d359fcc7af361d093f53",
+      "bytes": 140815,
+      "pages": 6,
+      "text_fragments": [
+        "Request for Taxpayer",
+        "Identification Number and Certification"
+      ]
+    }
+  ],
+  "revision_pairs": [
+    {
+      "id": "irs-w4-2024-to-2025",
+      "old": "irs-w4-2024",
+      "new": "irs-w4",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2024",
+          "new": "2025"
+        },
+        {
+          "page": 3,
+          "old": "29,200",
+          "new": "30,000"
+        },
+        {
+          "page": 3,
+          "old": "21,900",
+          "new": "22,500"
+        },
+        {
+          "page": 3,
+          "old": "14,600",
+          "new": "15,000"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2022-to-2023",
+      "old": "irs-w4-2022",
+      "new": "irs-w4-2023",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2022",
+          "new": "2023"
+        },
+        {
+          "page": 3,
+          "old": "25,900",
+          "new": "27,700"
+        },
+        {
+          "page": 3,
+          "old": "19,400",
+          "new": "20,800"
+        },
+        {
+          "page": 3,
+          "old": "12,950",
+          "new": "13,850"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2023-to-2024",
+      "old": "irs-w4-2023",
+      "new": "irs-w4-2024",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2023",
+          "new": "2024"
+        },
+        {
+          "page": 3,
+          "old": "27,700",
+          "new": "29,200"
+        },
+        {
+          "page": 3,
+          "old": "20,800",
+          "new": "21,900"
+        },
+        {
+          "page": 3,
+          "old": "13,850",
+          "new": "14,600"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2025-to-2026",
+      "old": "irs-w4",
+      "new": "irs-w4-2026",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          null,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2025",
+          "new": "2026"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "30,000",
+          "new": "32,200"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "22,500",
+          "new": "24,150"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "15,000",
+          "new": "16,100"
+        },
+        {
+          "page": 1,
+          "old": "2,000",
+          "new": "2,200"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w9-2018-to-2024",
+      "old": "irs-w9-2018",
+      "new": "irs-w9-2024",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "October 2018",
+          "new": "March 2024"
+        },
+        {
+          "page": 1,
+          "old": "C Corporation",
+          "new": "C corporation"
+        },
+        {
+          "page": 1,
+          "old": "Limited liability company.",
+          "new": "LLC. Enter the tax classification"
+        }
+      ],
+      "added": [
+        {
+          "page": 1,
+          "text": "foreign partners, owners, or beneficiaries"
+        }
+      ],
+      "removed": [
+        {
+          "page": 1,
+          "text": "single-member LLC"
+        }
+      ],
+      "unchanged": [
+        "The number shown on this form is my correct taxpayer identification number"
+      ]
+    }
+  ],
+  "robustness": [
+    {
+      "id": "pdfjs-boundingbox-invalid",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/boundingBox_invalid.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/boundingBox_invalid.pdf",
+      "category": "page geometry regression: boundingBox_invalid",
+      "sha256": "f85be7aaf217f8f1864b910501d4aeea53f3d7a503df5b81dd6aaa267e5968ad",
+      "bytes": 1263,
+      "text_fragments": [],
+      "outcome": "geometry_rejected",
+      "invalid_page": 3,
+      "note": "The entire document is rejected; earlier valid pages must not produce a partial comparison."
+    },
+    {
+      "id": "pdfjs-pdfbox-4352-0",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/PDFBOX-4352-0.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/PDFBOX-4352-0.pdf",
+      "category": "page geometry regression: PDFBOX-4352-0",
+      "sha256": "ede76ce3aaa8a5d9da0e6f7fadce8470083be748035da6db08ede9ea34813f40",
+      "bytes": 1481,
+      "text_fragments": [],
+      "outcome": "accepted",
+      "pages": 1,
+      "note": "Pdfium recovers this malformed source; pypdf 6.10.0 cannot parse it, so it is outside controlled rewrites."
+    },
+    {
+      "id": "pdfium-cropped-no-overlap",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_no_overlap.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_no_overlap.pdf",
+      "category": "CropBox regression: cropped_no_overlap",
+      "sha256": "9ec5b72e3d23e0a3e3b1f2c91ac08e622210ff34999aa48716a46e351e1e2ed8",
+      "bytes": 503,
+      "text_fragments": [],
+      "outcome": "geometry_rejected",
+      "invalid_page": 1,
+      "note": "The entire document is rejected; earlier valid pages must not produce a partial comparison."
+    },
+    {
+      "id": "pdfium-encrypted",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted.pdf",
+      "category": "encrypted PDF regression: encrypted",
+      "sha256": "cbbead7185d9cd46daecaf60165a9aa7b9f2daceb3623218c328cb015ae862d5",
+      "bytes": 10564,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r2",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r2",
+      "sha256": "267945749086981b8727c4931cfc8a24973c3aa5819ea8a392fa8bd0d637ee84",
+      "bytes": 1021,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r2-bad-okey",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2_bad_okey.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2_bad_okey.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r2_bad_okey",
+      "sha256": "7c6c1bb4dd62bc30e2396640cab1d988876f7c9ceb54794475c370af168fe01e",
+      "bytes": 1020,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document. This Pdfium regression also contains a malformed owner key."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r3",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r3",
+      "sha256": "cdbfd4f6728786dc70c7514bd5c669a38b03bba38be3e91ec46ccb02168b9ad3",
+      "bytes": 1033,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r3-bad-okey",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3_bad_okey.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3_bad_okey.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r3_bad_okey",
+      "sha256": "bfe206c8f79ec27886dc64ac6894834c7f2830bed5ae5ef5223ed83e2e8c7634",
+      "bytes": 1032,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document. This Pdfium regression also contains a malformed owner key."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r5",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r5.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r5.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r5",
+      "sha256": "9f2bdfbbd675fcaa40e89240f4f66be81621afa33114d24e8f568fb727ad37d9",
+      "bytes": 1496,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r6",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r6.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r6.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r6",
+      "sha256": "a5bcee67d2731547d8e6956cbb0d41eddeef4ca80c378c9dba8bc97961ece064",
+      "bytes": 1496,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    }
+  ]
+}

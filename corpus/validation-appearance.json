@@ -1,0 +1,206 @@
+{
+  "version": 5,
+  "date": "2026-10-23",
+  "goal_status": "in_progress",
+  "platform": {
+    "os": "macOS",
+    "architecture": "arm64",
+    "rustc": "rustc 1.93.1 (01f6ddf75 2026-02-11)"
+  },
+  "corpus": {
+    "documents": 46,
+    "pages": 442,
+    "robustness_documents": 10,
+    "revision_pairs": 4,
+    "manifest_sha256": "14fa6e44de646f79c5a22ea6bc4cdeeef30d054a597efcade97efe7ae6ed6186",
+    "total_sources": 56
+  },
+  "native_evaluation": {
+    "passed": 456,
+    "cases": 456,
+    "controlled_transformations": 428,
+    "selected_natural_revision_checks": 25,
+    "binary_sha256": "0e2b452cda32c7ac42560530ff90dc7174c3cabab229179d36ffed215cae049d",
+    "details": "results-appearance.json",
+    "methodology": "Known PDF transformations, three independently checked public widget value edits, and 25 selected official IRS revision assertions. Default file comparison includes raster appearance. Not exhaustive natural-revision precision/recall.",
+    "selected_public_form_value_checks": 3
+  },
+  "character_conservation": {
+    "characters": 751445,
+    "missing": 0,
+    "excess": 0,
+    "legacy_rectangle_missing": 86,
+    "legacy_rectangle_excess": 953,
+    "methodology": "Multiset comparison with Pdfium character stream after NFC, explicit ligature expansion, and whitespace/control/soft-hyphen filtering. Legacy rectangle queries are reproduced by the audit example; this is not independent Unicode ground truth.",
+    "details": "results-extraction-appearance.jsonl"
+  },
+  "browser_runtime": {
+    "passed": 104,
+    "cases": 104,
+    "browser": "155.0.8059.85",
+    "pdfium": "8046d",
+    "wasm_sha256": "082f0f7ea0e17bdc851a6717082f720dab72c62168ad5894cd04ab35750d788e",
+    "full_document_text_and_geometry": 46,
+    "first_page_png_renderings": 46,
+    "methodology": "All-page text/geometry vs one immutable native executable; first-page rendering. Also 24 painted projection cases, 19 independent appearance/widget fixture pairs, image/raster budgets, encrypted/damaged sources, full page count, alignment budget and recovery. Each engine compares its own old/new rasters; no cross-engine pixel-equivalence claim.",
+    "details": "results-wasm-appearance.json",
+    "native_binary_sha256": "0e2b452cda32c7ac42560530ff90dc7174c3cabab229179d36ffed215cae049d",
+    "painted_viewport_cases": 24,
+    "robustness_documents": 10,
+    "appearance_fixture_pairs": 19
+  },
+  "checks": {
+    "rust_unit_integration_doctests": "passed: 94",
+    "public_corpus_tests": "passed: 4",
+    "downloader_tests": "passed: 4",
+    "clippy": "passed: all targets with -D warnings",
+    "rustfmt": "passed",
+    "wasm_build": "release probe rebuilt and executed in actual Chrome, including the bounded generic widget value C API",
+    "runtime_bootstrap": "checksum verification, archive extraction and build tested",
+    "npm_lockfile": "npm ci tested",
+    "workflow_yaml": "parsed with Ruby Psych; native matrix and browser gate verified",
+    "remote_ci": "not dispatched; Linux gate remains unverified",
+    "native_profile": "dev, debug=0, incremental disabled; immutable executable snapshot shared by native and browser evaluation"
+  },
+  "readiness": [
+    {
+      "id": "linux_runtime",
+      "status": "unverified",
+      "evidence": "Ubuntu native test gate with fontconfig and CJK fallback fonts added; not executed in this macOS session."
+    },
+    {
+      "id": "natural_revision_oracle",
+      "status": "partial",
+      "evidence": "Four edition pairs with 25 selected checks; exhaustive labels and precision/recall on broader natural revisions are missing."
+    },
+    {
+      "id": "nontext_changes",
+      "status": "partial",
+      "evidence": "File/byte APIs now compare 144DPI rasters and widget scalars/selections. Nineteen independent fixture pairs pass natively and in Chrome; three public form mutations verified against canonical/widget values. Full canonical forms, signatures, annotation actions, exhaustive visual ground truth and cross-engine raster behavior remain incomplete."
+    },
+    {
+      "id": "highlight_projection",
+      "status": "verified_current_renderer",
+      "evidence": "PageIr.view_box, PageSize.view_box and RenderedPage.viewport added. Native 48 and browser 24 independently painted renders verified within 1px; shifted CropBox regression on all 43 public documents. Physical UserUnit scaling remains outside this gate."
+    },
+    {
+      "id": "configuration_contract",
+      "status": "verified_checked_entrypoints",
+      "evidence": "All seven options have externally observable tests. Checked APIs reject invalid values. text_change_score recovery implemented. Budget exhaustion is explicit and does not silently force unscored matches. Raw diff_documents requires already validated inputs. Four visual options (DPI, total pixels, channel tolerance, source image pixels) have validation and observable-effect tests."
+    },
+    {
+      "id": "malformed_encrypted_resource_extremes",
+      "status": "partial",
+      "evidence": "Ten pinned damaged/geometry/encrypted inputs; seven password-required sources rejected in all routes; full page-count overflow fixed and tested natively and in Chrome. Sparse oversized-file and byte-size limits tested. Broader damaged/decompression-bomb and timeout coverage remains. Exposed image metadata, nested form depth/object counts and choice string buffers are guarded; these are not process isolation or a complete decompression/time limit."
+    },
+    {
+      "id": "physical_user_unit",
+      "status": "unsupported",
+      "evidence": "UserUnit=3 projects correctly to current Pdfium bitmaps, but physical page-size/DPI scaling and changes only to UserUnit are not detected. Documented as unsupported."
+    }
+  ],
+  "historical_validation": "validation-initial.json",
+  "source_sha256": {
+    ".github/workflows/ci.yml": "ff276f2e5e346a6fe14b305e8726c0d640c6af779bd0cb8c7423579218ca5bce",
+    ".gitignore": "d7cfe384581964a943d850830215ece2275923b31d1cdf0017483b56519a6249",
+    "Cargo.lock": "d9075c042b277e23db4068de76aab4185fef878d415285bf3c0736a5306f8fe9",
+    "Cargo.toml": "467d064a39efcb4a3c9c5a0dbedfecd226d79568acd6f2e618b7f2b2056032cf",
+    "README.md": "ffb1d2142aa1dd89383fd0d342591073317a3156b74ce18e4b366243df78d0c8",
+    "corpus/README.md": "7f05dfd6f520155d6777d2b17e547f6c23582836d57ed2ec3dce60497ef1c523",
+    "crates/jade-pdf-diff/Cargo.toml": "db994896c43cc436521dd88a903d540bcd0deec20cb63f81d11228290c724ca4",
+    "crates/jade-pdf-diff/src/comparison.rs": "ce980a5a001346e6cb4e6578edacf0b66e4cbe3f97832f505bb2a9e7b74a94ba",
+    "crates/jade-pdf-diff/src/diff.rs": "8603445329fcbf6dbd947d2a04eb9cdcb9c48359d779bbbea19fe312712e15ca",
+    "crates/jade-pdf-diff/src/geometry.rs": "1cd9b8ba1489bce4f0bfc53028e20848f4e7f7439fc585d19e42c2aa389aacae",
+    "crates/jade-pdf-diff/src/input.rs": "cf32b7e839b7c2c6b82ac9ba4293f6ce9f17af871365e4f30ee8d944e08c2aa8",
+    "crates/jade-pdf-diff/src/ir.rs": "e9fd906ce4ab4ae5d7ec682997cd5ce76d88eda2aedc4c4fd311ba1aaf617941",
+    "crates/jade-pdf-diff/src/lib.rs": "3f94a0b959e1fc0d4c50bfe62909b453be1e5bd7e1e12ca66dafe6a6732ec4be",
+    "crates/jade-pdf-diff/src/main.rs": "3cb82cf9c8a925beea65077855cbd554d4b1634e9235e581ccc4b6daa63215dc",
+    "crates/jade-pdf-diff/src/parse.rs": "14a492b7c54ca9ddcf4ebb82c3b13f92b978bf2215d31fbd09364e08b8b5fe99",
+    "crates/jade-pdf-diff/src/raster_limits.rs": "c6c43be2b2bf0bdb6b4b70393e35ccfbe818331a7b36e091a9b7f8d43cfc9032",
+    "crates/jade-pdf-diff/src/render.rs": "af603155ae4467e646b9be50a766ff788223e352ad075441a8bf9dfbc6716b8e",
+    "crates/jade-pdf-diff/src/scan.rs": "5dc133711b69c74bffbf119499bcdb9b6d3a4de723862d74d42f2076701edb04",
+    "crates/jade-pdf-diff/src/text.rs": "d70bd455957f31a8a28d411abc9ff4b9a6a9a8084108f447c544ec4a6a3c42c9",
+    "crates/jade-pdf-diff/src/widget_values.rs": "024209db175adb53d86cf3e663e12951184d2a0f97f8d92eddd0042e4f1f041b",
+    "crates/jade-pdf-diff/tests/appearance.rs": "59c20eaf465305677dba441e29ea537e261c27791917a350fd3728d271d38f0f",
+    "crates/jade-pdf-diff/tests/extraction.rs": "d33693c9e85c801ba6d09228a04b82ac6d3c9d3bd83fcf49fc6211cedf942465",
+    "crates/jade-pdf-diff/tests/geometry.rs": "29a585b01cc19ed9ac76df094577945b04ca7f657a39b2984c70efd15043f91f",
+    "crates/jade-pdf-diff/tests/input_limits.rs": "eb1ec511a00210d927394c9cdc9155b06e551f75143d2eda3ab786d3469e0618",
+    "crates/jade-pdf-diff/tests/ocr_ir.rs": "e8fb8d9f0a40b550bbdb7f3df0aa4d36a3ee255c9ccf50afacd9b2a06eb268b0",
+    "crates/jade-pdf-diff/tests/options.rs": "979dbfff6e28b838bf4836c8d7e8e16f54a7e36a22fb79b7c8be8a12e7bb45e8",
+    "crates/jade-pdf-diff/tests/public_corpus.rs": "a79d39b8b036d0b461b937d943b87dd0564450f7674c0ac65e9c63c23cf2184d",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "31b9a5815065b5f2ca9eb67f61014a38a7224b0052485a27f15416cf25a698e2",
+    "tools/evaluate_pdf_corpus.py": "52b66d29af32f77f4282fb71566104f3c80cb3c2688bc7cff423508e9e4c3bbf",
+    "tools/pdf_corpus.py": "5a1736e5a81983deefde42278acd5612d6be4c0056bd4834d3f923eddd21a3f3",
+    "tools/wasm-smoke/Cargo.lock": "8143b5e1135b449d8db29e677b3a763213a18df53c573f5bd6f6982e5a131739",
+    "tools/wasm-smoke/browser_smoke.mjs": "a44900daaed2399a6333824120752202255e83322d9c0023035079b1c497acff",
+    "tools/wasm-smoke/package-lock.json": "c8a0e71d59fbb3853756e9cab7bcc6516f8fd4178b4de794c2563e1d84b63942",
+    "tools/wasm-smoke/prepare_runtime.py": "7e5cedea295ccd625292410445fdf07267a02d97ddb976e78aa426c83c0a03c6",
+    "tools/wasm-smoke/runtime.json": "6da5645adf2105c243e81640f45b22356398b801b75f6dade7b8300457f7acf9",
+    "tools/wasm-smoke/src/lib.rs": "38b0225dcd452564c5cb838ec8b048f74a8d7fe13efc7319993b390d2ee314a4"
+  },
+  "geometry_evaluation": {
+    "native_renderings": 48,
+    "browser_renderings": 24,
+    "painted_markers_per_rendering": 2,
+    "maximum_pixel_error": 1,
+    "native_oracle": "Actual PNG pixels plus Pdfium PageToDevice API",
+    "browser_oracle": "Canvas reads PNG pixels; DOMMatrix applies public coefficients",
+    "conditions": "Four rotations; inherited boxes; nonzero, negative and 100000-unit origins; fractional dimensions; CropBox/MediaBox intersection; UserUnit=3 as rendered by Pdfium.",
+    "limits": "Projection to the current Pdfium renderer, not physical UserUnit support or arbitrary-coordinate precision.",
+    "regressions": "Crop-only origin edit, header-only and textless page matching, duplicate-page geometry tie, off-page clipping, legacy OCR JSON and render size limits."
+  },
+  "robustness_evaluation": {
+    "documents": 10,
+    "geometry_rejected_without_partial_diff": 2,
+    "malformed_source_recovered": 1,
+    "native_and_wasm": "passed",
+    "password_required_inputs_explicitly_rejected": 7
+  },
+  "previous_validation": "validation-contract.json",
+  "native_engine": {
+    "build": "7961",
+    "library_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "provenance": "Confirmed actual loaded libpdfium.dylib with DYLD_PRINT_LIBRARIES on the evaluated executable."
+  },
+  "page_count_regression": {
+    "input_pages": 65537,
+    "before_fix": "IR silently contained 1 page (reproduced before modification).",
+    "after_fix": "Native CLI exit 2 with empty stdout; original full page count in the error. Native Rust tests cover 65536 and 65537 across all file/byte routes. Chrome covers 65537 across all four byte APIs, followed by valid-input recovery.",
+    "backend_page_limit": 65535,
+    "count_validation": "Raw FPDF_GetPageCount checked before pdfium-render u16 conversion; file path uses streaming custom access, without reading the whole file."
+  },
+  "configuration_evaluation": {
+    "tests": 6,
+    "scope": "All seven DiffOptions fields, finite/range validation, positive Limits, checked OCR IR, page/block budget exhaustion and unchanged exact anchors at zero budget.",
+    "checked_entrypoints": [
+      "try_diff_documents",
+      "diff_files",
+      "diff_bytes"
+    ],
+    "unchecked_entrypoint": "diff_documents remains available for already validated input.",
+    "text_change_score": "Recovers still-unpaired changes by pure text similarity; positional recovery remains independent.",
+    "budget_behavior": "Unscored ordinal fallback is split into removal/addition and flagged as alignment limited; CLI returns review code 3."
+  },
+  "appearance_comparison": {
+    "default": "Enabled for file/byte comparisons; pure IR APIs retain text-only behavior.",
+    "dpi": 144,
+    "channel_tolerance": 0,
+    "max_total_old_and_new_pixels": 200000000,
+    "max_pixels_per_bitmap": 16000000,
+    "max_source_image_pixels_per_page": 64000000,
+    "maximum_nested_form_depth": 32,
+    "maximum_exposed_page_objects": 20000,
+    "changed_regions": "Enclosing changed raster region projected back to each page PDF space; entire view box when raster dimensions differ.",
+    "incomplete_behavior": "Skipped page and reason are returned when a budget or renderer limit is reached. CLI exits 3 if comparison coverage is incomplete.",
+    "identical_source": "Exact equal byte inputs or equal file streams provide a stronger identity proof without rasterization. File inputs must remain immutable during comparison.",
+    "limitations": "Raster resolution and white-background Pdfium rendering are the comparison profile, not arbitrary PDF object equivalence. Metadata preflight does not bound every internal decoder allocation or parse time."
+  },
+  "widget_comparison": {
+    "supported": "Visible/hidden widget text, checkbox scalar/check state, radio group scalar/check state, combo/list first scalar export value, all selected option indices and labels.",
+    "regression": "Public Listbox_SingleSelect stores foo/bar but displays Foo/Bar. Generic Pdfium field value API now supplies value; selected labels supply display_value. Verified natively with pypdf canonical/widget oracles and in native/WASM independent fixtures.",
+    "additional_regression": "Editable combo values not present in the option list are preserved and compared.",
+    "buffer_checks": "Choice value and option label buffers are length-checked before Rust allocation, capped at 2000000 UTF-16 units, budgeted, terminated and decoded strictly. Two unit tests exercise oversize/budget and malformed UTF-16 behavior.",
+    "incomplete": "Full canonical Fields trees, unplaced/orphan fields, every export value in a multiple-selection array, signatures and annotation actions remain outside the implemented widget model. Changed-source interactive documents always require review."
+  },
+  "previous_manifest": "manifest-contract.json"
+}
