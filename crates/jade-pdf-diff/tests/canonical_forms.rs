@@ -322,7 +322,13 @@ fn non_null_form_records_are_checked_even_when_the_sdk_reports_no_form() {
             .arg(b.path())
             .output()
             .unwrap();
-        assert_eq!(output.status.code(), Some(exit));
+        assert_eq!(
+            output.status.code(),
+            Some(exit),
+            "{mode}: stderr={} stdout={}",
+            String::from_utf8_lossy(&output.stderr),
+            String::from_utf8_lossy(&output.stdout)
+        );
     }
 }
 
