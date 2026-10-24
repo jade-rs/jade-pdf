@@ -156,7 +156,7 @@ __pycache__/
 
 # Downloaded corpus, generated variants, reports and SDK runtimes.
 target
-/corpus/cache/
+/corpus/cache
 /corpus/variants/
 /corpus/variants-*/
 /corpus/wasm-runtime
