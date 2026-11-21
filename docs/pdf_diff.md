@@ -298,4 +298,6 @@ JADE_PDF_BROWSER_ENGINE=webkit JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_
 実行前に公開PDFの取得と `python3 tools/wasm-smoke/prepare_runtime.py --build` が必要である。エンジン指定を省略するとChromiumを使い、不明な名前は明示的に拒否する。`JADE_PDF_BROWSER` は選択したエンジンの実行ファイルを指定する。
 直接WASMの精度検証とWorkerの強制終了検証は別の証拠である。Workerの既存全監査はChromium CDPで対象の消滅まで観測するため、Firefox/WebKitを指定した実行では成功扱いにせず拒否する。WebKitの検証はPlaywrightのWebKitビルドであり、Safari製品全体の保証ではない。
 
+Workerの停止回帰では、終了しないWASMにだけジョブ単位の2.5秒期限を指定する。停止後の正常なSDK初期化には通常の既定予算を使い、3秒の初期化遅延を注入しても、同じクライアントで正常に再開できることを確認する。強制停止の期限・退役中の受入制限・CDPによる対象消滅の確認は維持し、復旧の実行有無・経過時間・失敗コードも記録する。
+
 ブラウザーの実行レポートでは、`passed` / `cases` は実行比較と選定した条件の結果である。通常資料に加えて `pending_semantic` の未達資料も実行し、`semantic_gold_checks` / `semantic_gold_passed` / `semantic_gold_failures` へ全ページ文字列の正誤を別途記録する。既知の誤抽出が両経路で要レビューになっていても、文字列の正解には数えない。未診断の誤抽出や等価書き換えの誤差分は検証を失敗させる。

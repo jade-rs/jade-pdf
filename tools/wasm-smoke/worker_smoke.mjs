@@ -157,13 +157,14 @@ try {
     const pending=page.evaluate(async({mode,job})=>{
       const bytes=new Uint8Array(await(await fetch('/corpus/cache/hello.pdf')).arrayBuffer());
       const controller=new AbortController();
+      const {DEFAULTS}=await import('/crates/jade-pdf-diff/wasm/worker_protocol.mjs');
       const url='/tools/wasm-smoke/worker_fault.mjs?mode='+(mode==='wait-init'?'wait-init':'spin')+'&job='+job;
-      const worker=new PdfWorkerClient(url,{timeoutMs:2500});
+      const worker=new PdfWorkerClient(url);
       window.faultStarted=false;let ticks=0;
       const heartbeat=setInterval(()=>ticks++,10),channel=new BroadcastChannel(job);
       channel.onmessage=()=>{window.faultStarted=true;window.faultStartedJob=job;};
       window.finishFault=()=>mode==='dispose'?worker.dispose():controller.abort();
-      const promise=worker.run('inspect',[bytes],{block:true},{signal:controller.signal});
+      const promise=worker.run('inspect',[bytes],{block:true},{signal:controller.signal,timeoutMs:2500});
       let busy=false;
       try {await worker.run('inspect',[bytes]);} catch(e) {busy=e.code==='BUSY';}
       let code;try {await promise;}catch(e){code=e.code;}
@@ -176,11 +177,21 @@ try {
       await worker.whenIdle();
       const retirementWaitMs=performance.now()-rejectedAt;
       const idle=worker.activeWorkers===0;
-      let recovered=true;
-      if(mode!=='wait-init'&&mode!=='dispose') {try {recovered=(await worker.run('inspect',[bytes])).pages.length===1;}catch{recovered=false;}}
+      const recoveryAttempted=mode!=='wait-init'&&mode!=='dispose';
+      let recovered=true,recoveryError;
+      const recoveryStarted=performance.now();
+      if(recoveryAttempted) {
+        try {recovered=(await worker.run('inspect',[bytes],{recovery_delay_ms:3000})).pages.length===1;}
+        catch(error){recovered=false;recoveryError={code:error.code,message:error.message};}
+      }
+      const recoveryElapsedMs=performance.now()-recoveryStarted;
       worker.dispose();clearInterval(heartbeat);channel.close();
-      return {id:'lifecycle-'+mode,passed:code===expected&&idle&&busy&&recovered&&ticks>2&&quarantine&&blockedDuringRetirement,
-        code,idle,busy,recovered,ticks,quarantine,blockedDuringRetirement,retirementWaitMs,rejectedAtEpochMs,started:window.faultStarted};
+      return {id:'lifecycle-'+mode,passed:code===expected&&idle&&busy&&recovered&&ticks>2&&quarantine&&blockedDuringRetirement
+          &&(!recoveryAttempted||recoveryElapsedMs>2500),
+        code,idle,busy,recovered,recovery_error:recoveryError,recovery_elapsed_ms:recoveryElapsedMs,
+        recovery_attempted:recoveryAttempted,recovery_delay_ms:recoveryAttempted?3000:0,
+        fault_timeout_ms:2500,recovery_timeout_ms:DEFAULTS.timeoutMs,
+        ticks,quarantine,blockedDuringRetirement,retirementWaitMs,rejectedAtEpochMs,started:window.faultStarted};
     },{mode,job});
     await page.waitForFunction(job=>window.faultStartedJob===job,job,{timeout:2000});
     const live=(await cdp.send('Target.getTargets')).targetInfos.filter(t=>t.type==='worker'&&t.url.includes(job));

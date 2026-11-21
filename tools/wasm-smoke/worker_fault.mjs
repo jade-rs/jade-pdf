@@ -26,6 +26,12 @@ if(mode?.startsWith('raw-')) {
       }
       if(mode==='trap') throw new WebAssembly.RuntimeError('Injected WASM trap');
       if(mode==='large-json') return JSON.stringify('x'.repeat(4096));
+      // Cold SDK startup can exceed the short deadline used only to stop the fault.
+      if(params.recovery_delay_ms!==undefined) {
+        if(!Number.isSafeInteger(params.recovery_delay_ms)||params.recovery_delay_ms<0||params.recovery_delay_ms>5000)
+          throw new Error('Invalid recovery delay fixture');
+        await new Promise(resolve=>setTimeout(resolve,params.recovery_delay_ms));
+      }
       const operations=await loadPdfOperations();
       return operations.inspect(inputs,{});
     }};
