@@ -29,6 +29,21 @@
         "": "∨",
         "": "∑"
       }
+    },
+    {
+      "object": [
+        59,
+        0
+      ],
+      "base_font": "ABCDEE+MT Extra",
+      "sdk_name": "ABCDEE+MT Extra",
+      "encoding": "mt_extra",
+      "to_unicode_sha256": "2aa8356557a2fb5ef3c2336d7f6b2d7f084134c7e44f7114b7f71766d8e63ffc",
+      "program_sha256": "da81d1bd97275cf2f93c5fb62713bf1d2b29fbfe0fd14b21210324348e9b140d",
+      "aliases": {
+        "": "…",
+        "": "ℓ"
+      }
     }
   ],
   "method": "Original PDF dictionaries and pypdf 6.10.0 strict UTF-16; raw MCID inventory from independent SDK bindings. Symbol cmap inspected in memory using FontTools 4.60.2; no outlines exported. Conservation equivalences only, not full-page Unicode gold."

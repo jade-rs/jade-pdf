@@ -16,8 +16,13 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
-    let legacy = name.strip_prefix("symbol_unicode_").map(|mode| (mode, false))
-        .or_else(|| name.strip_prefix("mtextra_unicode_").map(|mode| (mode, true)));
+    let legacy = name
+        .strip_prefix("symbol_unicode_")
+        .map(|mode| (mode, false))
+        .or_else(|| {
+            name.strip_prefix("mtextra_unicode_")
+                .map(|mode| (mode, true))
+        });
     if let Some((mode, mt_extra)) = legacy {
         let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
             .map_err(|e| JsValue::from_str(&e.to_string()))?;
@@ -69,7 +74,11 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
             }
         } else if text.contains('≤')
             || text.contains('σ')
-            || (mt_extra && (text.contains('…') || text.contains('ℓ') || text.contains('Κ') || text.contains('λ')))
+            || (mt_extra
+                && (text.contains('…')
+                    || text.contains('ℓ')
+                    || text.contains('Κ')
+                    || text.contains('λ')))
             || !ir.pages[0].source_unicode_accounting_unavailable
         {
             return Err(JsValue::from_str(

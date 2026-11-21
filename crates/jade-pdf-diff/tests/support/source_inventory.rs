@@ -40,6 +40,9 @@ pub struct Actual {
 /// 一つの固定字体に対する独立した符号対応資料。
 #[derive(Clone, Deserialize)]
 pub struct Font {
+    /// 同じ私用符号の意味を混同しないための、資料ごとの符号表。
+    #[serde(default)]
+    encoding: Encoding,
     /// PDFのフォント辞書オブジェクト番号と世代。
     pub object: (u32, u16),
     /// 原文のBaseFont名。
@@ -52,6 +55,17 @@ pub struct Font {
     pub program_sha256: String,
     /// FontToolsと原文ToUnicodeから独立に照合した、私用符号と標準文字。
     pub aliases: BTreeMap<char, char>,
+}
+
+/// 独立した資料で確認した旧字体の符号表。
+#[derive(Clone, Default, Deserialize)]
+#[serde(rename_all = "snake_case")]
+enum Encoding {
+    /// Adobeの通知付きSymbol対応表。
+    #[default]
+    Symbol,
+    /// Mozillaの一次調査で確認した二つのMT Extra対応。
+    MtExtra,
 }
 
 /// 論理置換後の参照文字列と、文字保存量だけに使用する一意な等価対応。
@@ -152,6 +166,20 @@ fn verify(bytes: &[u8], gold: &Gold) -> Result<()> {
     }
     for g in &gold.fonts {
         ensure!(g.sdk_name == g.base_font, "Unverified SDK font name alias");
+        let name = g.base_font.as_bytes();
+        let name =
+            if name.len() > 7 && name[6] == b'+' && name[..6].iter().all(u8::is_ascii_uppercase) {
+                &name[7..]
+            } else {
+                name
+            };
+        ensure!(
+            match g.encoding {
+                Encoding::Symbol => matches!(name, b"Symbol" | b"SymbolMT"),
+                Encoding::MtExtra => matches!(name, b"MT Extra" | b"MT-Extra" | b"MTExtra"),
+            },
+            "Source encoding profile disagrees with font family"
+        );
         let matching: BTreeSet<_> = doc
             .objects
             .iter()
@@ -203,18 +231,35 @@ fn verify(bytes: &[u8], gold: &Gold) -> Result<()> {
                 "Not a reviewed legacy Symbol position"
             );
             let code = raw as u32 - 0xf000;
-            let candidates: BTreeSet<String> = include_str!("../../resources/adobe-symbol.txt")
-                .lines()
-                .filter(|s| !s.starts_with('#'))
-                .filter_map(|line| {
-                    let mut columns = line.split_whitespace();
-                    let unicode = u32::from_str_radix(columns.next()?, 16).ok()?;
-                    let byte = u32::from_str_radix(columns.next()?, 16).ok()?;
-                    use unicode_normalization::UnicodeNormalization;
-                    (byte == code)
-                        .then(|| char::from_u32(unicode).unwrap().to_string().nfc().collect())
-                })
-                .collect();
+            let candidates: BTreeSet<String> = if matches!(g.encoding, Encoding::MtExtra) {
+                let metadata: serde_json::Value =
+                    serde_json::from_str(include_str!("../../resources/mt-extra.json"))?;
+                let value = metadata["facts"][format!("0x{code:02X}")]
+                    .as_str()
+                    .context("Unreviewed MT Extra position")?;
+                let scalar = u32::from_str_radix(
+                    value
+                        .strip_prefix("U+")
+                        .context("Invalid reference scalar")?,
+                    16,
+                )?;
+                BTreeSet::from([char::from_u32(scalar)
+                    .context("Invalid reference scalar")?
+                    .to_string()])
+            } else {
+                include_str!("../../resources/adobe-symbol.txt")
+                    .lines()
+                    .filter(|s| !s.starts_with('#'))
+                    .filter_map(|line| {
+                        let mut columns = line.split_whitespace();
+                        let unicode = u32::from_str_radix(columns.next()?, 16).ok()?;
+                        let byte = u32::from_str_radix(columns.next()?, 16).ok()?;
+                        use unicode_normalization::UnicodeNormalization;
+                        (byte == code)
+                            .then(|| char::from_u32(unicode).unwrap().to_string().nfc().collect())
+                    })
+                    .collect()
+            };
             ensure!(
                 candidates.len() == 1
                     && candidates.contains(&target.to_string())
@@ -408,6 +453,7 @@ mod tests {
     /// 所有数だけを検証するための、原本検証とは分離した字体資料。
     fn font() -> Font {
         Font {
+            encoding: Encoding::Symbol,
             object: (1, 0),
             base_font: "Symbol".into(),
             sdk_name: "Symbol".into(),
@@ -482,6 +528,15 @@ mod tests {
                 assert!(verify(&bytes, &bad).is_err());
                 let mut bad = gold.clone();
                 bad.fonts[0].aliases.insert('\u{f0a3}', '≥');
+                assert!(verify(&bytes, &bad).is_err());
+                let mut bad = gold.clone();
+                bad.fonts[1].encoding = Encoding::Symbol;
+                assert!(verify(&bytes, &bad).is_err());
+                let mut bad = gold.clone();
+                bad.fonts[1].aliases.insert('\u{f04b}', 'Κ');
+                assert!(verify(&bytes, &bad).is_err());
+                let mut bad = gold.clone();
+                bad.fonts[0].encoding = Encoding::MtExtra;
                 assert!(verify(&bytes, &bad).is_err());
             }
         }
