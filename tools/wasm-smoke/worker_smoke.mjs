@@ -95,6 +95,14 @@ try {
         checks.push({operation:'visibleOperatorGold',passed,worker_idle:window.client.activeWorkers===0});
       }
       let semanticGold;
+      const contextGold=[];
+      for(const gold of entry.context_gold??[]) {
+        const {checkPageGold}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
+        const goldCheck=checkPageGold(ir,gold);
+        contextGold.push({page:gold.page,check:goldCheck,passed:goldCheck.matches});
+        checks.push({operation:'textContextGold',passed:goldCheck.matches,worker_idle:window.client.activeWorkers===0});
+      }
       if(entry.gold) {
         const {checkPageGold,pageHasTextReview,goldOutcomeAccepted}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
@@ -110,7 +118,7 @@ try {
       }
       return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle)
         &&(!semanticGold||semanticGold.accepted),
-        checks,...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
+        checks,...(contextGold.length?{context_gold:contextGold}:{}),...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
     },{...entry,symbol_operator_gold:(manifest.symbol_operator_gold??[]).filter(g=>g.id===entry.id)});
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
   }
@@ -283,6 +291,8 @@ try {
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_checks:documents.filter(d=>d.semantic_gold).length,semantic_gold_failures:documents.filter(d=>d.semantic_gold&&!d.semantic_gold.matches).length,
     semantic_gold_by_kind:goldByKind,
+    context_gold_checks:entries.reduce((n,e)=>n+(e.context_gold?.length??0),0),
+    context_gold_passed:documents.flatMap(d=>d.context_gold??[]).filter(c=>c.passed).length,
     semantic_gold_by_cohort:goldByCohort(documents.filter(d=>d.semantic_gold).map(d=>({
       cohort:d.semantic_gold.cohort,kind:d.semantic_gold.kind,matches:d.semantic_gold.matches}))),
     cases:results.length,passed:results.filter(x=>x.passed).length,results,document_results:documents};

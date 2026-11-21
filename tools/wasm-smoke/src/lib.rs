@@ -16,6 +16,39 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if name.starts_with("advance_") {
+        for unit in [1. / 64., 1., 3., 64.] {
+            for rotation in [0, 90, 180, 270] {
+                for reverse in [false, true] {
+                    let gap = if name == "advance_word_gap" { 6. } else { 0. };
+                    let revised = name == "advance_unicode_edit";
+                    let bytes = appearance_fixture::advance_word_layout(
+                        unit, rotation, reverse, gap, true, revised,
+                    );
+                    let ir =
+                        pdf_diff::load_document_from_bytes(&bytes, &pdf_diff::Limits::default())
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                    let layer = pdf_diff::text_layer_from_bytes(&bytes, 1)
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                    let expected = if revised {
+                        "17"
+                    } else if gap > 0. {
+                        "1 8"
+                    } else {
+                        "18"
+                    };
+                    if ir.pages[0].text() != expected
+                        || layer.len() != 1
+                        || layer[0].text != expected
+                    {
+                        return Err(JsValue::from_str(
+                            "Advance spacing changed under units, rotation or source order",
+                        ));
+                    }
+                }
+            }
+        }
+    }
     if name == "baseline_bucket_edit" {
         for unit in [1. / 64., 1., 3., 64.] {
             for rotation in [0, 90, 180, 270] {

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""通常資料の独立したページ全文goldを厳格に照合する。未達群とは別集計。"""
+"""通常資料の独立したページ全文と限定文脈goldを種類別に厳格照合する。"""
 import argparse
 import hashlib
 import json
@@ -24,6 +24,11 @@ def regular_cases(manifest):
             if type(entry.get('pages')) is not int or entry['pages'] != 1:
                 raise ValueError(f"{entry['id']}: legacy full_page_text requires one page")
             cases.append((entry, dict(page=1, kind='full_page_text', text=entry['full_page_text'])))
+        contexts = entry.get('context_gold', [])
+        if (not isinstance(contexts, list) or len(contexts) > 32
+                or any(not isinstance(gold, dict) or gold.get('kind') != 'text_context' for gold in contexts)):
+            raise ValueError(f"{entry['id']}: invalid bounded text contexts")
+        cases.extend((entry, gold) for gold in contexts)
     return cases
 
 
@@ -82,7 +87,7 @@ def main():
                   manifest_sha256=hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
                   audit_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                   gold_checker_sha256=hashlib.sha256((ROOT/'tools/semantic_gold.py').read_bytes()).hexdigest(),
-                  method='Only explicitly declared gold in the regular documents cohort. Full-page text compares all selected-page text using NFC and whitespace collapse, retaining order, marks and joiners. No substring match. No claim about other pages or highlight geometry. Unresolved pending_semantic cases remain separately audited and are not included or relabelled here. Equivalent rewrite agreement is not semantic accuracy.')
+                  method='Only declared gold in regular documents, reported separately by kind. Full-page text compares all selected-page text using NFC and whitespace collapse, retaining order, marks and joiners. text_context checks only one bounded literal context with a unique anchor; it does not assess full-page prose, other pages or highlight geometry. Unresolved pending_semantic cases remain separately audited. Equivalent rewrite agreement is not semantic accuracy.')
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')
     print(json.dumps({key: report[key] for key in ('cohort', 'cases', 'gold_by_kind', 'correct_cases',
                                                  'failed_cases', 'false_change_cases', 'execution_errors')}, ensure_ascii=False))

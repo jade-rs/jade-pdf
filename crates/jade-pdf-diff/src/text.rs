@@ -12,9 +12,14 @@ mod order;
 #[cfg(test)]
 #[path = "text/row_tests.rs"]
 mod row_tests;
+mod spacing;
 mod table;
 
 pub(crate) struct ExtractedRun {
+    /// 書字方向と送り幅を確認できた水平文字のセル。字面の座標とは分けて保持する。
+    advance: spacing::Edges,
+    /// 読み順を決めた後に除く、行結合時だけに生成した空白のスカラー位置。
+    pending_spaces: Vec<usize>,
     pub text: String,
     pub source_text_region: bool,
     pub source_text_anchor: bool,
@@ -39,6 +44,8 @@ pub(crate) struct ExtractedPage {
 }
 
 struct RunBuilder {
+    /// 現在の文字列の先頭と末尾について確認できた、水平送りセル。
+    advance: spacing::Edges,
     text: String,
     sdk_unicode_mapping_errors: usize,
     spans: Vec<(f64, f64)>,
@@ -59,6 +66,7 @@ struct RunBuilder {
 impl RunBuilder {
     fn new() -> Self {
         Self {
+            advance: spacing::Edges::default(),
             text: String::new(),
             sdk_unicode_mapping_errors: 0,
             spans: Vec::new(),
@@ -85,6 +93,12 @@ impl RunBuilder {
         if !self.text.trim().is_empty() {
             ensure!(output.len() < max_blocks, "PDF exceeds max_blocks_per_page {max_blocks}. No partial comparison was performed.");
             output.push(ExtractedRun {
+                pending_spaces: Vec::new(),
+                advance: if self.rtl || self.vertical == Some(true) {
+                    spacing::Edges::default()
+                } else {
+                    self.advance
+                },
                 text: std::mem::take(&mut self.text),
                 source_text_region: false,
                 source_text_anchor: false,
@@ -438,6 +452,22 @@ fn extract_unrotated_runs(
             run.tagged_cell = tagged_cell;
         }
         let em = size.or(run.size).unwrap_or(12.0 * point).max(point);
+        let advance = (!is_rtl(c))
+            .then(|| {
+                let loose = ch.loose_bounds().ok()?;
+                spacing::Cell::from_loose(
+                    origin.0,
+                    Bounds {
+                        x0: f64::from(loose.left().value),
+                        x1: f64::from(loose.right().value),
+                        y0: f64::from(loose.bottom().value),
+                        y1: f64::from(loose.top().value),
+                    },
+                    em,
+                    matrix?,
+                )
+            })
+            .flatten();
         let combining = unicode_normalization::char::canonical_combining_class(c) != 0
             || matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe0e}' | '\u{fe0f}');
         if let Some((x, y)) = run.last_origin {
@@ -553,10 +583,13 @@ fn extract_unrotated_runs(
         separated = false;
         generated_space = false;
         if run.text.is_empty() {
+            run.advance.first = advance;
             run.outside_mark = content.outside;
-        } else if run.outside_mark != content.outside {
-            // Mixed structural marks are not an unambiguous orphan cell.
-            run.outside_mark = None;
+        } else {
+            if run.outside_mark != content.outside {
+                // Mixed structural marks are not an unambiguous orphan cell.
+                run.outside_mark = None;
+            }
         }
         run.text.push(c);
         run.tagged_cell = tagged_cell;
@@ -588,6 +621,7 @@ fn extract_unrotated_runs(
             None => bounds,
         });
         if !combining {
+            run.advance.last = advance;
             run.last_origin = Some(origin);
             run.last_bounds = Some(bounds);
             run.last_baseline_end = baseline_end;
@@ -625,6 +659,8 @@ fn extract_unrotated_runs(
             .unwrap_or((region.bounds.x0, region.bounds.y1));
         let spans = vec![(region.bounds.x0, region.bounds.x1); text.chars().count()];
         output.push(ExtractedRun {
+            pending_spaces: Vec::new(),
+            advance: spacing::Edges::default(),
             text,
             source_text_region: true,
             source_text_anchor: region.anchor,
@@ -907,6 +943,15 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
                 && !current.text.ends_with(char::is_whitespace)
                 && !next.text.starts_with(char::is_whitespace)
             {
+                if !spacing::requires_space(
+                    if rtl { None } else { current.advance.last },
+                    next.advance.first,
+                    ink_gap,
+                    em,
+                ) {
+                    // 読み順の添字判定は、空白を補正する前の独立した入力で行う。
+                    current.pending_spaces.push(current.spans.len());
+                }
                 current.text.push(' ');
                 current.spans.push((
                     if rtl {
@@ -922,6 +967,10 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
                 ));
             }
             let offset = current.spans.len();
+            current
+                .pending_spaces
+                .extend(next.pending_spaces.into_iter().map(|i| i + offset));
+            current.advance.last = next.advance.last;
             current
                 .source_regions
                 .extend(next.source_regions.into_iter().map(|mut region| {
@@ -953,7 +1002,7 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
     // top-to-bottom sort would interleave the two columns of a paper.
     let vertical = result.iter().filter(|r| r.vertical).count() > result.len() / 2;
     if !vertical {
-        return table::sort(result, point);
+        return spacing::finish_order(table::sort(result, point));
     }
     // Origins come from PDF positioning operators and are independent of the
     // platform's substitute font ink metrics (notably native vs browser CID fonts).
@@ -985,7 +1034,7 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
             .then_with(|| b.origin.1.total_cmp(&a.origin.1))
             .then_with(|| a.layout.x0.total_cmp(&b.layout.x0))
     });
-    result
+    spacing::finish_order(result)
 }
 
 fn is_dot_leader(text: &str) -> bool {

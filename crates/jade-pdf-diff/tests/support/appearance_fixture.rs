@@ -1,6 +1,9 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "advance_touching",
+    "advance_word_gap",
+    "advance_unicode_edit",
     "baseline_bucket_edit",
     "mtextra_unicode_valid",
     "mtextra_unicode_edit",
@@ -1171,6 +1174,16 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if case.starts_with("advance_") {
+        return advance_word_layout(
+            1.,
+            0,
+            revised,
+            if case == "advance_word_gap" { 6. } else { 0. },
+            case != "advance_touching" || revised,
+            case == "advance_unicode_edit" && revised,
+        );
+    }
     if case == "baseline_bucket_edit" {
         return baseline_bucket_layout(1., 0, 0., revised);
     }
@@ -2125,6 +2138,39 @@ BT /F2 12 Tf 107 {y:.17} Td (79,) Tj ET Q",
         stream(symbol_glyph_font(),"/Filter /ASCIIHexDecode"),
         stream("/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <0000> <FFFF> endcodespacerange 2 beginbfchar <0001> <F0A3> <0002> <F03C> endbfchar endcmap end end",""),
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+    ])
+}
+
+/// 自作矩形字形の送り幅を字面より広くし、同じ文字列を分割・逆順の別オブジェクトで描く。
+pub fn advance_word_layout(
+    unit: f64,
+    rotation: u16,
+    reverse: bool,
+    gap: f64,
+    split: bool,
+    revised: bool,
+) -> Vec<u8> {
+    let second = 32. + gap;
+    let first = "BT /F1 12 Tf 20 100 Td <0001> Tj ET";
+    let last = format!("BT /F1 12 Tf {second:.17} 100 Td <0002> Tj ET");
+    let body = if !split {
+        "BT /F1 12 Tf 20 100 Td <00010002> Tj ET".to_string()
+    } else if reverse {
+        format!("{last}\n{first}")
+    } else {
+        format!("{first}\n{last}")
+    };
+    let content = format!("q {s:.17} 0 0 {s:.17} 0 0 cm {body} Q", s = 1. / unit);
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {} {}] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>",200./unit,200./unit),
+        "<< /Type /Font /Subtype /Type0 /BaseFont /OwnedAdvance /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 9 0 R >>".into(),
+        stream(&content,""),
+        "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /OwnedAdvance /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 7 0 R /CIDToGIDMap /Identity /DW 1000 >>".into(),
+        "<< /Type /FontDescriptor /FontName /OwnedAdvance /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile2 8 0 R >>".into(),
+        stream(symbol_glyph_font(),"/Filter /ASCIIHexDecode"),
+        stream(&format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <0000> <FFFF> endcodespacerange 2 beginbfchar <0001> <0031> <0002> <{}> endbfchar endcmap end end",if revised {"0037"} else {"0038"}),""),
     ])
 }
 

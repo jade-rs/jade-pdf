@@ -16,6 +16,12 @@ def sequence(page):
     return unicodedata.normalize('NFC',''.join(c for b in page['blocks'] for c in b['text'] if not c.isspace()))
 
 
+def block_inventory(page):
+    """各ブロックの文字列と元座標の所有を保ち、空白・ブロックの出力順だけを除外する。"""
+    return sorted(json.dumps([block['bounds'], block['size'], sequence(dict(blocks=[block]))],
+                             sort_keys=True, ensure_ascii=False, allow_nan=False) for block in page['blocks'])
+
+
 def main():
     """変更の有無を記録し、文字順または診断が変われば目視による裁定を要求する。"""
     parser=argparse.ArgumentParser(description=__doc__)
@@ -41,11 +47,14 @@ def main():
             if old_text!=new_text or len(a['blocks'])!=len(b['blocks']) or diagnostic:
                 rows.append(dict(page=i,old_blocks=len(a['blocks']),new_blocks=len(b['blocks']),
                     text_changed=old_text!=new_text,ordered_scalars_changed=before!=after,diagnostic_changes=diagnostic,
+                    block_inventory_changed=block_inventory(a)!=block_inventory(b),
+                    old_text=old_text,new_text=new_text,
                     old_ordered_sha256=hashlib.sha256(before.encode()).hexdigest(),new_ordered_sha256=hashlib.sha256(after.encode()).hexdigest()))
         return dict(id=entry['id'],source_sha256=entry['sha256'],pages=entry['pages'],changes=rows)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(compare,manifest['documents']))
     rows=[r for d in results for r in d['changes']]
     report=dict(documents=len(results),pages=sum(d['pages'] for d in results),changed_pages=len(rows),
+        changed_block_inventory_pages=sum(r['block_inventory_changed'] for r in rows),
         changed_ordered_scalar_pages=sum(r['ordered_scalars_changed'] for r in rows),
         changed_diagnostic_pages=sum(bool(r['diagnostic_changes']) for r in rows),
         old_blocks_on_changed_pages=sum(r['old_blocks'] for r in rows),new_blocks_on_changed_pages=sum(r['new_blocks'] for r in rows),
@@ -54,8 +63,8 @@ def main():
         manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         scope='Native before/after ordered scalar sequence after NFC and whitespace removal, plus existing diagnostics. Unchanged output does not establish Unicode accuracy or whole-document diff precision/recall.')
     args.report.parent.mkdir(parents=True,exist_ok=True);args.report.write_text(json.dumps(report,ensure_ascii=False,indent=2)+'\n')
-    print(json.dumps({k:report[k] for k in ['documents','pages','changed_pages','changed_ordered_scalar_pages','changed_diagnostic_pages']},ensure_ascii=False))
-    return 3 if report['changed_ordered_scalar_pages'] or report['changed_diagnostic_pages'] else 0
+    print(json.dumps({k:report[k] for k in ['documents','pages','changed_pages','changed_ordered_scalar_pages','changed_block_inventory_pages','changed_diagnostic_pages']},ensure_ascii=False))
+    return 3 if report['changed_ordered_scalar_pages'] or report['changed_block_inventory_pages'] or report['changed_diagnostic_pages'] else 0
 
 
 if __name__=='__main__':raise SystemExit(main())

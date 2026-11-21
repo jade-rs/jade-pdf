@@ -1787,6 +1787,15 @@
       "category": "NIST ITL technical bulletin / page-scoped independent full text",
       "text_fragments": [
         "Disclaimer"
+      ],
+      "context_gold": [
+        {
+          "page": 1,
+          "kind": "text_context",
+          "text": "standard replaces FIPS 180-3 and specifies seven secure hash algorithms.",
+          "anchor": "standard replaces FIPS",
+          "scope": "Only the complete selected printed line on original page1, visually confirmed with Poppler and independently interpreted source advances. Not full-page prose, source encoding accuracy, other contexts or highlight geometry."
+        }
       ]
     }
   ],

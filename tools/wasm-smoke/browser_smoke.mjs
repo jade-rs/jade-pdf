@@ -158,6 +158,7 @@ try {
   for (const entry of documents) {
     const started = Date.now();
     let semanticGold;
+    const contextGold=[];
     try {
       const file = path.join(root,'corpus/cache',entry.id+'.pdf');
       const data = await fs.readFile(file);
@@ -286,6 +287,12 @@ try {
             at,native:old.slice(Math.max(0,at-30),at+60),wasm:next.slice(Math.max(0,at-30),at+60)}));
         }
       }
+      for(const gold of entry.context_gold??[]) {
+        const nativeCheck=checkPageGold(expected,gold),wasmCheck=checkPageGold(actual.ir,gold);
+        const passed=nativeCheck.matches&&wasmCheck.matches;
+        contextGold.push({page:gold.page,native_check:nativeCheck,wasm_check:wasmCheck,passed});
+        if(!passed) throw new Error('Scoped text context mismatch: '+entry.id);
+      }
       if(entry.gold) {
         const nativeCheck=checkPageGold(expected,entry.gold), wasmCheck=checkPageGold(actual.ir,entry.gold);
         semanticGold={cohort:entry.semantic_gold_cohort,kind:nativeCheck.kind,native_check:nativeCheck,wasm_check:wasmCheck,
@@ -345,8 +352,10 @@ try {
         results.push(gold);console.log('PASS '+JSON.stringify(gold));
       }
       results.push({id:entry.id,passed:true,pages:expected.pages.length,png_bytes:actual.png_bytes,ms:Date.now()-started,
+        ...(contextGold.length?{context_gold:contextGold}:{}),
         ...(semanticGold?{semantic_gold:semanticGold}:{})});
     } catch(error) { results.push({id:entry.id,passed:false,error:String(error),ms:Date.now()-started,
+      ...(contextGold.length?{context_gold:contextGold}:{}),
       ...(semanticGold?{semantic_gold:semanticGold}:{})}); }
     console.log((results.at(-1).passed?'PASS ':'FAIL ')+entry.id+' '+JSON.stringify(results.at(-1)));
   }
@@ -451,7 +460,15 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name==='baseline_bucket_edit') {
+        if(name.startsWith('advance_')) {
+          passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
+          if(name==='advance_unicode_edit') {
+            const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');
+            passed&&=summary.blocks_changed===1&&summary.blocks_added===0&&summary.blocks_removed===0
+              &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')==='8'
+              &&blocks[0].segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')==='7';
+          } else passed&&=Object.values(summary).every(v=>v===0);
+        } else if(name==='baseline_bucket_edit') {
           const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');
           passed&&=result.complete&&result.text_complete&&summary.blocks_changed===1&&summary.blocks_added===0&&summary.blocks_removed===0&&summary.pages_visual_changed===0
             &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')==='<'
@@ -782,6 +799,8 @@ try {
     scalar_revision_gold_checks:results.filter(r=>r.id.startsWith('scalar-revision-gold-')).length,
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_by_kind:goldByKind,
+    context_gold_checks:documents.reduce((n,e)=>n+(e.context_gold?.length??0),0),
+    context_gold_passed:results.flatMap(r=>r.context_gold??[]).filter(c=>c.passed).length,
     semantic_gold_by_cohort:goldByCohort(documents.filter(e=>e.gold).map(e=>({
       cohort:e.semantic_gold_cohort,kind:e.gold.kind??'full_page_text',
       matches:results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)}))),

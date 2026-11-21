@@ -11,6 +11,8 @@ fn run(text: &str, x: f64, y: f64, size: f64, point: f64) -> ExtractedRun {
         y1: (y + 8.) * point,
     };
     ExtractedRun {
+        pending_spaces: Vec::new(),
+        advance: Default::default(),
         text: text.into(),
         source_text_region: false,
         source_text_anchor: false,
@@ -26,6 +28,38 @@ fn run(text: &str, x: f64, y: f64, size: f64, point: f64) -> ExtractedRun {
         tagged_cell: None,
         outside_mark: None,
     }
+}
+
+/// 補助文字のUTF-8バイト幅によらず、生成空白・文字セル・原文領域を同じ添字で更新する。
+#[test]
+fn deferred_spacing_preserves_source_region_and_character_cell_ownership() {
+    let mut value = run("A", 0., 10., 12., 1.);
+    value.text = "𐐀 B C".into();
+    value.spans = vec![(0., 1.), (1., 1.), (2., 3.), (3., 3.), (4., 5.)];
+    value.pending_spaces = vec![1];
+    value.sdk_unicode_mapping_errors = 1;
+    let bounds = value.bounds;
+    value.source_regions = vec![crate::render::SourceTextRegion {
+        start: 2,
+        end: 5,
+        bounds,
+        anchor: false,
+    }];
+    let result = super::spacing::finish_order(vec![value]);
+    assert_eq!(result[0].text, "𐐀B C");
+    assert_eq!(
+        result[0].spans,
+        vec![(0., 1.), (2., 3.), (3., 3.), (4., 5.)]
+    );
+    assert_eq!(
+        (
+            result[0].source_regions[0].start,
+            result[0].source_regions[0].end
+        ),
+        (1, 4)
+    );
+    assert_eq!(result[0].source_regions[0].bounds, bounds);
+    assert_eq!(result[0].sdk_unicode_mapping_errors, 1);
 }
 
 /// NIST原本と同じ微小な字号・ベースライン差でも、同じ行を断片化しない。

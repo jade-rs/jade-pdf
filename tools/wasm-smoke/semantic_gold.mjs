@@ -69,6 +69,17 @@ export function pageHasTextReview(page) {
 
 export function checkGold(actual,gold) {
   const kind=gold.kind??'full_page_text';
+  if(kind==='text_context') {
+    const values=['text','anchor','scope'].map(key=>gold[key]);
+    if(values.some(value=>typeof value!=='string'||!value.trim()||[...value].length>2048))
+      throw new Error('Text context requires bounded nonempty text, anchor and scope');
+    const [expected,anchor]=values.slice(0,2).map(normalizeText);
+    const count=(text,part)=>text.split(part).length-1;
+    if(count(expected,anchor)!==1) throw new Error('Text context anchor must occur once within expected context');
+    const actualText=normalizeText(actual),contexts=count(actualText,expected),anchors=count(actualText,anchor);
+    return {kind,scope:gold.scope,matches:contexts===1&&anchors===1,
+      expected_context:gold.text,context_occurrences:contexts,anchor_occurrences:anchors};
+  }
   if(kind==='full_page_text') {
     if(typeof gold.text!=='string') throw new Error('Full-page text gold requires expected text');
     return {kind,matches:normalizeText(actual)===normalizeText(gold.text),expected_text:gold.text,actual_text:actual};

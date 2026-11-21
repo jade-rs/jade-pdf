@@ -34,6 +34,13 @@ for(const value of ['', ' \n', '\u0085', '\u001c', null, 4])
   assert.throws(()=>compactFragmentMatches('anything',{compact_fragment:value}));
 
 const clean={blocks:[{text:'wrong'}],user_unit:null};
+const context={kind:'text_context',text:'replaces FIPS 180-3 and specifies',anchor:'replaces FIPS',scope:'One printed line, not page prose or geometry'};
+assert.equal(checkGold('prefix\nreplaces FIPS 180-3 and specifies\nsuffix',context).matches,true);
+for(const text of ['replaces FIPS 1 80-3 and specifies','replaces FIPS 180-3 and\u200dspecifies',
+  context.text+'\nreplaces FIPS 1 80-3 and specifies',context.text+'\n'+context.text])
+  assert.equal(checkGold(text,context).matches,false);
+for(const change of [{text:''},{text:' '},{text:'a'.repeat(2049)},{anchor:''},{anchor:'absent'},{scope:''},{text:null}])
+  assert.throws(()=>checkGold('',{...context,...change}));
 assert.equal(pageHasTextReview(clean),false);
 for(const field of ['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
   'source_text_characters_missing','source_unicode_scalars_unmatched'])

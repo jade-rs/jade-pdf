@@ -60,6 +60,17 @@ def inventory_spec(gold):
 def check_gold(actual, gold):
     """Return the exact check kind and evidence; an inventory is not full-page gold."""
     kind = gold.get('kind', 'full_page_text')
+    if kind == 'text_context':
+        values = [gold.get(key) for key in ('text', 'anchor', 'scope')]
+        if any(not isinstance(value, str) or not value.strip() or len(value) > 2048 for value in values):
+            raise ValueError('Text context requires bounded nonempty text, anchor and scope')
+        expected, anchor = map(normalize_text, values[:2])
+        if expected.count(anchor) != 1:
+            raise ValueError('Text context anchor must occur once within the expected context')
+        normalized = normalize_text(actual)
+        count, anchors = normalized.count(expected), normalized.count(anchor)
+        return dict(kind=kind, scope=gold['scope'], matches=count == anchors == 1,
+                    expected_context=gold['text'], context_occurrences=count, anchor_occurrences=anchors)
     if kind == 'full_page_text':
         expected = gold.get('text')
         if not isinstance(expected, str):

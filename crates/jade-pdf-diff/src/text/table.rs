@@ -450,6 +450,8 @@ pub(super) fn sort(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
         // replaced with all original members below, never exported as text.
         // A whitespace sentinel prevents inline-script attachment heuristics.
         units.push(ExtractedRun {
+            advance: Default::default(),
+            pending_spaces: Vec::new(),
             source_text_region: false,
             source_text_anchor: false,
             source_regions: Vec::new(),
@@ -502,6 +504,8 @@ mod tests {
                     y1: 1000.0 - f64::from(row),
                 };
                 ExtractedRun {
+                    advance: Default::default(),
+                    pending_spaces: Vec::new(),
                     source_text_region: false,
                     source_text_anchor: false,
                     source_regions: Vec::new(),
@@ -547,6 +551,8 @@ mod tests {
                     y1: 1.0,
                 };
                 ExtractedRun {
+                    advance: Default::default(),
+                    pending_spaces: Vec::new(),
                     source_text_region: false,
                     source_text_anchor: false,
                     source_regions: Vec::new(),
