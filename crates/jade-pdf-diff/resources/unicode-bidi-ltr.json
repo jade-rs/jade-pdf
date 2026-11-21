@@ -1,0 +1,11 @@
+{
+  "unicode_version": "18.0.0",
+  "source": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedBidiClass.txt",
+  "source_sha256": "d9e23222522551348ea1ccfbb4f62efbf98982afb95840f8959c08ed992c5607",
+  "generated": "src/strong_ltr_data.rs",
+  "generator": "tools/generate_strong_ltr.py",
+  "scope": "Explicit Bidi_Class=L scalar ranges only; no @missing defaults, unassigned code points or surrogate ranges. Adjacent intervals merged.",
+  "license": "Unicode License V3",
+  "license_file": "unicode-license-v3.txt",
+  "license_sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+}

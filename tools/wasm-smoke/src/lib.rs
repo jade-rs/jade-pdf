@@ -16,6 +16,29 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("named_unicode_") {
+        let expected = match mode {
+            "edit" | "equivalent" => "A𐐌C",
+            "collision" => "𐐌\u{2040c}",
+            "bmp_collision" => "𐐌Ќ",
+            "direction" => "😀",
+            _ => return Err(JsValue::from_str("Unknown named Unicode case")),
+        };
+        let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let layer = pdf_diff::text_layer_from_bytes(&new, 1)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        if ir.pages[0].text() != expected
+            || layer.iter().map(|r| r.text.as_str()).collect::<String>() != expected
+            || ir.pages[0].source_unicode_scalars_unmatched != 0
+            || ir.pages[0].source_unicode_accounting_unavailable
+            || ir.pages[0].sdk_unicode_mapping_errors != 0
+        {
+            return Err(JsValue::from_str(
+                "Embedded glyph names lost declared Unicode",
+            ));
+        }
+    }
     if let Some(mode) = name.strip_prefix("rtl_unicode_") {
         let expected = match mode {
             "equivalent" => Some("لخ"),

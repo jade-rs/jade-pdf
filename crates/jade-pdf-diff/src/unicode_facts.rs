@@ -27,6 +27,8 @@ pub(crate) struct PageFacts {
     pub reading_order_requires_review: bool,
     /// 原文で一意に確認した、同一文字セル内の RTL 順序補正。
     pub rtl_order: crate::rtl_order::Corrections,
+    /// 原文と字形セルから検証した、Windowsの補助文字の復元。
+    pub supplementary: crate::supplementary_glyph::Corrections,
     pub actual_regions: Vec<crate::actual_text::Region>,
     pub projected_empty: bool,
     pub preserve_object_boundaries: bool,
@@ -281,6 +283,7 @@ pub(crate) fn read(
                     table_declarations: table_facts.declarations,
                     reading_order_requires_review: table_facts.requires_review,
                     rtl_order: crate::rtl_order::Corrections::default(),
+                    supplementary: crate::supplementary_glyph::Corrections::default(),
                     actual_regions: projection.regions.clone(),
                     projected_empty: false,
                     preserve_object_boundaries: projection
@@ -456,6 +459,13 @@ pub(crate) fn read(
                     }
                     None => facts.source_text_accounting_unavailable = true,
                 }
+                facts.supplementary = crate::supplementary_glyph::read(
+                    pdfium,
+                    text.cast(),
+                    &facts,
+                    units.source_unicode(number),
+                    &mut observed_unicode,
+                );
                 if let Some(source) = units.source_unicode(number) {
                     facts.source_unicode_accounting_unavailable |= source.unavailable;
                     let missing: usize = source

@@ -49,6 +49,7 @@ mod canonical_forms;
 mod comparison;
 mod diff;
 mod geometry;
+mod glyph_cell;
 mod input;
 mod ir;
 #[cfg(not(target_arch = "wasm32"))]
@@ -68,6 +69,8 @@ mod rtl_order;
 mod scan;
 mod sdk_probes;
 mod source_text;
+mod strong_ltr;
+mod supplementary_glyph;
 mod tagged_table;
 mod text;
 mod unicode_facts;

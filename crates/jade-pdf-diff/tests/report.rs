@@ -1,5 +1,5 @@
 //! 不正な入力ファイルと存在しないパスのエラーを検証する。
-use std::path::Path;
+use std::io::{Error as IoError, ErrorKind};
 
 use pdf_diff::{load_document_blocking, Limits};
 
@@ -11,13 +11,29 @@ fn rejects_files_that_are_not_pdf() {
     assert!(load_document_blocking(&path, &Limits::default()).is_err());
 }
 
+/// OSや表示言語に依存せず、対象パスとファイル未発見の型付き原因を返す。
 #[test]
 fn reports_a_missing_file() {
-    let error =
-        load_document_blocking(Path::new("/nonexistent/none.pdf"), &Limits::default()).unwrap_err();
-    let message = error.to_string();
-    assert!(
-        message.contains("none.pdf") && message.contains("No such file"),
-        "unexpected error: {message}"
-    );
+    let directory = tempfile::tempdir().unwrap();
+    for path in [
+        directory.path().join("none.pdf"),
+        directory
+            .path()
+            .join("未作成のディレクトリ")
+            .join("none.pdf"),
+    ] {
+        let error = load_document_blocking(&path, &Limits::default()).unwrap_err();
+        let message = error.to_string();
+        assert!(
+            message.contains(&path.display().to_string()),
+            "unexpected error: {message}"
+        );
+        assert_eq!(
+            error
+                .downcast_ref::<IoError>()
+                .expect("Missing original I/O error")
+                .kind(),
+            ErrorKind::NotFound
+        );
+    }
 }

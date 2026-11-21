@@ -99,6 +99,7 @@ impl PageProjection {
                 merge_unicode(&mut self.outside, part);
             } else {
                 minimum = minimum.saturating_sub(self.glyphs[index]);
+                self.outside.glyph_ownership_unavailable = true;
                 for c in self.actual.groups[index].text.chars() {
                     unicode::add_scalar(&mut self.outside.scalars, c);
                 }

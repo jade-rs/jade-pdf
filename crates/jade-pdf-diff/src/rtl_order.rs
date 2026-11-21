@@ -5,6 +5,7 @@ use std::collections::BTreeMap;
 use std::ffi::c_void;
 use unicode_normalization::UnicodeNormalization;
 
+use crate::glyph_cell::{Cell, Inventory};
 use crate::source_text::unicode::{rtl_key, rtl_letter, Facts};
 use crate::unicode_facts::{self, PageFacts};
 
@@ -77,9 +78,6 @@ impl Corrections {
     }
 }
 
-/// SDK が公開する同一オブジェクトと六つの座標から成るセル識別子。
-#[derive(PartialEq)]
-struct Cell([u64; 7]);
 /// 連続する同一セルの文字。256文字を超えた内容は候補として保存しない。
 struct Group {
     /// オブジェクト・矩形・原点の厳密な一致。
@@ -102,31 +100,6 @@ struct Matches {
     reversals: Vec<(usize, usize)>,
     /// 正順・逆順のどちらでも原文と一致しない場合。
     ambiguous: bool,
-}
-
-/// 座標が不明・非有限なら所有関係を推測しない。
-fn cell(pdfium: &Pdfium, text: *mut c_void, index: i32) -> Option<Cell> {
-    let b = pdfium.bindings();
-    let object = b.FPDFText_GetTextObject(text.cast(), index);
-    if object.is_null() {
-        return None;
-    }
-    let (mut l, mut r, mut bottom, mut top, mut x, mut y) = (0., 0., 0., 0., 0., 0.);
-    if b.FPDFText_GetCharBox(text.cast(), index, &mut l, &mut r, &mut bottom, &mut top) == 0
-        || b.FPDFText_GetCharOrigin(text.cast(), index, &mut x, &mut y) == 0
-    {
-        return None;
-    }
-    let values: [f64; 6] = [l, r, bottom, top, x, y];
-    if values.iter().any(|v| !v.is_finite()) {
-        return None;
-    }
-    let mut key = [0; 7];
-    key[0] = object as usize as u64;
-    for (slot, value) in key[1..].iter_mut().zip(values) {
-        *slot = if value == 0. { 0 } else { value.to_bits() };
-    }
-    Some(Cell(key))
 }
 
 /// 使用された原文の対応表と一致するセルだけを数える。
@@ -175,6 +148,7 @@ pub(crate) fn read(
     output.requires_review = true;
     if source.rtl_unavailable
         || source.unavailable
+        || source.glyph_ownership_unavailable
         || facts.errors != 0
         || facts.source_text_characters_missing != 0
         || facts.source_unicode_scalars_unmatched != 0
@@ -186,7 +160,7 @@ pub(crate) fn read(
     }
     let b = pdfium.bindings();
     let mut group: Option<Group> = None;
-    let mut groups = 0;
+    let mut cells = Inventory::default();
     let mut matches = BTreeMap::new();
     for index in 0..facts.characters {
         if facts.projected(index) {
@@ -202,7 +176,6 @@ pub(crate) fn read(
         let generated = b.FPDFText_IsGenerated(text.cast(), index as i32);
         if generated == 1 {
             if let Some(old) = group.take() {
-                groups += 1;
                 finish(old, source, &mut matches);
             }
             continue;
@@ -210,7 +183,7 @@ pub(crate) fn read(
         if generated != 0 {
             return output;
         }
-        let Some(cell) = cell(pdfium, text, index as i32) else {
+        let Some(cell) = Cell::read(pdfium, text, index as i32) else {
             return output;
         };
         let raw = b.FPDFText_GetUnicode(text.cast(), index as i32);
@@ -227,8 +200,10 @@ pub(crate) fn read(
         };
         if group.as_ref().is_none_or(|g| g.cell != cell) {
             if let Some(old) = group.take() {
-                groups += 1;
                 finish(old, source, &mut matches);
+            }
+            if cells.insert(cell).is_none() {
+                return output;
             }
             group = Some(Group {
                 cell,
@@ -246,12 +221,11 @@ pub(crate) fn read(
         }
     }
     if let Some(old) = group {
-        groups += 1;
         finish(old, source, &mut matches);
     }
     // SDK の一文字コードは一つのセルにしか対応しない。欠落や重なりでセルが
     // 合流した場合は、文字集合が偶然一致しても補正しない。
-    if groups != source.glyphs {
+    if cells.len() != source.glyphs {
         return output;
     }
     let mut ranges = Vec::new();

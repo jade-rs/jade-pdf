@@ -16,6 +16,8 @@ CLI の比較モードの終了コードは `0`: 検出対象の変更なし、`
 `2`: 引数・読み込み・解析・実行の失敗（プロセス上限を含む）、`3`: 描画・対応付けの計算上限や未対応の対話要素により要確認。
 `3` のときも差分 JSON は出力する。
 
+Rustの `load_document()` / `load_document_blocking()` は、ファイル情報の取得失敗を対象パスの文脈と元の `std::io::Error` とともに返す。`anyhow::Error::downcast_ref::<std::io::Error>()` で `ErrorKind::NotFound` などを確認でき、OSや表示言語の文字列へ依存する必要がない。
+
 CLIは各処理を子プロセスで実行する。既定は子の実行120秒、メモリ2GiB、標準出力・標準エラー・
 PNGの合計64MiB。コマンドの前に `--timeout-ms`、`--max-memory-mb`、`--max-output-mb` で変更できる。
 上限到達・クラッシュは終了コード2とし、途中のJSONは返さない。PNGは正常終了後に原子的に置き換える。
@@ -32,7 +34,7 @@ LinuxはRSSとSwapに加えてRLIMIT_ASを適用する。監視間の増大やOS
 `with_process_limits()` と `with_temporary_directory()` で実行上限と一時保存先を指定できる。
 
 バイト入力・通信・PNGは匿名スプールを使う。Unixでは内容を書き込む前にリンク数0を確認し、
-Windowsでは最後のハンドルを閉じると削除する一時ファイルを使う（Windows実行は未確認）。
+Windowsでは最後のハンドルを閉じると削除する一時ファイルを使う。OS別のSDK取得・キャッシュ修復・隔離APIの実行結果は、対象コミットのCIで確認する。
 操作用ディレクトリは終了時に明示的に閉じ、後始末の失敗もエラーにする。
 入力の一時保存は1ファイルごとの `Limits.max_input_mb` で制限し、子の実行時間とは別に計測する。
 通信メタデータは1MiB、受信JSONは深さ256までとし、浮動小数点の正確な往復を有効にして座標を保つ。
@@ -92,6 +94,10 @@ Unicode側の予算は文書全体で展開CMap8MiB、400万作業単位、512�
 単純フォントのDifferencesは、コミットとSHA-256を固定したAdobe Glyph List 2.0の4,281名と、AGLの `uni`／`u` 命名規則で照合する。
 `union` や `uacute` など、表にある正式名を汎用の接頭辞規則より先に扱う。小文字の16進数、`uni` 内のサロゲート、非標準の別名、不明な複合名は確定した原文Unicodeにしない。
 グリフ名は4,096バイト・対応先はUTF-8で1,024バイトまで。名前の読み取りを文書の作業予算に、単純フォント表を8MiBのUnicode対応保存予算に含める。
+Windowsの固定SDKが正式な字形名の補助文字を下位16ビットへ切り詰める場合は、原文の使用字形名・使用回数と、同一オブジェクト・矩形・原点のセルを照合して復元する。
+原文解析が完全で、欠落・未観測・SDK変換エラー・ActualText置換がなく、重複を除いたセル数が原文コード数と一致し、復元後の文字集合全体が一致することを必要とする。元の値と補助文字がともにUnicode 18.0.0の公式データで明示的な左から右の強い文字（Bidi_Class=L）の場合に限り、通常のBMP文字との衝突や同じ下位値を持つ複数候補は推測しない。
+ToUnicodeの明示対応から候補を作らず、正常に復元済みのUTF-16対も補正対象にしない。復元した文字も元のセル座標を保持し、二度の読み取りの生Unicode・座標を指紋で検証する。原文の補助文字資料は1,024種類、RTL補正を含むセル一覧は20万個を上限とする。
+未割当の既定値Lは復元の証明に使わない。公式の固定SHA-256・生成方法・Unicode License V3は `resources/unicode-bidi-ltr.json` に記録し、`tools/generate_strong_ltr.py` で再生成できる。追加の実行時依存は不要である。
 未対応の複合CMap、継承CMap、不正なUTF-16などを推測で補完しない。
 多重集合の一致も順序・位置・原文全体の完全性の証明ではない。
 構造要素のActualTextは、ページ・MCID・Formの名前空間、ParentTreeの逆参照と祖先関係を原文から確認して反映する。
@@ -257,7 +263,7 @@ await pdf.whenIdle();
 
 公開 PDF の取得・精度評価・対応範囲は [corpus/README.md](../corpus/README.md) を参照。
 
-MIT License.
+プロジェクトのコードは [PolyForm Noncommercial 1.0.0](../LICENSE) に従う。SDKと公開資料は各権利者のライセンスに従う。
 
 空のAcroForm辞書は、Fields配列が空で、使用されない外観既定値だけを持ち、
 予算付きの全オブジェクト走査でフィールド・Widget・注釈・動的アクションが見つからない
@@ -276,3 +282,22 @@ MIT License.
 フォーム辞書のnull項目と存在しないオブジェクトへの参照は、省略と同じ意味に正規化する。
 配列中のnull要素は保持する。無名の子Widgetが親の型や既定値を繰り返しても、
 意味が一致する場合だけ同じフィールドの制御と扱い、保存値一覧を重複エラーで失わない。
+
+
+ブラウザーの直接WASM検証では、Chromeに加えてPlaywrightのFirefox・WebKitを同じ公開PDF・生成条件で実行する。エンジン名とバージョンをレポートへ記録する。
+
+```sh
+cd tools/wasm-smoke
+npm ci
+npx playwright install firefox webkit
+cd ../..
+JADE_PDF_BROWSER_ENGINE=firefox JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_BROWSER_REPORT=corpus/results-browser-firefox.json node tools/wasm-smoke/browser_smoke.mjs
+JADE_PDF_BROWSER_ENGINE=webkit JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_BROWSER_REPORT=corpus/results-browser-webkit.json node tools/wasm-smoke/browser_smoke.mjs
+```
+
+実行前に公開PDFの取得と `python3 tools/wasm-smoke/prepare_runtime.py --build` が必要である。エンジン指定を省略するとChromiumを使い、不明な名前は明示的に拒否する。`JADE_PDF_BROWSER` は選択したエンジンの実行ファイルを指定する。
+直接WASMの精度検証とWorkerの強制終了検証は別の証拠である。Workerの既存全監査はChromium CDPで対象の消滅まで観測するため、Firefox/WebKitを指定した実行では成功扱いにせず拒否する。WebKitの検証はPlaywrightのWebKitビルドであり、Safari製品全体の保証ではない。
+
+Workerの停止回帰では、終了しないWASMにだけジョブ単位の2.5秒期限を指定する。停止後の正常なSDK初期化には通常の既定予算を使い、3秒の初期化遅延を注入しても、同じクライアントで正常に再開できることを確認する。強制停止の期限・退役中の受入制限・CDPによる対象消滅の確認は維持し、復旧の実行有無・経過時間・失敗コードも記録する。
+
+ブラウザーの実行レポートでは、`passed` / `cases` は実行比較と選定した条件の結果である。通常資料に加えて `pending_semantic` の未達資料も実行し、`semantic_gold_checks` / `semantic_gold_passed` / `semantic_gold_failures` へ全ページ文字列の正誤を別途記録する。既知の誤抽出が両経路で要レビューになっていても、文字列の正解には数えない。未診断の誤抽出や等価書き換えの誤差分は検証を失敗させる。
