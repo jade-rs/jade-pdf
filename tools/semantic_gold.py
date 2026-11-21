@@ -8,6 +8,17 @@ def normalize_text(text):
     return ' '.join(unicodedata.normalize('NFC', text).split())
 
 
+def page_has_text_review(page):
+    """Require review evidence on the checked page, not only on another page."""
+    return (not any(block['text'].strip() for block in page['blocks'])
+            or any(page.get(key, 0) > 0 for key in (
+                'sdk_unicode_mapping_errors', 'sdk_text_objects_without_characters',
+                'source_text_characters_missing', 'source_unicode_scalars_unmatched'))
+            or any(page.get(key, False) for key in (
+                'source_text_accounting_unavailable', 'source_unicode_accounting_unavailable',
+                'reading_order_requires_review')))
+
+
 def inventory_spec(gold):
     """Validate a bounded literal-scalar inventory before inspecting output."""
     ranges = gold.get('ranges')

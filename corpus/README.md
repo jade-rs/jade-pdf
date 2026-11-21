@@ -4,7 +4,7 @@
 
 [今回の検証台帳](validation-deseret-gold.json) はChrome・WebKit各270条件、Worker 81資料953操作＋追加196条件の実行結果とハッシュを固定する。これらは実装間の一致と選定条件の検証であり、抽出精度の成功率ではない。
 
-この資料のType0 Identity-HフォントにはToUnicodeがなく、現状の抽出は80文字すべて未達である。既存Arabicの全ページ文字列も未達であり、[意味精度の記録](results-pending-semantic-deseret.json) では全文0/1・指定文字の出現回数0/1と分けて残す。等価書き換えは両方とも要レビュー・誤差分なしとなるが、抽出成功には数えない。以前のmanifestは `manifest-rtl-unicode.json` に保存し、過去レポートの分母を変更しない。
+この資料のType0 Identity-HフォントにはToUnicodeがなく、現状の抽出は80文字すべて未達である。既存Arabicの全ページ文字列も未達であり、[意味精度の記録](results-pending-semantic-deseret.json) では全文0/1・指定文字の出現回数0/1と分けて残す。等価書き換えは両方とも要レビュー・誤差分なしとなり、対象ページ自体の文字診断も確認する。別ページの警告だけでは診断できたと数えず、要レビューも抽出成功には数えない。以前のmanifestは `manifest-rtl-unicode.json` に保存し、過去レポートの分母を変更しない。
 
 出典は [Unicode 18.0 code charts](https://www.unicode.org/Public/18.0.0/charts/) と [利用条件](https://unicode.org/copyright.html)。PDFは通知を含む原本のままignoredの内部キャッシュに保持する。PDF本体と埋め込みフォントはGitへ追加せず、埋め込みフォントデータの抽出・再利用も行わない。自作の矩形CFFテスト字形とは独立した資料である。
 

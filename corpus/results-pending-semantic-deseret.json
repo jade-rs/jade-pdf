@@ -31,6 +31,7 @@
       },
       "semantic_gold_matches": false,
       "comparison_exit": 3,
+      "selected_page_has_text_review": true,
       "mismatch_is_guarded": true,
       "false_changes_on_equivalent_rewrite": false,
       "diagnostics": {
@@ -223,6 +224,7 @@
       },
       "semantic_gold_matches": false,
       "comparison_exit": 3,
+      "selected_page_has_text_review": true,
       "mismatch_is_guarded": true,
       "false_changes_on_equivalent_rewrite": false,
       "diagnostics": {
@@ -247,6 +249,6 @@
   ],
   "binary_sha256": "d6c274ab3321d395145524adc6d80ad3faf9c14dced2dc78981ca888f80b0d7c",
   "manifest_sha256": "3657e1fc322309fec0302ad3a166d63003bc07073e60b98cf162eaf9e624b0f7",
-  "gold_checker_sha256": "95729688df43ce344b1557eaf7f8d92d684b0d67a4ce9dd7778772f2a8dfd88c",
+  "gold_checker_sha256": "f63e5f264bb56b160d6898f9c735c250c263eeb65629d5e1d9fd18adaf5509da",
   "method": "Gold kind is explicit: full-page text uses NFC and whitespace collapse while retaining order, marks and joiners; scalar inventories count literal declared ranges only and do not assess page prose, order or geometry. Guarded failures are failures, not correct extractions."
 }

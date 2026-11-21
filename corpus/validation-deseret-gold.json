@@ -45,7 +45,8 @@
       "failed": 1
     },
     "guarded_failures": 2,
-    "unguarded_or_false_change_failures": 0
+    "unguarded_or_false_change_failures": 0,
+    "guard_scope": "A mismatch needs selected-page text review evidence and an incomplete equivalent-rewrite comparison with no false changes. Other-page or geometry-only warnings do not qualify."
   },
   "browser": {
     "chrome": {
@@ -70,7 +71,7 @@
   "native_binary_sha256": "d6c274ab3321d395145524adc6d80ad3faf9c14dced2dc78981ca888f80b0d7c",
   "wasm_sha256": "4692b90da50efd38a8bd942b6dd7adaf800eca45f7160c80813ea5524169a324",
   "validation": {
-    "python_harness_tests": 13,
+    "python_harness_tests": 14,
     "fixture_hygiene_tests": 2,
     "js_semantic_gold_tests": true,
     "offline_pdf_checksums": 82
@@ -82,19 +83,21 @@
     "Deployment throughput, latency and host resource behavior require workload-specific qualification."
   ],
   "source_sha256": {
-    "tools/semantic_gold.py": "95729688df43ce344b1557eaf7f8d92d684b0d67a4ce9dd7778772f2a8dfd88c",
-    "tools/test_semantic_gold.py": "9512123b23418d3379c69fb2713cbf08e36e24e44734bb5b4579d5e79d12b6b2",
-    "tools/audit_pending_semantic.py": "ec7023e91a750fd64c60c4cbf6bf1942796cb393de6be1013d5513690cfc723c",
-    "tools/wasm-smoke/semantic_gold.mjs": "74047ef5d144e00b54a44da86cdc5736e4a30829ecf5f7c837344c6570107faf",
-    "tools/wasm-smoke/test_semantic_gold.mjs": "b13283ca7411235d9395c4542fbf483fc270bb937435a2257dde782b5598b0d8",
-    "tools/wasm-smoke/browser_smoke.mjs": "db584a7a81e377d45c2e1df42634f4e5ce1ee3ba588debc10694ebff83b3d741",
-    "tools/wasm-smoke/worker_smoke.mjs": "f652d6c93272d7decb529b6fc74e30ee2c23e226bebc3a435f1c5dfd3750d0a3",
-    ".github/workflows/ci.yml": "cee2685d5dc95fb70047bdc60dea644caa6d05f3e93913060d2280697bfafb7f"
+    "tools/semantic_gold.py": "f63e5f264bb56b160d6898f9c735c250c263eeb65629d5e1d9fd18adaf5509da",
+    "tools/test_semantic_gold.py": "e1e5dfbf7b0e13610a0fe1603c0fd57e5095faec8de2b141d8cbd55e01906784",
+    "tools/audit_pending_semantic.py": "8f16e24008c0e2000843784226d51448f968653160e324113d50fe0a8e7c87df",
+    "tools/wasm-smoke/semantic_gold.mjs": "64468bc10c9f6a356a9dbcddb10cdcb9d0a47353a3cf71e1b9a41234d7880f61",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "28ccd357365807007505a2f8c395b7332ec1c340e8473439bf42c75da7687361",
+    "tools/wasm-smoke/browser_smoke.mjs": "8c70246c9862df60a9740111c8f0a3a3910f3bd524a3d047eb7f39ceb999e17a",
+    "tools/wasm-smoke/worker_smoke.mjs": "5de20c6195f8d946b949292ccc9fc87fd01eb4de42879b39f895df00d5a30e2d",
+    ".github/workflows/ci.yml": "fbe7345eefc057b30d252cd3c3969eafe3a94f059917149c82cfcbd6818926b1",
+    "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf"
   },
   "report_sha256": {
-    "results-pending-semantic-deseret.json": "42b04ba70c1aa794e6eb02055e63f72152f83fad6ed441aa3e3fc5a2d2bf18d0",
-    "results-browser-chrome-deseret.json": "addcc531da95575c2a371030488fa880150cfc27963e4bba98386fc6c3bd202b",
-    "results-browser-webkit-deseret.json": "69b258389e733de882f68360eedf7735e32ee617d40e9c58ae7a4a0e6c7ebe78",
-    "results-workers-deseret.json": "53b1442f76ade3748de5517bd31b50967b1db4219998120e779c83b3320c78c7"
-  }
+    "results-pending-semantic-deseret.json": "defe8168d917dcb833f1e13ea2449cfbc475bdbbe5de4d03cc794ae57a4d5ed7",
+    "results-browser-chrome-deseret.json": "1782902bca2f125e538b2bb120969f85da144f841afccc1eab8bec8a10e17f80",
+    "results-browser-webkit-deseret.json": "19259e47fc7ec533fda19e0e244aa8fda2b1af7d8f3f07183b135ff847bfbe0b",
+    "results-workers-deseret.json": "3a718930ef6773b33842ca1235fb83847bbd35805bcb85448056fec37a5a2f4c"
+  },
+  "qualification_harness_base_commit": "adf230be40ad6c9eb5306894ca5873c632a238f3"
 }

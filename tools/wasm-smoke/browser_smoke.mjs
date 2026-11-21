@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
-import {checkGold} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview} from './semantic_gold.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
@@ -277,7 +277,9 @@ try {
         const text=ir=>ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
         const nativeCheck=checkGold(text(expected),entry.gold), wasmCheck=checkGold(text(actual.ir),entry.gold);
         semanticGold={kind:nativeCheck.kind,native_check:nativeCheck,wasm_check:wasmCheck,
-          native_matches:nativeCheck.matches,wasm_matches:wasmCheck.matches};
+          native_matches:nativeCheck.matches,wasm_matches:wasmCheck.matches,
+          selected_page_has_text_review:pageHasTextReview(expected.pages[entry.gold.page-1])
+            &&pageHasTextReview(actual.ir.pages[entry.gold.page-1])};
         if(!semanticGold.native_matches || !semanticGold.wasm_matches) {
           const suffix='\n% Semantic gold equivalent rewrite\n';
           const rewritten=path.join(binaryDirectory,entry.id+'-semantic-rewrite.pdf');
@@ -292,7 +294,8 @@ try {
             return JSON.parse(window.jadeProbe.compare_with_budget(bytes,next,40000));
           },{id:entry.id,suffix});
           const same=key=>isDeepStrictEqual(guarded.diff[key],reference[key]);
-          semanticGold.mismatch_is_guarded=!guarded.complete&&same('diagnostics')&&same('comparison')
+          semanticGold.mismatch_is_guarded=semanticGold.selected_page_has_text_review
+            &&!guarded.complete&&same('diagnostics')&&same('comparison')
             &&same('summary')&&Object.values(reference.summary).every(n=>n===0);
           if(!semanticGold.mismatch_is_guarded) throw new Error('Incorrect semantic gold is not guarded equally by WASM '+JSON.stringify({
             complete:guarded.complete,native_summary:reference.summary,wasm_summary:guarded.diff.summary,

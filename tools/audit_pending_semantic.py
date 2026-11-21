@@ -8,7 +8,7 @@ import subprocess
 import tempfile
 
 from pdf_corpus import ROOT, fetch
-from semantic_gold import check_gold, normalize_text
+from semantic_gold import check_gold, normalize_text, page_has_text_review
 
 
 def same_text(actual, expected):
@@ -48,17 +48,19 @@ def main():
                 rewrite.write_bytes(source.read_bytes() + b'\n% equivalent source rewrite\n')
                 code, diff = invoke(binary, source, rewrite)
             false_changes = any(diff['summary'].values())
+            page_review = page_has_text_review(page)
             rows.append(dict(id=entry['id'], page=entry['gold']['page'],
                              source_sha256=entry['sha256'], gold_check=gold_check,
                              semantic_gold_matches=matches,
-                             comparison_exit=code, mismatch_is_guarded=not matches and code == 3,
+                             comparison_exit=code, selected_page_has_text_review=page_review,
+                             mismatch_is_guarded=not matches and code == 3 and page_review,
                              false_changes_on_equivalent_rewrite=false_changes,
                              diagnostics=diff['diagnostics']))
         except (OSError, ValueError, KeyError, RuntimeError, subprocess.TimeoutExpired) as error:
             errors.append(dict(id=entry['id'], error=str(error)))
     correct = sum(row['semantic_gold_matches'] for row in rows)
     failed = sum(not row['semantic_gold_matches'] for row in rows)
-    unsafe = sum((not row['semantic_gold_matches'] and row['comparison_exit'] != 3)
+    unsafe = sum((not row['semantic_gold_matches'] and not row['mismatch_is_guarded'])
                  or row['false_changes_on_equivalent_rewrite'] for row in rows)
     by_kind = {}
     for row in rows:

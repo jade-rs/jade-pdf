@@ -1,9 +1,21 @@
 import unittest
 
-from semantic_gold import check_gold
+from semantic_gold import check_gold, page_has_text_review
 
 
 class SemanticGoldTests(unittest.TestCase):
+    def test_unrelated_page_or_geometry_review_cannot_guard_wrong_text(self):
+        clean = dict(blocks=[dict(text='wrong')], user_unit=None)
+        self.assertFalse(page_has_text_review(clean))
+        for field in ['sdk_unicode_mapping_errors', 'sdk_text_objects_without_characters',
+                      'source_text_characters_missing', 'source_unicode_scalars_unmatched']:
+            self.assertTrue(page_has_text_review(clean | {field: 1}))
+        for field in ['source_text_accounting_unavailable',
+                      'source_unicode_accounting_unavailable', 'reading_order_requires_review']:
+            self.assertTrue(page_has_text_review(clean | {field: True}))
+        self.assertTrue(page_has_text_review(dict(blocks=[])))
+        self.assertTrue(page_has_text_review(dict(blocks=[dict(text=' \n')])) )
+
     def test_full_text_preserves_order_marks_and_compatibility(self):
         gold = dict(text='é text')
         self.assertTrue(check_gold(' e\u0301\ntext ', gold)['matches'])

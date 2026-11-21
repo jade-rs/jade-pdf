@@ -83,13 +83,15 @@ try {
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
       let semanticGold;
       if(entry.gold) {
-        const {checkGold}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const {checkGold,pageHasTextReview}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
         const actual=ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
         semanticGold=checkGold(actual,entry.gold);
+        semanticGold.selected_page_has_text_review=pageHasTextReview(ir.pages[entry.gold.page-1]);
         if(!semanticGold.matches) {
           const guarded=JSON.parse(probe.compare_with_budget(bytes,rewritten,40000));
-          semanticGold.mismatch_is_guarded=!guarded.complete&&checks[1].passed
+          semanticGold.mismatch_is_guarded=semanticGold.selected_page_has_text_review
+            &&!guarded.complete&&checks[1].passed
             &&Object.values(guarded.diff.summary).every(n=>n===0);
         }
       }

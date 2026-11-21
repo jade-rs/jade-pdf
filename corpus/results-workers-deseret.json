@@ -1,7 +1,7 @@
 {
   "version": 2,
   "manifest_sha256": "3657e1fc322309fec0302ad3a166d63003bc07073e60b98cf162eaf9e624b0f7",
-  "browser": "158.0.8127.36",
+  "browser": "159.0.8154.6",
   "wasm_sha256": "4692b90da50efd38a8bd942b6dd7adaf800eca45f7160c80813ea5524169a324",
   "source_sha256": {
     "crates/jade-pdf-diff/wasm/worker_client.mjs": "2b225d7d8a75246f24d85037de40dbc0784a6f51205cb4f221d7ff7cae90419b",
@@ -9,9 +9,9 @@
     "crates/jade-pdf-diff/wasm/worker_protocol.mjs": "9ac07b2da10e5377ac788c1293c4c3811a1b1a4ee032fda16c3e743828d10cee",
     "tools/wasm-smoke/worker_adapter.mjs": "f326bf38658f5a90cfee60dfe07f39425698918492e5b4cd45794e841f4aeba5",
     "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
-    "tools/wasm-smoke/worker_fault.mjs": "4d80e3c6731d825efa46346db0fb228d4a61b198227cbd09f804761024d4f81d",
-    "tools/wasm-smoke/worker_smoke.mjs": "f652d6c93272d7decb529b6fc74e30ee2c23e226bebc3a435f1c5dfd3750d0a3",
-    "tools/wasm-smoke/semantic_gold.mjs": "74047ef5d144e00b54a44da86cdc5736e4a30829ecf5f7c837344c6570107faf"
+    "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
+    "tools/wasm-smoke/worker_smoke.mjs": "5de20c6195f8d946b949292ccc9fc87fd01eb4de42879b39f895df00d5a30e2d",
+    "tools/wasm-smoke/semantic_gold.mjs": "64468bc10c9f6a356a9dbcddb10cdcb9d0a47353a3cf71e1b9a41234d7880f61"
   },
   "methodology": "Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.",
   "documents": 81,
@@ -1949,30 +1949,35 @@
       "idle": true,
       "busy": true,
       "recovered": true,
-      "ticks": 557,
+      "recovery_elapsed_ms": 3077.5999999940395,
+      "recovery_attempted": true,
+      "recovery_delay_ms": 3000,
+      "fault_timeout_ms": 2500,
+      "recovery_timeout_ms": 120000,
+      "ticks": 857,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3007.9000000059605,
-      "rejectedAtEpochMs": 1795283856620,
+      "retirementWaitMs": 3000.5,
+      "rejectedAtEpochMs": 1795285611403,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "08D8CDA64616FDF2D5F9EB6470A946E6",
+          "targetId": "B0D641F85468DF420BB1313DFDB242A3",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:63087/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-timeout-1795283854116",
+          "url": "http://127.0.0.1:63474/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-timeout-1795285608897",
           "attached": true,
-          "parentId": "8D3BD83309184872923AC602799269EC",
+          "parentId": "2A28F7B6E58665EAD75162B23095DB80",
           "canAccessOpener": false,
-          "parentFrameId": "8D3BD83309184872923AC602799269EC",
-          "browserContextId": "91F015559B1FB17A04F2BCF29B971AF0"
+          "parentFrameId": "2A28F7B6E58665EAD75162B23095DB80",
+          "browserContextId": "3A8001347B7A1ADC80845D850A0D3BA5"
         }
       ],
       "remaining_target_details": [],
       "target_destroy_event": true,
-      "observed_termination_delay_ms": 2001
+      "observed_termination_delay_ms": 2000
     },
     {
       "id": "lifecycle-abort",
@@ -1981,25 +1986,30 @@
       "idle": true,
       "busy": true,
       "recovered": true,
-      "ticks": 314,
+      "recovery_elapsed_ms": 3058.7999999821186,
+      "recovery_attempted": true,
+      "recovery_delay_ms": 3000,
+      "fault_timeout_ms": 2500,
+      "recovery_timeout_ms": 120000,
+      "ticks": 614,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3002.2000000178814,
-      "rejectedAtEpochMs": 1795283859773,
+      "retirementWaitMs": 3002.4000000059605,
+      "rejectedAtEpochMs": 1795285617565,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "3D1DAD846E01B5A23E3DC43DC34691A0",
+          "targetId": "11AF5207E47135D798C4421CDB5C631E",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:63087/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-abort-1795283859691",
+          "url": "http://127.0.0.1:63474/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-abort-1795285617482",
           "attached": true,
-          "parentId": "8D3BD83309184872923AC602799269EC",
+          "parentId": "2A28F7B6E58665EAD75162B23095DB80",
           "canAccessOpener": false,
-          "parentFrameId": "8D3BD83309184872923AC602799269EC",
-          "browserContextId": "91F015559B1FB17A04F2BCF29B971AF0"
+          "parentFrameId": "2A28F7B6E58665EAD75162B23095DB80",
+          "browserContextId": "3A8001347B7A1ADC80845D850A0D3BA5"
         }
       ],
       "remaining_target_details": [],
@@ -2013,25 +2023,30 @@
       "idle": true,
       "busy": true,
       "recovered": true,
+      "recovery_elapsed_ms": 0,
+      "recovery_attempted": false,
+      "recovery_delay_ms": 0,
+      "fault_timeout_ms": 2500,
+      "recovery_timeout_ms": 120000,
       "ticks": 550,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3000,
-      "rejectedAtEpochMs": 1795283865341,
+      "retirementWaitMs": 3000.4000000059605,
+      "rejectedAtEpochMs": 1795285626131,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "595D47ACC4A36C1710D2615E8534F93A",
+          "targetId": "B110E5E4C7A819F75E6F588E42BADEE9",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:63087/tools/wasm-smoke/worker_fault.mjs?mode=wait-init&job=jade-worker-wait-init-1795283862837",
+          "url": "http://127.0.0.1:63474/tools/wasm-smoke/worker_fault.mjs?mode=wait-init&job=jade-worker-wait-init-1795285623627",
           "attached": true,
-          "parentId": "8D3BD83309184872923AC602799269EC",
+          "parentId": "2A28F7B6E58665EAD75162B23095DB80",
           "canAccessOpener": false,
-          "parentFrameId": "8D3BD83309184872923AC602799269EC",
-          "browserContextId": "91F015559B1FB17A04F2BCF29B971AF0"
+          "parentFrameId": "2A28F7B6E58665EAD75162B23095DB80",
+          "browserContextId": "3A8001347B7A1ADC80845D850A0D3BA5"
         }
       ],
       "remaining_target_details": [],
@@ -2045,30 +2060,35 @@
       "idle": true,
       "busy": true,
       "recovered": true,
-      "ticks": 309,
+      "recovery_elapsed_ms": 0,
+      "recovery_attempted": false,
+      "recovery_delay_ms": 0,
+      "fault_timeout_ms": 2500,
+      "recovery_timeout_ms": 120000,
+      "ticks": 308,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3004.899999976158,
-      "rejectedAtEpochMs": 1795283868440,
+      "retirementWaitMs": 3007.800000011921,
+      "rejectedAtEpochMs": 1795285629216,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "0C29431079C252CAA9D52B411F26EE5D",
+          "targetId": "840E9652BB67D5994427AFC61B5C0934",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:63087/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-dispose-1795283868344",
+          "url": "http://127.0.0.1:63474/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-dispose-1795285629134",
           "attached": true,
-          "parentId": "8D3BD83309184872923AC602799269EC",
+          "parentId": "2A28F7B6E58665EAD75162B23095DB80",
           "canAccessOpener": false,
-          "parentFrameId": "8D3BD83309184872923AC602799269EC",
-          "browserContextId": "91F015559B1FB17A04F2BCF29B971AF0"
+          "parentFrameId": "2A28F7B6E58665EAD75162B23095DB80",
+          "browserContextId": "3A8001347B7A1ADC80845D850A0D3BA5"
         }
       ],
       "remaining_target_details": [],
       "target_destroy_event": true,
-      "observed_termination_delay_ms": 2006
+      "observed_termination_delay_ms": 2009
     },
     {
       "id": "all-worker-termination-requests",
@@ -11537,6 +11557,7 @@
         "matches": false,
         "expected_text": "عربي",
         "actual_text": "᧒ᥱᦎᦫ",
+        "selected_page_has_text_review": true,
         "mismatch_is_guarded": true
       }
     },
@@ -11787,6 +11808,7 @@
           "U+1044E": 0,
           "U+1044F": 0
         },
+        "selected_page_has_text_review": true,
         "mismatch_is_guarded": true
       }
     }

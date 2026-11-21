@@ -167,6 +167,7 @@ jobs:
           path: |
             corpus/results.json
             corpus/results-pending-semantic.json
+            corpus/results-pending-semantic-deseret.json
             corpus/results-structure.json
             corpus/results-form-fields.json
             corpus/results-form-discovery.json

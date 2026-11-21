@@ -1,5 +1,15 @@
 import assert from 'node:assert/strict';
-import {checkGold} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview} from './semantic_gold.mjs';
+
+const clean={blocks:[{text:'wrong'}],user_unit:null};
+assert.equal(pageHasTextReview(clean),false);
+for(const field of ['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
+  'source_text_characters_missing','source_unicode_scalars_unmatched'])
+  assert.equal(pageHasTextReview({...clean,[field]:1}),true);
+for(const field of ['source_text_accounting_unavailable','source_unicode_accounting_unavailable','reading_order_requires_review'])
+  assert.equal(pageHasTextReview({...clean,[field]:true}),true);
+assert.equal(pageHasTextReview({blocks:[]}),true);
+assert.equal(pageHasTextReview({blocks:[{text:' \n'}]}),true);
 
 assert.equal(checkGold(' e\u0301\ntext ',{text:'é text'}).matches,true);
 for(const [actual,text] of [['خل','لخ'],['²','2'],['بَ','ب'],['ب\u200cت','بت'],['A\ufeffB','AB']])
