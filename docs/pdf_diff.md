@@ -32,7 +32,7 @@ LinuxはRSSとSwapに加えてRLIMIT_ASを適用する。監視間の増大やOS
 `with_process_limits()` と `with_temporary_directory()` で実行上限と一時保存先を指定できる。
 
 バイト入力・通信・PNGは匿名スプールを使う。Unixでは内容を書き込む前にリンク数0を確認し、
-Windowsでは最後のハンドルを閉じると削除する一時ファイルを使う（Windows実行は未確認）。
+Windowsでは最後のハンドルを閉じると削除する一時ファイルを使う。OS別のSDK取得・キャッシュ修復・隔離APIの実行結果は、対象コミットのCIで確認する。
 操作用ディレクトリは終了時に明示的に閉じ、後始末の失敗もエラーにする。
 入力の一時保存は1ファイルごとの `Limits.max_input_mb` で制限し、子の実行時間とは別に計測する。
 通信メタデータは1MiB、受信JSONは深さ256までとし、浮動小数点の正確な往復を有効にして座標を保つ。
@@ -276,3 +276,18 @@ MIT License.
 フォーム辞書のnull項目と存在しないオブジェクトへの参照は、省略と同じ意味に正規化する。
 配列中のnull要素は保持する。無名の子Widgetが親の型や既定値を繰り返しても、
 意味が一致する場合だけ同じフィールドの制御と扱い、保存値一覧を重複エラーで失わない。
+
+
+ブラウザーの直接WASM検証では、Chromeに加えてPlaywrightのFirefox・WebKitを同じ公開PDF・生成条件で実行する。エンジン名とバージョンをレポートへ記録する。
+
+```sh
+cd tools/wasm-smoke
+npm ci
+npx playwright install firefox webkit
+cd ../..
+JADE_PDF_BROWSER_ENGINE=firefox JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_BROWSER_REPORT=corpus/results-browser-firefox.json node tools/wasm-smoke/browser_smoke.mjs
+JADE_PDF_BROWSER_ENGINE=webkit JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_BROWSER_REPORT=corpus/results-browser-webkit.json node tools/wasm-smoke/browser_smoke.mjs
+```
+
+実行前に公開PDFの取得と `python3 tools/wasm-smoke/prepare_runtime.py --build` が必要である。エンジン指定を省略するとChromiumを使い、不明な名前は明示的に拒否する。`JADE_PDF_BROWSER` は選択したエンジンの実行ファイルを指定する。
+直接WASMの精度検証とWorkerの強制終了検証は別の証拠である。Workerの既存全監査はChromium CDPで対象の消滅まで観測するため、Firefox/WebKitを指定した実行では成功扱いにせず拒否する。WebKitの検証はPlaywrightのWebKitビルドであり、Safari製品全体の保証ではない。

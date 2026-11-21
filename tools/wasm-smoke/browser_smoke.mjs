@@ -6,10 +6,12 @@ import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { selectBrowser } from './browser_engine.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
-const { chromium } = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
+const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
   ? pathToFileURL(process.env.JADE_PDF_PLAYWRIGHT_PATH).href : 'playwright');
+const {engine,launcher,options}=selectBrowser(playwright);
 const manifestBytes = await fs.readFile(path.join(root,'corpus/manifest.json'));
 const manifest = JSON.parse(manifestBytes);
 const runtime = JSON.parse(await fs.readFile(path.join(root,'tools/wasm-smoke/runtime.json')));
@@ -48,8 +50,8 @@ await new Promise(resolve => server.listen(0,'127.0.0.1',resolve));
 let browser;
 const results = [];
 try {
-  browser = await chromium.launch({headless:true,
-    ...(process.env.JADE_PDF_BROWSER ? {executablePath:process.env.JADE_PDF_BROWSER} : {})});
+  browser = await launcher.launch(options);
+  if(browser.browserType().name()!==engine) throw new Error('Launched browser engine differs from requested engine');
   const page = await browser.newPage();
   page.on('console', message => { if (message.type() === 'error') process.stderr.write(message.text()+'\n'); });
   page.on('pageerror', error => process.stderr.write(error.stack+'\n'));
@@ -661,7 +663,7 @@ try {
   });
   results.push({id:'invalid-inputs-and-recovery',passed:invalidInputs.rejected===4 && invalidInputs.recovered,...invalidInputs});
   const wasm = await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'));
-  const report = {version:3,browser:browser.version(),pdfium:runtime.pdfium.version,
+  const report = {version:4,browser_engine:engine,browser:browser.version(),pdfium:runtime.pdfium.version,
     pdfium_archive_sha256:runtime.pdfium.sha256,pdfium_wasm_sha256:runtime.pdfium.members['lib/pdfium.wasm'].sha256,
     wasm_sha256:createHash('sha256').update(wasm).digest('hex'),
     runtime_adapter_sha256:adapterHash,pdfium_loader_sha256:loaderHash,

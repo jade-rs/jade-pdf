@@ -28,12 +28,12 @@ jobs:
       - run: cargo check -p jade-pdf-diff --locked --lib --target wasm32-unknown-unknown
       - run: python3 -m unittest discover -s tools -p 'test_*.py'
 
-  # Linux の Pdfium ランタイムと CJK 代替フォントも検証する。
+  # 各 OS の SDK 取得・キャッシュ修復・隔離 API・文字精度を実行して検証する。
   test:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-latest, ubuntu-latest]
+        os: [macos-latest, ubuntu-latest, windows-latest]
     runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     steps:
@@ -45,6 +45,40 @@ jobs:
       - run: cargo test -p jade-pdf-diff
       - run: cargo test -p jade-pdf-diff --locked --test runtime -- --ignored --nocapture
       - run: cargo test -p jade-pdf-diff --locked --features bundled-pdfium --test runtime
+
+  browser-engines:
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [firefox, webkit]
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: '22'
+      - uses: Swatinem/rust-cache@e18b497796c12c097a38f9edb9d0641fb99eee32 # v2
+      - run: python3 tools/pdf_corpus.py
+      - run: cargo build -p jade-pdf-diff --locked --release --bin pdf-diff
+      - run: python3 tools/wasm-smoke/prepare_runtime.py --build
+      - run: npm ci && npx playwright install ${{ matrix.engine }}
+        working-directory: tools/wasm-smoke
+      - run: node tools/wasm-smoke/test_browser_engine.mjs
+      - run: node tools/wasm-smoke/browser_smoke.mjs
+        env:
+          JADE_PDF_BROWSER_ENGINE: ${{ matrix.engine }}
+          JADE_PDF_BINARY: target/release/pdf-diff
+          JADE_PDF_BROWSER_REPORT: corpus/results-browser-${{ matrix.engine }}.json
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        if: always()
+        with:
+          name: browser-${{ matrix.engine }}
+          path: corpus/results-browser-${{ matrix.engine }}.json
+          if-no-files-found: ignore
 
   public-pdf-corpus:
     runs-on: macos-latest
@@ -109,6 +143,7 @@ jobs:
       - run: python3 tools/wasm-smoke/prepare_runtime.py --build
       - run: npm ci && npx playwright install chromium
         working-directory: tools/wasm-smoke
+      - run: node tools/wasm-smoke/test_browser_engine.mjs
       - run: node tools/wasm-smoke/browser_smoke.mjs
         env:
           JADE_PDF_BINARY: target/release/pdf-diff

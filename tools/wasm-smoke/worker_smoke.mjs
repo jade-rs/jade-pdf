@@ -4,6 +4,8 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
+if(process.env.JADE_PDF_BROWSER_ENGINE && process.env.JADE_PDF_BROWSER_ENGINE!=='chromium')
+  throw new Error('Full Worker termination qualification requires Chromium CDP; other engines need separate termination evidence');
 const {chromium}=await import(process.env.JADE_PDF_PLAYWRIGHT_PATH?pathToFileURL(process.env.JADE_PDF_PLAYWRIGHT_PATH).href:'playwright');
 const manifestBytes=await fs.readFile(path.join(root,'corpus/manifest.json')), manifest=JSON.parse(manifestBytes);
 const selected=process.argv.slice(2), entries=[...manifest.documents,...manifest.robustness,...(manifest.pending_semantic||[])].filter(d=>!selected.length||selected.includes(d.id));
