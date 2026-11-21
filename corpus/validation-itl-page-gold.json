@@ -1,8 +1,8 @@
 {
   "version": 42,
   "date": "2026-11-22",
-  "qualification_revision": "4f57148",
-  "base_revision": "6ac9a44343bdcf729c22f2e0c04deb122eead1da",
+  "qualification_revision": "29700111623b4bcfed014884976b5dbf13c61b1c",
+  "base_revision": "48054e70a2d8143f539c8882df4b9c321a377328",
   "production_ready": false,
   "scope": "New independently reviewed five-page NIST bulletin; strict selected-page gold across native, two browsers and Workers. Cohorts remain separate. No product Rust changes and no full-document precision/recall claim.",
   "collection": {
@@ -175,5 +175,8 @@
     "corpus/results-browser-chromium-itl.json": "5f9e4e27d97d6afc6ca6d8d61669832db0c72c2399a9bacb61aa82eec053a42e",
     "corpus/results-browser-webkit-itl.json": "8ab8bd3315287bce0a9f3af3ebb7c4e6a1044945282da28b55ee229ed5f208ff",
     "corpus/results-workers-itl.json": "7431301e52b98964aeb7978cc5612adaed570fa668e0c66b3ae5aede9dfea56e"
-  }
+  },
+  "qualified_source_tree": "569c8eed74cb9023980f3f9c6a5d1d7cb07db869",
+  "qualified_result_tree": "c0b826ab050baa3cdb76de30b9f3cf27a3801e17",
+  "rebase_verification": "Qualification and result trees are byte-identical when replayed onto merged PR7. Only these history references were subsequently updated; v42 reports and frozen artifact hashes retain the pre-spacing baseline."
 }

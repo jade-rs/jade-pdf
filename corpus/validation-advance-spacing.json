@@ -1,9 +1,9 @@
 {
   "version": 43,
   "date": "2026-11-22",
-  "core_revision": "349ce18",
-  "qualification_revision": "b4131618477fe84f674f0f703d3ab56b4f0ab457",
-  "base_revision": "6ac9a44343bdcf729c22f2e0c04deb122eead1da",
+  "core_revision": "9bca37cba225fb4fd8475b40b6f3b68b6a97d625",
+  "qualification_revision": "79d979e81ed0cfbbd94ddbc3a5607d8e6c6ae4ce",
+  "base_revision": "48054e70a2d8143f539c8882df4b9c321a377328",
   "production_ready": false,
   "scope": "Correct a confirmed false space within the NIST ITL standard number; preserve geometric reading order and source ownership while suppressing row-join-generated spacing between verified touching horizontal LTR advance cells. Not universal word spacing, whole-page1 text, source encoding or glyph-ink accuracy.",
   "collection": {
@@ -184,11 +184,11 @@
   "sha256": {
     ".github/workflows/ci.yml": "82aa2d2e28b9f1cde44b02a89353adc1a37bd3048b2609e4d616d9817e7097d4",
     "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
-    "corpus/README.md": "e7d5c29f968a6ec831a1a83132714e988867537c9a644f62da98a91e525fac89",
+    "corpus/README.md": "6528cefd0e667a1698c54f705e89d2b5e26e05ac36a6a1b2247daa75118c59b8",
     "corpus/manifest.json": "5c32771f436a6935c98bdf063f58e98e18884293bab4ce40d5393f6190425619",
     "corpus/manifest-itl-page-gold.json": "76788f3b1b6d82a58acdc715a7854164dd4f3a75bf6ced92637bd6a68ac5edaf",
     "corpus/advance-spacing-review.json": "faa4d09f388c03918f0d77eaad386e1154cd2319f188a8c9cd754e7a010a7ba7",
-    "corpus/validation-itl-page-gold.json": "c3ea5bb29781f5557b7167e446ec8e997bbc5ad1a205a260c24fd0764cffcea9",
+    "corpus/validation-itl-page-gold.json": "4ea1bc72726298cf6918614253c77a43a55943f6e7dcec4644b93015b78c3695",
     "crates/jade-pdf-diff/src/text.rs": "23fe1d34050c3d993066e7f78767104300f9bc5b912ab1838bad107308452f30",
     "crates/jade-pdf-diff/src/text/spacing.rs": "f6244763ec56d2812fce5474902cb1b848c489272ca96d1fb6fe2f3f982e0c7a",
     "crates/jade-pdf-diff/src/text/row_tests.rs": "9353ba4df4ed9d2f0e56055188bdc45f049aa7c37a7f6c5e3c13fdbdc1b6ab1c",
@@ -220,5 +220,9 @@
     "corpus/results-browser-chromium-advance.json": "fb410ed426f9bda7839c8a139e2f8804c60ae2dc24574edcde22df553f1b2703",
     "corpus/results-browser-webkit-advance.json": "f018385df8252a86951993af87d6d9648877fe0ea815ce795113d2e25694002b",
     "corpus/results-workers-advance.json": "770f0ca7e16f16d061e22484fbfe13a14f9dd0cdabdc71d86ccb748d180b449b"
-  }
+  },
+  "qualified_core_tree": "bbf410f06a0d36acefc87e74d92184456a6e3eee",
+  "qualified_source_tree": "5297d1f96816c93251037a7f25b34d860b8e629e",
+  "qualified_result_tree": "cb9bd7767781ad6bd740ad0254ab7e8cd3b25871",
+  "rebase_verification": "All five qualified source/result trees are byte-identical before/after replay onto merged PR7. Only ledger history references and a README history clarification were subsequently changed. Rust/probe/checker bytes, native/WASM artifacts, manifests and reports remain qualified."
 }
