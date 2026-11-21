@@ -1,0 +1,139 @@
+{
+  "scope": "Native before/after impact inventory; neither raw PUA counts nor backend agreement establish Unicode accuracy.",
+  "before_binary_sha256": "d0aabaf29215b5dea7ede9a38b92a4450e41bba28e36cedb37ea8a43b8b3efeb",
+  "after_binary_sha256": "a3933b2d0dad2b0dbc16dd9c62d98300abc4f230ba7878c97950129ac2ab4f57",
+  "manifest_sha256": "e902476fbd7a7e24c333211c36f6341837a9236fdbabf97b6405d9f4ee0bd826",
+  "documents": 71,
+  "pages": 606,
+  "changed_pages": 11,
+  "results": [
+    {
+      "id": "nist-fips180-4-2015",
+      "pages": 36,
+      "changes": [
+        {
+          "page": 9,
+          "text_changed": true,
+          "private_scalars_before": 1,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {}
+        },
+        {
+          "page": 10,
+          "text_changed": true,
+          "private_scalars_before": 8,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 12,
+          "text_changed": true,
+          "private_scalars_before": 4,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 16,
+          "text_changed": true,
+          "private_scalars_before": 30,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 17,
+          "text_changed": true,
+          "private_scalars_before": 1,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {}
+        },
+        {
+          "page": 21,
+          "text_changed": true,
+          "private_scalars_before": 9,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 23,
+          "text_changed": true,
+          "private_scalars_before": 5,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 26,
+          "text_changed": true,
+          "private_scalars_before": 41,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 28,
+          "text_changed": true,
+          "private_scalars_before": 47,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 29,
+          "text_changed": true,
+          "private_scalars_before": 18,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        },
+        {
+          "page": 31,
+          "text_changed": true,
+          "private_scalars_before": 12,
+          "private_scalars_after": 0,
+          "diagnostic_changes": {
+            "source_unicode_accounting_unavailable": [
+              true,
+              null
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

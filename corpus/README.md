@@ -4,7 +4,7 @@
 
 [影響調査](results-mtextra-impact.json) では2015版の11ページで計176個の私用符号が減り、他595ページの抽出文字列を保持した。引用符や結合記号など、明示的に割り当てられた非RTL文脈を許したことで、従来復元できなかったSymbolの対応も適用できた。所有を確認した9ページでUnicode対応不足フラグを解消し、SDKエラー・欠落・未観測オブジェクト・読み順の診断は保持する。私用文字の減少自体は意味精度のgoldではない。括弧の組み立て片など未確認の符号と、Arabic・Deseretの意味goldの未達は残す。
 
-[Chromium](results-browser-chromium-mtextra.json)・[WebKit](results-browser-webkit-mtextra.json) で各287条件、[Worker](results-workers-mtextra.json) で83資料1,039操作＋207条件、公開PDFの6テストと約106万文字の保存量照合が通過した。自作矩形フォントで単位・回転・せん断24通りと、見た目が同じ実際の文字編集を確認する。字体プログラムと字形を外部資料から保存・再利用せず、追加の実行時依存もない。Unicode文脈表と既存の強いL表、自作フォント二種類の再生成結果を固定SHAで照合する。
+Rust全291件（8件ignored）に加え、[Chromium](results-browser-chromium-mtextra.json)・[WebKit](results-browser-webkit-mtextra.json) で各287条件、[Worker](results-workers-mtextra.json) で83資料1,039操作＋207条件、公開PDFの6テストと約106万文字の保存量照合が通過した。自作矩形フォントで単位・回転・せん断24通りと、見た目が同じ実際の文字編集を確認する。字体プログラムと字形を外部資料から保存・再利用せず、追加の実行時依存もない。Unicode文脈表と既存の強いL表、自作フォント二種類の再生成結果を固定SHAで照合する。
 
 2026-11-22にNISTのFIPS 180-4の2012版・2015版を追加収集し、計72ページを目視確認した。登録は84本（通常71・堅牢性10・参照1・未達2）、通常資料は606ページとなる。出典・固定SHA・権利・全ページの確認記録はmanifestに残し、原本は通知を保持した内部キャッシュだけで扱う。NISTに謝辞を付し、PDF・埋め込みフォント・外部輪郭をGitへ追加しない。
 
