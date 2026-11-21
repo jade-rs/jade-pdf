@@ -48,7 +48,24 @@
     "sdk_text_objects_without_characters": 36,
     "source_text_characters_missing": 36
   },
-  "hypothesis": "SDK-generated blank or run-join inference may use ink gaps instead of advances. Cause is not established; inspect generated flags and source text-object boundaries before changing behavior.",
+  "hypothesis": "The SDK stream has adjacent indices 2087 (1) and 2088 (8), neither generated, with no blank between them. The extra blank is introduced during product run extraction or row canonicalization. Their advance-cell gap is about .034pt but ink gap is about2.054pt, exceeding the existing 0.15em heuristic. Source-object boundary and row-merge behavior still need an owned TDD reproduction before a fix.",
   "scope": "A documented unresolved spacing defect, not a passing semantic gold, not part of the nine page-full-text cases, and not evidence that pages 1-4 are correct. The page5 gold does not cover it.",
-  "binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c"
+  "binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+  "sdk_stream_observation": {
+    "before": {
+      "index": 2087,
+      "text": "1",
+      "generated": false,
+      "origin_x": 193.54607,
+      "loose_x1": 199.06607
+    },
+    "after": {
+      "index": 2088,
+      "text": "8",
+      "generated": false,
+      "origin_x": 199.1,
+      "loose_x1": 204.62001
+    },
+    "no_intervening_sdk_character": true
+  }
 }
