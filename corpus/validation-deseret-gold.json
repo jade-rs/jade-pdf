@@ -1,0 +1,100 @@
+{
+  "version": 38,
+  "date": "2026-11-22",
+  "goal_status": "in_progress",
+  "production_ready": false,
+  "product_source_commit": "6b54ec110f8dbe53577fae2f4d4ce3350b85f04b",
+  "historical_validation": "validation-rtl-unicode.json",
+  "historical_validation_sha256": "02265d9d090ad6656ece5ec07aa92add61b219b9c3c89e311b121ce703774454",
+  "historical_manifest": "manifest-rtl-unicode.json",
+  "historical_manifest_sha256": "01fff2a268da2667bcf039f5255db4eea4477373e51b0aa5f87e922d1a9d60b0",
+  "manifest_sha256": "3657e1fc322309fec0302ad3a166d63003bc07073e60b98cf162eaf9e624b0f7",
+  "corpus": {
+    "regular_documents": 69,
+    "regular_pages": 534,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 2,
+    "pending_semantic_pages": 4,
+    "collected_pdf_files": 82,
+    "executable_documents": 81
+  },
+  "new_pdf": {
+    "id": "unicode-deseret-18",
+    "reviewed_pages": [
+      1,
+      2,
+      3
+    ],
+    "gold_kind": "scalar_inventory",
+    "selected_page": 2,
+    "expected_scalars": 80,
+    "correct_scalars": 0,
+    "scope": "Literal U+10400..U+1044F counts, one each in the printed grid. Not full-page prose, reading order or highlight geometry.",
+    "rights": "Original Unicode chart kept unchanged with notices in ignored internal cache. No embedded font data extracted, reused or redistributed."
+  },
+  "semantic_gold": {
+    "full_page_text": {
+      "cases": 1,
+      "correct": 0,
+      "failed": 1
+    },
+    "scalar_inventory": {
+      "cases": 1,
+      "correct": 0,
+      "failed": 1
+    },
+    "guarded_failures": 2,
+    "unguarded_or_false_change_failures": 0
+  },
+  "browser": {
+    "chrome": {
+      "cases": 270,
+      "passed": 270
+    },
+    "webkit": {
+      "cases": 270,
+      "passed": 270
+    },
+    "scope": "Native/WASM runtime parity, selected generated golds and guards for incorrect semantic gold. These passed runtime cases are not an extraction-accuracy rate."
+  },
+  "worker": {
+    "documents": 81,
+    "passed_documents": 81,
+    "operation_checks": 953,
+    "matching_operations": 953,
+    "additional_cases": 196,
+    "passed_additional_cases": 196,
+    "scope": "Chromium CDP Worker lifecycle and exact direct-WASM parity under self-only CSP; no Firefox/WebKit Worker-termination claim."
+  },
+  "native_binary_sha256": "d6c274ab3321d395145524adc6d80ad3faf9c14dced2dc78981ca888f80b0d7c",
+  "wasm_sha256": "4692b90da50efd38a8bd942b6dd7adaf800eca45f7160c80813ea5524169a324",
+  "validation": {
+    "python_harness_tests": 13,
+    "fixture_hygiene_tests": 2,
+    "js_semantic_gold_tests": true,
+    "offline_pdf_checksums": 82
+  },
+  "remaining_gaps": [
+    "Both pending semantic golds remain incorrect; safe review outcomes are failures, not recovered Unicode.",
+    "Full natural-revision precision/recall, independent highlight positions and arbitrary reading order remain unqualified.",
+    "Historical source omissions, Unicode-unavailable pages and PDF.js discrepancies remain separate unresolved evidence.",
+    "Deployment throughput, latency and host resource behavior require workload-specific qualification."
+  ],
+  "source_sha256": {
+    "tools/semantic_gold.py": "95729688df43ce344b1557eaf7f8d92d684b0d67a4ce9dd7778772f2a8dfd88c",
+    "tools/test_semantic_gold.py": "9512123b23418d3379c69fb2713cbf08e36e24e44734bb5b4579d5e79d12b6b2",
+    "tools/audit_pending_semantic.py": "ec7023e91a750fd64c60c4cbf6bf1942796cb393de6be1013d5513690cfc723c",
+    "tools/wasm-smoke/semantic_gold.mjs": "74047ef5d144e00b54a44da86cdc5736e4a30829ecf5f7c837344c6570107faf",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "b13283ca7411235d9395c4542fbf483fc270bb937435a2257dde782b5598b0d8",
+    "tools/wasm-smoke/browser_smoke.mjs": "db584a7a81e377d45c2e1df42634f4e5ce1ee3ba588debc10694ebff83b3d741",
+    "tools/wasm-smoke/worker_smoke.mjs": "f652d6c93272d7decb529b6fc74e30ee2c23e226bebc3a435f1c5dfd3750d0a3",
+    ".github/workflows/ci.yml": "cee2685d5dc95fb70047bdc60dea644caa6d05f3e93913060d2280697bfafb7f"
+  },
+  "report_sha256": {
+    "results-pending-semantic-deseret.json": "42b04ba70c1aa794e6eb02055e63f72152f83fad6ed441aa3e3fc5a2d2bf18d0",
+    "results-browser-chrome-deseret.json": "addcc531da95575c2a371030488fa880150cfc27963e4bba98386fc6c3bd202b",
+    "results-browser-webkit-deseret.json": "69b258389e733de882f68360eedf7735e32ee617d40e9c58ae7a4a0e6c7ebe78",
+    "results-workers-deseret.json": "53b1442f76ade3748de5517bd31b50967b1db4219998120e779c83b3320c78c7"
+  }
+}

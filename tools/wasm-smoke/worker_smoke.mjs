@@ -83,11 +83,19 @@ try {
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
       let semanticGold;
       if(entry.gold) {
+        const {checkGold}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
         const actual=ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
-        semanticGold={expected:entry.gold.text,actual,matches:actual.normalize('NFC').trim()===entry.gold.text.normalize('NFC').trim()};
+        semanticGold=checkGold(actual,entry.gold);
+        if(!semanticGold.matches) {
+          const guarded=JSON.parse(probe.compare_with_budget(bytes,rewritten,40000));
+          semanticGold.mismatch_is_guarded=!guarded.complete&&checks[1].passed
+            &&Object.values(guarded.diff.summary).every(n=>n===0);
+        }
       }
-      return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle),checks,...(semanticGold?{semantic_gold:semanticGold}:{})};
+      return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle)
+        &&(!semanticGold||semanticGold.matches||semanticGold.mismatch_is_guarded),
+        checks,...(semanticGold?{semantic_gold:semanticGold}:{})};
     },entry);
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
   }
@@ -220,13 +228,19 @@ try {
     await page.waitForTimeout(20);
   }
   results.push({id:'no-remaining-worker-targets',passed:remainingTargets.length===0,remainingTargets});
-  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs'];
+  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs'];
   const sourceHashes=Object.fromEntries(await Promise.all(sourceFiles.map(async f=>[f,hash(await fs.readFile(path.join(root,f)))])));
   const operations=documents.flatMap(d=>d.checks);
-  const report={version:1,manifest_sha256:hash(manifestBytes),browser:browser.version(),wasm_sha256:hash(await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'))),source_sha256:sourceHashes,
+  const goldByKind={};
+  for(const {semantic_gold:gold} of documents) if(gold) {
+    const count=goldByKind[gold.kind]??={cases:0,correct:0,failed:0};
+    count.cases++;count[gold.matches?'correct':'failed']++;
+  }
+  const report={version:2,manifest_sha256:hash(manifestBytes),browser:browser.version(),wasm_sha256:hash(await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'))),source_sha256:sourceHashes,
     methodology:'Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.',
     documents:documents.length,passed_documents:documents.filter(d=>d.passed).length,operation_checks:operations.length,matching_operations:operations.filter(x=>x.passed).length,matching_successful_operations:operations.filter(x=>x.passed&&!x.rejected).length,matching_rejections:operations.filter(x=>x.passed&&x.rejected).length,
     semantic_gold_checks:documents.filter(d=>d.semantic_gold).length,semantic_gold_failures:documents.filter(d=>d.semantic_gold&&!d.semantic_gold.matches).length,
+    semantic_gold_by_kind:goldByKind,
     cases:results.length,passed:results.filter(x=>x.passed).length,results,document_results:documents};
   await fs.writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
   console.log(`${report.passed_documents}/${report.documents} documents, ${report.matching_operations}/${report.operation_checks} operations, ${report.passed}/${report.cases} additional cases`);

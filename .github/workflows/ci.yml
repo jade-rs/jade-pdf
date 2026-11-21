@@ -68,6 +68,7 @@ jobs:
       - run: npm ci && npx playwright install ${{ matrix.engine }}
         working-directory: tools/wasm-smoke
       - run: node tools/wasm-smoke/test_browser_engine.mjs
+      - run: node tools/wasm-smoke/test_semantic_gold.mjs
       - run: node tools/wasm-smoke/browser_smoke.mjs
         env:
           JADE_PDF_BROWSER_ENGINE: ${{ matrix.engine }}
@@ -110,7 +111,7 @@ jobs:
           .venv-corpus/bin/python tools/audit_orphan_forms.py --binary target/release/pdf-diff
           .venv-corpus/bin/python tools/audit_empty_forms.py --binary target/release/pdf-diff
           python3 tools/audit_sdk_cache_contention.py --binary target/release/pdf-diff
-      - name: Full-page semantic gold (unresolved failures retained)
+      - name: Scoped semantic gold (unresolved failures retained)
         run: |
           audit_exit_code=0
           python3 tools/audit_pending_semantic.py --binary target/release/pdf-diff || audit_exit_code=$?
@@ -118,7 +119,7 @@ jobs:
             exit "$audit_exit_code"
           fi
           if [ "$audit_exit_code" -eq 3 ]; then
-            echo "Semantic gold is still failing; see results-pending-semantic.json. Guarded failures are not correct extractions."
+            echo "Semantic gold is still failing; see results-pending-semantic-deseret.json. Guarded failures are not correct extractions."
           fi
       - name: Independent table gold (incomplete source tags retained)
         run: |
@@ -144,6 +145,7 @@ jobs:
       - run: npm ci && npx playwright install chromium
         working-directory: tools/wasm-smoke
       - run: node tools/wasm-smoke/test_browser_engine.mjs
+      - run: node tools/wasm-smoke/test_semantic_gold.mjs
       - run: node tools/wasm-smoke/browser_smoke.mjs
         env:
           JADE_PDF_BINARY: target/release/pdf-diff

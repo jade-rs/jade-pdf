@@ -2076,6 +2076,40 @@
         "source_unicode_scalars_unmatched": 8
       },
       "retrieved": "2026-11-21"
+    },
+    {
+      "id": "unicode-deseret-18",
+      "url": "https://www.unicode.org/Public/18.0.0/charts/PDF/U10400.pdf",
+      "source": "https://www.unicode.org/Public/18.0.0/charts/",
+      "category": "Deseret supplementary characters: embedded Identity-H CID font without ToUnicode",
+      "sha256": "cddfdeb1c5eb73bfb2794dd98d6ea9596b3f18c8d7aabe8ac8fa894982770b40",
+      "bytes": 118677,
+      "pages": 3,
+      "gold": {
+        "kind": "scalar_inventory",
+        "page": 2,
+        "ranges": [
+          [
+            66560,
+            66639
+          ]
+        ],
+        "count_each": 1,
+        "scope": "All 80 Deseret glyphs in the printed code-chart grid, each once. Unicode identities manually checked against visible codepoint labels on page 2 and names on page 3; not full-page prose, reading-order or highlight-position gold."
+      },
+      "known_failure": "SDK returns fallback CIDs instead of Deseret scalars. The Type0 Identity-H embedded subset has no ToUnicode declaration. Font names or raw CIDs alone are not Unicode evidence.",
+      "rights": "Unicode chart page 1 and https://unicode.org/copyright.html permit personal/internal copies with notices. Keep original PDF unchanged in ignored internal cache; do not redistribute PDF or extract/reuse/distribute embedded font data.",
+      "reviewed": "2026-11-22",
+      "reviewed_pages": [
+        1,
+        2,
+        3
+      ],
+      "retrieved": "2026-11-22",
+      "baseline_diagnostics": {
+        "sdk_unicode_mapping_errors_page_2": 80,
+        "source_unicode_accounting_unavailable_page_2": true
+      }
     }
   ],
   "updated": "2026-11-22"
