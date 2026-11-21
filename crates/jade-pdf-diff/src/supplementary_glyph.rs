@@ -193,9 +193,7 @@ fn targets(
         }
         let narrowed = char::from_u32(scalar as u32 & 0xffff)?;
         // SDK内で既に決めた双方向の順序を、文字置換だけで変えない。
-        if unicode_bidi::bidi_class(scalar) != unicode_bidi::BidiClass::L
-            || unicode_bidi::bidi_class(narrowed) != unicode_bidi::BidiClass::L
-        {
+        if !crate::strong_ltr::contains(scalar) || !crate::strong_ltr::contains(narrowed) {
             return None;
         }
         let normalized = bag_for(narrowed);
@@ -331,6 +329,22 @@ mod tests {
         let declared = bag("𐐌");
         let targets = targets(&declared, &named).unwrap();
         assert!(prove(&declared, &BTreeMap::new(), &targets, &[], 0, 1).is_none());
+    }
+
+    /// Unicode 16で未割当だった結合文字・記号を既定のLとして復元しない。
+    #[test]
+    fn newly_assigned_non_ltr_scalars_are_not_treated_as_default_l() {
+        for original in ['\u{11b60}', '\u{11b62}', '\u{1ccfa}', '\u{1ceba}'] {
+            assert!(
+                targets(
+                    &bag(&original.to_string()),
+                    &BTreeMap::from([(original, 1)])
+                )
+                .is_none(),
+                "U+{:X}",
+                original as u32
+            );
+        }
     }
 
     /// 分割された同一字形の再出現で、消えた空白のセルを埋め合わせない。

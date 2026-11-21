@@ -69,6 +69,7 @@ mod rtl_order;
 mod scan;
 mod sdk_probes;
 mod source_text;
+mod strong_ltr;
 mod supplementary_glyph;
 mod tagged_table;
 mod text;

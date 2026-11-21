@@ -23,7 +23,6 @@ flate2 = "1"
 lopdf = { version = "=0.46.0", default-features = false }
 unicode-segmentation = "1"
 unicode-normalization = "0.1"
-unicode-bidi = "=0.3.18"
 
 # ネイティブでは同梱の検証処理で固定版Pdfiumを取得する。
 # WASM では Pdfium を JS 側で読み込んだ Emscripten モジュールにつなぐので要らない。

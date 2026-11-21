@@ -866,7 +866,6 @@ dependencies = [
  "sha2 0.10.9",
  "tar",
  "tempfile",
- "unicode-bidi",
  "unicode-normalization",
  "unicode-segmentation",
  "windows-sys 0.61.2",
