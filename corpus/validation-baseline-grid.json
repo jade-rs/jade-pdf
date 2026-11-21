@@ -1,0 +1,149 @@
+{
+  "version": 41,
+  "date": "2026-11-22",
+  "core_revision": "109b7c53105dd71a0c341ff75d413480bddb1d66",
+  "qualification_revision": "3abf66336dc3fbbea813bde79c65769580d621d2",
+  "base_revision": "bb0e21fa7c2f33c45614e8fad38f2865ba80afcb",
+  "production_ready": false,
+  "scope": "Stable row lookup for close font sizes, one independently reviewed natural-revision scalar edit and horizontal character-cell locations. Not whole-page or full-document precision/recall.",
+  "collection": {
+    "registered_documents": 84,
+    "regular_documents": 71,
+    "regular_pages": 606,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 2,
+    "new_registered_documents": 0
+  },
+  "natural_revision": {
+    "before_correct": 0,
+    "after_correct": 1,
+    "cases": 1,
+    "old_page": 16,
+    "new_page": 15,
+    "old_scalar": "<",
+    "new_scalar": "≤",
+    "independent_erratum_page": 36,
+    "horizontal_character_iou": {
+      "old": 0.9308492601904141,
+      "new": 0.8961773703680977
+    },
+    "positions_preserved_before_and_after": true,
+    "scope": "Section 4.1.1 introductory upper bound only, independently inspected from both page images and the erratum. Original character advance cells from pdfplumber 0.11.9, compared against public scalar spans. Not glyph-ink pixel geometry or full-document precision/recall."
+  },
+  "transition": {
+    "documents": 71,
+    "pages": 606,
+    "changed_grouping_pages": 7,
+    "old_blocks_on_changed_pages": 599,
+    "new_blocks_on_changed_pages": 584,
+    "changed_ordered_nonwhitespace_scalar_pages": 0,
+    "changed_sdk_source_and_order_diagnostic_pages": 0,
+    "normalization": "NFC and whitespace removal only; no NFKC, order changes, joiner or format-character removal.",
+    "scope": "Unchanged output is not semantic ground truth."
+  },
+  "verification": {
+    "native": {
+      "passed": 296,
+      "ignored": 8,
+      "test_groups": 25,
+      "exit_code": 0,
+      "log_sha256": "9ea4e2bf77f557f01533c4687b6e9e896dfa718fe9970a975f0361fbe9243f46"
+    },
+    "public_corpus": {
+      "passed": 6,
+      "semantic_characters_conserved": 1062884,
+      "exit_code": 0,
+      "log_sha256": "507e4d856b7f711555b97dc06477dad04395a905638fee238d9361d2d5ceec57"
+    },
+    "row_grid_tests": 4,
+    "saved_property_regression": true,
+    "owned_api_tests": 1,
+    "unit_rotation_translation_combinations": 48,
+    "fmt_root_and_probe": true,
+    "clippy_warnings_denied": true,
+    "python_harness_passed": 25,
+    "fixture_hygiene_passed": 2,
+    "browsers": [
+      {
+        "engine": "chromium",
+        "browser": "159.0.8154.6",
+        "passed": 289,
+        "cases": 289,
+        "scoped_revision_correct": 1,
+        "scoped_revision_cases": 1
+      },
+      {
+        "engine": "webkit",
+        "browser": "27.2",
+        "passed": 289,
+        "cases": 289,
+        "scoped_revision_correct": 1,
+        "scoped_revision_cases": 1
+      }
+    ],
+    "workers": {
+      "documents": 83,
+      "passed_documents": 83,
+      "operations": 1042,
+      "matching_operations": 1042,
+      "successful_operations": 981,
+      "matching_rejections": 61,
+      "additional_cases": 209,
+      "passed_additional_cases": 209,
+      "natural_revision_operations": 3,
+      "scoped_revision_correct": 1,
+      "scoped_revision_cases": 1
+    },
+    "retained_visible_operator_gold": {
+      "correct": 4,
+      "cases": 4
+    },
+    "native_binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+    "baseline_binary_sha256": "a3933b2d0dad2b0dbc16dd9c62d98300abc4f230ba7878c97950129ac2ab4f57",
+    "wasm_sha256": "9ae74cf5f94b9cce6384799ddba7dcb38debba422101a58354b0b06e76994564"
+  },
+  "unresolved": {
+    "arabic_full_page_correct": 0,
+    "arabic_full_page_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "guarded_failures": 2,
+    "full_natural_revision_precision_recall_unproven": true,
+    "mt_extra_assembly_fragments_unresolved": true
+  },
+  "previous_validation": "validation-mtextra.json",
+  "previous_manifest": "manifest-mtextra.json",
+  "sha256": {
+    ".github/workflows/ci.yml": "c26dd752e79fa42685b9c4a23994bfbed60f4502efc12eda141d33f20979620d",
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "corpus/README.md": "a7041691f6eb9567aa2acd8cc0bcbfd27de9a00270c2f856fa01a6ad3dc52c98",
+    "corpus/manifest-mtextra.json": "e902476fbd7a7e24c333211c36f6341837a9236fdbabf97b6405d9f4ee0bd826",
+    "corpus/manifest.json": "a1bbf9bafed556988f26beb356651c216f2c38dc48106375f641255b5679e77d",
+    "corpus/results-baseline-grid-impact.json": "e9ee591d17245c8f9ec75d1a10fc7b4294859fa8151d96f975eccb6751b515f8",
+    "corpus/results-browser-chromium-baseline-grid.json": "8e7fb992ea411e0da85476094e5ef1b4d33a5e9c1ac08462dad4988da099be04",
+    "corpus/results-browser-webkit-baseline-grid.json": "87e155bbe6c8c0214d1883b41a3c3975e868a67983d4628bbbfa495a82bfc8a2",
+    "corpus/results-pending-semantic-baseline-grid.json": "781c72e345991b2d84d43e399519e045700cc654945fc9bdccb9c77d63de21eb",
+    "corpus/results-scalar-revision-before.json": "da27ec41c4accb5d7fdd5fcde72e6324dd47e7a851c98f1e21cc9afd7f3f3859",
+    "corpus/results-scalar-revision.json": "56624c2496c5df2e483f2b5ae5d17ad666265cd48f76e81b7a3478ed60600fd8",
+    "corpus/results-symbol-operators-baseline-grid.json": "2902542712cfb35a07a5d301f81f0ef9feaa139687398bc33eec3e1c642103e9",
+    "corpus/results-workers-baseline-grid.json": "eb643e6e0844db6c291ed923799fa0deb9c7c64babc9cfa9a42efa56fb15aaf4",
+    "corpus/validation-mtextra.json": "14655ebe656eaad368374ed2c52b7e7ac02c28e16e5087264c4bb03d58d30c69",
+    "crates/jade-pdf-diff/Cargo.toml": "4070c168ff57846c5f5c0e67ba6e0c6ab88c76660548381d0847550a41e6473b",
+    "crates/jade-pdf-diff/proptest-regressions/text/row_tests.txt": "92fccb0b698e719e957e32ae04d76e262c1736dbf1e4f5dd91d152628756edea",
+    "crates/jade-pdf-diff/src/text.rs": "179c86a74d8adcb4fc60b627cdd0891344979024c3ba8ab09dc2d06e6f3a0174",
+    "crates/jade-pdf-diff/src/text/row_tests.rs": "86a038e1fdf106a5118404126279de37e32d896acde3ae245b792a5443420772",
+    "crates/jade-pdf-diff/tests/baseline_buckets.rs": "e28d1f16d48bab2c707a8a063754eaa012e4611342549f81659721e4824fe1c0",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "9d4e5772977b949bc641d4fad2fe3b49601c4c6751b604a1673924873ad2042e",
+    "docs/pdf_diff.md": "c40a9d57586c868f2db886ab59188974b0e99160ec2708d833158f0a281aea2e",
+    "tools/audit_run_grouping.py": "a61c13e00ea212be5bf4d2c6331daf696ba39d5db7f4472b58e9f876fc98da6d",
+    "tools/audit_scalar_revision.py": "eccbacdb9c321ae9d86e48d5ffa790386a926760b6d7712fb860c692c50e55ba",
+    "tools/scalar_revision_gold.py": "08d851d7c8b619e9f150f72086783348858e8e9e0e78a72619b6a093929d5cf2",
+    "tools/test_scalar_revision_gold.py": "60af95c07670f80aa24e26b00d9877b244d9be9c67775a0693bfb49a0d4035b2",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/browser_smoke.mjs": "0cccd0009d15d481085c45c5db4cdc6680702a69e17111a848aa1a86ba2a8b83",
+    "tools/wasm-smoke/scalar_revision.mjs": "3f135eade3818322ae86e943b99ed16c56ba5b8f8fef4690d04db48c20ddea56",
+    "tools/wasm-smoke/src/lib.rs": "8d96ff8133839a08502036800bc57bca9cc1fec54f5eb1d7c6b1d5728fafe905",
+    "tools/wasm-smoke/worker_smoke.mjs": "c2d389815b433f226ed421f45e58f1bd3b1016777a4481be8b0080695c658a87"
+  }
+}
