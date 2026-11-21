@@ -9,7 +9,7 @@
 
 use std::path::Path;
 
-use anyhow::{anyhow, Result};
+use anyhow::{anyhow, Context, Result};
 
 use crate::ir::DocumentIr;
 use crate::scan::{scan_document, Limits};
@@ -17,11 +17,12 @@ use crate::scan::{scan_document, Limits};
 /// PDF を読み込む。CPU を長く使うので、呼び出し側ではブロッキングスレッドへ。
 ///
 /// テキストが 1 つも無い PDF (スキャンした紙など) は、ページの枠だけ入った
-/// [`DocumentIr`] を返す。
+/// [`DocumentIr`] を返す。ファイル情報の取得失敗は対象パスと元の
+/// [`std::io::Error`] を保持するため、OSの文言に依存せず原因を判定できる。
 pub fn load_document(path: &Path, limits: &Limits) -> Result<DocumentIr> {
     limits.validate()?;
     let size = std::fs::metadata(path)
-        .map_err(|e| anyhow!("failed to read {}: {e}", path.display()))?
+        .with_context(|| format!("failed to read {}", path.display()))?
         .len();
     crate::scan::ensure_size(size, limits)?;
     let pdfium = crate::render::bind()?;

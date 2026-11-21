@@ -16,6 +16,8 @@ CLI の比較モードの終了コードは `0`: 検出対象の変更なし、`
 `2`: 引数・読み込み・解析・実行の失敗（プロセス上限を含む）、`3`: 描画・対応付けの計算上限や未対応の対話要素により要確認。
 `3` のときも差分 JSON は出力する。
 
+Rustの `load_document()` / `load_document_blocking()` は、ファイル情報の取得失敗を対象パスの文脈と元の `std::io::Error` とともに返す。`anyhow::Error::downcast_ref::<std::io::Error>()` で `ErrorKind::NotFound` などを確認でき、OSや表示言語の文字列へ依存する必要がない。
+
 CLIは各処理を子プロセスで実行する。既定は子の実行120秒、メモリ2GiB、標準出力・標準エラー・
 PNGの合計64MiB。コマンドの前に `--timeout-ms`、`--max-memory-mb`、`--max-output-mb` で変更できる。
 上限到達・クラッシュは終了コード2とし、途中のJSONは返さない。PNGは正常終了後に原子的に置き換える。
@@ -257,7 +259,7 @@ await pdf.whenIdle();
 
 公開 PDF の取得・精度評価・対応範囲は [corpus/README.md](../corpus/README.md) を参照。
 
-MIT License.
+プロジェクトのコードは [PolyForm Noncommercial 1.0.0](../LICENSE) に従う。SDKと公開資料は各権利者のライセンスに従う。
 
 空のAcroForm辞書は、Fields配列が空で、使用されない外観既定値だけを持ち、
 予算付きの全オブジェクト走査でフィールド・Widget・注釈・動的アクションが見つからない
