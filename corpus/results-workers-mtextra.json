@@ -11,7 +11,7 @@
     "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
     "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
     "tools/wasm-smoke/worker_smoke.mjs": "e35550fb0585230e503e735af25e4156a4009cc107a85a9ed3ab1d9f54566130",
-    "tools/wasm-smoke/semantic_gold.mjs": "694f0258684b04ade6c192bb9df48897b2aa5a098a07830608112463f0e59fd9"
+    "tools/wasm-smoke/semantic_gold.mjs": "fb0efd5951142febd1fe1dc886dde80a4134c06b0ac64e9c84d8e15f6d42b015"
   },
   "methodology": "Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.",
   "documents": 83,
@@ -2070,35 +2070,35 @@
       "idle": true,
       "busy": true,
       "recovered": true,
-      "recovery_elapsed_ms": 3037.2999999821186,
+      "recovery_elapsed_ms": 3080.699999988079,
       "recovery_attempted": true,
       "recovery_delay_ms": 3000,
       "fault_timeout_ms": 2500,
       "recovery_timeout_ms": 120000,
-      "ticks": 854,
+      "ticks": 859,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3010,
-      "rejectedAtEpochMs": 1795296851130,
+      "retirementWaitMs": 3007.800000011921,
+      "rejectedAtEpochMs": 1795297354529,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "981013F92165729263EAFE5F731710C8",
+          "targetId": "D9E190F9FE32AA0DB961082B24F12B36",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:64799/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-timeout-1795296848625",
+          "url": "http://127.0.0.1:64874/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-timeout-1795297352024",
           "attached": true,
-          "parentId": "896E92F109703B65A4E892C7FD084C42",
+          "parentId": "DAFC942B42FE4184950E927CA55EB4E7",
           "canAccessOpener": false,
-          "parentFrameId": "896E92F109703B65A4E892C7FD084C42",
-          "browserContextId": "7627886D7429BA662014E93F690C6FA9"
+          "parentFrameId": "DAFC942B42FE4184950E927CA55EB4E7",
+          "browserContextId": "DDD3F5DA4F620DFDBFA3C1A5F490AF63"
         }
       ],
       "remaining_target_details": [],
       "target_destroy_event": true,
-      "observed_termination_delay_ms": 2011
+      "observed_termination_delay_ms": 2001
     },
     {
       "id": "lifecycle-abort",
@@ -2107,30 +2107,30 @@
       "idle": true,
       "busy": true,
       "recovered": true,
-      "recovery_elapsed_ms": 3033.0999999940395,
+      "recovery_elapsed_ms": 3074.9000000059605,
       "recovery_attempted": true,
       "recovery_delay_ms": 3000,
       "fault_timeout_ms": 2500,
       "recovery_timeout_ms": 120000,
-      "ticks": 611,
+      "ticks": 616,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3008.199999988079,
-      "rejectedAtEpochMs": 1795296857254,
+      "retirementWaitMs": 3007.2999999821186,
+      "rejectedAtEpochMs": 1795297360708,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "DA37943994797E5F53D8C172694F7897",
+          "targetId": "C5B620866A3DC5C2A73F64887B1478C5",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:64799/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-abort-1795296857178",
+          "url": "http://127.0.0.1:64874/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-abort-1795297360619",
           "attached": true,
-          "parentId": "896E92F109703B65A4E892C7FD084C42",
+          "parentId": "DAFC942B42FE4184950E927CA55EB4E7",
           "canAccessOpener": false,
-          "parentFrameId": "896E92F109703B65A4E892C7FD084C42",
-          "browserContextId": "7627886D7429BA662014E93F690C6FA9"
+          "parentFrameId": "DAFC942B42FE4184950E927CA55EB4E7",
+          "browserContextId": "DDD3F5DA4F620DFDBFA3C1A5F490AF63"
         }
       ],
       "remaining_target_details": [],
@@ -2149,25 +2149,25 @@
       "recovery_delay_ms": 0,
       "fault_timeout_ms": 2500,
       "recovery_timeout_ms": 120000,
-      "ticks": 551,
+      "ticks": 550,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3009.7999999821186,
-      "rejectedAtEpochMs": 1795296865801,
+      "retirementWaitMs": 3000.4000000059605,
+      "rejectedAtEpochMs": 1795297369296,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "43EEEB46B04825FE57DC953883990EC8",
+          "targetId": "E5D345F5CB955D08D99ABC6C323DFD49",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:64799/tools/wasm-smoke/worker_fault.mjs?mode=wait-init&job=jade-worker-wait-init-1795296863297",
+          "url": "http://127.0.0.1:64874/tools/wasm-smoke/worker_fault.mjs?mode=wait-init&job=jade-worker-wait-init-1795297366792",
           "attached": true,
-          "parentId": "896E92F109703B65A4E892C7FD084C42",
+          "parentId": "DAFC942B42FE4184950E927CA55EB4E7",
           "canAccessOpener": false,
-          "parentFrameId": "896E92F109703B65A4E892C7FD084C42",
-          "browserContextId": "7627886D7429BA662014E93F690C6FA9"
+          "parentFrameId": "DAFC942B42FE4184950E927CA55EB4E7",
+          "browserContextId": "DDD3F5DA4F620DFDBFA3C1A5F490AF63"
         }
       ],
       "remaining_target_details": [],
@@ -2186,30 +2186,30 @@
       "recovery_delay_ms": 0,
       "fault_timeout_ms": 2500,
       "recovery_timeout_ms": 120000,
-      "ticks": 308,
+      "ticks": 307,
       "quarantine": true,
       "blockedDuringRetirement": true,
-      "retirementWaitMs": 3009.0999999940395,
-      "rejectedAtEpochMs": 1795296868887,
+      "retirementWaitMs": 3000.399999976158,
+      "rejectedAtEpochMs": 1795297372376,
       "started": true,
       "observed_live_targets": 1,
       "remaining_targets": 0,
       "live_targets": [
         {
-          "targetId": "A0EC217316A4080D1C0638AE3A69A9CC",
+          "targetId": "082B68EB0D451B2C4EB7FB8E980EAD6D",
           "type": "worker",
           "title": "jade-pdf-inspect",
-          "url": "http://127.0.0.1:64799/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-dispose-1795296868812",
+          "url": "http://127.0.0.1:64874/tools/wasm-smoke/worker_fault.mjs?mode=spin&job=jade-worker-dispose-1795297372298",
           "attached": true,
-          "parentId": "896E92F109703B65A4E892C7FD084C42",
+          "parentId": "DAFC942B42FE4184950E927CA55EB4E7",
           "canAccessOpener": false,
-          "parentFrameId": "896E92F109703B65A4E892C7FD084C42",
-          "browserContextId": "7627886D7429BA662014E93F690C6FA9"
+          "parentFrameId": "DAFC942B42FE4184950E927CA55EB4E7",
+          "browserContextId": "DDD3F5DA4F620DFDBFA3C1A5F490AF63"
         }
       ],
       "remaining_target_details": [],
       "target_destroy_event": true,
-      "observed_termination_delay_ms": 2010
+      "observed_termination_delay_ms": 2001
     },
     {
       "id": "all-worker-termination-requests",

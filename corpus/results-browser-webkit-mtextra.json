@@ -87,7 +87,7 @@
     "pdfjs-arial-unicode-arabic",
     "unicode-deseret-18"
   ],
-  "semantic_gold_checker_sha256": "694f0258684b04ade6c192bb9df48897b2aa5a098a07830608112463f0e59fd9",
+  "semantic_gold_checker_sha256": "fb0efd5951142febd1fe1dc886dde80a4134c06b0ac64e9c84d8e15f6d42b015",
   "semantic_gold_by_kind": {
     "full_page_text": {
       "cases": 1,
@@ -198,385 +198,385 @@
       "passed": true,
       "pages": 1,
       "png_bytes": 8112,
-      "ms": 605
+      "ms": 484
     },
     {
       "id": "rotated",
       "passed": true,
       "pages": 5,
       "png_bytes": 5838,
-      "ms": 427
+      "ms": 262
     },
     {
       "id": "arabic",
       "passed": true,
       "pages": 1,
       "png_bytes": 25937,
-      "ms": 795
+      "ms": 515
     },
     {
       "id": "ligatures",
       "passed": true,
       "pages": 1,
       "png_bytes": 14531,
-      "ms": 430
+      "ms": 254
     },
     {
       "id": "vertical",
       "passed": true,
       "pages": 3,
       "png_bytes": 9130,
-      "ms": 345
+      "ms": 234
     },
     {
       "id": "empty",
       "passed": true,
       "pages": 1,
       "png_bytes": 5557,
-      "ms": 408
+      "ms": 239
     },
     {
       "id": "scanned",
       "passed": true,
       "pages": 1,
       "png_bytes": 8750,
-      "ms": 483
+      "ms": 297
     },
     {
       "id": "form",
       "passed": true,
       "pages": 1,
       "png_bytes": 9264,
-      "ms": 473
+      "ms": 301
     },
     {
       "id": "type3",
       "passed": true,
       "pages": 1,
       "png_bytes": 6070,
-      "ms": 289
+      "ms": 241
     },
     {
       "id": "cjk",
       "passed": true,
       "pages": 1,
       "png_bytes": 7250,
-      "ms": 432
+      "ms": 233
     },
     {
       "id": "tracemonkey",
       "passed": true,
       "pages": 14,
       "png_bytes": 190967,
-      "ms": 2834
+      "ms": 1643
     },
     {
       "id": "freeculture",
       "passed": true,
       "pages": 352,
       "png_bytes": 60371,
-      "ms": 15050
+      "ms": 10786
     },
     {
       "id": "w3c-word",
       "passed": true,
       "pages": 1,
       "png_bytes": 98266,
-      "ms": 409
+      "ms": 293
     },
     {
       "id": "w3c-openoffice",
       "passed": true,
       "pages": 1,
       "png_bytes": 117202,
-      "ms": 438
+      "ms": 303
     },
     {
       "id": "mhlw-employment",
       "passed": true,
       "pages": 4,
       "png_bytes": 147410,
-      "ms": 588
+      "ms": 492
     },
     {
       "id": "irs-w4",
       "passed": true,
       "pages": 4,
       "png_bytes": 181322,
-      "ms": 890
+      "ms": 735
     },
     {
       "id": "irs-w4-2024",
       "passed": true,
       "pages": 4,
       "png_bytes": 156353,
-      "ms": 855
+      "ms": 664
     },
     {
       "id": "pdfjs-truetype-without-cmap",
       "passed": true,
       "pages": 1,
       "png_bytes": 3928,
-      "ms": 379
+      "ms": 230
     },
     {
       "id": "pdfjs-type3wordspacing",
       "passed": true,
       "pages": 1,
       "png_bytes": 11491,
-      "ms": 359
+      "ms": 234
     },
     {
       "id": "pdfjs-identitytounicodemap-charcodeof",
       "passed": true,
       "pages": 1,
       "png_bytes": 6540,
-      "ms": 320
+      "ms": 249
     },
     {
       "id": "pdfjs-arial-unicode-en-cidfont",
       "passed": true,
       "pages": 1,
       "png_bytes": 18201,
-      "ms": 304
+      "ms": 230
     },
     {
       "id": "pdfjs-french-diacritics",
       "passed": true,
       "pages": 1,
       "png_bytes": 7908,
-      "ms": 292
+      "ms": 239
     },
     {
       "id": "pdfjs-glyph-accent",
       "passed": true,
       "pages": 1,
       "png_bytes": 7256,
-      "ms": 333
+      "ms": 231
     },
     {
       "id": "pdfjs-nonembedded-type1-tounicode",
       "passed": true,
       "pages": 1,
       "png_bytes": 5213,
-      "ms": 332
+      "ms": 249
     },
     {
       "id": "pdfjs-rotation",
       "passed": true,
       "pages": 2,
       "png_bytes": 9999,
-      "ms": 343
+      "ms": 238
     },
     {
       "id": "pdfjs-text-rise-eol-bug",
       "passed": true,
       "pages": 1,
       "png_bytes": 8277,
-      "ms": 372
+      "ms": 243
     },
     {
       "id": "pdfjs-multiline",
       "passed": true,
       "pages": 1,
       "png_bytes": 3020,
-      "ms": 347
+      "ms": 219
     },
     {
       "id": "pdfjs-basicapi",
       "passed": true,
       "pages": 3,
       "png_bytes": 13468,
-      "ms": 399
+      "ms": 321
     },
     {
       "id": "pdfjs-cid-cff",
       "passed": true,
       "pages": 1,
       "png_bytes": 6596,
-      "ms": 314
+      "ms": 234
     },
     {
       "id": "pdfjs-text-clip-cff-cid",
       "passed": true,
       "pages": 1,
       "png_bytes": 8104,
-      "ms": 293
+      "ms": 230
     },
     {
       "id": "pdfjs-bug1947248-text",
       "passed": true,
       "pages": 1,
       "png_bytes": 6881,
-      "ms": 317
+      "ms": 231
     },
     {
       "id": "pdfjs-pattern-text-embedded-font",
       "passed": true,
       "pages": 1,
       "png_bytes": 24364,
-      "ms": 393
+      "ms": 236
     },
     {
       "id": "pdfjs-showtext-shadingpattern",
       "passed": true,
       "pages": 1,
       "png_bytes": 34865,
-      "ms": 312
+      "ms": 252
     },
     {
       "id": "pdfjs-image-rotated-black-white-ratio",
       "passed": true,
       "pages": 1,
       "png_bytes": 9235,
-      "ms": 358
+      "ms": 228
     },
     {
       "id": "pdfjs-form-two-pages",
       "passed": true,
       "pages": 2,
       "png_bytes": 6154,
-      "ms": 335
+      "ms": 236
     },
     {
       "id": "pdfjs-annotation-text-widget",
       "passed": true,
       "pages": 1,
       "png_bytes": 36836,
-      "ms": 353
+      "ms": 248
     },
     {
       "id": "pdfjs-issue-cmap12",
       "passed": true,
       "pages": 1,
       "png_bytes": 4318,
-      "ms": 395
+      "ms": 229
     },
     {
       "id": "irs-w4-2022",
       "passed": true,
       "pages": 4,
       "png_bytes": 155048,
-      "ms": 890
+      "ms": 637
     },
     {
       "id": "irs-w4-2023",
       "passed": true,
       "pages": 4,
       "png_bytes": 151183,
-      "ms": 869
+      "ms": 662
     },
     {
       "id": "irs-w4-2026",
       "passed": true,
       "pages": 5,
       "png_bytes": 200304,
-      "ms": 1061
+      "ms": 754
     },
     {
       "id": "pdfjs-bigboundingbox",
       "passed": true,
       "pages": 1,
       "png_bytes": 58394,
-      "ms": 303
+      "ms": 264
     },
     {
       "id": "pdfjs-issue-cff-unsigned-bbox",
       "passed": true,
       "pages": 1,
       "png_bytes": 8358,
-      "ms": 320
+      "ms": 231
     },
     {
       "id": "pdfium-cropped-text",
       "passed": true,
       "pages": 4,
       "png_bytes": 19598,
-      "ms": 403
+      "ms": 264
     },
     {
       "id": "pdfium-combobox-form",
       "passed": true,
       "pages": 1,
       "png_bytes": 12698,
-      "ms": 402
+      "ms": 250
     },
     {
       "id": "pdfium-listbox-form",
       "passed": true,
       "pages": 1,
       "png_bytes": 29257,
-      "ms": 324
+      "ms": 246
     },
     {
       "id": "pdfium-text-form-multiline",
       "passed": true,
       "pages": 1,
       "png_bytes": 5987,
-      "ms": 336
+      "ms": 250
     },
     {
       "id": "irs-w9-2018",
       "passed": true,
       "pages": 6,
       "png_bytes": 198284,
-      "ms": 842
+      "ms": 750
     },
     {
       "id": "irs-w9-2024",
       "passed": true,
       "pages": 6,
       "png_bytes": 201337,
-      "ms": 974
+      "ms": 741
     },
     {
       "id": "pdfjs-user-unit",
       "passed": true,
       "pages": 1,
       "png_bytes": 5565,
-      "ms": 335
+      "ms": 236
     },
     {
       "id": "acl-bleu-2002",
       "passed": true,
       "pages": 8,
       "png_bytes": 180124,
-      "ms": 941
+      "ms": 707
     },
     {
       "id": "pdfjs-membership-mixed-columns",
       "passed": true,
       "pages": 1,
       "png_bytes": 86299,
-      "ms": 460
+      "ms": 321
     },
     {
       "id": "pdfium-font-matrix",
       "passed": true,
       "pages": 1,
       "png_bytes": 14293,
-      "ms": 324
+      "ms": 247
     },
     {
       "id": "neurips-attention-2017",
       "passed": true,
       "pages": 11,
       "png_bytes": 121544,
-      "ms": 872
+      "ms": 681
     },
     {
       "id": "bipm-si-concise",
       "passed": true,
       "pages": 5,
       "png_bytes": 187737,
-      "ms": 770
+      "ms": 595
     },
     {
       "id": "w3c-tagged-table",
       "passed": true,
       "pages": 1,
       "png_bytes": 15159,
-      "ms": 289
+      "ms": 240
     },
     {
       "id": "empty-shell-w3c-complex-table",
@@ -591,7 +591,7 @@
       "passed": true,
       "pages": 1,
       "png_bytes": 28580,
-      "ms": 1229
+      "ms": 840
     },
     {
       "id": "empty-shell-w3c-rowspan-table",
@@ -606,91 +606,91 @@
       "passed": true,
       "pages": 1,
       "png_bytes": 28238,
-      "ms": 1123
+      "ms": 849
     },
     {
       "id": "pdfium-multiple-form-types",
       "passed": true,
       "pages": 1,
       "png_bytes": 12808,
-      "ms": 319
+      "ms": 241
     },
     {
       "id": "pdfbox-orphan-widgets",
       "passed": true,
       "pages": 4,
       "png_bytes": 99774,
-      "ms": 588
+      "ms": 512
     },
     {
       "id": "bipm-si-concise-2026",
       "passed": true,
       "pages": 5,
       "png_bytes": 174154,
-      "ms": 851
+      "ms": 652
     },
     {
       "id": "bipm-si-concise-fr-2026",
       "passed": true,
       "pages": 5,
       "png_bytes": 187673,
-      "ms": 833
+      "ms": 717
     },
     {
       "id": "pdfjs-issue6612",
       "passed": true,
       "pages": 1,
       "png_bytes": 5191,
-      "ms": 277
+      "ms": 235
     },
     {
       "id": "pdfjs-issue14497",
       "passed": true,
       "pages": 1,
       "png_bytes": 4632,
-      "ms": 294
+      "ms": 247
     },
     {
       "id": "pdfium-rotated-text",
       "passed": true,
       "pages": 1,
       "png_bytes": 17116,
-      "ms": 361
+      "ms": 238
     },
     {
       "id": "pdfium-rotated-text-90",
       "passed": true,
       "pages": 1,
       "png_bytes": 13651,
-      "ms": 268
+      "ms": 246
     },
     {
       "id": "pdfjs-issue14497-original",
       "passed": true,
       "pages": 3,
       "png_bytes": 50743,
-      "ms": 1250
+      "ms": 1035
     },
     {
       "id": "pdfjs-actualtext-eset",
       "passed": true,
       "pages": 26,
       "png_bytes": 47487,
-      "ms": 1321
+      "ms": 1233
     },
     {
       "id": "pdfa-actualtext-graphics",
       "passed": true,
       "pages": 1,
       "png_bytes": 6989,
-      "ms": 336
+      "ms": 245
     },
     {
       "id": "pdfa-actualtext-ocr",
       "passed": true,
       "pages": 1,
       "png_bytes": 10504,
-      "ms": 292
+      "ms": 253
     },
     {
       "id": "symbol-operator-gold-nist-fips180-4-2012-page-16",
@@ -740,7 +740,7 @@
       "passed": true,
       "pages": 36,
       "png_bytes": 91657,
-      "ms": 1623
+      "ms": 1461
     },
     {
       "id": "symbol-operator-gold-nist-fips180-4-2015-page-15",
@@ -876,14 +876,14 @@
       "passed": true,
       "pages": 36,
       "png_bytes": 58826,
-      "ms": 1617
+      "ms": 1436
     },
     {
       "id": "pdfjs-arial-unicode-arabic",
       "passed": true,
       "pages": 1,
       "png_bytes": 7250,
-      "ms": 968,
+      "ms": 762,
       "semantic_gold": {
         "kind": "full_page_text",
         "native_check": {
@@ -909,7 +909,7 @@
       "passed": true,
       "pages": 3,
       "png_bytes": 115314,
-      "ms": 1889,
+      "ms": 1752,
       "semantic_gold": {
         "kind": "scalar_inventory",
         "native_check": {
