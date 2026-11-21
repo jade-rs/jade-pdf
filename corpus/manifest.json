@@ -1698,7 +1698,8 @@
       "text_fragments": [
         "SHA-256"
       ],
-      "confidentiality": "Public NIST technical publication; no private user documents."
+      "confidentiality": "Public NIST technical publication; no private user documents.",
+      "source_inventory_gold": "source-inventory-nist-2012.json"
     },
     {
       "id": "nist-fips180-4-2015",
@@ -1754,7 +1755,8 @@
       "text_fragments": [
         "SHA-256"
       ],
-      "confidentiality": "Public NIST technical publication; no private user documents."
+      "confidentiality": "Public NIST technical publication; no private user documents.",
+      "source_inventory_gold": "source-inventory-nist-2015.json"
     }
   ],
   "revision_pairs": [

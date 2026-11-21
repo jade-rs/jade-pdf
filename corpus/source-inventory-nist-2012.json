@@ -1,0 +1,183 @@
+{
+  "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+  "actual_text": [
+    {
+      "page": 9,
+      "object": [
+        3483,
+        0
+      ],
+      "mcid": 3,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 13,
+      "object": [
+        3265,
+        0
+      ],
+      "mcid": 36,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 14,
+      "object": [
+        3252,
+        0
+      ],
+      "mcid": 16,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 15,
+      "object": [
+        3217,
+        0
+      ],
+      "mcid": 4,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 16,
+      "object": [
+        3170,
+        0
+      ],
+      "mcid": 5,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 20,
+      "object": [
+        2995,
+        0
+      ],
+      "mcid": 13,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 23,
+      "object": [
+        2784,
+        0
+      ],
+      "mcid": 1,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 24,
+      "object": [
+        2559,
+        0
+      ],
+      "mcid": 3,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 24,
+      "object": [
+        2560,
+        0
+      ],
+      "mcid": 5,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 24,
+      "object": [
+        2561,
+        0
+      ],
+      "mcid": 7,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 28,
+      "object": [
+        2266,
+        0
+      ],
+      "mcid": 5,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 30,
+      "object": [
+        2110,
+        0
+      ],
+      "mcid": 63,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 31,
+      "object": [
+        2056,
+        0
+      ],
+      "mcid": 32,
+      "source_hex": "feff22110020",
+      "text": "∑ ",
+      "raw_sdk_text": "∑"
+    },
+    {
+      "page": 34,
+      "object": [
+        3515,
+        0
+      ],
+      "mcid": 7,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 34,
+      "object": [
+        3518,
+        0
+      ],
+      "mcid": 14,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 29,
+      "object": [
+        2215,
+        0
+      ],
+      "mcid": 9,
+      "source_hex": "feff22110020",
+      "text": "∑ ",
+      "raw_sdk_text": "∑"
+    }
+  ],
+  "fonts": [],
+  "method": "Original PDF dictionaries and pypdf 6.10.0 strict UTF-16; raw MCID inventory from independent SDK bindings. Symbol cmap inspected in memory using FontTools 4.60.2; no outlines exported. Conservation equivalences only, not full-page Unicode gold."
+}

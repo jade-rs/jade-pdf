@@ -6,6 +6,8 @@
 
 [v39検証台帳](validation-symbol-encoding.json) に、Rust 283件（7件ignored）、Chromium159・WebKit27.2各281条件、Worker83資料1,037操作＋203条件と成果物・ソースのハッシュを固定した。[不等号の変更前](results-symbol-operators-before.json) は1/2、[修正後](results-symbol-operators.json) は2/2で、2015版の私用文字10個を「≤」10個へ復元した。全体の精度達成とは扱わず、[ArabicとDeseretの未達](results-pending-semantic-symbol.json) は全文0/1・指定文字集合0/1のまま残す。以前のmanifestは `manifest-deseret-gold.json` に保持した。
 
+v39のハッシュはコミット `39f73fd` の実行時点を記録している。その後のCIで、生SDKのハイフンと原本の論理的なソフトハイフンを同じ文字として数えていた監査上の不足が判明した。`source-inventory-nist-2012.json` は原本のActualTextバイト・構造要素・所有ページ・MCIDと、そのMCIDのSDK文字列を固定する。`source-inventory-nist-2015.json` はSymbolの原本辞書・ToUnicode・字体プログラムのハッシュと、独立に照合した対応だけを固定する。検証時に原本と所有関係を再確認し、別字体やActualTextが同じ私用符号を使う場合は等価化しない。これは文字保存量の参照の補正であり、全文の意味精度goldではない。原本のハッシュ・タグ・MCID・字体資料の改変と所有数の不一致を拒否するテストを追加し、製品のハイフン処理・生SDK診断・前述の目視goldは保持する。
+
 両ブラウザーの[初回Chromium](results-browser-chromium-symbol-initial.json)・[初回WebKit](results-browser-webkit-symbol-initial.json) は280/281だった。代替字体で `{256}` が `{ 256}` と抽出され、上付きの数値注記が別行扱いになる不一致を自作テストで再現し、短い括弧付き数値だけは内側の空白を許して修正した。[最終Chromium](results-browser-chromium-symbol.json)・[最終WebKit](results-browser-webkit-symbol.json) では71資料606ページと未達資料2本の文字順・診断を照合し、目視した不等号goldも確認する。[Worker記録](results-workers-symbol.json) では通常・堅牢性・未達資料の操作、停止・終了・復帰と、選択ページの不等号goldを検証した。元の失敗を合格へ書き換えていない。
 
 変更前のSDKとPDF.jsは2015版の「≤」10個をともにU+F0A3と抽出した。バックエンド間の一致を正解とせず、原文の字形IDと埋め込みMicrosoft Symbol cmapを照合して復元する。Delta・muなど曖昧な対応や不明なフォントは推測せず要確認に残し、ActualText内の論理文字を置換しない。欠落・未観測・読み順の診断は保持する。自作の長方形TrueTypeで回転・物理単位・せん断、実際の文字編集、曖昧な符号と別のActualText領域を検証する。
