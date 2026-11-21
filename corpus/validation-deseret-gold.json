@@ -1,0 +1,103 @@
+{
+  "version": 38,
+  "date": "2026-11-22",
+  "goal_status": "in_progress",
+  "production_ready": false,
+  "product_source_commit": "6b54ec110f8dbe53577fae2f4d4ce3350b85f04b",
+  "historical_validation": "validation-rtl-unicode.json",
+  "historical_validation_sha256": "02265d9d090ad6656ece5ec07aa92add61b219b9c3c89e311b121ce703774454",
+  "historical_manifest": "manifest-rtl-unicode.json",
+  "historical_manifest_sha256": "01fff2a268da2667bcf039f5255db4eea4477373e51b0aa5f87e922d1a9d60b0",
+  "manifest_sha256": "3657e1fc322309fec0302ad3a166d63003bc07073e60b98cf162eaf9e624b0f7",
+  "corpus": {
+    "regular_documents": 69,
+    "regular_pages": 534,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 2,
+    "pending_semantic_pages": 4,
+    "collected_pdf_files": 82,
+    "executable_documents": 81
+  },
+  "new_pdf": {
+    "id": "unicode-deseret-18",
+    "reviewed_pages": [
+      1,
+      2,
+      3
+    ],
+    "gold_kind": "scalar_inventory",
+    "selected_page": 2,
+    "expected_scalars": 80,
+    "correct_scalars": 0,
+    "scope": "Literal U+10400..U+1044F counts, one each in the printed grid. Not full-page prose, reading order or highlight geometry.",
+    "rights": "Original Unicode chart kept unchanged with notices in ignored internal cache. No embedded font data extracted, reused or redistributed."
+  },
+  "semantic_gold": {
+    "full_page_text": {
+      "cases": 1,
+      "correct": 0,
+      "failed": 1
+    },
+    "scalar_inventory": {
+      "cases": 1,
+      "correct": 0,
+      "failed": 1
+    },
+    "guarded_failures": 2,
+    "unguarded_or_false_change_failures": 0,
+    "guard_scope": "A mismatch needs selected-page text review evidence and an incomplete equivalent-rewrite comparison with no false changes. Other-page or geometry-only warnings do not qualify."
+  },
+  "browser": {
+    "chrome": {
+      "cases": 270,
+      "passed": 270
+    },
+    "webkit": {
+      "cases": 270,
+      "passed": 270
+    },
+    "scope": "Native/WASM runtime parity, selected generated golds and guards for incorrect semantic gold. These passed runtime cases are not an extraction-accuracy rate."
+  },
+  "worker": {
+    "documents": 81,
+    "passed_documents": 81,
+    "operation_checks": 953,
+    "matching_operations": 953,
+    "additional_cases": 196,
+    "passed_additional_cases": 196,
+    "scope": "Chromium CDP Worker lifecycle and exact direct-WASM parity under self-only CSP; no Firefox/WebKit Worker-termination claim."
+  },
+  "native_binary_sha256": "d6c274ab3321d395145524adc6d80ad3faf9c14dced2dc78981ca888f80b0d7c",
+  "wasm_sha256": "4692b90da50efd38a8bd942b6dd7adaf800eca45f7160c80813ea5524169a324",
+  "validation": {
+    "python_harness_tests": 14,
+    "fixture_hygiene_tests": 2,
+    "js_semantic_gold_tests": true,
+    "offline_pdf_checksums": 82
+  },
+  "remaining_gaps": [
+    "Both pending semantic golds remain incorrect; safe review outcomes are failures, not recovered Unicode.",
+    "Full natural-revision precision/recall, independent highlight positions and arbitrary reading order remain unqualified.",
+    "Historical source omissions, Unicode-unavailable pages and PDF.js discrepancies remain separate unresolved evidence.",
+    "Deployment throughput, latency and host resource behavior require workload-specific qualification."
+  ],
+  "source_sha256": {
+    "tools/semantic_gold.py": "f63e5f264bb56b160d6898f9c735c250c263eeb65629d5e1d9fd18adaf5509da",
+    "tools/test_semantic_gold.py": "e1e5dfbf7b0e13610a0fe1603c0fd57e5095faec8de2b141d8cbd55e01906784",
+    "tools/audit_pending_semantic.py": "8f16e24008c0e2000843784226d51448f968653160e324113d50fe0a8e7c87df",
+    "tools/wasm-smoke/semantic_gold.mjs": "64468bc10c9f6a356a9dbcddb10cdcb9d0a47353a3cf71e1b9a41234d7880f61",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "28ccd357365807007505a2f8c395b7332ec1c340e8473439bf42c75da7687361",
+    "tools/wasm-smoke/browser_smoke.mjs": "8c70246c9862df60a9740111c8f0a3a3910f3bd524a3d047eb7f39ceb999e17a",
+    "tools/wasm-smoke/worker_smoke.mjs": "5de20c6195f8d946b949292ccc9fc87fd01eb4de42879b39f895df00d5a30e2d",
+    ".github/workflows/ci.yml": "fbe7345eefc057b30d252cd3c3969eafe3a94f059917149c82cfcbd6818926b1",
+    "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf"
+  },
+  "report_sha256": {
+    "results-pending-semantic-deseret.json": "defe8168d917dcb833f1e13ea2449cfbc475bdbbe5de4d03cc794ae57a4d5ed7",
+    "results-browser-chrome-deseret.json": "1782902bca2f125e538b2bb120969f85da144f841afccc1eab8bec8a10e17f80",
+    "results-browser-webkit-deseret.json": "19259e47fc7ec533fda19e0e244aa8fda2b1af7d8f3f07183b135ff847bfbe0b",
+    "results-workers-deseret.json": "3a718930ef6773b33842ca1235fb83847bbd35805bcb85448056fec37a5a2f4c"
+  },
+  "qualification_harness_base_commit": "adf230be40ad6c9eb5306894ca5873c632a238f3"
+}
