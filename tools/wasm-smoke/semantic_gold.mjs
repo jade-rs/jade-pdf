@@ -55,8 +55,10 @@ export function checkGold(actual,gold) {
 }
 export function compactFragmentMatches(actual,gold) {
   if(!Object.hasOwn(gold,'compact_fragment')) return true;
-  if(typeof gold.compact_fragment!=='string'||!gold.compact_fragment.trim())
+  if(typeof gold.compact_fragment!=='string')
     throw new Error('Compact fragment requires nonempty text');
   const compact=text=>text.replace(/[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/gu,'');
-  return compact(actual).includes(compact(gold.compact_fragment));
+  const expected=compact(gold.compact_fragment);
+  if(!expected.length) throw new Error('Compact fragment requires nonempty text');
+  return compact(actual).includes(expected);
 }

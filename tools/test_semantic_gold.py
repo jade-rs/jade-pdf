@@ -17,7 +17,9 @@ class SemanticGoldTests(unittest.TestCase):
         self.assertTrue(compact_fragment_matches('…ℓ', {}))
         self.assertTrue(compact_fragment_matches('0 ≤ t\n≤ 79', dict(compact_fragment='0≤t≤79')))
         self.assertFalse(compact_fragment_matches('0≤t<79', dict(compact_fragment='0≤t≤79')))
-        for value in ['', ' \n', None, 4]:
+        self.assertFalse(compact_fragment_matches('A\ufeffB', dict(compact_fragment='AB')))
+        self.assertTrue(compact_fragment_matches('A\ufeffB', dict(compact_fragment='\ufeff')))
+        for value in ['', ' \n', '\u0085', '\u001c', None, 4]:
             with self.assertRaises(ValueError):
                 compact_fragment_matches('anything', dict(compact_fragment=value))
 

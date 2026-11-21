@@ -4,7 +4,9 @@ import {checkGold,pageHasTextReview,compactFragmentMatches} from './semantic_gol
 assert.equal(compactFragmentMatches('…ℓ',{}),true);
 assert.equal(compactFragmentMatches('0 ≤ t\n≤ 79',{compact_fragment:'0≤t≤79'}),true);
 assert.equal(compactFragmentMatches('0≤t<79',{compact_fragment:'0≤t≤79'}),false);
-for(const value of ['', ' \n', null, 4])
+assert.equal(compactFragmentMatches('A\ufeffB',{compact_fragment:'AB'}),false);
+assert.equal(compactFragmentMatches('A\ufeffB',{compact_fragment:'\ufeff'}),true);
+for(const value of ['', ' \n', '\u0085', '\u001c', null, 4])
   assert.throws(()=>compactFragmentMatches('anything',{compact_fragment:value}));
 
 const clean={blocks:[{text:'wrong'}],user_unit:null};
