@@ -58,10 +58,12 @@ def main():
         source=ROOT/'corpus/cache'/(entry['id']+'.pdf')
         old,new=[records(invoke(exe,'--text-layer',source,page)[1]) for exe in (baseline,binary)]
         return dict(id=entry['id'],page=page,source_sha256=entry['sha256'],nonwhitespace_scalars=len(old),
+                    source_owned_nonwhitespace_scalars=sum(bool(row[4]) for row in old),
                     old_sha256=digest(old),new_sha256=digest(new),matches=old==new)
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:results=list(pool.map(inspect,cases))
     report=dict(version=1,cases=len(results),matched=sum(r['matches'] for r in results),
                 nonwhitespace_scalars=sum(r['nonwhitespace_scalars'] for r in results),results=results,
+                source_owned_nonwhitespace_scalars=sum(r['source_owned_nonwhitespace_scalars'] for r in results),
                 binary_sha256=hash_file(binary),baseline_sha256=hash_file(baseline),
                 manifest_sha256=hash_file(ROOT/'corpus/manifest.json'),impact_sha256=hash_file(args.impact),
                 audit_sha256=hash_file(__file__),scope='All pages changed by the paired native extraction audit. Literal nonwhitespace scalar sequence, public character spans, run bounds/font sizes, diagnostics and per-character source-region ownership must remain exact. Source-region indices may shift with removed blanks but ownership must not. Not semantic text gold, glyph-ink truth or full diff precision/recall.')
