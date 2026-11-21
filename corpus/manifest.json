@@ -2240,7 +2240,10 @@
       ],
       "count_each": 9,
       "scope": "Visible less-equal operators on printed page 10; one in introductory bound and eight in piecewise rows. Other symbols, whole-page text/order and coordinates are not gold.",
-      "compact_fragment": "0≤t<79"
+      "compact_fragment": "0≤t<79",
+      "forbidden_scalars": [
+        61603
+      ]
     },
     {
       "id": "nist-fips180-4-2015",
@@ -2254,7 +2257,42 @@
       ],
       "count_each": 10,
       "scope": "Visible less-equal operators on printed page 10; two in introductory bound and eight in piecewise rows. The erratum on PDF page 36 independently identifies the < to ≤ editorial correction. Other symbols, whole-page text/order and coordinates are not gold.",
-      "compact_fragment": "0≤t≤79"
+      "compact_fragment": "0≤t≤79",
+      "forbidden_scalars": [
+        61603
+      ]
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 9,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          8467,
+          8467
+        ]
+      ],
+      "count_each": 1,
+      "scope": "One visible script small l in the parameter list, defined as the length of message M in bits. Counted manually on the rendered page; not full-page text, order or geometry gold.",
+      "forbidden_scalars": [
+        61548
+      ]
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 17,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          8230,
+          8230
+        ]
+      ],
+      "count_each": 1,
+      "scope": "One horizontal ellipsis between the first two and last SHA-512 constants in the introductory sentence. Counted manually on the rendered page; not the surrounding hex constants, full-page order or geometry gold.",
+      "forbidden_scalars": [
+        61515
+      ]
     }
   ]
 }

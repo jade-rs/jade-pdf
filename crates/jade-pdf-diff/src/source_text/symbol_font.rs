@@ -1,19 +1,37 @@
-//! 外部フォントを保存せず、旧Symbol符号の所有関係だけを有界に読む。
+//! 外部フォントを保存せず、旧数式用Symbol符号の所有関係だけを有界に読む。
 use anyhow::{ensure, Context, Result};
 use lopdf::{Dictionary, Document, Object};
 use std::{collections::BTreeMap, sync::OnceLock};
 use ttf_parser::{Face, PlatformId, Tag};
 use unicode_normalization::UnicodeNormalization;
 
-/// 正式なSymbol名だけを受け入れ、有効な六文字のsubset接頭辞を除く。
-pub(super) fn family(name: &[u8]) -> bool {
+/// 同じ私用コードでも意味が異なる、独立した二つの旧字体符号化。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum Kind {
+    /// Adobe Symbolの独立した符号表。
+    Symbol,
+    /// MathType Extraの独立した符号表。
+    MtExtra,
+}
+
+/// 正式な字体名だけを受け入れ、有効な六文字のsubset接頭辞を除く。
+fn kind(name: &[u8]) -> Option<Kind> {
     let name = if name.len() > 7 && name[6] == b'+' && name[..6].iter().all(u8::is_ascii_uppercase)
     {
         &name[7..]
     } else {
         name
     };
-    matches!(name, b"Symbol" | b"SymbolMT")
+    match name {
+        b"Symbol" | b"SymbolMT" => Some(Kind::Symbol),
+        b"MT Extra" | b"MT-Extra" | b"MTExtra" => Some(Kind::MtExtra),
+        _ => None,
+    }
+}
+
+/// 独立した対応表を持つ字体だけを、旧私用符号の診断対象にする。
+pub(super) fn family(name: &[u8]) -> bool {
+    kind(name).is_some()
 }
 
 /// 参照の深さを32段に制限し、循環した辞書を受け入れない。
@@ -30,7 +48,14 @@ fn resolve<'a>(doc: &'a Document, mut value: &'a Object) -> Result<&'a Object> {
 }
 
 /// 元の通知付きAdobe表から、正準合成後も一意な非私用文字だけを採用する。
-fn mapping() -> &'static BTreeMap<u8, char> {
+fn mapping(encoding: Kind) -> &'static BTreeMap<u8, char> {
+    if encoding == Kind::MtExtra {
+        // Mozilla MathMLの一次資料に記載された、単独文字である二つの対応事実。
+        // フォント・字形・表全体を複製せず、組み立て片を一文字へ誤変換しない。
+        // 出典と範囲はresources/mt-extra.jsonに記録する。
+        static MT: OnceLock<BTreeMap<u8, char>> = OnceLock::new();
+        return MT.get_or_init(|| BTreeMap::from([(0x4b, '…'), (0x6c, 'ℓ')]));
+    }
     static MAP: OnceLock<BTreeMap<u8, char>> = OnceLock::new();
     MAP.get_or_init(|| {
         let mut entries = BTreeMap::<u8, Option<char>>::new();
@@ -79,7 +104,7 @@ pub(super) fn read(
         font.get(b"Subtype")?.as_name()? == b"Type0",
         "Not a Type0 Symbol font"
     );
-    ensure!(family(font.get(b"BaseFont")?.as_name()?), "Not Symbol");
+    let encoding = kind(font.get(b"BaseFont")?.as_name()?).context("Unknown legacy math font")?;
     ensure!(
         font.get(b"Encoding")?.as_name()? == b"Identity-H",
         "Unverified Symbol encoding"
@@ -92,7 +117,7 @@ pub(super) fn read(
         "Not TrueType CID"
     );
     ensure!(
-        family(descendant.get(b"BaseFont")?.as_name()?),
+        kind(descendant.get(b"BaseFont")?.as_name()?) == Some(encoding),
         "Symbol family disagreement"
     );
     ensure!(
@@ -101,7 +126,7 @@ pub(super) fn read(
     );
     let descriptor = resolve(doc, descendant.get(b"FontDescriptor")?)?.as_dict()?;
     ensure!(
-        family(descriptor.get(b"FontName")?.as_name()?),
+        kind(descriptor.get(b"FontName")?.as_name()?) == Some(encoding),
         "Symbol descriptor disagreement"
     );
     let stream = resolve(doc, descriptor.get(b"FontFile2")?)?.as_stream()?;
@@ -142,7 +167,10 @@ pub(super) fn read(
         } else {
             anyhow::bail!("Unverified Symbol name encoding");
         };
-        ensure!(family(text.as_bytes()), "Embedded font is not Symbol");
+        ensure!(
+            kind(text.as_bytes()) == Some(encoding),
+            "Embedded font disagrees with legacy math encoding"
+        );
         family_seen |= name.name_id == 1;
         ps_seen |= name.name_id == 6;
     }
@@ -159,7 +187,7 @@ pub(super) fn read(
         .collect();
     ensure!(!symbol.is_empty(), "Missing Microsoft Symbol cmap");
     let mut result = BTreeMap::new();
-    for (&code, &target) in mapping() {
+    for (&code, &target) in mapping(encoding) {
         let raw = char::from_u32(0xf000 + u32::from(code)).unwrap();
         let Some(gid) = symbol[0].glyph_index(raw as u32) else {
             continue;
@@ -197,14 +225,21 @@ mod tests {
     /// 数学的に異なるDelta・muと、空白・私用の組み立て字形を推測しない。
     #[test]
     fn symbol_table_preserves_ambiguous_semantics() {
-        assert_eq!(mapping().get(&0xa3), Some(&'≤'));
-        assert_eq!(mapping().get(&0x73), Some(&'σ'));
+        assert_eq!(mapping(Kind::Symbol).get(&0xa3), Some(&'≤'));
+        assert_eq!(mapping(Kind::Symbol).get(&0x73), Some(&'σ'));
         for code in [0x20, 0x44, 0x6d, 0x60] {
-            assert!(!mapping().contains_key(&code));
+            assert!(!mapping(Kind::Symbol).contains_key(&code));
         }
         assert!(family(b"ABCDEF+Symbol"));
         assert!(!family(b"abcdef+Symbol"));
         assert!(!family(b"MySymbol"));
+        assert_eq!(kind(b"ABCDEF+MT Extra"), Some(Kind::MtExtra));
+        assert_eq!(kind(b"ABCDEF+MT-Extra"), Some(Kind::MtExtra));
+        assert_eq!(mapping(Kind::MtExtra).get(&0x4b), Some(&'…'));
+        assert_eq!(mapping(Kind::Symbol).get(&0x4b), Some(&'Κ'));
+        assert_eq!(mapping(Kind::MtExtra).get(&0x6c), Some(&'ℓ'));
+        assert_eq!(mapping(Kind::Symbol).get(&0x6c), Some(&'λ'));
+        assert!(!mapping(Kind::MtExtra).contains_key(&0x31));
     }
 
     /// 自作PDFのフォント辞書だけを取得し、外部フォントをテストへ持ち込まない。
@@ -250,6 +285,6 @@ mod tests {
             ),
             pin["sha256"].as_str().unwrap()
         );
-        assert!(mapping().len() > 150);
+        assert!(mapping(Kind::Symbol).len() > 150);
     }
 }

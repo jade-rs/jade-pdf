@@ -54,6 +54,7 @@ mod input;
 mod ir;
 #[cfg(not(target_arch = "wasm32"))]
 pub mod isolation;
+mod legacy_context;
 #[cfg(not(target_arch = "wasm32"))]
 mod native_runtime;
 mod page_units;

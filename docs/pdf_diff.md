@@ -102,7 +102,8 @@ ToUnicodeの明示対応から候補を作らず、正常に復元済みのUTF-1
 未割当の既定値Lは復元の証明に使わない。公式の固定SHA-256・生成方法・Unicode License V3は `resources/unicode-bidi-ltr.json` に記録し、`tools/generate_strong_ltr.py` で再生成できる。追加の実行時依存は不要である。
 
 旧Microsoft Symbolの私用符号は、Type0／Identity-H／CIDFontType2／明示的なCIDToGIDMap Identity、PDF内の三つのSymbol名、埋め込みTrueTypeのfamily／PostScript名、Microsoft Symbol cmapの字形IDとToUnicodeの一致を確認した場合に限り復元する。フォント名だけで私用領域を一括置換しない。Unicode公式Adobe Symbol表から正準合成後も一意な非私用文字だけを採用し、Delta・mu・空白など意味の曖昧な符号は要確認に残す。表の原本通知・固定SHAは `resources/adobe-symbol.json` に記録している。
-この投影はASCII、明示的なLTR文字、省略記号と検証済みSymbol符号だけのページに限定する。原文の全使用回数、ページ全体の文字集合、重複のない一文字セルを確認し、同じ私用符号を他のフォントやActualTextも使う場合は復元しない。検証済みActualText領域の外の字形だけを対象にし、領域内の論理文字は保持する。二度の読み取りで生Unicodeと位置の座標を照合し、空白欠落・未観測オブジェクト・読み順などの診断を消さない。
+MT Extraは別の符号化として扱い、同じ検証を通った場合だけF04Bを省略記号U+2026、F06Cをスクリプト小文字l U+2113へ復元する。Symbolの同じ位置はKappa・lambdaを表すため混同しない。MozillaのMathML一次調査・メーカー資料・字体識別情報の出典と対象範囲は `resources/mt-extra.json` に記録する。組み立て用の括弧片・アクセントなど、他の位置は復元しない。
+この投影の周辺文字はUnicode 18の明示的なL・EN・ES・ET・CS・NSM・B・S・WS・ONに限定する。引用符や結合記号は元のまま保持し、未割当・私用領域・RTL・Arabic数字・方向制御と、配置処理がRTL候補とする区間を拒否する。固定した原本と生成方法は `resources/unicode-legacy-context.json` に記録し、補助文字の字形名復元に必要な強いLの条件は緩めない。原文の全使用回数、ページ全体の文字集合、重複のない一文字セルを確認し、同じ私用符号を他のフォントやActualTextも使う場合は復元しない。検証済みActualText領域の外の字形だけを対象にし、領域内の論理文字は保持する。二度の読み取りで生Unicodeと位置の座標を照合し、空白欠落・未観測オブジェクト・読み順などの診断を消さない。
 フォント資料はpure Rustの `ttf-parser = 0.25.1` で名前とcmapだけを読み、外部フォントや輪郭を保存・再利用しない。一つ2MiB、文書全体16MiB（展開失敗も予算を消費）、64表・128名・16cmap表、セル20万個を上限とする。元のToUnicode用の予算は独立して保持する。
 未対応の複合CMap、継承CMap、不正なUTF-16などを推測で補完しない。
 多重集合の一致も順序・位置・原文全体の完全性の証明ではない。

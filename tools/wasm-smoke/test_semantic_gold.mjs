@@ -1,5 +1,13 @@
 import assert from 'node:assert/strict';
-import {checkGold,pageHasTextReview} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches} from './semantic_gold.mjs';
+
+assert.equal(compactFragmentMatches('…ℓ',{}),true);
+assert.equal(compactFragmentMatches('0 ≤ t\n≤ 79',{compact_fragment:'0≤t≤79'}),true);
+assert.equal(compactFragmentMatches('0≤t<79',{compact_fragment:'0≤t≤79'}),false);
+assert.equal(compactFragmentMatches('A\ufeffB',{compact_fragment:'AB'}),false);
+assert.equal(compactFragmentMatches('A\ufeffB',{compact_fragment:'\ufeff'}),true);
+for(const value of ['', ' \n', '\u0085', '\u001c', null, 4])
+  assert.throws(()=>compactFragmentMatches('anything',{compact_fragment:value}));
 
 const clean={blocks:[{text:'wrong'}],user_unit:null};
 assert.equal(pageHasTextReview(clean),false);
@@ -22,6 +30,12 @@ assert.equal(result.scope,gold.scope);
 assert.equal('actual_text' in result,false);
 for(const actual of ['𐐀','𐐀𐐁𐐁','\u0400\u0401']) assert.equal(checkGold(actual,gold).matches,false);
 const math={kind:'scalar_inventory',ranges:[[0x1d400,0x1d400]],count_each:1,scope:'One math scalar'};
+const selected={kind:'scalar_inventory',ranges:[[0x2264,0x2264]],count_each:1,
+  scope:'One visible operator',forbidden_scalars:[0xf0a3]};
+assert.equal(checkGold('≤\uf04b',selected).matches,true);
+assert.equal(checkGold('≤\uf0a3',selected).matches,false);
+for(const value of [null,'x',[true],[0xd800],[0x110000],[0xf0a3,0xf0a3]])
+  assert.throws(()=>checkGold('≤',{...selected,forbidden_scalars:value}));
 assert.equal(checkGold('A',math).matches,false);
 assert.equal(checkGold('𝐀',math).matches,true);
 for(const change of [{ranges:[]},{ranges:[[2,1]]},{ranges:[[0xd7ff,0xe000]]},

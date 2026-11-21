@@ -1,0 +1,62 @@
+{
+  "document_id": "nist-fips180-4-2015",
+  "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+  "font_object": [
+    59,
+    0
+  ],
+  "pdf_font": {
+    "BaseFont": "ABCDEE+MT Extra",
+    "Subtype": "Type0",
+    "Encoding": "Identity-H",
+    "descendant": "CIDFontType2",
+    "CIDToGIDMap": "Identity",
+    "FontFile2_decoded_bytes": 3632
+  },
+  "font_program": {
+    "family": "MT Extra",
+    "postscript": "MT-Extra",
+    "post_format": 3,
+    "post_glyph_names": false,
+    "microsoft_symbol_cmap": {
+      "platform": 3,
+      "encoding": 0,
+      "format": 4
+    },
+    "sha256": "da81d1bd97275cf2f93c5fb62713bf1d2b29fbfe0fd14b21210324348e9b140d"
+  },
+  "verified_uses": [
+    {
+      "raw": "U+F04B",
+      "glyph_id": 21,
+      "to_unicode_cid": "0015",
+      "target": "U+2026"
+    },
+    {
+      "raw": "U+F06C",
+      "glyph_id": 34,
+      "to_unicode_cid": "0022",
+      "target": "U+2113"
+    }
+  ],
+  "scope": "Two standalone positions only. F031-F034 and F036-F038 are assembly fragments; neither ASCII digits nor whole braces. Original metadata inspected in memory with pypdf 6.10.0 and FontTools 4.60.2; no external font, outline or binary was exported, stored or reused.",
+  "visible_gold": [
+    {
+      "page": 9,
+      "scalar": "U+2113",
+      "count": 1,
+      "scope": "Parameter definition for the length of message M in bits."
+    },
+    {
+      "page": 17,
+      "scalar": "U+2026",
+      "count": 1,
+      "scope": "Introductory sentence listing the first two and last SHA-512 constants."
+    }
+  ],
+  "sources": [
+    "https://www-archive.mozilla.org/projects/mathml/fonts/encoding/mtextra",
+    "https://docs.wiris.com/en_US/reference/font-knowledge",
+    "https://learn.microsoft.com/en-us/typography/font-list/mt-extra"
+  ]
+}

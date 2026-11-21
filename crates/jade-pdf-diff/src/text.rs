@@ -784,7 +784,8 @@ fn baseline_angle([a, b, c, d]: [f64; 4]) -> Option<f64> {
     }
 }
 
-fn is_rtl(c: char) -> bool {
+/// 文字配置側でRTL候補として数える範囲。旧字体の文脈検証でも共有する。
+pub(crate) fn is_rtl(c: char) -> bool {
     matches!(c, '\u{590}'..='\u{8ff}' | '\u{fb1d}'..='\u{fdff}' | '\u{fe70}'..='\u{feff}')
 }
 
