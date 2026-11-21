@@ -16,6 +16,40 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if name == "baseline_bucket_edit" {
+        for unit in [1. / 64., 1., 3., 64.] {
+            for rotation in [0, 90, 180, 270] {
+                for shift in [-200., 0., 100.] {
+                    for revised in [false, true] {
+                        let bytes = appearance_fixture::baseline_bucket_layout(
+                            unit, rotation, shift, revised,
+                        );
+                        let ir = pdf_diff::load_document_from_bytes(
+                            &bytes,
+                            &pdf_diff::Limits::default(),
+                        )
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        let layer = pdf_diff::text_layer_from_bytes(&bytes, 1)
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        let expected = if revised {
+                            "where0≤t≤79,"
+                        } else {
+                            "where0≤t<79,"
+                        };
+                        if ir.pages[0].blocks.len() != 1
+                            || layer.len() != 1
+                            || ir.pages[0].text().split_whitespace().collect::<String>() != expected
+                            || layer[0].text != ir.pages[0].text()
+                        {
+                            return Err(JsValue::from_str(
+                                "Baseline grouping changed under translation, units or rotation",
+                            ));
+                        }
+                    }
+                }
+            }
+        }
+    }
     let legacy = name
         .strip_prefix("symbol_unicode_")
         .map(|mode| (mode, false))

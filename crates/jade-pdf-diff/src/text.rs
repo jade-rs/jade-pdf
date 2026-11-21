@@ -9,6 +9,9 @@ use crate::Bounds;
 
 mod inline;
 mod order;
+#[cfg(test)]
+#[path = "text/row_tests.rs"]
+mod row_tests;
 mod table;
 
 pub(crate) struct ExtractedRun {
@@ -805,9 +808,20 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
         let tolerance = (em * 0.1).max(0.25 * point);
         let font = (em / point * 10.0).round() as i64;
         let angle = (run.angle * 10.0).round() as i64;
-        let y = (run.origin.1 / tolerance).floor() as i64;
+        // 同じ字号キーには共通の格子幅を使う。各runの微小な字号差で
+        // 格子幅を変えると、絶対座標が大きいほど同じ行を探索できなくなる。
+        // 整数キーが飽和する極端な字号は、従来の格子幅を保持する。
+        let grid_em = if font == i64::MAX {
+            em
+        } else {
+            font as f64 / 10.0 * point
+        };
+        let grid = (grid_em * 0.1).max(0.25 * point);
+        let y = (run.origin.1 / grid).floor() as i64;
         let mut row = None;
-        for offset in -1i64..=1 {
+        // 元の実字号による許容差は保持する。丸めた格子幅より僅かに
+        // 大きい許容差が境界を跨ぐ場合も、定数個の近傍で検査する。
+        for offset in -2i64..=2 {
             if let Some(candidates) =
                 buckets.get(&(font, angle, y.saturating_add(offset), run.tagged_cell))
             {
