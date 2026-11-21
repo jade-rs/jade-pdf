@@ -1,6 +1,7 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "baseline_bucket_edit",
     "mtextra_unicode_valid",
     "mtextra_unicode_edit",
     "mtextra_unicode_fragment",
@@ -1170,6 +1171,9 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if case == "baseline_bucket_edit" {
+        return baseline_bucket_layout(1., 0, 0., revised);
+    }
     if let Some(mode) = case.strip_prefix("mtextra_unicode_") {
         let mode = if mode == "edit" && !revised {
             "valid"
@@ -2093,6 +2097,34 @@ fn legacy_math_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool, mt
         format!("<< /Type /FontDescriptor /FontName /{family} /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile2 8 0 R >>"),
         stream(&font, "/Filter /ASCIIHexDecode"),
         stream(&format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /Test def /CMapType 2 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 5 beginbfchar {map} <0004> <F044> <0005> <F06D> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end"), ""),
+    ])
+}
+
+/// 同じ行に微小な字号差とベースライン差を配置し、元の矩形字形だけで不等号を編集する。
+pub fn baseline_bucket_layout(unit: f64, rotation: u16, shift_y: f64, revised: bool) -> Vec<u8> {
+    let y = 504.19 + shift_y;
+    let symbol_y = 504.099 + shift_y;
+    let content = format!(
+        "q {scale:.17} 0 0 {scale:.17} 0 0 cm
+BT /F2 12 Tf 20 {y:.17} Td (where 0) Tj ET
+BT /F1 12.0452776 Tf 70 {symbol_y:.17} Td <0001> Tj ET
+BT /F2 12 Tf 83 {y:.17} Td (t) Tj ET
+BT /F1 12.0452776 Tf 94 {symbol_y:.17} Td <upper> Tj ET
+BT /F2 12 Tf 107 {y:.17} Td (79,) Tj ET Q",
+        scale = 1. / unit
+    )
+    .replace("<upper>", if revised { "<0001>" } else { "<0002>" });
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 {} {} {}] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R /F2 10 0 R >> >> /Contents 5 0 R >>",(400.+shift_y)/unit,200./unit,(600.+shift_y)/unit),
+        "<< /Type /Font /Subtype /Type0 /BaseFont /Symbol /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 9 0 R >>".into(),
+        stream(&content,""),
+        "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /Symbol /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 7 0 R /CIDToGIDMap /Identity /DW 500 >>".into(),
+        "<< /Type /FontDescriptor /FontName /Symbol /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile2 8 0 R >>".into(),
+        stream(symbol_glyph_font(),"/Filter /ASCIIHexDecode"),
+        stream("/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <0000> <FFFF> endcodespacerange 2 beginbfchar <0001> <F0A3> <0002> <F03C> endbfchar endcmap end end",""),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
     ])
 }
 

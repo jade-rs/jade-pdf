@@ -1,0 +1,100 @@
+{
+  "documents": 71,
+  "pages": 606,
+  "changed_pages": 7,
+  "changed_ordered_scalar_pages": 0,
+  "changed_diagnostic_pages": 0,
+  "old_blocks_on_changed_pages": 599,
+  "new_blocks_on_changed_pages": 584,
+  "results": [
+    {
+      "id": "nist-fips180-4-2012",
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "pages": 36,
+      "changes": [
+        {
+          "page": 27,
+          "old_blocks": 117,
+          "new_blocks": 116,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "89c07be38e0d6610653a8f8bda65b3fcaa861170e5b01dbff66587e6ae68f161",
+          "new_ordered_sha256": "89c07be38e0d6610653a8f8bda65b3fcaa861170e5b01dbff66587e6ae68f161"
+        }
+      ]
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "pages": 36,
+      "changes": [
+        {
+          "page": 11,
+          "old_blocks": 9,
+          "new_blocks": 8,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "c088d88d9566b34365b2782dc2aca97e2150dcaa506bf9c32d74513d837ee4ce",
+          "new_ordered_sha256": "c088d88d9566b34365b2782dc2aca97e2150dcaa506bf9c32d74513d837ee4ce"
+        },
+        {
+          "page": 15,
+          "old_blocks": 135,
+          "new_blocks": 127,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "5e66c6e43af5a60da5e4e9b23e3b975c2bdcd13a712bd7116f8597295fb31380",
+          "new_ordered_sha256": "5e66c6e43af5a60da5e4e9b23e3b975c2bdcd13a712bd7116f8597295fb31380"
+        },
+        {
+          "page": 16,
+          "old_blocks": 120,
+          "new_blocks": 118,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "176abd61b584766855980521ae821a2eb1b0f792f0a6a1257ac5e4a4b666e564",
+          "new_ordered_sha256": "176abd61b584766855980521ae821a2eb1b0f792f0a6a1257ac5e4a4b666e564"
+        },
+        {
+          "page": 17,
+          "old_blocks": 37,
+          "new_blocks": 36,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "8202ceaed44291ab3fa2941dd5ec846aa1572be81e23d3b795480055c9b25820",
+          "new_ordered_sha256": "8202ceaed44291ab3fa2941dd5ec846aa1572be81e23d3b795480055c9b25820"
+        },
+        {
+          "page": 23,
+          "old_blocks": 68,
+          "new_blocks": 67,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "627101f8263388ff6c4e0541844c3ad8a9f1472b0ba7ddb2a3651257a4dd8203",
+          "new_ordered_sha256": "627101f8263388ff6c4e0541844c3ad8a9f1472b0ba7ddb2a3651257a4dd8203"
+        },
+        {
+          "page": 29,
+          "old_blocks": 113,
+          "new_blocks": 112,
+          "text_changed": true,
+          "ordered_scalars_changed": false,
+          "diagnostic_changes": {},
+          "old_ordered_sha256": "5ce5a4ddc764bf386e73eec6e6a304f455b84bd0faa5fad45b18b586691905f8",
+          "new_ordered_sha256": "5ce5a4ddc764bf386e73eec6e6a304f455b84bd0faa5fad45b18b586691905f8"
+        }
+      ]
+    }
+  ],
+  "binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+  "baseline_sha256": "a3933b2d0dad2b0dbc16dd9c62d98300abc4f230ba7878c97950129ac2ab4f57",
+  "manifest_sha256": "a1bbf9bafed556988f26beb356651c216f2c38dc48106375f641255b5679e77d",
+  "source_sha256": "a61c13e00ea212be5bf4d2c6331daf696ba39d5db7f4472b58e9f876fc98da6d",
+  "scope": "Native before/after ordered scalar sequence after NFC and whitespace removal, plus existing diagnostics. Unchanged output does not establish Unicode accuracy or whole-document diff precision/recall."
+}

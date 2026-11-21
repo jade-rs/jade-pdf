@@ -2294,5 +2294,38 @@
         61515
       ]
     }
+  ],
+  "scalar_revision_gold": [
+    {
+      "id": "nist-fips180-4-introductory-upper-bound",
+      "old_id": "nist-fips180-4-2012",
+      "new_id": "nist-fips180-4-2015",
+      "old_page": 16,
+      "new_page": 15,
+      "old_context": "where0≤t<79",
+      "new_context": "where0≤t≤79",
+      "old_focus": 8,
+      "new_focus": 8,
+      "minimum_horizontal_iou": 0.75,
+      "source_cells": {
+        "old": {
+          "x0": 513.9819,
+          "y0": 501.408,
+          "x1": 520.7499,
+          "y1": 513.408
+        },
+        "new": {
+          "x0": 511.30251618288,
+          "y0": 501.497469448446,
+          "x1": 519.1178968393671,
+          "y1": 513.54274854921
+        }
+      },
+      "erratum_page": 36,
+      "independent_reference": "Both rendered printed-page-10 section 4.1.1 introductory sentences and the 2015 erratum table were inspected. Original character advance cells independently interpreted with pdfplumber; coordinates are PDF user space, bottom-left origin, unit 1 and rotation 0. Cells are not glyph-ink outlines.",
+      "scope": "Only the changed upper-bound scalar and its horizontal character cell. Not other formula rows, full-page text/order, all natural-revision changes, or pixel highlight precision/recall.",
+      "old_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "new_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82"
+    }
   ]
 }
