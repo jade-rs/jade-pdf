@@ -51,10 +51,7 @@ struct PageProjection {
     contexts: Vec<(usize, i32, usize)>,
 }
 fn merge_unicode(into: &mut unicode::Facts, from: unicode::Facts) {
-    into.unavailable |= from.unavailable;
-    for (c, count) in from.scalars {
-        *into.scalars.entry(c).or_default() += count;
-    }
+    into.merge(from);
 }
 impl PageProjection {
     fn new(actual: structure::Plan) -> Self {

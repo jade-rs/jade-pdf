@@ -367,7 +367,13 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name.startsWith('agl_')) {
+        if(name.startsWith('rtl_unicode_')) {
+          const mode=name.slice('rtl_unicode_'.length);
+          const complete=!['ambiguous','mixed'].includes(mode);
+          passed&&=result.complete===complete&&result.text_complete===complete&&summary.pages_visual_changed===0;
+          if(['edit','hebrew','mixed_edit'].includes(mode)) passed&&=summary.blocks_changed===1;
+          else passed&&=Object.values(summary).every(value=>value===0);
+        } else if(name.startsWith('agl_')) {
           const mode=name.slice(4);
           const supported=['uacute','ugrave'].includes(mode);
           const known=['union','universal','uacute','ugrave','nonbmp','multicomponent'].includes(mode);

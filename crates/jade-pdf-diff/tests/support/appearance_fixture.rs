@@ -1,6 +1,12 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "rtl_unicode_equivalent",
+    "rtl_unicode_edit",
+    "rtl_unicode_ambiguous",
+    "rtl_unicode_mixed",
+    "rtl_unicode_hebrew",
+    "rtl_unicode_mixed_edit",
     "agl_union",
     "agl_universal",
     "agl_uacute",
@@ -1148,6 +1154,21 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("rtl_unicode_") {
+        let mut bytes = match mode {
+            "equivalent" => unicode_spelling(if revised { "لخ" } else { "\u{fccb}" }),
+            "edit" => unicode_spelling(if revised { "لح" } else { "لخ" }),
+            "hebrew" => unicode_spelling(if revised { "שם" } else { "של" }),
+            "ambiguous" => ambiguous_rtl_spellings(),
+            "mixed" => unicode_spelling("ب\u{200c}ت"),
+            "mixed_edit" => unicode_spelling(if revised { "بB" } else { "بA" }),
+            _ => panic!("Unknown RTL case"),
+        };
+        if revised && matches!(mode, "ambiguous" | "mixed") {
+            bytes.extend_from_slice(b"\n% equivalent rewrite\n");
+        }
+        return bytes;
+    }
     if let Some(mode) = case.strip_prefix("agl_") {
         return glyph_named_text(mode, revised);
     }
@@ -1814,5 +1835,38 @@ pub fn glyph_named_text(mode: &str, revised: bool) -> Vec<u8> {
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".into(),
         format!("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 /{name}] >> >>"),
         stream("BT /F1 12 Tf 3 Tr 30 150 Td (A) Tj ET", ""),
+    ])
+}
+
+/// 同じ描画文字に別の Unicode 対応を宣言し、原文照合と文字差分を検証する。
+pub fn unicode_spelling(text: &str) -> Vec<u8> {
+    unicode_spelling_geometry(text, 1.0, 0, false)
+}
+
+/// 表示回転・物理単位・せん断を変えても、一文字コードの所有関係を保持する。
+pub fn unicode_spelling_geometry(text: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
+    let target = text
+        .encode_utf16()
+        .map(|unit| format!("{unit:04X}"))
+        .collect::<String>();
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 6 0 R >>".into(),
+        stream(&format!("{} BT /F1 12 Tf 3 Tr 30 150 Td (A) Tj ET", if shear { "1 .2 .3 1 0 0 cm" } else { "" }), ""),
+        stream(&format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /SpellingGold def /CMapType 2 def 1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfchar <41> <{target}> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end"), ""),
+    ])
+}
+
+/// 同じ文字集合に異なる原文順序を持つ、二つの独立した文字セルを生成する。
+pub fn ambiguous_rtl_spellings() -> Vec<u8> {
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".into(),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 6 0 R >>".into(),
+        stream("BT /F1 12 Tf 3 Tr 30 150 Td (A) Tj ET BT /F1 12 Tf 3 Tr 100 150 Td (B) Tj ET", ""),
+        stream("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /AmbiguousOrder def /CMapType 2 def 1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0644062E> <42> <062E0644> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end", ""),
     ])
 }

@@ -5,7 +5,7 @@ use lopdf::{content::Content, dictionary, Document, Encoding, Object};
 use std::collections::{BTreeMap, HashMap};
 use std::rc::Rc;
 use std::sync::OnceLock;
-use unicode_normalization::UnicodeNormalization;
+use unicode_normalization::char::{decompose_canonical, decompose_compatible};
 
 const WORK: usize = 4_000_000;
 const BYTES: usize = 8 * 1024 * 1024;
@@ -16,10 +16,138 @@ const MAP_ENTRIES: usize = 100_000;
 pub(crate) struct Facts {
     pub scalars: BTreeMap<char, usize>,
     pub unavailable: bool,
+    /// 原文の文字コードを厳密に数えた個数。
+    pub glyphs: usize,
+    /// 同じ文字集合を持つ複数字形の、原文に明記された論理順序。
+    pub rtl_sequences: BTreeMap<String, RtlSequence>,
+    /// 論理順序の補助資料が予算内に収まらなかったことを示す。
+    pub rtl_unavailable: bool,
+    /// 論理順序資料の保存量の保守的な上限。
+    rtl_bytes: usize,
 }
 
-/// Canonical equivalents and the SDK's common Latin ligature expansions.
-/// Whitespace/control codes stay in the separate encoded-glyph count guard.
+/// 一つの文字コードが持つ右から左への複数文字対応。
+#[derive(Clone)]
+pub(crate) struct RtlSequence {
+    /// 同じ文字集合に異なる原文順序がある場合は確定しない。
+    pub text: Option<String>,
+    /// 原文で使用された文字コードの個数。
+    pub count: usize,
+    /// 複数の Unicode 文字が直接宣言され、SDK で逆順になり得るか。
+    pub explicit: bool,
+}
+
+impl Facts {
+    /// 原文の表示命令ごとの検証資料を、ページ単位で予算内に結合する。
+    pub fn merge(&mut self, from: Self) {
+        self.unavailable |= from.unavailable;
+        self.glyphs = self.glyphs.saturating_add(from.glyphs);
+        self.rtl_unavailable |= from.rtl_unavailable;
+        for (c, count) in from.scalars {
+            *self.scalars.entry(c).or_default() += count;
+        }
+        if self.rtl_unavailable {
+            self.rtl_sequences.clear();
+            self.rtl_bytes = 0;
+            return;
+        }
+        for (key, sequence) in from.rtl_sequences {
+            self.merge_sequence(key, sequence);
+        }
+    }
+
+    /// 一意な論理順序と出現回数を保ち、曖昧さを単語集合の一致で隠さない。
+    fn merge_sequence(&mut self, key: String, sequence: RtlSequence) {
+        if self.rtl_unavailable {
+            self.rtl_sequences.clear();
+            return;
+        }
+        if let Some(old) = self.rtl_sequences.get_mut(&key) {
+            old.count = old.count.saturating_add(sequence.count);
+            old.explicit |= sequence.explicit;
+            if old.text != sequence.text {
+                old.text = None;
+            }
+        } else {
+            self.rtl_bytes = self
+                .rtl_bytes
+                .saturating_add(key.len() + sequence.text.as_ref().map_or(0, String::len) + 80);
+            if self.rtl_sequences.len() >= 1024 || self.rtl_bytes > 64 * 1024 {
+                self.rtl_sequences.clear();
+                self.rtl_unavailable = true;
+                return;
+            }
+            self.rtl_sequences.insert(key, sequence);
+        }
+    }
+
+    /// 原文の一文字コードに対する RTL 展開だけを記録する。
+    fn sequence(&mut self, text: &str) {
+        if self.rtl_unavailable || text.is_ascii() {
+            return;
+        }
+        if text.chars().any(|c| matches!(c, '\u{061c}' | '\u{200c}'..='\u{200f}' | '\u{202a}'..='\u{202e}' | '\u{2066}'..='\u{206f}')) {
+            self.rtl_sequences.clear(); self.rtl_unavailable = true; return;
+        }
+        let mut chars = text.chars();
+        let first = chars.next().unwrap();
+        if chars.next().is_none()
+            && !matches!(first, '\u{fc00}'..='\u{fdff}' | '\u{fef5}'..='\u{fefc}')
+        {
+            return;
+        }
+        let mut normalized = String::new();
+        for c in text.chars() {
+            let add = |c| normalized.push(c);
+            if matches!(c, '\u{fb50}'..='\u{fdff}' | '\u{fe70}'..='\u{feff}' | '\u{0675}'..='\u{0678}')
+            {
+                decompose_compatible(c, add);
+            } else {
+                decompose_canonical(c, add);
+            }
+        }
+        if normalized.chars().count() < 2 || !normalized.chars().any(rtl_letter) {
+            return;
+        }
+        if normalized.chars().any(|c| c.is_control() || c == '\u{ad}') {
+            self.rtl_sequences.clear();
+            self.rtl_unavailable = true;
+            return;
+        }
+        if normalized.chars().count() > 256 {
+            self.rtl_unavailable = true;
+            self.rtl_sequences.clear();
+            return;
+        }
+        let key = rtl_key(&normalized);
+        self.merge_sequence(
+            key,
+            RtlSequence {
+                text: Some(normalized),
+                count: 1,
+                explicit: text.chars().count() > 1,
+            },
+        );
+    }
+}
+
+/// 結合記号・数字・制御を除く、SDK の RTL 基底文字の適用範囲。
+pub(crate) fn rtl_letter(c: char) -> bool {
+    c.is_alphabetic()
+        && unicode_normalization::char::canonical_combining_class(c) == 0
+        && matches!(c, '\u{0590}'..='\u{05ff}' | '\u{0600}'..='\u{06ff}' | '\u{0750}'..='\u{077f}' | '\u{0870}'..='\u{08ff}')
+}
+
+/// 文字の重複を残して、原文と SDK の候補を照合する。
+pub(crate) fn rtl_key(text: &str) -> String {
+    let mut chars: Vec<_> = text.chars().collect();
+    chars.sort_unstable();
+    chars.into_iter().collect()
+}
+
+/// 原文と SDK の文字集合を正規分解・ラテン合字・アラビア接続形で照合する。
+/// 数字や数学記号の一般的な互換変換は行わず、意味の異なる文字を保持する。
+/// 空白・制御コードは別の原文文字コード数の検査に残す。
 pub(crate) fn add_scalar(bag: &mut BTreeMap<char, usize>, scalar: char) {
     let expansion = match scalar {
         'ﬀ' => "ff",
@@ -31,17 +159,23 @@ pub(crate) fn add_scalar(bag: &mut BTreeMap<char, usize>, scalar: char) {
         'ſ' => "s",
         _ => "",
     };
-    if expansion.is_empty() {
-        for c in scalar
-            .to_string()
-            .nfd()
-            .filter(|c| !c.is_whitespace() && !c.is_control())
-        {
+    let mut add = |c: char| {
+        if !c.is_whitespace() && !c.is_control() {
             *bag.entry(c).or_default() += 1;
+        }
+    };
+    if expansion.is_empty() {
+        // U+0675..0678 は接続形の分解先にも現れる名目文字であり、
+        // 二段階の分解でも同じ文字集合になるよう併せて処理する。
+        if matches!(scalar, '\u{fb50}'..='\u{fdff}' | '\u{fe70}'..='\u{feff}' | '\u{0675}'..='\u{0678}')
+        {
+            decompose_compatible(scalar, add);
+        } else {
+            decompose_canonical(scalar, add);
         }
     } else {
         for c in expansion.chars() {
-            *bag.entry(c).or_default() += 1;
+            add(c);
         }
     }
 }
@@ -482,6 +616,7 @@ impl<'a> Reader<'a> {
             };
             let code_bytes = &bytes[at..at + width];
             at += width;
+            facts.glyphs = facts.glyphs.saturating_add(1);
             let decoded = match font {
                 Font::Simple(table) => Ok(table[code_bytes[0] as usize].clone()),
                 Font::Cmap { mapping, .. } => {
@@ -500,6 +635,7 @@ impl<'a> Reader<'a> {
                         facts.unavailable = true;
                         return;
                     }
+                    facts.sequence(&text);
                     for c in text.chars() {
                         add_scalar(&mut facts.scalars, c);
                     }
@@ -758,6 +894,105 @@ pub(crate) fn decode_actual_bytes(bytes: &[u8]) -> Result<String> {
 
 #[cfg(test)]
 mod tests {
+    /// 同じ文字集合を持つ異なる論理順序を、一意の単語として扱わない。
+    #[test]
+    fn rtl_source_candidates_keep_occurrences_and_ambiguity() {
+        let mut facts = Facts::default();
+        facts.sequence("لخ");
+        facts.sequence("لخ");
+        let key = rtl_key("لخ");
+        assert_eq!(facts.rtl_sequences[&key].count, 2);
+        assert_eq!(facts.rtl_sequences[&key].text.as_deref(), Some("لخ"));
+        facts.sequence("خل");
+        assert_eq!(facts.rtl_sequences[&key].count, 3);
+        assert!(facts.rtl_sequences[&key].text.is_none());
+    }
+
+    /// 補助の論理順序資料が大きすぎても、原文Unicodeの検査を捨てない。
+    #[test]
+    fn rtl_source_candidate_budget_is_explicit_and_bounded() {
+        let mut facts = Facts::default();
+        facts.scalars.insert('ب', 9);
+        for length in 2..=256 {
+            facts.sequence(&"ب".repeat(length));
+        }
+        assert!(facts.rtl_unavailable);
+        assert!(facts.rtl_sequences.is_empty());
+        assert_eq!(facts.scalars.get(&'ب'), Some(&9));
+        assert!(!facts.unavailable);
+    }
+
+    /// 原文と SDK の文字集合を、位置依存字形に限定した同値性で照合する。
+    fn scalar_bag(text: &str) -> BTreeMap<char, usize> {
+        let mut bag = BTreeMap::new();
+        for scalar in text.chars() {
+            add_scalar(&mut bag, scalar);
+        }
+        bag
+    }
+
+    /// アラビア文字の接続形と合字は基底文字列と同じ文字集合になる。
+    #[test]
+    fn arabic_presentation_forms_match_nominal_letters_and_marks() {
+        for (presentation, nominal) in [
+            ("\u{fe91}\u{fedf}\u{fee7}", "بلن"),
+            ("\u{fccb}", "لخ"),
+            ("\u{fefb}", "لا"),
+            ("\u{fdf2}", "الله"),
+            ("\u{fe70}", "\u{064b}"),
+            ("\u{fe71}", "\u{0640}\u{064b}"),
+            ("\u{fbdd}", "\u{0677}"),
+            ("\u{0675}", "\u{0627}\u{0674}"),
+            ("\u{0676}", "\u{0648}\u{0674}"),
+            ("\u{0678}", "\u{064a}\u{0674}"),
+        ] {
+            assert_eq!(
+                scalar_bag(presentation),
+                scalar_bag(nominal),
+                "{presentation:?}"
+            );
+        }
+    }
+
+    /// 意味を持つ記号・数字・結合制御・重複は互換正規化で消さない。
+    #[test]
+    fn arabic_presentation_equivalence_keeps_semantic_differences() {
+        for (left, right) in [
+            ("²", "2"),
+            ("①", "1"),
+            ("𝒜", "A"),
+            ("Ａ", "A"),
+            ("𞸀", "ا"),
+            ("㌀", "アパート"),
+            ("١", "1"),
+            ("بَ", "ب"),
+            ("آ", "ا"),
+            ("می\u{200c}روم", "میروم"),
+            ("\u{fefb}\u{fefb}", "لا"),
+        ] {
+            assert_ne!(scalar_bag(left), scalar_bag(right), "{left:?} == {right:?}");
+        }
+    }
+
+    /// 二段階の字形展開でも同じ結果を保ち、変換を繰り返して文字を失わない。
+    #[test]
+    fn arabic_presentation_equivalence_is_idempotent_over_its_full_ranges() {
+        for value in (0xfb50..=0xfdff)
+            .chain(0xfe70..=0xfeff)
+            .chain(0x0675..=0x0678)
+        {
+            let scalar = char::from_u32(value).unwrap();
+            let once = scalar_bag(&scalar.to_string());
+            let mut twice = BTreeMap::new();
+            for (c, count) in &once {
+                for _ in 0..*count {
+                    add_scalar(&mut twice, *c);
+                }
+            }
+            assert_eq!(once, twice, "U+{value:04X}");
+        }
+    }
+
     #[test]
     fn actual_text_decoding_is_strict_and_preserves_explicit_empty_strings() {
         assert_eq!(super::decode_actual_bytes(b"").unwrap(), "");

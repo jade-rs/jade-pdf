@@ -1,0 +1,1209 @@
+{
+  "version": 1,
+  "tool_sha256": "a972c7e5bc67302bb5e2ca427aaf8826a52811f27027372d4cfc9709e907e944",
+  "baseline_sha256": "ce231d2f7f251ee862ea87a9d2f2f1312e7058deb09076525efb79d66ecd41c6",
+  "binary_sha256": "0f3b35fb9aeb05f4017b4728b7be9316f2c33257f8de54d39fd20742bf126798",
+  "manifest_sha256": "01fff2a268da2667bcf039f5255db4eea4477373e51b0aa5f87e922d1a9d60b0",
+  "pypdf_version": "6.10.0",
+  "unicode_version": "15.0.0",
+  "documents": 69,
+  "pages": 534,
+  "original_body_exact_documents": 69,
+  "changed_documents": 1,
+  "controls": [
+    {
+      "id": "initial",
+      "source_sha256": [
+        "de252a1b0c30df6369508defec64a28079446c279b9b4f4e8b4069b07029ef1b",
+        "dfd47787378f2ff8da51b08a34ad12582d7179e1751403914da6a40f64cd2536",
+        "2dbc0f6cb16d00e5141150841b0a5010e4b5fac36ab2513e7f5cfc41b3b84244"
+      ],
+      "expected": "ب",
+      "baseline_exit": 3,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "ب",
+        "ب",
+        "ت"
+      ],
+      "current_texts": [
+        "ب",
+        "ب",
+        "ت"
+      ]
+    },
+    {
+      "id": "ligature",
+      "source_sha256": [
+        "8ef99753b89fef885510b193c034bd2014b341eecb7b67a24a46d41b1253f40f",
+        "1aadcd732af9801b77cbd7f2a6b88b4676818c4dc05ad99e5125a4e0ab1321d6",
+        "6b832594aad6eec48ce090a3f597f4051f733c6de4352d0e5f9ac461311f87ae"
+      ],
+      "expected": "لخ",
+      "baseline_exit": 3,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 1,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 1,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "لخ",
+        "خل",
+        "حل"
+      ],
+      "current_texts": [
+        "لخ",
+        "لخ",
+        "لح"
+      ]
+    },
+    {
+      "id": "lam-alef",
+      "source_sha256": [
+        "b471014e0754c65adcb6cd3c61fc52d5aa6191b86f12b9e829e9fa2ef3d53cb8",
+        "167d9641657d652434b1ff80176a4d61f666a78598234452f96ec5aca634a511",
+        "f1ca681d825cfc09c18129b2444d4aaaf827eb05dc3bb78f9e66f094bb68ccb2"
+      ],
+      "expected": "لا",
+      "baseline_exit": 3,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 1,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 1,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "لا",
+        "ال",
+        "بل"
+      ],
+      "current_texts": [
+        "لا",
+        "لا",
+        "لب"
+      ]
+    },
+    {
+      "id": "allah",
+      "source_sha256": [
+        "9a5f0065ba26514954cf623fe2046fc934bc20d11f12581a8ec2730bc3c70928",
+        "7481f20a3361b39f4eea2ba00c88f04a1045babbb7f274f5ffb1b63f3019c0a9",
+        "a736d734427bfd7039f7e9ac6df655bf4ff8e6062ad168d40b7ac31c1561faf8"
+      ],
+      "expected": "الله",
+      "baseline_exit": 3,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 1,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 1,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "الله",
+        "هللا",
+        "ةللا"
+      ],
+      "current_texts": [
+        "الله",
+        "الله",
+        "اللة"
+      ]
+    },
+    {
+      "id": "hebrew",
+      "source_sha256": [
+        "b8c0b1684ee8a6cf22977f49d6f62968a94b5d469fc989d519e2b8ac71d68ae8",
+        "b8c0b1684ee8a6cf22977f49d6f62968a94b5d469fc989d519e2b8ac71d68ae8",
+        "f78949f5f556a5ccbdfd0bdef0d7fdeec096fc1a35f9bea345784cc6e8e3f0c0"
+      ],
+      "expected": "של",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "לש",
+        "לש",
+        "םש"
+      ],
+      "current_texts": [
+        "של",
+        "של",
+        "שם"
+      ]
+    },
+    {
+      "id": "mixed-latin",
+      "source_sha256": [
+        "e496d05517f9f744492991f85a5817914b4fa05b3d02dadc9b6862c40558fdea",
+        "e496d05517f9f744492991f85a5817914b4fa05b3d02dadc9b6862c40558fdea",
+        "a91156ce95b2cc7999f87ec293a12a298eb526acc3f152961ecaf6b9ce7ae805"
+      ],
+      "expected": "بA",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "بA",
+        "بA",
+        "بB"
+      ],
+      "current_texts": [
+        "بA",
+        "بA",
+        "بB"
+      ]
+    },
+    {
+      "id": "mixed-digit",
+      "source_sha256": [
+        "f14158a1fd5984a04bef2937e979bb3c4cf5b0abf50dce327f23f9e92446b121",
+        "f14158a1fd5984a04bef2937e979bb3c4cf5b0abf50dce327f23f9e92446b121",
+        "fad7bd829d66b334470a551ebaa8c48cf47057604863163f36abea25249d4d01"
+      ],
+      "expected": "ب1",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "1ب",
+        "1ب",
+        "2ب"
+      ],
+      "current_texts": [
+        "ب1",
+        "ب1",
+        "ب2"
+      ]
+    },
+    {
+      "id": "mixed-mark",
+      "source_sha256": [
+        "7f57c8111e4d67fa52618bf68d031207ae43f941f245ba642d42641557524877",
+        "7f57c8111e4d67fa52618bf68d031207ae43f941f245ba642d42641557524877",
+        "1c3f1682871c3e343a4316c1cf0e0ead1077a21f42bd755354dced47357492ac"
+      ],
+      "expected": "بَ",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "َب",
+        "َب",
+        "َت"
+      ],
+      "current_texts": [
+        "بَ",
+        "بَ",
+        "تَ"
+      ]
+    },
+    {
+      "id": "mixed-composed",
+      "source_sha256": [
+        "12e8b2a77faf3a7ea083973262c5cf761b2535928610f6c463220e0c39b88cde",
+        "12e8b2a77faf3a7ea083973262c5cf761b2535928610f6c463220e0c39b88cde",
+        "b35b8a1878d68ee22cde398a1fb02dd00a665f15229d45e65dda95f6dd6c6718"
+      ],
+      "expected": "بé",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "بé",
+        "بé",
+        "تé"
+      ],
+      "current_texts": [
+        "بé",
+        "بé",
+        "تé"
+      ]
+    },
+    {
+      "id": "hebrew-mark",
+      "source_sha256": [
+        "47a226a1e1a1cc4d28c97ec52b635832b42860056ab065d49badbc6af2aa755d",
+        "47a226a1e1a1cc4d28c97ec52b635832b42860056ab065d49badbc6af2aa755d",
+        "ba74a46e614ab415b3674a13e9a369da05ac878554685c35e57bd56210a0a5a0"
+      ],
+      "expected": "שׁל",
+      "baseline_exit": 0,
+      "current_exit": 0,
+      "real_edit_exit": 1,
+      "baseline_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "current_summary": {
+        "canonical_form_fields_changed": 0,
+        "pages_visual_changed": 0,
+        "form_fields_changed": 0,
+        "pages_added": 0,
+        "pages_removed": 0,
+        "pages_moved": 0,
+        "pages_modified": 0,
+        "pages_geometry_changed": 0,
+        "blocks_added": 0,
+        "blocks_removed": 0,
+        "blocks_changed": 0,
+        "blocks_moved": 0,
+        "blocks_resized": 0,
+        "blocks_format_changed": 0,
+        "blocks_minor": 0
+      },
+      "baseline_texts": [
+        "לׁש",
+        "לׁש",
+        "םׁש"
+      ],
+      "current_texts": [
+        "שׁל",
+        "שׁל",
+        "שׁם"
+      ]
+    }
+  ],
+  "results": [
+    {
+      "id": "hello",
+      "pages": 1,
+      "source_sha256": "c9efcaa374939ff19fc37974131f1db6d457eb942700c02a63fc9dda983e1400",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "rotated",
+      "pages": 5,
+      "source_sha256": "ab0cb700cd5e5338fd676dfca25becae800acd2be03a4e57856485b8cfd2d28b",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "arabic",
+      "pages": 1,
+      "source_sha256": "1cad1de912ba29f89a6d8b08bc5b0f84382874ffedab2c8f9e05ef608c265bb1",
+      "original_body_exact": true,
+      "changes": [
+        {
+          "page": 1,
+          "changes": {
+            "source_unicode_scalars_unmatched": [
+              92,
+              0
+            ]
+          }
+        }
+      ],
+      "arabic_evidence": {
+        "source_sha256": "1cad1de912ba29f89a6d8b08bc5b0f84382874ffedab2c8f9e05ef608c265bb1",
+        "font_mappings": {
+          "/TT1": {
+            "0004": "ﺑ",
+            "0013": "ﻟ",
+            "0015": "ﻧ",
+            "0028": "ﳋ",
+            "0032": "ﻄ",
+            "0034": "ﻌ",
+            "003D": "ﻴ",
+            "0045": "ﺔ",
+            "0052": "ﺮ",
+            "0062": "ﻮ",
+            "00B1": "ا",
+            "00C1": "ط",
+            "00C3": "ع"
+          },
+          "/TT3": {
+            "0004": "ﺑ",
+            "0013": "ﻟ",
+            "0015": "ﻧ",
+            "0028": "ﳋ",
+            "0032": "ﻄ",
+            "0034": "ﻌ",
+            "003D": "ﻴ",
+            "0045": "ﺔ",
+            "0052": "ﺮ",
+            "0062": "ﻮ",
+            "00B1": "ا",
+            "00C1": "ط",
+            "00C3": "ع"
+          },
+          "/TT5": {
+            "0004": "ﺑ",
+            "0013": "ﻟ",
+            "0015": "ﻧ",
+            "0028": "ﳋ",
+            "0032": "ﻄ",
+            "0034": "ﻌ",
+            "003D": "ﻴ",
+            "0045": "ﺔ",
+            "0052": "ﺮ",
+            "0062": "ﻮ",
+            "00B1": "ا",
+            "00C1": "ط",
+            "00C3": "ع"
+          },
+          "/TT7": {
+            "0004": "ﺑ",
+            "0013": "ﻟ",
+            "0015": "ﻧ",
+            "0028": "ﳋ",
+            "0032": "ﻄ",
+            "0034": "ﻌ",
+            "003D": "ﻴ",
+            "0045": "ﺔ",
+            "0052": "ﺮ",
+            "0062": "ﻮ",
+            "00B1": "ا",
+            "00C1": "ط",
+            "00C3": "ع"
+          }
+        },
+        "original_scalar_discrepancies": 92,
+        "current_scalar_discrepancies": 0,
+        "source_blank_codes": 8,
+        "full_page_text": "انواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية",
+        "gold_scope": "Four visible complete lines on the original page; glyphs and positions unchanged. SDK omissions and other review gates remain."
+      }
+    },
+    {
+      "id": "ligatures",
+      "pages": 1,
+      "source_sha256": "3a6948ca33558a0f1c9dabf70902e14e263e814b6a12da44ba8ec9439c0bafdd",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "vertical",
+      "pages": 3,
+      "source_sha256": "514511143db12309893fb69cdf98c76f2361c20da394f79fdff2c119ed7a4393",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "empty",
+      "pages": 1,
+      "source_sha256": "fcee6184c0d776126782cd2799797b106373278c8ea0a4354ee4e33cd8663d51",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "scanned",
+      "pages": 1,
+      "source_sha256": "d40f31f182cf254ab134826d379875acacb1f7b48bf1a57bce2e30b38d16628e",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "form",
+      "pages": 1,
+      "source_sha256": "808af1e794952475e8af824ad1ee6ac41d6646de122e5ac91975e75b0951c80b",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "type3",
+      "pages": 1,
+      "source_sha256": "a5697cbc51c19816944658b91e3a41f86e98ae63fbd1007798994b073385aef1",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "cjk",
+      "pages": 1,
+      "source_sha256": "049a4330710d8470896061acf7ee486735e94cef2769f6cc13fec3cb13bb65aa",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "tracemonkey",
+      "pages": 14,
+      "source_sha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "freeculture",
+      "pages": 352,
+      "source_sha256": "753441c619c529c8d0fc3e7e470f07c9547838fc7229bea8c1dcf854acee03b4",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "w3c-word",
+      "pages": 1,
+      "source_sha256": "9a3a38c444fa165d2b33af41fb2c90502c52def5c560f5d543afe01d937d6e80",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "w3c-openoffice",
+      "pages": 1,
+      "source_sha256": "0c8cd5c891e4b39f85f3f3ebea00c8aa56db35ce1f6d04f1ff263dac43e1ff3a",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "mhlw-employment",
+      "pages": 4,
+      "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w4",
+      "pages": 4,
+      "source_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w4-2024",
+      "pages": 4,
+      "source_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-truetype-without-cmap",
+      "pages": 1,
+      "source_sha256": "3e111eef52ce9c0d0b1da043290df4b49a5670c89891fcb3db6962edb12e35aa",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-type3wordspacing",
+      "pages": 1,
+      "source_sha256": "8ac40dc49d40af8b5a50b442ced56b8db962c961a779a0284cd3a6207adc0bb7",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-identitytounicodemap-charcodeof",
+      "pages": 1,
+      "source_sha256": "81243ff4cca5f7898688008224247d88534cd03e76ac3cbbdc38f925cfbee18f",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-arial-unicode-en-cidfont",
+      "pages": 1,
+      "source_sha256": "1c4a08108d8074f543c04e9b2ea2b93a842e2b29eb05ee9d99766f430fd365ab",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-french-diacritics",
+      "pages": 1,
+      "source_sha256": "eb6af7155988924ca0ba75cd95d21a93ea730b77b111dacb5d6599fa00867194",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-glyph-accent",
+      "pages": 1,
+      "source_sha256": "556da20f31754bcfabd6821b39e4d97ea569fd91363a19ef9b16cdec0f95a68e",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "pages": 1,
+      "source_sha256": "95ef7cc7e6c80b3ce6e884407b0b695898a6f47a30b339d7472657406f041a82",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-rotation",
+      "pages": 2,
+      "source_sha256": "5087c2afe763d145537d652bb3bc6c321ace3a267b2679ae2c178add3ba7f1d9",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-text-rise-eol-bug",
+      "pages": 1,
+      "source_sha256": "0d3cb608bbcdc3da823f2955fb026d9760a20be7802c7ca6e1a34632f87d0127",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-multiline",
+      "pages": 1,
+      "source_sha256": "a320198cf4bf28eaeb99080afcd92e5c2f864af1620b1b394a7bea44fb01c93c",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-basicapi",
+      "pages": 3,
+      "source_sha256": "925853d98d67d5dae7473c635f932958e1695ce1029d23b2ecd2531cb65f1f14",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-cid-cff",
+      "pages": 1,
+      "source_sha256": "d894d356411217414fd9040d3d038612e1f4a1598936b2385a76458dd6d64d38",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-text-clip-cff-cid",
+      "pages": 1,
+      "source_sha256": "81aaf48f55c659d29d7a533cd913bd9d028ffad183b46580a2122eebe5187506",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-bug1947248-text",
+      "pages": 1,
+      "source_sha256": "249c09e9e76ab30f11aa0ca9d06bfc3fef40499810d6790134a43ee3bf838790",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-pattern-text-embedded-font",
+      "pages": 1,
+      "source_sha256": "0d87537cfba850b7501db8010801bebe62b9cc19776ae387f9dafc61e00b1699",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-showtext-shadingpattern",
+      "pages": 1,
+      "source_sha256": "13ac785e8445fbf01d5a8200e0e899daa204cdbe723b02f38f8af61ac48707bb",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-image-rotated-black-white-ratio",
+      "pages": 1,
+      "source_sha256": "dd884a5f5676d5e32cd70590f793238faddedbd6d135918735c0c99b89e28279",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-form-two-pages",
+      "pages": 2,
+      "source_sha256": "6d7c608d0102fa1e1b3cbc2c3b0a989783e90f84ff1a7fe7cbdb6dc2a1b60fbd",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-annotation-text-widget",
+      "pages": 1,
+      "source_sha256": "9f091ceb368ad0406094efaa6c50d5033735ee52f383e0973dc53a7467089d7c",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-issue-cmap12",
+      "pages": 1,
+      "source_sha256": "c9938b41e3b93b0bc36073f50714319fa3c1d805be5f53e55b3d23f2e86e143a",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w4-2022",
+      "pages": 4,
+      "source_sha256": "8b4c3d8fe967fb1ed3c5fca54b34a44c72efea239cd395bd6bfeac84937c7a15",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w4-2023",
+      "pages": 4,
+      "source_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w4-2026",
+      "pages": 5,
+      "source_sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-bigboundingbox",
+      "pages": 1,
+      "source_sha256": "6cd3d57b85891021af2de75ac304a6efc2894793dab7594968b0b5efcd1d0013",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-issue-cff-unsigned-bbox",
+      "pages": 1,
+      "source_sha256": "f91dc7dc6d4d9488f8c3d0dd37bc97b3eb0c5cccc28aa179df4ba486147994af",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-cropped-text",
+      "pages": 4,
+      "source_sha256": "1e2a6b5f13c77d8c0611ac7fcde88cd28352c7c0eb8a36bc593e2d91ef3c4ccc",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-combobox-form",
+      "pages": 1,
+      "source_sha256": "e96064f079baf65b1ebd23b152c2037eba68345a48e7b845a3c0bc3620cd7d26",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-listbox-form",
+      "pages": 1,
+      "source_sha256": "4dd3b8b958eb56cb49afbb6b60b14b6d6ecba788181e088aa68be459fed10b49",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-text-form-multiline",
+      "pages": 1,
+      "source_sha256": "414dfebc2d5541659daaf65197e3bb02d4741487eba7680c184a7bbdffcf9814",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w9-2018",
+      "pages": 6,
+      "source_sha256": "78366390cd4e3db89e06009fce54df272bee0d3b34003f3a786c4835239bfdff",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "irs-w9-2024",
+      "pages": 6,
+      "source_sha256": "2d420cbb4123dcf1fb82595b2359cfbb5d81f00b9df9d359fcc7af361d093f53",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-user-unit",
+      "pages": 1,
+      "source_sha256": "5fafd5649ade0b3f5b12c647d877f7f3723fa14d4104648548aa25c9b1add122",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "acl-bleu-2002",
+      "pages": 8,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "pages": 1,
+      "source_sha256": "ce40a4f30d332478930eea0318e4784db5b3d6e4956bfff8256bf765fa22181c",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "pages": 1,
+      "source_sha256": "b714ae5cd5d81d18b0d850d3ae7ffc6f0a98dac4ad6fb3f4b6df183184d75fd9",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "neurips-attention-2017",
+      "pages": 11,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "bipm-si-concise",
+      "pages": 5,
+      "source_sha256": "0152ee82c2b3df89758c879238d23ee6bc1fa2d53303a5fec95509a3883e1a30",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "w3c-tagged-table",
+      "pages": 1,
+      "source_sha256": "d6a9c84d97ec1eb3573988af3502e5c7f7a3dd66e2c65479f38a464e957f18b5",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "w3c-complex-table",
+      "pages": 1,
+      "source_sha256": "c0bd0fc65103f2528e2fd6ece4c2529cce9dbbbdc0d333dc0d7e538550cd46c7",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "w3c-rowspan-table",
+      "pages": 1,
+      "source_sha256": "a693998ff2a475d128c11644fbf02374249f08ac134d526a4d9b913d8b5834a5",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-multiple-form-types",
+      "pages": 1,
+      "source_sha256": "cdff8afa99ed38cf602f13877d5be8d5aa4c9ed56b85e799349fece2bfeda129",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfbox-orphan-widgets",
+      "pages": 4,
+      "source_sha256": "2517db254664ed2bd960f7faadbef38438128f0853ea76c745c48d84a0347d0b",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "pages": 5,
+      "source_sha256": "5a46755dacd99540ef210ff8e6329f5df1fa426bbd5a7c9cd356cb81098c29eb",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "pages": 5,
+      "source_sha256": "db2f085b0017a777830e73c7310a1cdc55f23cced6224b3941df154396ea333b",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-issue6612",
+      "pages": 1,
+      "source_sha256": "2940293c5f32c23c1ccf5df34c44d226cff4e46c7ff633772b9f677d6c4e5738",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-issue14497",
+      "pages": 1,
+      "source_sha256": "7bd3bd4073aa4fe1b12d072c25e892d04e9d8579bc4a31b13282ff86abcf09b7",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-rotated-text",
+      "pages": 1,
+      "source_sha256": "9b1356570d111afaed4c300da3479ac094d320a38f652729514c1064f0c17e5a",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfium-rotated-text-90",
+      "pages": 1,
+      "source_sha256": "861824e46c3a2b6b1aa3a1d57900b25c7181c3f2f95e5cb98a387138d74f29ea",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-issue14497-original",
+      "pages": 3,
+      "source_sha256": "c13dd009598674527a520ac3e24448b6d989fb6354702b44bf745c4483802b04",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfjs-actualtext-eset",
+      "pages": 26,
+      "source_sha256": "84bacfff2b5a3ba07f036ba45a3a394c4969a7c691e5fbf1a981e3379095be91",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfa-actualtext-graphics",
+      "pages": 1,
+      "source_sha256": "c1179396dc0eb4ffacbdfbadba896fb1a6e9661f272ee9cd28b2623d5b506c0d",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    },
+    {
+      "id": "pdfa-actualtext-ocr",
+      "pages": 1,
+      "source_sha256": "d7de1e10e633b7e6b5e93d7c45c9153e225eee5ae1e961186b93ae21d00025f0",
+      "original_body_exact": true,
+      "changes": [],
+      "arabic_evidence": null
+    }
+  ],
+  "scope": "Selected source and SDK glyph ownership profile; not exhaustive Unicode, reading-order, natural-revision or production qualification."
+}

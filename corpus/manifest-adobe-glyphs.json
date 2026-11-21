@@ -1,0 +1,2055 @@
+{
+  "version": 1,
+  "retrieved": "2026-10-23",
+  "documents": [
+    {
+      "id": "hello",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/examples/learning/helloworld.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/examples/learning/helloworld.pdf",
+      "category": "simple text",
+      "sha256": "c9efcaa374939ff19fc37974131f1db6d457eb942700c02a63fc9dda983e1400",
+      "bytes": 678,
+      "pages": 1,
+      "text_fragments": [
+        "Hello, world!"
+      ]
+    },
+    {
+      "id": "rotated",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/hello_world_rotated.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/hello_world_rotated.pdf",
+      "category": "page rotation",
+      "sha256": "ab0cb700cd5e5338fd676dfca25becae800acd2be03a4e57856485b8cfd2d28b",
+      "bytes": 1324,
+      "pages": 5,
+      "text_fragments": [
+        "Hello world"
+      ]
+    },
+    {
+      "id": "arabic",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ArabicCIDTrueType.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ArabicCIDTrueType.pdf",
+      "category": "Arabic CID",
+      "sha256": "1cad1de912ba29f89a6d8b08bc5b0f84382874ffedab2c8f9e05ef608c265bb1",
+      "bytes": 39370,
+      "pages": 1,
+      "text_fragments": [
+        "انواع",
+        "الخطوط"
+      ],
+      "right_to_left_spaces": true
+    },
+    {
+      "id": "ligatures",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/copy_paste_ligatures.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/copy_paste_ligatures.pdf",
+      "category": "ligatures",
+      "sha256": "3a6948ca33558a0f1c9dabf70902e14e263e814b6a12da44ba8ec9439c0bafdd",
+      "bytes": 32408,
+      "pages": 1,
+      "text_fragments": [
+        "abcdefff",
+        "ghijklmno"
+      ]
+    },
+    {
+      "id": "vertical",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/vertical.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/vertical.pdf",
+      "category": "vertical text",
+      "sha256": "514511143db12309893fb69cdf98c76f2361c20da394f79fdff2c119ed7a4393",
+      "bytes": 6905,
+      "pages": 3,
+      "text_fragments": [
+        "日本語",
+        "あいうえお"
+      ]
+    },
+    {
+      "id": "empty",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/empty.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/empty.pdf",
+      "category": "blank page",
+      "sha256": "fcee6184c0d776126782cd2799797b106373278c8ea0a4354ee4e33cd8663d51",
+      "bytes": 4920,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "scanned",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/scan-bad.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/scan-bad.pdf",
+      "category": "scanned image",
+      "sha256": "d40f31f182cf254ab134826d379875acacb1f7b48bf1a57bce2e30b38d16628e",
+      "bytes": 29832,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "form",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/file_pdfjs_form.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/file_pdfjs_form.pdf",
+      "category": "AcroForm",
+      "sha256": "808af1e794952475e8af824ad1ee6ac41d6646de122e5ac91975e75b0951c80b",
+      "bytes": 8586,
+      "pages": 1,
+      "text_fragments": [
+        "AcroForm",
+        "TextField:"
+      ]
+    },
+    {
+      "id": "type3",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/simpletype3font.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/simpletype3font.pdf",
+      "category": "Type3 font",
+      "sha256": "a5697cbc51c19816944658b91e3a41f86e98ae63fbd1007798994b073385aef1",
+      "bytes": 1624,
+      "pages": 1,
+      "text_fragments": [
+        "ababab"
+      ]
+    },
+    {
+      "id": "cjk",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "category": "CID font",
+      "sha256": "049a4330710d8470896061acf7ee486735e94cef2769f6cc13fec3cb13bb65aa",
+      "bytes": 13110,
+      "pages": 1,
+      "text_fragments": [],
+      "extraction_expectation": "Best-effort printable scalars are retained. SDK reports invalid mappings for all four glyphs; IR and text-layer metadata must expose the errors and changed-source comparisons must require review. Original Unicode has not been recovered."
+    },
+    {
+      "id": "tracemonkey",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/tracemonkey.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/tracemonkey.pdf",
+      "category": "two-column research paper",
+      "sha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113",
+      "bytes": 1016315,
+      "pages": 14,
+      "text_fragments": [
+        "Trace-based Just-in-Time",
+        "Dynamic Languages"
+      ],
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Abstract",
+            "Categories and Subject Descriptors",
+            "General Terms",
+            "Keywords",
+            "1. Introduction",
+            "and is used for the application logic"
+          ],
+          "methodology": "Selected geometric order declared after inspecting a Poppler rendering of the public source; not inferred from extraction output. Not a full reading-order, table, bidi or tagged-PDF oracle."
+        }
+      ]
+    },
+    {
+      "id": "freeculture",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/freeculture.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/freeculture.pdf",
+      "category": "long book",
+      "sha256": "753441c619c529c8d0fc3e7e470f07c9547838fc7229bea8c1dcf854acee03b4",
+      "bytes": 2598727,
+      "pages": 352,
+      "text_fragments": [
+        "Free Culture"
+      ],
+      "reading_order": [
+        {
+          "page": 2,
+          "anchors": [
+            "This PDF version of Free Culture is licensed"
+          ],
+          "methodology": "Visual first-line grouping from original rendering;the sheared book title belongs between its horizontal neighbors. Whole-page text/Unicode is not gold."
+        }
+      ]
+    },
+    {
+      "id": "w3c-word",
+      "url": "https://www.w3.org/WAI/WCAG21/working-examples/pdf-reading-order/reading-order-2cols-word.pdf",
+      "source": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF3",
+      "category": "two columns (Word)",
+      "sha256": "9a3a38c444fa165d2b33af41fb2c90502c52def5c560f5d543afe01d937d6e80",
+      "bytes": 68781,
+      "pages": 1,
+      "text_fragments": [
+        "Application for this and that"
+      ]
+    },
+    {
+      "id": "w3c-openoffice",
+      "url": "https://www.w3.org/WAI/WCAG21/working-examples/pdf-reading-order/reading-order-2cols-oo.pdf",
+      "source": "https://www.w3.org/WAI/WCAG21/Techniques/pdf/PDF3",
+      "category": "two columns (OpenOffice)",
+      "sha256": "0c8cd5c891e4b39f85f3f3ebea00c8aa56db35ce1f6d04f1ff263dac43e1ff3a",
+      "bytes": 75402,
+      "pages": 1,
+      "text_fragments": [
+        "Application for this and that"
+      ]
+    },
+    {
+      "id": "mhlw-employment",
+      "url": "https://www.mhlw.go.jp/seisakunitsuite/bunya/koyou_roudou/roudoukijun/keiyaku/kaisei/dl/youshiki_01a.pdf",
+      "source": "https://www.mhlw.go.jp/stf/seisakunitsuite/bunya/koyou_roudou/roudoukijun/roudoukijunkankei.html",
+      "category": "Japanese employment form",
+      "sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "bytes": 163435,
+      "pages": 4,
+      "text_fragments": [
+        "労働条件通知書",
+        "契約期間"
+      ]
+    },
+    {
+      "id": "irs-w4",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2025.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "tax form and numeric tables",
+      "sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+      "bytes": 192528,
+      "pages": 4,
+      "text_fragments": [
+        "Employee’s Withholding Certificate",
+        "1545-0074"
+      ]
+    },
+    {
+      "id": "irs-w4-2024",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2024.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: 2024 tax form",
+      "sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "bytes": 189925,
+      "pages": 4,
+      "text_fragments": [
+        "Employee’s Withholding Certificate",
+        "2024",
+        "29,200",
+        "21,900",
+        "14,600"
+      ]
+    },
+    {
+      "id": "pdfjs-truetype-without-cmap",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/TrueType_without_cmap.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/TrueType_without_cmap.pdf",
+      "category": "extraction regression: TrueType_without_cmap",
+      "sha256": "3e111eef52ce9c0d0b1da043290df4b49a5670c89891fcb3db6962edb12e35aa",
+      "bytes": 3989,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-type3wordspacing",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/Type3WordSpacing.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/Type3WordSpacing.pdf",
+      "category": "extraction regression: Type3WordSpacing",
+      "sha256": "8ac40dc49d40af8b5a50b442ced56b8db962c961a779a0284cd3a6207adc0bb7",
+      "bytes": 2693,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-identitytounicodemap-charcodeof",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/IdentityToUnicodeMap_charCodeOf.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/IdentityToUnicodeMap_charCodeOf.pdf",
+      "category": "extraction regression: IdentityToUnicodeMap_charCodeOf",
+      "sha256": "81243ff4cca5f7898688008224247d88534cd03e76ac3cbbdc38f925cfbee18f",
+      "bytes": 651,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-arial-unicode-en-cidfont",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_en_cidfont.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_en_cidfont.pdf",
+      "category": "extraction regression: arial_unicode_en_cidfont",
+      "sha256": "1c4a08108d8074f543c04e9b2ea2b93a842e2b29eb05ee9d99766f430fd365ab",
+      "bytes": 15779,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-french-diacritics",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/french_diacritics.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/french_diacritics.pdf",
+      "category": "extraction regression: french_diacritics",
+      "sha256": "eb6af7155988924ca0ba75cd95d21a93ea730b77b111dacb5d6599fa00867194",
+      "bytes": 10500,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-glyph-accent",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/glyph_accent.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/glyph_accent.pdf",
+      "category": "extraction regression: glyph_accent",
+      "sha256": "556da20f31754bcfabd6821b39e4d97ea569fd91363a19ef9b16cdec0f95a68e",
+      "bytes": 5490,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/nonembedded_type1_tounicode.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/nonembedded_type1_tounicode.pdf",
+      "category": "extraction regression: nonembedded_type1_tounicode",
+      "sha256": "95ef7cc7e6c80b3ce6e884407b0b695898a6f47a30b339d7472657406f041a82",
+      "bytes": 1175,
+      "pages": 1,
+      "text_fragments": [
+        "óº€íºXABéê"
+      ],
+      "full_page_text": "óº€íºXABéê",
+      "extraction_expectation": "Full-page Unicode gold from the declared ToUnicode entries, independently confirmed by PDF.js and pypdf. Later bfchar and bfrange definitions override the earlier catch-all range (Adobe TN5014 section 5.2)."
+    },
+    {
+      "id": "pdfjs-rotation",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/rotation.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/rotation.pdf",
+      "category": "extraction regression: rotation",
+      "sha256": "5087c2afe763d145537d652bb3bc6c321ace3a267b2679ae2c178add3ba7f1d9",
+      "bytes": 6605,
+      "pages": 2,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-text-rise-eol-bug",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_rise_eol_bug.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_rise_eol_bug.pdf",
+      "category": "extraction regression: text_rise_eol_bug",
+      "sha256": "0d3cb608bbcdc3da823f2955fb026d9760a20be7802c7ca6e1a34632f87d0127",
+      "bytes": 670,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-multiline",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/multiline.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/multiline.pdf",
+      "category": "extraction regression: multiline",
+      "sha256": "a320198cf4bf28eaeb99080afcd92e5c2f864af1620b1b394a7bea44fb01c93c",
+      "bytes": 6455,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-basicapi",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/basicapi.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/basicapi.pdf",
+      "category": "extraction regression: basicapi",
+      "sha256": "925853d98d67d5dae7473c635f932958e1695ce1029d23b2ecd2531cb65f1f14",
+      "bytes": 105779,
+      "pages": 3,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-cid-cff",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/cid_cff.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/cid_cff.pdf",
+      "category": "extraction regression: cid_cff",
+      "sha256": "d894d356411217414fd9040d3d038612e1f4a1598936b2385a76458dd6d64d38",
+      "bytes": 19970,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-text-clip-cff-cid",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_clip_cff_cid.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/text_clip_cff_cid.pdf",
+      "category": "extraction regression: text_clip_cff_cid",
+      "sha256": "81aaf48f55c659d29d7a533cd913bd9d028ffad183b46580a2122eebe5187506",
+      "bytes": 7393,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-bug1947248-text",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1947248_text.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1947248_text.pdf",
+      "category": "extraction regression: bug1947248_text",
+      "sha256": "249c09e9e76ab30f11aa0ca9d06bfc3fef40499810d6790134a43ee3bf838790",
+      "bytes": 14504,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-pattern-text-embedded-font",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/pattern_text_embedded_font.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/pattern_text_embedded_font.pdf",
+      "category": "extraction regression: pattern_text_embedded_font",
+      "sha256": "0d87537cfba850b7501db8010801bebe62b9cc19776ae387f9dafc61e00b1699",
+      "bytes": 2662,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-showtext-shadingpattern",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ShowText-ShadingPattern.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/ShowText-ShadingPattern.pdf",
+      "category": "extraction regression: ShowText-ShadingPattern",
+      "sha256": "13ac785e8445fbf01d5a8200e0e899daa204cdbe723b02f38f8af61ac48707bb",
+      "bytes": 4671,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-image-rotated-black-white-ratio",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/image-rotated-black-white-ratio.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/image-rotated-black-white-ratio.pdf",
+      "category": "extraction regression: image-rotated-black-white-ratio",
+      "sha256": "dd884a5f5676d5e32cd70590f793238faddedbd6d135918735c0c99b89e28279",
+      "bytes": 1954,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-form-two-pages",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/form_two_pages.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/form_two_pages.pdf",
+      "category": "extraction regression: form_two_pages",
+      "sha256": "6d7c608d0102fa1e1b3cbc2c3b0a989783e90f84ff1a7fe7cbdb6dc2a1b60fbd",
+      "bytes": 23136,
+      "pages": 2,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-annotation-text-widget",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/annotation-text-widget.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/annotation-text-widget.pdf",
+      "category": "extraction regression: annotation-text-widget",
+      "sha256": "9f091ceb368ad0406094efaa6c50d5033735ee52f383e0973dc53a7467089d7c",
+      "bytes": 93171,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-issue-cmap12",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cmap12.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cmap12.pdf",
+      "category": "extraction regression: issue_cmap12",
+      "sha256": "c9938b41e3b93b0bc36073f50714319fa3c1d805be5f53e55b3d23f2e86e143a",
+      "bytes": 2162,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2022",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2022.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "8b4c3d8fe967fb1ed3c5fca54b34a44c72efea239cd395bd6bfeac84937c7a15",
+      "bytes": 175956,
+      "pages": 4,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2023",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2023.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "bytes": 188715,
+      "pages": 4,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w4-2026",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw4.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "category": "natural revision pair: tax form",
+      "sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "bytes": 208845,
+      "pages": 5,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfjs-bigboundingbox",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bigboundingbox.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bigboundingbox.pdf",
+      "category": "page geometry regression: bigboundingbox",
+      "sha256": "6cd3d57b85891021af2de75ac304a6efc2894793dab7594968b0b5efcd1d0013",
+      "bytes": 76044,
+      "text_fragments": [],
+      "pages": 1
+    },
+    {
+      "id": "pdfjs-issue-cff-unsigned-bbox",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cff_unsigned_bbox.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue_cff_unsigned_bbox.pdf",
+      "category": "page geometry regression: issue_cff_unsigned_bbox",
+      "sha256": "f91dc7dc6d4d9488f8c3d0dd37bc97b3eb0c5cccc28aa179df4ba486147994af",
+      "bytes": 2796,
+      "text_fragments": [],
+      "pages": 1
+    },
+    {
+      "id": "pdfium-cropped-text",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_text.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_text.pdf",
+      "category": "CropBox regression: cropped_text",
+      "sha256": "1e2a6b5f13c77d8c0611ac7fcde88cd28352c7c0eb8a36bc593e2d91ef3c4ccc",
+      "bytes": 1855,
+      "text_fragments": [],
+      "pages": 4
+    },
+    {
+      "id": "pdfium-combobox-form",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/combobox_form.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/combobox_form.pdf",
+      "category": "AcroForm regression: combobox_form",
+      "sha256": "e96064f079baf65b1ebd23b152c2037eba68345a48e7b845a3c0bc3620cd7d26",
+      "bytes": 1738,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfium-listbox-form",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/listbox_form.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/listbox_form.pdf",
+      "category": "AcroForm regression: listbox_form",
+      "sha256": "4dd3b8b958eb56cb49afbb6b60b14b6d6ecba788181e088aa68be459fed10b49",
+      "bytes": 3012,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "pdfium-text-form-multiline",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/text_form_multiline.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/text_form_multiline.pdf",
+      "category": "AcroForm regression: text_form_multiline",
+      "sha256": "414dfebc2d5541659daaf65197e3bb02d4741487eba7680c184a7bbdffcf9814",
+      "bytes": 955,
+      "pages": 1,
+      "text_fragments": []
+    },
+    {
+      "id": "irs-w9-2018",
+      "url": "https://www.irs.gov/pub/irs-prior/fw9--2018.pdf",
+      "source": "https://www.irs.gov/pub/irs-prior/fw9--2018.pdf",
+      "category": "official natural revision: fillable W-9 form and multi-column instructions",
+      "sha256": "78366390cd4e3db89e06009fce54df272bee0d3b34003f3a786c4835239bfdff",
+      "bytes": 132144,
+      "pages": 6,
+      "text_fragments": [
+        "Request for Taxpayer",
+        "Identification Number and Certification"
+      ]
+    },
+    {
+      "id": "irs-w9-2024",
+      "url": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "source": "https://www.irs.gov/pub/irs-pdf/fw9.pdf",
+      "category": "official natural revision: fillable W-9 form and multi-column instructions",
+      "sha256": "2d420cbb4123dcf1fb82595b2359cfbb5d81f00b9df9d359fcc7af361d093f53",
+      "bytes": 140815,
+      "pages": 6,
+      "text_fragments": [
+        "Request for Taxpayer",
+        "Identification Number and Certification"
+      ]
+    },
+    {
+      "id": "pdfjs-user-unit",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue19176.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue19176.pdf",
+      "category": "Physical US Letter page encoded as 8.5 x 11 user units with UserUnit 72; painted rectangle",
+      "sha256": "5fafd5649ade0b3f5b12c647d877f7f3723fa14d4104648548aa25c9b1add122",
+      "bytes": 466,
+      "pages": 1,
+      "text_fragments": [],
+      "full_page_text": "",
+      "expected_user_units": [
+        72
+      ]
+    },
+    {
+      "id": "acl-bleu-2002",
+      "url": "https://aclanthology.org/P02-1040.pdf",
+      "source": "https://aclanthology.org/P02-1040/",
+      "category": "two-column paper with spanning title and footnote",
+      "sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "bytes": 282048,
+      "pages": 8,
+      "text_fragments": [
+        "Abstract",
+        "Viewpoint"
+      ],
+      "retrieved_on": "2026-10-24",
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Abstract",
+            "1 Introduction",
+            "1.1 Rationale",
+            "fruitful research ideas",
+            "the evaluation bottleneck.",
+            "1.2 Viewpoint",
+            "metric performance"
+          ],
+          "methodology": "Selected geometric order declared after inspecting a Poppler rendering of the public source; not inferred from extraction output. Not a full reading-order, table, bidi or tagged-PDF oracle."
+        }
+      ]
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1669099.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/bug1669099.pdf",
+      "category": "mixed layout membership form and three-column footer",
+      "sha256": "ce40a4f30d332478930eea0318e4784db5b3d6e4956bfff8256bf765fa22181c",
+      "bytes": 187596,
+      "pages": 1,
+      "text_fragments": [
+        "Mitgliedschaft",
+        "Bankverbindung:"
+      ],
+      "retrieved_on": "2026-10-24",
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Internet:",
+            "irc:",
+            "Adresse:",
+            "Österreich",
+            "Bankverbindung:",
+            "IBAN:",
+            "BIC:"
+          ],
+          "methodology": "Selected geometric order declared after inspecting a Poppler rendering of the public source; not inferred from extraction output. Not a full reading-order, table, bidi or tagged-PDF oracle."
+        }
+      ]
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/font_matrix.pdf",
+      "source": "https://pdfium.googlesource.com/pdfium/+/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/font_matrix.in",
+      "category": "equivalent text and graphics transformation matrices",
+      "sha256": "b714ae5cd5d81d18b0d850d3ae7ffc6f0a98dac4ad6fb3f4b6df183184d75fd9",
+      "bytes": 790,
+      "pages": 1,
+      "text_fragments": [
+        "A1",
+        "A2",
+        "A3"
+      ],
+      "retrieved_on": "2026-10-24",
+      "full_page_text": "A3\nA1\nA2",
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "A3",
+            "A1",
+            "A2"
+          ],
+          "methodology": "Declared after inspecting the Poppler-rendered public PDF and its pinned font_matrix.in source: vertical placements are 130, 90 and 60. These labels occupy disjoint vertical regions rather than parallel columns."
+        }
+      ]
+    },
+    {
+      "id": "neurips-attention-2017",
+      "url": "https://papers.nips.cc/paper_files/paper/2017/file/3f5ee243547dee91fbd053c1c4a845aa-Paper.pdf",
+      "source": "https://papers.nips.cc/paper_files/paper/2017/hash/3f5ee243547dee91fbd053c1c4a845aa-Abstract.html",
+      "category": "mathematical paper: author cards in four/three/one-column regions; equations, attention figures and tables",
+      "sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "bytes": 569417,
+      "pages": 11,
+      "text_fragments": [
+        "Attention Is All You Need",
+        "Abstract",
+        "Multi-Head Attention"
+      ],
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Ashish Vaswani",
+            "Noam Shazeer",
+            "Niki Parmar",
+            "Jakob Uszkoreit",
+            "Llion Jones",
+            "Aidan N. Gomez",
+            "Łukasz Kaiser",
+            "Illia Polosukhin",
+            "Abstract",
+            "Introduction"
+          ],
+          "methodology": "Visually declared author-card order from Poppler-rendered first page: four authors in row one, three in row two, one in row three; then abstract and introduction. Geometric selected order, not full table/formula/logical tagging gold."
+        },
+        {
+          "page": 4,
+          "anchors": [
+            "While for small values of dk the two mechanisms perform similarly",
+            "Instead of performing a single attention function with dmodel-dimensional keys, values and queries",
+            "linear projections to dk, dk and dv dimensions, respectively.",
+            "yielding dv-dimensional output values."
+          ],
+          "methodology": "Visually declared inline-subscript fragments on Poppler-rendered page four. Only these prose fragments are gold; roots, fractions, stacked limits and arbitrary mathematical structure remain unverified."
+        }
+      ]
+    },
+    {
+      "id": "bipm-si-concise",
+      "url": "https://www.bipm.org/documents/20126/41483022/SI-Brochure-9-concise-EN.pdf/2fda4656-e236-0fcb-3867-36ca74eea4e3?download=true&version=1.2",
+      "source": "https://www.bipm.org/en/si-brochure-9",
+      "category": "scientific units: inline superscripts/subscripts, bullet constants, tables and a fraction; official concise SI summary version 1.2",
+      "sha256": "0152ee82c2b3df89758c879238d23ee6bc1fa2d53303a5fec95509a3883e1a30",
+      "bytes": 201415,
+      "pages": 5,
+      "text_fragments": [
+        "A concise summary",
+        "The SI is the system of units",
+        "Decimal multiples"
+      ],
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "• the unperturbed ground state hyperfine transition frequency of the caesium 133 atom ∆νCs is 9 192 631 770 Hz,",
+            "• the speed of light in vacuum c is 299 792 458 m/s,",
+            "• the Planck constant h is 6.626 070 15 × 10−34 J s,",
+            "• the elementary charge e is 1.602 176 634 × 10−19 C,",
+            "• the Boltzmann constant k is 1.380 649 × 10−23 J/K,",
+            "• the Avogadro constant NA is 6.022 140 76 × 1023 mol−1,",
+            "• the luminous efficacy of monochromatic radiation of frequency 540 × 1012 Hz, Kcd, is 683 lm/W,",
+            "according to Hz = s–1, J = kg m2 s–2, C = A s, lm = cd m2 m–2 = cd sr, and W = kg m2 s–3."
+          ],
+          "methodology": "Visually declared bullet/item and inline exponent/subscript order from the Poppler-rendered first page. Numeric values are source facts, not a current SI-policy assertion; this pinned document predates newer SI prefixes. Fraction/table logical structure is not gold."
+        },
+        {
+          "page": 2,
+          "anchors": [
+            "Quantity",
+            "SI unit",
+            "time",
+            "The second, symbol s, is the SI unit of time. It is defined by taking the fixed numerical value of the caesium frequency ∆νCs, the unperturbed ground-state hyperfine transition frequency of the caesium 133 atom, to be 9 192 631 770 when expressed in the unit Hz, which is equal to s−1.",
+            "length",
+            "The metre, symbol m, is the SI unit of length. It is defined by taking the fixed numerical value of the speed of light in vacuum c to be 299 792 458 when expressed in the unit m s−1, where the second is defined in terms of ∆νCs.",
+            "mass",
+            "The kilogram, symbol kg, is the SI unit of mass. It is defined by taking the fixed numerical value of the Planck constant h to be 6.626 070 15 ×10−34 when expressed in the unit J s, which is equal to kg m2 s−1, where the metre and the second are defined in terms of c and ∆νCs.",
+            "electric current",
+            "The ampere, symbol A, is the SI unit of electric current. It is defined by taking the fixed numerical value of the elementary charge e to be 1.602 176 634 ×10−19 when expressed in the unit C, which is equal to A s, where the second is defined in terms of ∆νCs.",
+            "thermodynamic temperature",
+            "The kelvin, symbol K, is the SI unit of thermodynamic temperature. It is defined by taking the fixed numerical value of the Boltzmann constant k to be 1.380 649 ×10−23 when expressed in the unit J K−1, which is equal to kg m2 s−2 K−1, where the kilogram, metre and second are defined in terms of h, c and ∆νCs.",
+            "amount of substance",
+            "The mole, symbol mol, is the SI unit of amount of substance. One mole contains exactly 6.022 140 76 × 1023 elementary entities. This number is the fixed numerical value of the Avogadro constant, NA, when expressed in the unit mol−1 and is called the Avogadro number. The amount of substance, symbol n, of a system is a measure of the number of specified elementary entities. An elementary entity may be an atom, a molecule, an ion, an electron, any other particle or specified group of particles.",
+            "luminous intensity",
+            "The candela, symbol cd, is the SI unit of luminous intensity in a given direction. It is defined by taking the fixed numerical value of the luminous efficacy of monochromatic radiation of frequency 540 ×1012 Hz, Kcd, to be 683 when expressed in the unit lm W−1, which is equal to cd sr W−1, or cd sr kg−1 m−2 s3, where the kilogram, metre and second are defined in terms of h, c and ∆νCs.",
+            "Derived quantity",
+            "Name of derived unit",
+            "Symbol for unit",
+            "Expression in terms of other units",
+            "plane angle",
+            "radian",
+            "rad",
+            "m/m",
+            "solid angle",
+            "steradian",
+            "sr",
+            "m2/m2",
+            "frequency",
+            "hertz",
+            "Hz",
+            "s−1",
+            "force",
+            "newton",
+            "N",
+            "kg m s−2",
+            "pressure, stress",
+            "pascal",
+            "Pa",
+            "N/m2 = kg m−1 s−2",
+            "energy, work, amount of heat",
+            "joule",
+            "J",
+            "N m = kg m2 s−2",
+            "power, radiant flux",
+            "watt",
+            "W",
+            "J/s = kg m2 s−3",
+            "electric charge",
+            "coulomb",
+            "C",
+            "A s",
+            "electric potential difference",
+            "volt",
+            "V",
+            "W/A = kg m2 s−3 A−1",
+            "capacitance",
+            "farad",
+            "F",
+            "C/V = kg−1 m−2 s4 A2",
+            "electric resistance",
+            "ohm",
+            "Ω",
+            "V/A = kg m2 s−3 A−2",
+            "electric conductance",
+            "siemens",
+            "S",
+            "A/V = kg−1 m−2 s3 A2",
+            "magnetic flux",
+            "weber",
+            "Wb",
+            "V s = kg m2 s−2 A−1",
+            "magnetic flux density",
+            "tesla",
+            "T",
+            "Wb/m2 = kg s−2 A−1",
+            "inductance",
+            "henry",
+            "H",
+            "Wb/A = kg m2 s−2 A−2",
+            "Celsius temperature",
+            "degree Celsius",
+            "oC",
+            "K",
+            "luminous flux",
+            "lumen",
+            "lm = cd sr",
+            "cd sr",
+            "illuminance",
+            "lux",
+            "lx =cd sr m−2",
+            "lm/m2",
+            "activity referred to a radionuclide",
+            "becquerel",
+            "Bq",
+            "s−1",
+            "absorbed dose, kerma",
+            "gray",
+            "Gy",
+            "J/kg = m2 s−2",
+            "dose equivalent",
+            "sievert",
+            "Sv",
+            "J/kg = m2 s−2",
+            "catalytic activity",
+            "katal",
+            "kat",
+            "mol s−1"
+          ],
+          "methodology": "Every cell of the two manually transcribed source tables,in visual row/cell order. Whitespace ignored;script order is visual text order,not math tree reconstruction."
+        }
+      ],
+      "table_golds": [
+        {
+          "page": 2,
+          "source_table_index": 0,
+          "rows": [
+            [
+              "Quantity",
+              "SI unit"
+            ],
+            [
+              "time",
+              "The second, symbol s, is the SI unit of time. It is defined by taking the fixed numerical value of the caesium frequency ∆νCs, the unperturbed ground-state hyperfine transition frequency of the caesium 133 atom, to be 9 192 631 770 when expressed in the unit Hz, which is equal to s−1."
+            ],
+            [
+              "length",
+              "The metre, symbol m, is the SI unit of length. It is defined by taking the fixed numerical value of the speed of light in vacuum c to be 299 792 458 when expressed in the unit m s−1, where the second is defined in terms of ∆νCs."
+            ],
+            [
+              "mass",
+              "The kilogram, symbol kg, is the SI unit of mass. It is defined by taking the fixed numerical value of the Planck constant h to be 6.626 070 15 ×10−34 when expressed in the unit J s, which is equal to kg m2 s−1, where the metre and the second are defined in terms of c and ∆νCs."
+            ],
+            [
+              "electric current",
+              "The ampere, symbol A, is the SI unit of electric current. It is defined by taking the fixed numerical value of the elementary charge e to be 1.602 176 634 ×10−19 when expressed in the unit C, which is equal to A s, where the second is defined in terms of ∆νCs."
+            ],
+            [
+              "thermodynamic temperature",
+              "The kelvin, symbol K, is the SI unit of thermodynamic temperature. It is defined by taking the fixed numerical value of the Boltzmann constant k to be 1.380 649 ×10−23 when expressed in the unit J K−1, which is equal to kg m2 s−2 K−1, where the kilogram, metre and second are defined in terms of h, c and ∆νCs."
+            ],
+            [
+              "amount of substance",
+              "The mole, symbol mol, is the SI unit of amount of substance. One mole contains exactly 6.022 140 76 × 1023 elementary entities. This number is the fixed numerical value of the Avogadro constant, NA, when expressed in the unit mol−1 and is called the Avogadro number. The amount of substance, symbol n, of a system is a measure of the number of specified elementary entities. An elementary entity may be an atom, a molecule, an ion, an electron, any other particle or specified group of particles."
+            ],
+            [
+              "luminous intensity",
+              "The candela, symbol cd, is the SI unit of luminous intensity in a given direction. It is defined by taking the fixed numerical value of the luminous efficacy of monochromatic radiation of frequency 540 ×1012 Hz, Kcd, to be 683 when expressed in the unit lm W−1, which is equal to cd sr W−1, or cd sr kg−1 m−2 s3, where the kilogram, metre and second are defined in terms of h, c and ∆νCs."
+            ]
+          ],
+          "methodology": "Manually transcribed from original Pdfium and independent Poppler renderings;raw pypdf structure and pdfplumber MCIDs associate each complete cell. Original printed expressions and source scalar choices are retained,including kg m2 s−1 in mass definition and superscript ASCII o in Celsius symbol. Not current metrology policy or mathematical-expression semantics."
+        },
+        {
+          "page": 2,
+          "source_table_index": 1,
+          "rows": [
+            [
+              "Derived quantity",
+              "Name of derived unit",
+              "Symbol for unit",
+              "Expression in terms of other units"
+            ],
+            [
+              "plane angle",
+              "radian",
+              "rad",
+              "m/m"
+            ],
+            [
+              "solid angle",
+              "steradian",
+              "sr",
+              "m2/m2"
+            ],
+            [
+              "frequency",
+              "hertz",
+              "Hz",
+              "s−1"
+            ],
+            [
+              "force",
+              "newton",
+              "N",
+              "kg m s−2"
+            ],
+            [
+              "pressure, stress",
+              "pascal",
+              "Pa",
+              "N/m2 = kg m−1 s−2"
+            ],
+            [
+              "energy, work, amount of heat",
+              "joule",
+              "J",
+              "N m = kg m2 s−2"
+            ],
+            [
+              "power, radiant flux",
+              "watt",
+              "W",
+              "J/s = kg m2 s−3"
+            ],
+            [
+              "electric charge",
+              "coulomb",
+              "C",
+              "A s"
+            ],
+            [
+              "electric potential difference",
+              "volt",
+              "V",
+              "W/A = kg m2 s−3 A−1"
+            ],
+            [
+              "capacitance",
+              "farad",
+              "F",
+              "C/V = kg−1 m−2 s4 A2"
+            ],
+            [
+              "electric resistance",
+              "ohm",
+              "Ω",
+              "V/A = kg m2 s−3 A−2"
+            ],
+            [
+              "electric conductance",
+              "siemens",
+              "S",
+              "A/V = kg−1 m−2 s3 A2"
+            ],
+            [
+              "magnetic flux",
+              "weber",
+              "Wb",
+              "V s = kg m2 s−2 A−1"
+            ],
+            [
+              "magnetic flux density",
+              "tesla",
+              "T",
+              "Wb/m2 = kg s−2 A−1"
+            ],
+            [
+              "inductance",
+              "henry",
+              "H",
+              "Wb/A = kg m2 s−2 A−2"
+            ],
+            [
+              "Celsius temperature",
+              "degree Celsius",
+              "oC",
+              "K"
+            ],
+            [
+              "luminous flux",
+              "lumen",
+              "lm = cd sr",
+              "cd sr"
+            ],
+            [
+              "illuminance",
+              "lux",
+              "lx =cd sr m−2",
+              "lm/m2"
+            ],
+            [
+              "activity referred to a radionuclide",
+              "becquerel",
+              "Bq",
+              "s−1"
+            ],
+            [
+              "absorbed dose, kerma",
+              "gray",
+              "Gy",
+              "J/kg = m2 s−2"
+            ],
+            [
+              "dose equivalent",
+              "sievert",
+              "Sv",
+              "J/kg = m2 s−2"
+            ],
+            [
+              "catalytic activity",
+              "katal",
+              "kat",
+              "mol s−1"
+            ]
+          ],
+          "methodology": "Manually transcribed from original Pdfium and independent Poppler renderings;raw pypdf structure and pdfplumber MCIDs associate each complete cell. Original printed expressions and source scalar choices are retained,including kg m2 s−1 in mass definition and superscript ASCII o in Celsius symbol. Not current metrology policy or mathematical-expression semantics."
+        }
+      ]
+    },
+    {
+      "id": "w3c-tagged-table",
+      "url": "https://www.w3.org/TR/2013/NOTE-WCAG20-TECHS-20130905/working-examples/PDF6/table-example-repaired.pdf",
+      "source": "https://www.w3.org/TR/2013/NOTE-WCAG20-TECHS-20130905/working-examples/PDF6/",
+      "category": "tagged five-column table with repaired header cells",
+      "retrieved": "2026-10-24",
+      "sha256": "d6a9c84d97ec1eb3573988af3502e5c7f7a3dd66e2c65479f38a464e957f18b5",
+      "bytes": 52529,
+      "pages": 1,
+      "text_fragments": [
+        "School",
+        "First grade",
+        "Elm Street",
+        "Maple Street"
+      ],
+      "table_gold": {
+        "page": 1,
+        "rows": [
+          [
+            "School",
+            "First grade",
+            "Second grade",
+            "Third grade",
+            "Fourth grade"
+          ],
+          [
+            "Elm Street",
+            "23",
+            "24",
+            "26",
+            "22"
+          ],
+          [
+            "Spruce Street",
+            "25",
+            "30",
+            "26",
+            "23"
+          ],
+          [
+            "Locust Street",
+            "24",
+            "28",
+            "22",
+            "27"
+          ],
+          [
+            "Maple Street",
+            "26",
+            "26",
+            "21",
+            "29"
+          ]
+        ],
+        "methodology": "All 25 single-line cells independently transcribed from the original Poppler-rendered page; compared with the declared Table/TR/TH/TD tree and page-local SDK MCIDs. Row-major cell sequence, not a general table accessibility conformance claim."
+      },
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "School First grade Second grade Third grade Fourth grade Elm Street 23 24 26 22 Spruce Street 25 30 26 23 Locust Street 24 28 22 27 Maple Street 26 26 21 29"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "w3c-complex-table",
+      "url": "https://www.w3.org/WAI/WCAG22/working-examples/pdf-complex-table/complex-table.pdf",
+      "source": "https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF20",
+      "category": "multirow table headers and ragged cell counts",
+      "retrieved": "2026-10-24",
+      "sha256": "c0bd0fc65103f2528e2fd6ece4c2529cce9dbbbdc0d333dc0d7e538550cd46c7",
+      "bytes": 132046,
+      "pages": 1,
+      "text_fragments": [
+        "Example table",
+        "This is an example of a data table.",
+        "Participants",
+        "Dexterity",
+        "1416 sec, n=3"
+      ],
+      "table_gold": {
+        "page": 1,
+        "rows": [
+          [
+            "Disability Category",
+            "Participants",
+            "Ballots Completed",
+            "Ballots Incomplete/ Terminated",
+            "Results"
+          ],
+          [
+            "Accuracy",
+            "Time to complete"
+          ],
+          [
+            "Blind",
+            "5",
+            "1",
+            "4",
+            "34.5%, n=1",
+            "1199 sec, n=1"
+          ],
+          [
+            "Low Vision",
+            "5",
+            "2",
+            "3",
+            "98.3% n=2 (97.7%, n=3)",
+            "1716 sec, n=3 (1934 sec, n=2)"
+          ],
+          [
+            "Dexterity",
+            "5",
+            "4",
+            "1",
+            "98.3%, n=4",
+            "1672.1 sec, n=4"
+          ],
+          [
+            "Mobility",
+            "3",
+            "3",
+            "0",
+            "95.4%, n=3",
+            "1416 sec, n=3"
+          ]
+        ],
+        "methodology": "All 31 nonempty cells manually transcribed from each original Poppler page. Spanning headers emitted once in their declared row, then second-level headers and complete body rows. No accessibility conformance claim."
+      },
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Disability Category Participants Ballots Completed Ballots Incomplete/ Terminated Results Accuracy Time to complete Blind 5 1 4 34.5%, n=1 1199 sec, n=1 Low Vision 5 2 3 98.3% n=2 (97.7%, n=3) 1716 sec, n=3 (1934 sec, n=2) Dexterity 5 4 1 98.3%, n=4 1672.1 sec, n=4 Mobility 3 3 0 95.4%, n=3 1416 sec, n=3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "w3c-rowspan-table",
+      "url": "https://www.w3.org/WAI/WCAG21/working-examples/pdf-table/table.pdf",
+      "source": "https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF20",
+      "category": "multirow table headers and ragged cell counts with stale MCID references",
+      "retrieved": "2026-10-24",
+      "sha256": "a693998ff2a475d128c11644fbf02374249f08ac134d526a4d9b913d8b5834a5",
+      "bytes": 66887,
+      "pages": 1,
+      "text_fragments": [
+        "Example table",
+        "This is an example of a data table.",
+        "Participants",
+        "Dexterity",
+        "1416 sec, n=3"
+      ],
+      "table_gold": {
+        "page": 1,
+        "rows": [
+          [
+            "Disability Category",
+            "Participants",
+            "Ballots Completed",
+            "Ballots Incomplete/ Terminated",
+            "Results"
+          ],
+          [
+            "Accuracy",
+            "Time to complete"
+          ],
+          [
+            "Blind",
+            "5",
+            "1",
+            "4",
+            "34.5%, n=1",
+            "1199 sec, n=1"
+          ],
+          [
+            "Low Vision",
+            "5",
+            "2",
+            "3",
+            "98.3% n=2 (97.7%, n=3)",
+            "1716 sec, n=3 (1934 sec, n=2)"
+          ],
+          [
+            "Dexterity",
+            "5",
+            "4",
+            "1",
+            "98.3%, n=4",
+            "1672.1 sec, n=4"
+          ],
+          [
+            "Mobility",
+            "3",
+            "3",
+            "0",
+            "95.4%, n=3",
+            "1416 sec, n=3"
+          ]
+        ],
+        "methodology": "All 31 nonempty cells manually transcribed from each original Poppler page. Spanning headers emitted once in their declared row, then second-level headers and complete body rows. No accessibility conformance claim.",
+        "known_issue": "Original painted header uses MCID 147 outside Table, while its TH references absent MCIDs 145/146. Geometric spanning-cell recovery must remain explicitly marked as requiring reading-order review; source tag association stays incomplete."
+      },
+      "reading_order": [
+        {
+          "page": 1,
+          "anchors": [
+            "Disability Category Participants Ballots Completed Ballots Incomplete/ Terminated Results Accuracy Time to complete Blind 5 1 4 34.5%, n=1 1199 sec, n=1 Low Vision 5 2 3 98.3% n=2 (97.7%, n=3) 1716 sec, n=3 (1934 sec, n=2) Dexterity 5 4 1 98.3%, n=4 1672.1 sec, n=4 Mobility 3 3 0 95.4%, n=3 1416 sec, n=3"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pdfium-multiple-form-types",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/multiple_form_types.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/multiple_form_types.pdf",
+      "category": "mixed interactive forms with redundant widget field type",
+      "sha256": "cdff8afa99ed38cf602f13877d5be8d5aa4c9ed56b85e799349fece2bfeda129",
+      "bytes": 2138,
+      "pages": 1,
+      "text_fragments": [
+        "Test Form"
+      ],
+      "full_page_text": "Test Form",
+      "known_issue": "Source radio child repeats /FT /Btn without /T and has no /AP. pypdf get_fields() raises KeyError /AP; bounded raw field-tree reference retains five logical fields. Interactive and appearance semantics remain review.",
+      "canonical_field_gold": {
+        "Combo_Editable": {
+          "FT": {
+            "name_hex": "4368"
+          },
+          "Ff": 393216
+        },
+        "Listbox_MultiSelectMultipleSelected": {
+          "FT": {
+            "name_hex": "4368"
+          },
+          "Ff": 2097152,
+          "V": [
+            "Epsilon",
+            "Gamma"
+          ]
+        },
+        "Text Box": {
+          "FT": {
+            "name_hex": "5478"
+          }
+        },
+        "Checkbox": {
+          "FT": {
+            "name_hex": "42746e"
+          }
+        },
+        "radioButton": {
+          "FT": {
+            "name_hex": "42746e"
+          },
+          "Ff": 32768,
+          "V": {
+            "name_hex": "76616c756533"
+          }
+        }
+      }
+    },
+    {
+      "id": "pdfbox-orphan-widgets",
+      "url": "https://issues.apache.org/jira/secure/attachment/13013354/POPPLER-806.pdf",
+      "source": "https://issues.apache.org/jira/browse/PDFBOX-4985",
+      "category": "Orphan page Widgets with empty AcroForm Fields; interactive JavaScript portfolio report",
+      "sha256": "2517db254664ed2bd960f7faadbef38438128f0853ea76c745c48d84a0347d0b",
+      "bytes": 337769,
+      "pages": 4,
+      "text_fragments": [
+        "Weekly Portfolio Summary",
+        "October 3, 2020"
+      ],
+      "known_issue": "Original catalog Fields is empty while actual pages contain220unique Widget declarations:149Btn,70Tx,oneCh. SDK widget inventory/canonical catalog-only walkers miss saved values. Full JavaScript,appearance and global form semantics remain review.",
+      "page_widget_gold": {
+        "widgets": 220,
+        "unique_names": 220,
+        "catalog_fields": 0,
+        "field_types": {
+          "/Btn": 149,
+          "/Tx": 70,
+          "/Ch": 1
+        },
+        "saved_values": {
+          "PortfolioTable0:0": "AAPL",
+          "PortfolioTable0:1": "Apple Inc",
+          "AlertField0": ""
+        }
+      }
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "url": "https://www.bipm.org/documents/20126/41483022/SI-Brochure-9-concise-EN.pdf/2fda4656-e236-0fcb-3867-36ca74eea4e3?download=true&version=4.1",
+      "bytes": 515460,
+      "sha256": "5a46755dacd99540ef210ff8e6329f5df1fa426bbd5a7c9cd356cb81098c29eb",
+      "source": "https://www.bipm.org/en/web/guest/publications/si-brochure",
+      "pages": 5,
+      "category": "Official June2026 SI concise summary;scientific tables,inline scripts and accented text",
+      "text_fragments": [
+        "A concise summary",
+        "Metrology is the science of measurement"
+      ],
+      "known_issue": "Pinned 2026 snapshot;no assertion of exhaustive original Unicode/math/accessibility semantics. Historical English version1.2 is retained separately.",
+      "reading_order": [
+        {
+          "page": 2,
+          "anchors": [
+            "Quantity",
+            "SI unit",
+            "time",
+            "The second, symbol s",
+            "length",
+            "The metre, symbol m",
+            "mass",
+            "The kilogram, symbol kg",
+            "electric current",
+            "The ampere, symbol A",
+            "thermodynamic temperature",
+            "The kelvin, symbol K",
+            "amount of substance",
+            "The mole, symbol mol",
+            "luminous intensity",
+            "The candela, symbol cd"
+          ],
+          "methodology": "Manually transcribed headers/row labels and adjacent definition starts from original page2 rendering. Selected interleaved row/cell order,not full-cell Unicode/math or full-page semantics."
+        }
+      ]
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "url": "https://www.bipm.org/documents/20126/41483022/SI-Brochure-9-concise-FR.pdf/84feb619-c5be-f8e4-ee12-ce82a1584702?download=true&version=5.0",
+      "bytes": 577441,
+      "sha256": "db2f085b0017a777830e73c7310a1cdc55f23cced6224b3941df154396ea333b",
+      "source": "https://www.bipm.org/en/web/guest/publications/si-brochure",
+      "pages": 5,
+      "category": "Official June2026 SI concise summary;scientific tables,inline scripts and accented text",
+      "text_fragments": [
+        "Résumé de la Brochure",
+        "La métrologie est la science de la mesure",
+        "𝑐𝑐",
+        "𝑣𝑣"
+      ],
+      "known_issue": "Pinned 2026 snapshot;no assertion of exhaustive original Unicode/math/accessibility semantics. Historical English version1.2 is retained separately.",
+      "reading_order": [
+        {
+          "page": 2,
+          "anchors": [
+            "Grandeur",
+            "Unité SI",
+            "temps",
+            "La seconde, symbole s",
+            "longueur",
+            "Le mètre, symbole m",
+            "masse",
+            "Le kilogramme, symbole kg",
+            "courant électrique",
+            "L’ampère, symbole A",
+            "température thermodynamique",
+            "Le kelvin, symbole K",
+            "quantité de matière",
+            "La mole, symbole mol",
+            "intensité lumineuse",
+            "La candela, symbole cd"
+          ],
+          "methodology": "Manually transcribed headers/row labels and adjacent definition starts from original page2 rendering. Selected interleaved row/cell order,not full-cell Unicode/math or full-page semantics."
+        }
+      ],
+      "unicode_expansion_gold": {
+        "page": 1,
+        "font_resource": "/C2_7",
+        "base_font": "/NBLVYX+CambriaMath",
+        "mappings": [
+          {
+            "cid_hex": "073F",
+            "utf16_be_hex": "D835DC50D835DC50",
+            "text": "𝑐𝑐",
+            "source_glyphs": 3
+          },
+          {
+            "cid_hex": "0752",
+            "utf16_be_hex": "D835DC63D835DC63",
+            "text": "𝑣𝑣",
+            "source_glyphs": 2
+          }
+        ],
+        "sdk_utf16_units": 20,
+        "unicode_scalars": 10,
+        "scalar_counts": {
+          "𝑐": 6,
+          "𝑣": 4
+        },
+        "literal_replacements": 2,
+        "known_issue": "Original ToUnicode maps one painted glyph to two identical supplementary scalars and maps two other glyphs toU+FFFD. Preserve the declared mapping,not guessed visual math semantics. Full fraction order and original-Unicode correctness remain unverified."
+      }
+    },
+    {
+      "id": "pdfjs-issue6612",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue6612.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue6612.pdf",
+      "category": "PDF.js whitespace normalization regression; tabs in declared Unicode",
+      "sha256": "2940293c5f32c23c1ccf5df34c44d226cff4e46c7ff633772b9f677d6c4e5738",
+      "bytes": 7067,
+      "pages": 1,
+      "text_fragments": [
+        "To be, or not to be, that is the question:"
+      ],
+      "full_page_text": "To be, or not to be, that is the question:",
+      "known_issue": "Original ToUnicode whitespace U+0009 is normalized to spaces. This selected text gold does not establish original whitespace-code identity."
+    },
+    {
+      "id": "pdfjs-issue14497",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue14497.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/issue14497.pdf",
+      "category": "PDF.js word spacing regression; rotated cadastral labels and empty-box text objects",
+      "sha256": "7bd3bd4073aa4fe1b12d072c25e892d04e9d8579bc4a31b13282ff86abcf09b7",
+      "bytes": 33464,
+      "pages": 1,
+      "text_fragments": [
+        "PROFESSIONAL LAND SURVEYORS",
+        "Parklands Phase 14B"
+      ],
+      "known_issue": "Original contains many rotated survey labels and32SDK text objects without character records. Text reading order and original source completeness remain review; selected heading fragments alone do not certify all labels.",
+      "word_group_gold": {
+        "page": 1,
+        "numeric_labels": [
+          "320 25 00",
+          "57 15 10",
+          "150 11 10",
+          "57 15 10",
+          "256 30 40",
+          "246 55 50",
+          "66 55 50",
+          "165 29 50",
+          "246 55 50",
+          "76 36 30",
+          "166 36 40",
+          "76 36 30",
+          "256 36 30",
+          "256 36 30",
+          "256 36 30",
+          "166 36 40"
+        ],
+        "methodology": "All16numberlabels transcribedfromindependentPopplerrendering andoriginalglyphEncoding Differences. Exactfull-labelmultiset,not inter-labelreadingorder. Headingischeckedseparately."
+      }
+    },
+    {
+      "id": "pdfium-rotated-text",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text.in",
+      "bytes": 1010,
+      "sha256": "9b1356570d111afaed4c300da3479ac094d320a38f652729514c1064f0c17e5a",
+      "pages": 1,
+      "category": "Pinned PDFium text at four directions; display-rotation invariance",
+      "text_fragments": [],
+      "declared_source_strings": [
+        "Hello,",
+        " world!\r\n",
+        "Goodbye,",
+        " world!"
+      ],
+      "known_issue": "Original encodes CR/LF inside a Times-Roman Tj string. SDK reports two Unicode mapping errors and two replacements; retained as uncertainty. Arbitrarily angled text still has fragmented geometric reading order. This source is included without claiming full-page logical order.",
+      "source_template": {
+        "file": "wasm-runtime/pdfium-rotated_text.in",
+        "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text.in",
+        "bytes": 897,
+        "sha256": "6e47c25cc96262a0251967b5d8bf69a872b8d91eb56e5c9e401d3de7481031ac"
+      },
+      "word_group_gold": {
+        "page": 1,
+        "expected_blocks": [
+          "Hello,",
+          "world!��",
+          "Goodbye,",
+          "world!"
+        ],
+        "methodology": "FourindependentlydeclaredsourceTjstrings. InvalidTimes-RomanCR/LFglyphsretainspecifiedtwomappingflags/replacements;onlywithin-stringgrouping,notpage-ordergold."
+      }
+    },
+    {
+      "id": "pdfium-rotated-text-90",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text_90.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text_90.in",
+      "bytes": 810,
+      "sha256": "861824e46c3a2b6b1aa3a1d57900b25c7181c3f2f95e5cb98a387138d74f29ea",
+      "pages": 1,
+      "category": "Pinned PDFium text at four directions; display-rotation invariance",
+      "text_fragments": [
+        "Hello,",
+        "Goodbye,",
+        "world!"
+      ],
+      "declared_source_strings": [
+        "Hello,",
+        " world!\r\n",
+        "Goodbye,",
+        " world!"
+      ],
+      "known_issue": "Original encodes CR/LF inside a Times-Roman Tj string. SDK reports two Unicode mapping errors and two replacements; retained as uncertainty. Arbitrarily angled text still has fragmented geometric reading order. This source is included without claiming full-page logical order.",
+      "source_template": {
+        "file": "wasm-runtime/pdfium-rotated_text_90.in",
+        "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/rotated_text_90.in",
+        "bytes": 697,
+        "sha256": "135a1de5ee21b11ff30f48ad5f48fedce05e911fba94cc860b33bfe044b118cb"
+      },
+      "word_group_gold": {
+        "page": 1,
+        "expected_blocks": [
+          "Hello,",
+          "world!��",
+          "Goodbye,",
+          "world!"
+        ],
+        "methodology": "FourindependentlydeclaredsourceTjstrings. InvalidTimes-RomanCR/LFglyphsretainspecifiedtwomappingflags/replacements;onlywithin-stringgrouping,notpage-ordergold."
+      }
+    },
+    {
+      "id": "pdfjs-issue14497-original",
+      "url": "https://github.com/mozilla/pdf.js/files/7938019/e335bb3d-9b84-47eb-8238-a903095668af.pdf",
+      "source": "https://github.com/mozilla/pdf.js/issues/14497",
+      "category": "Original three-page cadastral map from PDF.js spacing issue; multiple text directions and dense labels",
+      "bytes": 205281,
+      "sha256": "c13dd009598674527a520ac3e24448b6d989fb6354702b44bf745c4483802b04",
+      "pages": 3,
+      "text_fragments": [
+        "PROFESSIONAL LAND SURVEYORS",
+        "Parklands Phase 14B"
+      ],
+      "known_issue": "Actual PDF has threepages althoughprintedtitles refer tofour sheets. OriginalA0dimensions/Rotate90are retained. Default144DPIcomparisons exceedthebitmapcap;SDKunobservedspaceobjectsalsorequirereview. Selectedlabelgolds do notcertifyfullmapreadingorder.",
+      "word_group_gold": {
+        "page": 2,
+        "selected_labels": [
+          "17,79",
+          "256 36 30",
+          "246 55 50",
+          "76 36 30"
+        ],
+        "methodology": "Selected text labels transcribed from an independent300DPI Poppler rendering around parcels5301/5302/5303 andmatched tooriginalEncoding Differences;selectedoccurrencepresence,not full-page order orprecision/recall."
+      }
+    },
+    {
+      "id": "pdfjs-actualtext-eset",
+      "url": "https://github.com/mozilla/pdf.js/files/5089612/ESET_Okrum_and_Ketrican.pdf",
+      "source": "https://github.com/mozilla/pdf.js/issues/12237",
+      "category": "ActualText replacement periods, simple-font ToUnicode codespace inconsistency",
+      "sha256": "84bacfff2b5a3ba07f036ba45a3a394c4969a7c691e5fbf1a981e3379095be91",
+      "bytes": 1002498,
+      "pages": 26,
+      "text_fragments": [
+        "OKRUM",
+        "operating out of China. Its",
+        "MirageFox."
+      ],
+      "actual_text_gold": {
+        "page": 3,
+        "actual_text_periods": 19,
+        "expected_periods": 20,
+        "methodology": "Nineteen original ActualText dot replacements on page3;underlying Book-font code2E maps tospace inToUnicode. One further dot plus19replacements yield20dots, independentlychecked withPoppler source extraction. Whole-page readingorder andother Unicode notadjudicated."
+      },
+      "source_unicode_limits": "Source simple fonts declaretwo-byte ToUnicode codespaces butone-byte bfchar keys. Retain explicitsource Unicode uncertainty;never silently certify this malformedmapping.",
+      "actual_text_golds": [
+        {
+          "page": 2,
+          "actual_text_periods": 301,
+          "expected_periods": 301,
+          "raw_sdk_periods": 63,
+          "recovered_periods": 238,
+          "methodology": "Original page2 has278 space-dot and23 dot ActualText declarations:301periods. Pypdf source declarations and independent Poppler both give301;SDK gives63. Recover238 with source-counted public marked-scope identities. Degenerate object bounds remain explicit source anchor ranges; no inferred glyph rectangles or whole-page Unicode/reading-order gold."
+        }
+      ]
+    },
+    {
+      "id": "pdfa-actualtext-graphics",
+      "url": "https://raw.githubusercontent.com/pdf-association/techniques-for-accessible-pdf/3e31095d8aeea941eccbbb766a23369374c2e9a6/fundamentals/2-text/G2_05-Graphics-representing-text-correctly-tagged/UA1_Tpdf-G2_05.pdf",
+      "source": "https://pdfa.org/techniques-for-accessible-pdf/graphics-representing-text-correctly-tagged/UA1_Tpdf-G2_05/",
+      "category": "PDF Association original: structure ActualText on vector text",
+      "sha256": "c1179396dc0eb4ffacbdfbadba896fb1a6e9661f272ee9cd28b2623d5b506c0d",
+      "bytes": 11493,
+      "pages": 1,
+      "text_fragments": [
+        "This is the",
+        "paragraph."
+      ],
+      "full_page_text": "This is the\nparagraph.",
+      "source_replacement_gold": {
+        "page": 1,
+        "raw_sdk_text": "This is the ",
+        "replacement": "paragraph."
+      },
+      "note": "Original PDF Association G2_05 source, CC-BY-4.0, immutable Git object URL and file SHA. Vector word paragraph. is declared by structure ActualText. Full text and geometry are verified independently; reading-order review and an unrelated omitted whitespace object remain explicit. Upstream pdfa.org download returns HTTP403; official GitHub mirror supplies the identical technique PDF."
+    },
+    {
+      "id": "pdfa-actualtext-ocr",
+      "url": "https://raw.githubusercontent.com/pdf-association/techniques-for-accessible-pdf/3e31095d8aeea941eccbbb766a23369374c2e9a6/fundamentals/2-text/G2_06-ActualText-provides-correct-extractable-characters-in-place-of-OCR-errors/UA1_Tpdf-G2_06.pdf",
+      "source": "https://pdfa.org/techniques-for-accessible-pdf/actualtext-provides-correct-extractable-characters-in-place-of-ocr-errors/UA1_Tpdf-G2_06/",
+      "category": "PDF Association original: invisible OCR errors replaced by structure ActualText",
+      "sha256": "d7de1e10e633b7e6b5e93d7c45c9153e225eee5ae1e961186b93ae21d00025f0",
+      "bytes": 45373,
+      "pages": 1,
+      "text_fragments": [
+        "Available 24/7, you can book an appointment online.",
+        "Page 1"
+      ],
+      "full_page_text": "Available 24/7, you can book an appointment online.\nPage 1",
+      "source_replacement_gold": {
+        "page": 1,
+        "raw_sdk_text": "Page 1 \r\nAvailal;!e 24/7, you c;m book an appointroP.nt online.",
+        "removed_sdk_text": "Availal;!e 24/7, you c;m book an appointroP.nt online.",
+        "replacement": "Available 24/7, you can book an appointment online."
+      },
+      "note": "CC-BY-4.0 official immutable Git object. Original image and structure ActualText independently agree on the corrected sentence. Raw invisible OCR has c;m and appointroP.nt errors; replacements and remaining footer are counted separately. The prior v34 already recovers this structure replacement; this source broadens original gold rather than adding an improvement claim."
+    }
+  ],
+  "revision_pairs": [
+    {
+      "id": "irs-w4-2024-to-2025",
+      "old": "irs-w4-2024",
+      "new": "irs-w4",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2024",
+          "new": "2025"
+        },
+        {
+          "page": 3,
+          "old": "29,200",
+          "new": "30,000"
+        },
+        {
+          "page": 3,
+          "old": "21,900",
+          "new": "22,500"
+        },
+        {
+          "page": 3,
+          "old": "14,600",
+          "new": "15,000"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2022-to-2023",
+      "old": "irs-w4-2022",
+      "new": "irs-w4-2023",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2022",
+          "new": "2023"
+        },
+        {
+          "page": 3,
+          "old": "25,900",
+          "new": "27,700"
+        },
+        {
+          "page": 3,
+          "old": "19,400",
+          "new": "20,800"
+        },
+        {
+          "page": 3,
+          "old": "12,950",
+          "new": "13,850"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2023-to-2024",
+      "old": "irs-w4-2023",
+      "new": "irs-w4-2024",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2023",
+          "new": "2024"
+        },
+        {
+          "page": 3,
+          "old": "27,700",
+          "new": "29,200"
+        },
+        {
+          "page": 3,
+          "old": "20,800",
+          "new": "21,900"
+        },
+        {
+          "page": 3,
+          "old": "13,850",
+          "new": "14,600"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w4-2025-to-2026",
+      "old": "irs-w4",
+      "new": "irs-w4-2026",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          null,
+          4
+        ],
+        [
+          4,
+          5
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "2025",
+          "new": "2026"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "30,000",
+          "new": "32,200"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "22,500",
+          "new": "24,150"
+        },
+        {
+          "old_page": 3,
+          "new_page": 4,
+          "old": "15,000",
+          "new": "16,100"
+        },
+        {
+          "page": 1,
+          "old": "2,000",
+          "new": "2,200"
+        }
+      ],
+      "unchanged": [
+        "Your withholding is subject to review by the IRS."
+      ]
+    },
+    {
+      "id": "irs-w9-2018-to-2024",
+      "old": "irs-w9-2018",
+      "new": "irs-w9-2024",
+      "page_pairs": [
+        [
+          1,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          6,
+          6
+        ]
+      ],
+      "changes": [
+        {
+          "page": 1,
+          "old": "October 2018",
+          "new": "March 2024"
+        },
+        {
+          "page": 1,
+          "old": "C Corporation",
+          "new": "C corporation"
+        },
+        {
+          "page": 1,
+          "old": "Limited liability company.",
+          "new": "LLC. Enter the tax classification"
+        }
+      ],
+      "added": [
+        {
+          "page": 1,
+          "text": "foreign partners, owners, or beneficiaries"
+        }
+      ],
+      "removed": [
+        {
+          "page": 1,
+          "text": "single-member LLC"
+        }
+      ],
+      "unchanged": [
+        "The number shown on this form is my correct taxpayer identification number"
+      ]
+    }
+  ],
+  "robustness": [
+    {
+      "id": "pdfjs-boundingbox-invalid",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/boundingBox_invalid.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/boundingBox_invalid.pdf",
+      "category": "page geometry regression: boundingBox_invalid",
+      "sha256": "f85be7aaf217f8f1864b910501d4aeea53f3d7a503df5b81dd6aaa267e5968ad",
+      "bytes": 1263,
+      "text_fragments": [],
+      "outcome": "geometry_rejected",
+      "invalid_page": 3,
+      "note": "The entire document is rejected; earlier valid pages must not produce a partial comparison."
+    },
+    {
+      "id": "pdfjs-pdfbox-4352-0",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/PDFBOX-4352-0.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/PDFBOX-4352-0.pdf",
+      "category": "page geometry regression: PDFBOX-4352-0",
+      "sha256": "ede76ce3aaa8a5d9da0e6f7fadce8470083be748035da6db08ede9ea34813f40",
+      "bytes": 1481,
+      "text_fragments": [],
+      "outcome": "accepted",
+      "pages": 1,
+      "note": "Pdfium recovers this malformed source; pypdf 6.10.0 cannot parse it, so it is outside controlled rewrites."
+    },
+    {
+      "id": "pdfium-cropped-no-overlap",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_no_overlap.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/cropped_no_overlap.pdf",
+      "category": "CropBox regression: cropped_no_overlap",
+      "sha256": "9ec5b72e3d23e0a3e3b1f2c91ac08e622210ff34999aa48716a46e351e1e2ed8",
+      "bytes": 503,
+      "text_fragments": [],
+      "outcome": "geometry_rejected",
+      "invalid_page": 1,
+      "note": "The entire document is rejected; earlier valid pages must not produce a partial comparison."
+    },
+    {
+      "id": "pdfium-encrypted",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted.pdf",
+      "category": "encrypted PDF regression: encrypted",
+      "sha256": "cbbead7185d9cd46daecaf60165a9aa7b9f2daceb3623218c328cb015ae862d5",
+      "bytes": 10564,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r2",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r2",
+      "sha256": "267945749086981b8727c4931cfc8a24973c3aa5819ea8a392fa8bd0d637ee84",
+      "bytes": 1021,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r2-bad-okey",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2_bad_okey.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r2_bad_okey.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r2_bad_okey",
+      "sha256": "7c6c1bb4dd62bc30e2396640cab1d988876f7c9ceb54794475c370af168fe01e",
+      "bytes": 1020,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document. This Pdfium regression also contains a malformed owner key."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r3",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r3",
+      "sha256": "cdbfd4f6728786dc70c7514bd5c669a38b03bba38be3e91ec46ccb02168b9ad3",
+      "bytes": 1033,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r3-bad-okey",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3_bad_okey.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r3_bad_okey.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r3_bad_okey",
+      "sha256": "bfe206c8f79ec27886dc64ac6894834c7f2830bed5ae5ef5223ed83e2e8c7634",
+      "bytes": 1032,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document. This Pdfium regression also contains a malformed owner key."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r5",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r5.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r5.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r5",
+      "sha256": "9f2bdfbbd675fcaa40e89240f4f66be81621afa33114d24e8f568fb727ad37d9",
+      "bytes": 1496,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    },
+    {
+      "id": "pdfium-encrypted-hello-world-r6",
+      "url": "https://raw.githubusercontent.com/chromium/pdfium/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r6.pdf",
+      "source": "https://github.com/chromium/pdfium/blob/a84323421e94f484faca52dd9d027934eba42ab8/testing/resources/encrypted_hello_world_r6.pdf",
+      "category": "encrypted PDF regression: encrypted_hello_world_r6",
+      "sha256": "a5bcee67d2731547d8e6956cbb0d41eddeef4ca80c378c9dba8bc97961ece064",
+      "bytes": 1496,
+      "text_fragments": [],
+      "outcome": "password_required",
+      "invalid_page": 1,
+      "note": "No password is supplied. The public library APIs must reject this input explicitly and recover for the next valid document."
+    }
+  ],
+  "references": [
+    {
+      "id": "adobe-iso32000-1-2008",
+      "url": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+      "source": "https://opensource.adobe.com/dc-acrobat-sdk-docs/pdfstandards/PDF32000_2008.pdf",
+      "category": "normative reference; excluded from extraction/rendering test denominators",
+      "sha256": "9de0ca9e8570d6209e8bd48a355be8eb6ec376acfc3fc3ae97cd8730351417ff",
+      "bytes": 22491828,
+      "pages": 756,
+      "relevant_clauses": [
+        {
+          "clause": "7.3.9",
+          "physical_page": 29,
+          "topic": "Null dictionary values and references to nonexistent objects"
+        }
+      ]
+    }
+  ]
+}

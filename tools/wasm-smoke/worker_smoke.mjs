@@ -6,7 +6,7 @@ import {createHash} from 'node:crypto';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 const {chromium}=await import(process.env.JADE_PDF_PLAYWRIGHT_PATH?pathToFileURL(process.env.JADE_PDF_PLAYWRIGHT_PATH).href:'playwright');
 const manifestBytes=await fs.readFile(path.join(root,'corpus/manifest.json')), manifest=JSON.parse(manifestBytes);
-const selected=process.argv.slice(2), entries=[...manifest.documents,...manifest.robustness].filter(d=>!selected.length||selected.includes(d.id));
+const selected=process.argv.slice(2), entries=[...manifest.documents,...manifest.robustness,...(manifest.pending_semantic||[])].filter(d=>!selected.length||selected.includes(d.id));
 if(!entries.length || selected.some(id=>!entries.some(d=>d.id===id))) throw new Error('Unknown corpus selection');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 for(const d of entries) if(hash(await fs.readFile(path.join(root,'corpus/cache',d.id+'.pdf')))!==d.sha256) throw new Error('PDF checksum mismatch: '+d.id);
@@ -79,7 +79,13 @@ try {
       for(const dpi of [72,144]) checks.push(await checkPair('renderDpi',[bytes],{page:renderPage,dpi}));
       if(entry.invalid_page) checks.push(await checkPair('textLayer',[bytes],{page:entry.invalid_page}));
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
-      return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle),checks};
+      let semanticGold;
+      if(entry.gold) {
+        const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
+        const actual=ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
+        semanticGold={expected:entry.gold.text,actual,matches:actual.normalize('NFC').trim()===entry.gold.text.normalize('NFC').trim()};
+      }
+      return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle),checks,...(semanticGold?{semantic_gold:semanticGold}:{})};
     },entry);
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
   }
@@ -207,6 +213,7 @@ try {
   const report={version:1,manifest_sha256:hash(manifestBytes),browser:browser.version(),wasm_sha256:hash(await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'))),source_sha256:sourceHashes,
     methodology:'Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.',
     documents:documents.length,passed_documents:documents.filter(d=>d.passed).length,operation_checks:operations.length,matching_operations:operations.filter(x=>x.passed).length,matching_successful_operations:operations.filter(x=>x.passed&&!x.rejected).length,matching_rejections:operations.filter(x=>x.passed&&x.rejected).length,
+    semantic_gold_checks:documents.filter(d=>d.semantic_gold).length,semantic_gold_failures:documents.filter(d=>d.semantic_gold&&!d.semantic_gold.matches).length,
     cases:results.length,passed:results.filter(x=>x.passed).length,results,document_results:documents};
   await fs.writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
   console.log(`${report.passed_documents}/${report.documents} documents, ${report.matching_operations}/${report.operation_checks} operations, ${report.passed}/${report.cases} additional cases`);

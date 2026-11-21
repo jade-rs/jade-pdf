@@ -16,6 +16,59 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("rtl_unicode_") {
+        let expected = match mode {
+            "equivalent" => Some("لخ"),
+            "edit" => Some("لح"),
+            "hebrew" => Some("שם"),
+            "mixed_edit" => Some("بB"),
+            _ => None,
+        };
+        let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let layer = pdf_diff::text_layer_from_bytes(&new, 1)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        if let Some(expected) = expected {
+            if ir.pages[0].text() != expected
+                || layer.iter().map(|r| r.text.as_str()).collect::<String>() != expected
+                || ir.pages[0].reading_order_requires_review
+            {
+                return Err(JsValue::from_str(
+                    "Source RTL order or character geometry mismatch",
+                ));
+            }
+            for unit in [1.0, 3.0, 64.0] {
+                for rotation in [0, 90, 180, 270] {
+                    for shear in [false, true] {
+                        let source = appearance_fixture::unicode_spelling_geometry(
+                            expected, unit, rotation, shear,
+                        );
+                        let ir = pdf_diff::load_document_from_bytes(
+                            &source,
+                            &pdf_diff::Limits::default(),
+                        )
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        let layer = pdf_diff::text_layer_from_bytes(&source, 1)
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        if ir.pages[0].text() != expected
+                            || layer.iter().map(|r| r.text.as_str()).collect::<String>() != expected
+                            || ir.pages[0].reading_order_requires_review
+                        {
+                            return Err(JsValue::from_str(
+                                "RTL order changed under geometry transformations",
+                            ));
+                        }
+                    }
+                }
+            }
+        } else if !ir.pages[0].reading_order_requires_review
+            || !layer.iter().all(|r| r.reading_order_requires_review)
+        {
+            return Err(JsValue::from_str(
+                "Ambiguous RTL source was accepted without review",
+            ));
+        }
+    }
     if let Some(mode) = name.strip_prefix("agl_") {
         let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
             .map_err(|e| JsValue::from_str(&e.to_string()))?;

@@ -64,6 +64,7 @@ mod pdfium_assets;
 mod physical_text;
 mod raster_limits;
 mod render;
+mod rtl_order;
 mod scan;
 mod sdk_probes;
 mod source_text;

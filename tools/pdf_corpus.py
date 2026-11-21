@@ -45,6 +45,18 @@ def fetch(entry, destination, offline=False):
     return entry["id"] + ": downloaded and verified"
 
 
+def sources(manifest):
+    """意味精度が未達の資料も取得し、通常の成功件数とは別に保持する。"""
+    entries = [entry for group in ("documents", "robustness", "references", "pending_semantic")
+               for entry in manifest.get(group, [])]
+    identifiers = set()
+    for entry in entries:
+        if entry["id"] in identifiers:
+            raise ValueError(f"Duplicate corpus ID: {entry['id']}")
+        identifiers.add(entry["id"])
+    return entries
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--offline", action="store_true", help="only verify cached files")
@@ -56,7 +68,7 @@ def main():
     with ThreadPoolExecutor(max_workers=4) as pool:
         futures = [
             pool.submit(fetch, entry, args.destination, args.offline)
-            for entry in manifest["documents"] + manifest.get("robustness", []) + manifest.get("references", [])
+            for entry in sources(manifest)
         ]
         for future in futures:
             try:

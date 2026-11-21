@@ -169,6 +169,7 @@ fn extract_unrotated_runs(
     let mut sdk_unicode_mapping_errors = 0;
     let mut fingerprint = crate::unicode_facts::FINGERPRINT_START;
     let mut projection_fingerprint = crate::unicode_facts::FINGERPRINT_START;
+    let mut rtl_fingerprint = crate::unicode_facts::FINGERPRINT_START;
     let mut region_sizes = vec![None; unicode_facts.actual_regions.len()];
     let mut region_mixed = vec![false; unicode_facts.actual_regions.len()];
     let mut region_origins = vec![None; unicode_facts.actual_regions.len()];
@@ -229,6 +230,20 @@ fn extract_unrotated_runs(
         if unicode_facts.is_paired_low(ch.index()) {
             continue; // Its raw scalar/error still contributed to the checks above.
         }
+        let corrected_index = unicode_facts.rtl_order.reverse_index(ch.index());
+        if corrected_index.is_some() {
+            let bounds = ch.tight_bounds().ok().map(|r| {
+                [
+                    r.left().value.min(r.right().value),
+                    r.bottom().value.min(r.top().value),
+                    r.left().value.max(r.right().value),
+                    r.bottom().value.max(r.top().value),
+                ]
+            });
+            let origin = ch.origin().ok().map(|(x, y)| [x.value, y.value]);
+            rtl_fingerprint =
+                crate::unicode_facts::geometry_add(rtl_fingerprint, ch.index(), bounds, origin);
+        }
         let mut character_errors = usize::from(raw_mapping_error);
         let scalar = if unicode_facts.is_paired_low(ch.index() + 1) {
             character_errors += usize::from(unicode_facts.has_error(ch.index() + 1));
@@ -239,6 +254,13 @@ fn extract_unrotated_runs(
             Some(
                 crate::unicode_facts::surrogate_scalar(raw_unicode, low)
                     .context("Paired Unicode characters changed during extraction")?,
+            )
+        } else if let Some(index) = corrected_index {
+            char::from_u32(
+                chars
+                    .get(index)
+                    .context("RTL correction index changed during extraction")?
+                    .unicode_value(),
             )
         } else {
             char::from_u32(raw_unicode)
@@ -543,6 +565,7 @@ fn extract_unrotated_runs(
     ensure!(
         fingerprint == unicode_facts.fingerprint
             && projection_fingerprint == unicode_facts.projection_fingerprint
+            && rtl_fingerprint == unicode_facts.rtl_order.fingerprint
             && sdk_unicode_mapping_errors == unicode_facts.errors,
         "Unicode diagnostics changed while opening the immutable PDF"
     );
