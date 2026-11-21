@@ -1,6 +1,9 @@
 // Report the check's actual scope; scalar inventories do not validate page prose or order.
 export function semanticEntries(manifest) {
   return ['documents','pending_semantic'].flatMap(cohort=>(manifest[cohort]??[]).map(entry=>{
+    const contexts=Object.hasOwn(entry,'context_gold')?entry.context_gold:[];
+    if(!Array.isArray(contexts)||contexts.length>32||contexts.some(g=>!g||g.kind!=='text_context'))
+      throw new Error('Invalid bounded text contexts');
     if(Object.hasOwn(entry,'gold')&&Object.hasOwn(entry,'full_page_text'))
       throw new Error('Ambiguous page gold declarations');
     let gold=entry.gold;
@@ -71,7 +74,7 @@ export function checkGold(actual,gold) {
   const kind=gold.kind??'full_page_text';
   if(kind==='text_context') {
     const values=['text','anchor','scope'].map(key=>gold[key]);
-    if(values.some(value=>typeof value!=='string'||!value.trim()||[...value].length>2048))
+    if(values.some(value=>typeof value!=='string'||!normalizeText(value)||[...value].length>2048))
       throw new Error('Text context requires bounded nonempty text, anchor and scope');
     const [expected,anchor]=values.slice(0,2).map(normalizeText);
     const count=(text,part)=>text.split(part).length-1;

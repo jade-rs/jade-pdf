@@ -17,7 +17,7 @@ class TextContextTests(unittest.TestCase):
     def test_invalid_context_cannot_be_an_unbounded_or_empty_match(self):
         valid=dict(kind='text_context',text='prefix text',anchor='prefix',scope='One context')
         for change in [dict(text=''),dict(text=' '*3),dict(text='a'*2049),dict(anchor=''),
-                       dict(anchor='absent'),dict(scope=''),dict(text=None)]:
+                       dict(anchor='absent'),dict(scope=''),dict(scope='\u0085'),dict(scope='\u001c'),dict(text=None)]:
             with self.subTest(change=change), self.assertRaises(ValueError):check_gold('',{**valid,**change})
 
     def test_context_is_additional_and_does_not_replace_page_gold(self):
@@ -25,6 +25,11 @@ class TextContextTests(unittest.TestCase):
         context=dict(page=1,kind='text_context',text='replaces FIPS',anchor='replaces',scope='One phrase')
         entry=dict(id='bulletin',gold=page,context_gold=[context])
         self.assertEqual(regular_cases(dict(documents=[entry])),[(entry,page),(entry,context)])
+
+    def test_malformed_context_lists_do_not_silently_skip_gold(self):
+        for contexts in [None,{},[dict(kind='text_context')]*33,[dict(kind='full_page_text')]]:
+            with self.subTest(contexts=contexts), self.assertRaises(ValueError):
+                regular_cases(dict(documents=[dict(id='bad',context_gold=contexts)]))
 
 
 if __name__=='__main__':unittest.main()

@@ -39,8 +39,10 @@ assert.equal(checkGold('prefix\nreplaces FIPS 180-3 and specifies\nsuffix',conte
 for(const text of ['replaces FIPS 1 80-3 and specifies','replaces FIPS 180-3 and\u200dspecifies',
   context.text+'\nreplaces FIPS 1 80-3 and specifies',context.text+'\n'+context.text])
   assert.equal(checkGold(text,context).matches,false);
-for(const change of [{text:''},{text:' '},{text:'a'.repeat(2049)},{anchor:''},{anchor:'absent'},{scope:''},{text:null}])
+for(const change of [{text:''},{text:' '},{text:'a'.repeat(2049)},{anchor:''},{anchor:'absent'},{scope:''},{scope:'\u0085'},{scope:'\u001c'},{text:null}])
   assert.throws(()=>checkGold('',{...context,...change}));
+for(const context_gold of [null,{},Array(33).fill(context),[{kind:'full_page_text'}]])
+  assert.throws(()=>semanticEntries({documents:[{id:'bad',context_gold}]}));
 assert.equal(pageHasTextReview(clean),false);
 for(const field of ['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
   'source_text_characters_missing','source_unicode_scalars_unmatched'])
