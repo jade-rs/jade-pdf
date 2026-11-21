@@ -1,9 +1,9 @@
 {
   "version": 41,
   "date": "2026-11-22",
-  "core_revision": "109b7c53105dd71a0c341ff75d413480bddb1d66",
-  "qualification_revision": "3abf66336dc3fbbea813bde79c65769580d621d2",
-  "base_revision": "bb0e21fa7c2f33c45614e8fad38f2865ba80afcb",
+  "core_revision": "5da6929df029f3b96442f1bc528f2e285d3bd41d",
+  "qualification_revision": "4080cabc2781b2986f9dc55dd25a76b7a0f68faa",
+  "base_revision": "dbb5f8279ee4a2ed98aef659d5c1221c0a8346ab",
   "production_ready": false,
   "scope": "Stable row lookup for close font sizes, one independently reviewed natural-revision scalar edit and horizontal character-cell locations. Not whole-page or full-document precision/recall.",
   "collection": {
@@ -117,7 +117,7 @@
   "sha256": {
     ".github/workflows/ci.yml": "c26dd752e79fa42685b9c4a23994bfbed60f4502efc12eda141d33f20979620d",
     "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
-    "corpus/README.md": "a7041691f6eb9567aa2acd8cc0bcbfd27de9a00270c2f856fa01a6ad3dc52c98",
+    "corpus/README.md": "3d3adbbe26bdb95d6ed649403eecfd4f26c554cdc8875ebe838bd0a49bcaf63d",
     "corpus/manifest-mtextra.json": "e902476fbd7a7e24c333211c36f6341837a9236fdbabf97b6405d9f4ee0bd826",
     "corpus/manifest.json": "a1bbf9bafed556988f26beb356651c216f2c38dc48106375f641255b5679e77d",
     "corpus/results-baseline-grid-impact.json": "e9ee591d17245c8f9ec75d1a10fc7b4294859fa8151d96f975eccb6751b515f8",
@@ -145,5 +145,8 @@
     "tools/wasm-smoke/scalar_revision.mjs": "3f135eade3818322ae86e943b99ed16c56ba5b8f8fef4690d04db48c20ddea56",
     "tools/wasm-smoke/src/lib.rs": "8d96ff8133839a08502036800bc57bca9cc1fec54f5eb1d7c6b1d5728fafe905",
     "tools/wasm-smoke/worker_smoke.mjs": "c2d389815b433f226ed421f45e58f1bd3b1016777a4481be8b0080695c658a87"
-  }
+  },
+  "qualified_core_tree": "e6ebe7003ebc6f5681978bf54b58a17c5064ea2a",
+  "qualified_source_tree": "61e3e8a356f1329eb7b9bfe9a4b946aeb0e9051e",
+  "rebase_verification": "Core, qualification and full result trees are byte-identical before and after rebase onto merged PR #6; only ledger history references and the README ledger link were then updated."
 }

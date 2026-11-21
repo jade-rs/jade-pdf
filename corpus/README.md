@@ -6,7 +6,7 @@ NISTの2012版PDF16ページと2015版15ページ、2015版36ページの正誤�
 
 この変更で通常資料は追加していない。登録84本、通常71資料606ページを保持し、直前の入力一覧は `manifest-mtextra.json` に保存した。v40の実行時点はコミット `bb0e21f` と [validation-mtextra.json](validation-mtextra.json) に固定している。実改訂全体には未確認の差分とレビュー診断が残り、Arabic・Deseretの意味goldも未達のままである。
 
-[変更前後の全資料対照](results-baseline-grid-impact.json) では、7ページで行の結合が変わり、対象ページのブロック数は599から584となった。全606ページでNFCと空白除去後の文字順、およびSDK・原文・読み順の診断は一致した。この一致自体は原文の意味が正しい証明にはしない。`tools/audit_run_grouping.py --binary <current> --baseline <before>` で対照を再実行できる。Rust 296件（8件ignored）、公開PDF6件、Chromium・WebKit各289条件、Worker83資料1,042操作＋209条件が通過し、実改訂の限定goldも各実行経路で確認した。
+[変更前後の全資料対照](results-baseline-grid-impact.json) では、7ページで行の結合が変わり、対象ページのブロック数は599から584となった。全606ページでNFCと空白除去後の文字順、およびSDK・原文・読み順の診断は一致した。この一致自体は原文の意味が正しい証明にはしない。`tools/audit_run_grouping.py --binary <current> --baseline <before>` で対照を再実行できる。[v41検証台帳](validation-baseline-grid.json) に、Rust 296件（8件ignored）、公開PDF6件、Chromium・WebKit各289条件、Worker83資料1,042操作＋209条件の通過と、各実行経路の実改訂goldを記録した。
 
 2026-11-22の追加改善では、同じNIST原本に残ったMT ExtraをSymbolと分け、確認できた省略記号とスクリプト小文字lだけを復元した。[字体の調査記録](mt-extra-font-review.json) に原本・字体プログラムのハッシュ、字形ID、ToUnicodeと出典を記録する。PDF9ページのℓ一つ、17ページの省略記号一つを目視goldへ加え、[変更前](results-mtextra-before.json) の2/4から[変更後](results-mtextra.json) の4/4となった。以前の二つの不等号goldも保持し、それぞれ指定した出現数・原文の私用符号が残らないこと、指定がある場合だけ導入文の断片を検証する。全文・順序・座標の正解率には数えない。登録数は84本、通常71資料606ページのままである。
 
