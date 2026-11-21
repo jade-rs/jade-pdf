@@ -1,6 +1,10 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "mtextra_unicode_valid",
+    "mtextra_unicode_edit",
+    "mtextra_unicode_fragment",
+    "mtextra_unicode_wrong_program",
     "symbol_unicode_valid",
     "symbol_unicode_edit",
     "symbol_unicode_wrong_cid",
@@ -1166,6 +1170,18 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("mtextra_unicode_") {
+        let mode = if mode == "edit" && !revised {
+            "valid"
+        } else {
+            mode
+        };
+        let mut bytes = mt_extra_glyph_cells(mode, 1., 0, false);
+        if revised && mode != "edit" {
+            bytes.extend_from_slice(b"\n% equivalent source rewrite\n");
+        }
+        return bytes;
+    }
     if let Some(mode) = case.strip_prefix("symbol_unicode_") {
         let mode = if mode == "edit" && !revised {
             "valid"
@@ -1981,17 +1997,39 @@ pub fn symbol_glyph_font() -> &'static str {
 
 /// SymbolのCID、私用Unicode、Microsoft Symbol cmapを独立に宣言する自作入力。
 pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
-    let family = if mode == "wrong_family" {
+    legacy_math_glyph_cells(mode, unit, rotation, shear, false)
+}
+
+/// 同じ私用コードがSymbolと異なる意味を持つ、独立に作ったMT Extra入力。
+pub fn mt_extra_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
+    legacy_math_glyph_cells(mode, unit, rotation, shear, true)
+}
+
+/// フォント名と符号表以外の配置を共有し、原文との所有照合を検証する。
+fn legacy_math_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool, mt: bool) -> Vec<u8> {
+    let family = if mt {
+        "ABCDEF+MT#20Extra"
+    } else if mode == "wrong_family" {
         "Custom"
     } else {
         "Symbol"
     };
-    let map = if mode == "wrong_cid" {
+    let map = if mt {
+        "<0001> <F04B>\n<0002> <F06C>\n<0003> <F031>"
+    } else if mode == "wrong_cid" {
         "<0001> <F073>\n<0002> <F03C>\n<0003> <F0A3>"
     } else {
         "<0001> <F0A3>\n<0002> <F03C>\n<0003> <F073>"
     };
-    let text = if mode == "ambiguous" {
+    let text = if mt {
+        if mode == "fragment" {
+            "000100020003"
+        } else if mode == "edit" {
+            "00020002"
+        } else {
+            "00010002"
+        }
+    } else if mode == "ambiguous" {
         "00040005"
     } else if mode == "edit" {
         "000200020003"
@@ -2004,7 +2042,11 @@ pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> 
         "/Identity"
     };
     let actual = if mode == "actual" {
-        "/Span << /ActualText <FEFFF0A3F03CF073> >> BDC"
+        if mt {
+            "/Span << /ActualText <FEFFF04BF06C> >> BDC"
+        } else {
+            "/Span << /ActualText <FEFFF0A3F03CF073> >> BDC"
+        }
     } else {
         ""
     };
@@ -2013,7 +2055,11 @@ pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> 
         format!(
             "/Span << /ActualText <FEFF{}> >> BDC BT /F1 12 Tf 60 150 Td <0002> Tj ET EMC",
             if mode == "actual_collision" {
-                "F0A3"
+                if mt {
+                    "F04B"
+                } else {
+                    "F0A3"
+                }
             } else {
                 "0041"
             }
@@ -2021,7 +2067,12 @@ pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> 
     } else {
         String::new()
     };
-    let mut font = symbol_glyph_font().to_owned();
+    let mut font = if mt && mode != "wrong_program" {
+        mt_extra_glyph_font()
+    } else {
+        symbol_glyph_font()
+    }
+    .to_owned();
     if mode == "wrong_program" {
         font = font
             .replace("53796D626F6C", "437573746F6D")
@@ -2043,4 +2094,32 @@ pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> 
         stream(&font, "/Filter /ASCIIHexDecode"),
         stream(&format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /Test def /CMapType 2 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 5 beginbfchar {map} <0004> <F044> <0005> <F06D> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end"), ""),
     ])
+}
+
+/// 自作の長方形だけを含むMT Extra名のTrueType。外部フォントを再利用しない。
+/// SHA-256: c9935c0586fce498fd235c4ab04f83d696f7030f7b9a3c397ea4eaade23e7a74.
+pub fn mt_extra_glyph_font() -> &'static str {
+    concat!(
+        "00010000000A0080000300204F532F3233E444600000012800000060636D6170F061E0E5000001940000003C",
+        "676C796647A8DF20000001DC00000060686561645955A49C000000AC000000366868656104B101F6000000E4",
+        "00000024686D747801F40000000001880000000A6C6F636100480030000001D00000000A6D61787000060006",
+        "00000108000000206E616D652A8590000000023C00000120706F7374000300000000035C0000002000010000",
+        "00010000B81823E75F0F3CF5000303E8000000007C25B080000000007C25B0800000000001F402BC00000003",
+        "00020000000000000001000002BC0000000001F40000000001F4000100000000000000000000000000000001",
+        "0001000000040004000100000000000200000000000000000000000000000000000301F40190000500040000",
+        "0000000000000000000000000000000000000000000000000000000000000000000010000000000000000000",
+        "00003F3F3F3F0000F031F06C02BC0000000002BC000000000000000000000000000000000020000001F40000",
+        "000000000000000000000001000300000000000C0004003000000008000800020000F031F04BF06CFFFF0000",
+        "F031F04BF06CFFFF0FD20FB60F96000100000000000000000000000C001800240030000000010000000001F4",
+        "02BC000300003121112101F4FE0C02BC00010000000001F402BC000300003121112101F4FE0C02BC00010000",
+        "000001F402BC000300003121112101F4FE0C02BC00010000000001F402BC000300003121112101F4FE0C02BC",
+        "0000000A007E0001000000000001000800000001000000000002000700080001000000000003001F000F0001",
+        "0000000000040008000000010000000000060008002E0003000104090001001000360003000104090002000E",
+        "00460003000104090003003E00540003000104090004001000360003000104090006001000924D5420457874",
+        "7261526567756C61724A61646520696E646570656E64656E742072656374616E676C6520746573744D542D45",
+        "78747261004D00540020004500780074007200610052006500670075006C00610072004A0061006400650020",
+        "0069006E0064006500700065006E00640065006E0074002000720065006300740061006E0067006C00650020",
+        "0074006500730074004D0054002D004500780074007200610003000000000000000000000000000000000000",
+        "000000000000000000000000>",
+    )
 }

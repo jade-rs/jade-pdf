@@ -40,12 +40,23 @@ export function checkGold(actual,gold) {
   }
   if(kind!=='scalar_inventory') throw new Error('Unknown semantic gold kind');
   const {codes,count}=inventorySpec(gold), selected=new Set(codes), observed=new Map();
+  const forbidden=Object.hasOwn(gold,'forbidden_scalars')?gold.forbidden_scalars:[];
+  if(!Array.isArray(forbidden)||forbidden.length>4096||forbidden.some(c=>!Number.isSafeInteger(c)||c<0||c>0x10ffff||c>=0xd800&&c<=0xdfff)||new Set(forbidden).size!==forbidden.length)
+    throw new Error('Forbidden scalars require a bounded unique scalar list');
   for(const scalar of actual) {
     const code=scalar.codePointAt(0);
     if(selected.has(code)) observed.set(code,(observed.get(code)??0)+1);
   }
   const key=c=>'U+'+c.toString(16).toUpperCase().padStart(5,'0');
-  return {kind,scope:gold.scope,matches:codes.every(c=>(observed.get(c)??0)===count),
+  const forbiddenInventory=Object.fromEntries(forbidden.map(c=>[key(c),[...actual].filter(s=>s.codePointAt(0)===c).length]));
+  return {kind,scope:gold.scope,matches:codes.every(c=>(observed.get(c)??0)===count)&&Object.values(forbiddenInventory).every(n=>n===0),
     expected_inventory:Object.fromEntries(codes.map(c=>[key(c),count])),
-    actual_inventory:Object.fromEntries(codes.map(c=>[key(c),observed.get(c)??0]))};
+    actual_inventory:Object.fromEntries(codes.map(c=>[key(c),observed.get(c)??0])),forbidden_inventory:forbiddenInventory};
+}
+export function compactFragmentMatches(actual,gold) {
+  if(!Object.hasOwn(gold,'compact_fragment')) return true;
+  if(typeof gold.compact_fragment!=='string'||!gold.compact_fragment.trim())
+    throw new Error('Compact fragment requires nonempty text');
+  const compact=text=>text.replace(/[\u0009-\u000d\u001c-\u0020\u0085\u00a0\u1680\u2000-\u200a\u2028\u2029\u202f\u205f\u3000]+/gu,'');
+  return compact(actual).includes(compact(gold.compact_fragment));
 }

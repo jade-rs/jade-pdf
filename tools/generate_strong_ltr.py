@@ -10,17 +10,21 @@ SHA256 = 'd9e23222522551348ea1ccfbb4f62efbf98982afb95840f8959c08ed992c5607'
 OUTPUT = ROOT/'crates/jade-pdf-diff/src/strong_ltr_data.rs'
 
 
-def generate(data):
-    """Keep assigned explicit L scalars only, with sorted disjoint ranges."""
+def generate(data, profile='strong-ltr'):
+    """Keep explicit assigned scalars under the selected, bounded proof profile."""
+    if profile not in ('strong-ltr', 'legacy-context'):
+        raise ValueError('Unknown Unicode evidence profile')
     if hashlib.sha256(data).hexdigest() != SHA256:
         raise ValueError('Unicode source SHA-256 mismatch')
     ranges = []
+    allowed = {'L'} if profile == 'strong-ltr' else {'L', 'EN', 'ES', 'ET', 'CS', 'NSM', 'B', 'S', 'WS', 'ON'}
+    excluded = ('Cn', 'Cs') if profile == 'strong-ltr' else ('Cn', 'Cs', 'Co')
     for line in data.decode('utf-8').splitlines():
         body, _, comment = line.partition('#')
         if not body.strip():
             continue
         span, value = body.split(';')
-        if value.strip() != 'L' or comment.strip().startswith(('Cn', 'Cs')):
+        if value.strip() not in allowed or comment.strip().startswith(excluded):
             continue
         bounds = span.strip().split('..')
         start, end = int(bounds[0], 16), int(bounds[-1], 16)
@@ -41,6 +45,10 @@ def generate(data):
               f'// Source: {SOURCE}\n// SHA-256: {SHA256}\n'
               '/// Unicode 18で明示的にLと定義された、未割当を含まないスカラー区間。\n'
               'pub(super) const RANGES: &[(u32, u32)] = &[\n')
+    if profile == 'legacy-context':
+        header = header.replace('/// Unicode 18で明示的にLと定義された、未割当を含まないスカラー区間。',
+            '// Profile: legacy-context; L, EN, ES, ET, CS, NSM, B, S, WS, ON only.\n'
+            '/// RTL・明示方向制御・未割当・サロゲート・私用領域を含まない既知の文脈。')
     return header + ''.join(f'    (0x{a:04x}, 0x{b:04x}),\n' for a, b in merged) + '];\n'
 
 
@@ -48,13 +56,15 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument('source', type=Path, help='Original hash-pinned DerivedBidiClass.txt')
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--profile', choices=['strong-ltr', 'legacy-context'], default='strong-ltr')
     args = parser.parse_args()
-    result = generate(args.source.read_bytes())
+    result = generate(args.source.read_bytes(), args.profile)
+    output = OUTPUT if args.profile == 'strong-ltr' else OUTPUT.with_name('legacy_context_data.rs')
     if args.check:
-        if OUTPUT.read_text() != result:
+        if output.read_text() != result:
             raise SystemExit('Generated strong-LTR table differs')
     else:
-        OUTPUT.write_text(result)
+        output.write_text(result)
 
 
 if __name__ == '__main__':

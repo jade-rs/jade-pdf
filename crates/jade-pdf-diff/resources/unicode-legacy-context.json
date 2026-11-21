@@ -1,0 +1,11 @@
+{
+  "unicode_version": "18.0.0",
+  "source": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedBidiClass.txt",
+  "source_sha256": "d9e23222522551348ea1ccfbb4f62efbf98982afb95840f8959c08ed992c5607",
+  "generated": "src/legacy_context_data.rs",
+  "generator": "tools/generate_strong_ltr.py --profile legacy-context",
+  "scope": "Explicit assigned classes L, EN, ES, ET, CS, NSM, B, S, WS, ON; no defaults, unassigned, surrogates, private use, RTL, Arabic numbers, boundary-neutral formatting, embeddings or isolates. Source text-layout RTL candidate ranges are additionally rejected. This context proof does not relax strong-L requirements for supplementary glyph-name repair.",
+  "license": "Unicode License V3",
+  "license_file": "unicode-license-v3.txt",
+  "license_sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96"
+}

@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
-import {checkGold,pageHasTextReview} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches} from './semantic_gold.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
@@ -220,12 +220,12 @@ try {
         for (const [engine,ir] of [['native',expected],['WASM',actual.ir]]) {
           const text=ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n');
           const inventory=checkGold(text,gold);
-          const fragmentMatches=text.replace(/\s/gu,'').includes(gold.compact_fragment);
-          if(!inventory.matches||!fragmentMatches||text.includes('\uf0a3'))
+          const fragmentMatches=compactFragmentMatches(text,gold);
+          if(!inventory.matches||!fragmentMatches)
             throw new Error(`${engine} visible Symbol operator gold mismatch`);
           checks.push({engine,inventory,compact_fragment_matches:fragmentMatches});
         }
-        results.push({id:'symbol-operator-gold-'+entry.id,passed:true,page:gold.page,checks});
+        results.push({id:'symbol-operator-gold-'+entry.id+'-page-'+gold.page,passed:true,page:gold.page,checks});
       }
       for (const gold of entry.reading_order ?? []) {
         const normalized = text => text.normalize('NFC').replace(/\s/gu,'');
@@ -424,8 +424,8 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name.startsWith('symbol_unicode_')) {
-          const mode=name.slice('symbol_unicode_'.length);
+        if(name.startsWith('symbol_unicode_')||name.startsWith('mtextra_unicode_')) {
+          const mode=name.slice(name.indexOf('_unicode_')+'_unicode_'.length);
           const complete=['valid','edit'].includes(mode);
           passed&&=result.complete===complete&&result.text_complete===complete&&summary.pages_visual_changed===0;
           if(mode==='edit') passed&&=summary.blocks_changed===1;

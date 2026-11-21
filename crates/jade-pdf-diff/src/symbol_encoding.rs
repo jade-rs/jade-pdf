@@ -44,22 +44,27 @@ impl Corrections {
     }
 }
 
-/// 未確認の私用文字、RTL、結合文字、方向制御のあるページで順序を推測しない。
-/// 初期対応はASCII・明示的なLTR文字・省略記号と、検証済みSymbol符号に限定する。
+/// 未確認の私用文字、RTL、方向制御のあるページで順序を推測しない。
+/// 明示的なUnicode 18文脈と、原文から検証済みの旧符号だけを許す。
 fn expected(source: &Facts) -> Option<BTreeMap<char, usize>> {
     if source.symbol_aliases.is_empty() || source.unavailable || source.rtl_unavailable {
         return None;
     }
     for (&raw, alias) in &source.symbol_aliases {
-        alias.scalar?;
+        if !crate::legacy_context::contains(alias.scalar?) {
+            return None;
+        }
         if source.scalars.get(&raw) != Some(&alias.count) || alias.count == 0 {
             return None;
         }
     }
-    if source.scalars.keys().any(|&c| {
-        !c.is_ascii() && c != '…' && !source.symbol_aliases.contains_key(&c)
-            && (matches!(c, '\u{e000}'..='\u{f8ff}' | '\u{f0000}'..='\u{ffffd}' | '\u{100000}'..='\u{10fffd}') || !crate::strong_ltr::contains(c))
-    }) { return None; }
+    if source
+        .scalars
+        .keys()
+        .any(|&c| !source.symbol_aliases.contains_key(&c) && !crate::legacy_context::contains(c))
+    {
+        return None;
+    }
     let mut result = source.scalars.clone();
     for (&raw, alias) in &source.symbol_aliases {
         result.remove(&raw)?;
@@ -199,7 +204,7 @@ mod tests {
     fn ambiguous_context_and_unowned_private_scalars_are_not_rewritten() {
         let mut s = source(1);
         assert_eq!(expected(&s), Some(BTreeMap::from([('≤', 1)])));
-        for c in ['א', '\u{1e900}', '\u{11b60}', '\u{e123}', '\u{0378}'] {
+        for c in ['א', '\u{1e900}', '\u{064b}', '\u{e123}', '\u{0378}'] {
             s.scalars.insert(c, 1);
             assert!(expected(&s).is_none());
             s.scalars.remove(&c);
@@ -211,6 +216,21 @@ mod tests {
         assert!(expected(&s).is_none());
         s.unavailable = false;
         s.symbol_aliases.get_mut(&'\u{f0a3}').unwrap().scalar = None;
+        assert!(expected(&s).is_none());
+    }
+
+    /// 引用符・アクセント・数学記号のあるLTR本文でも、原文の意味と結合文字を保つ。
+    #[test]
+    fn assigned_non_rtl_context_preserves_math_and_combining_marks() {
+        let mut s = source(1);
+        for c in "Café “x” ≥ 3 × 2".chars() {
+            crate::source_text::unicode::add_scalar(&mut s.scalars, c);
+        }
+        let mut wanted = s.scalars.clone();
+        wanted.remove(&'\u{f0a3}');
+        wanted.insert('≤', 1);
+        assert_eq!(expected(&s), Some(wanted));
+        s.symbol_aliases.get_mut(&'\u{f0a3}').unwrap().scalar = Some('א');
         assert!(expected(&s).is_none());
     }
 

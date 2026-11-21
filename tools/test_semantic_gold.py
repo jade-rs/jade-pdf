@@ -1,9 +1,26 @@
 import unittest
 
-from semantic_gold import check_gold, page_has_text_review
+from semantic_gold import check_gold, page_has_text_review, compact_fragment_matches
 
 
 class SemanticGoldTests(unittest.TestCase):
+    def test_selected_private_alias_must_not_remain_or_duplicate(self):
+        gold=dict(kind='scalar_inventory',ranges=[[0x2264,0x2264]],count_each=1,
+                  scope='One visible operator',forbidden_scalars=[0xf0a3])
+        self.assertTrue(check_gold('≤\uf04b',gold)['matches'])
+        self.assertFalse(check_gold('≤\uf0a3',gold)['matches'])
+        for value in [None, 'x', [True], [0xd800], [0x110000], [0xf0a3,0xf0a3]]:
+            with self.assertRaises(ValueError):
+                check_gold('≤',gold | dict(forbidden_scalars=value))
+
+    def test_optional_fragment_is_independent_of_inventory(self):
+        self.assertTrue(compact_fragment_matches('…ℓ', {}))
+        self.assertTrue(compact_fragment_matches('0 ≤ t\n≤ 79', dict(compact_fragment='0≤t≤79')))
+        self.assertFalse(compact_fragment_matches('0≤t<79', dict(compact_fragment='0≤t≤79')))
+        for value in ['', ' \n', None, 4]:
+            with self.assertRaises(ValueError):
+                compact_fragment_matches('anything', dict(compact_fragment=value))
+
     def test_unrelated_page_or_geometry_review_cannot_guard_wrong_text(self):
         clean = dict(blocks=[dict(text='wrong')], user_unit=None)
         self.assertFalse(page_has_text_review(clean))

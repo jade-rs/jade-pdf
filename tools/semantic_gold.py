@@ -8,6 +8,16 @@ def normalize_text(text):
     return ' '.join(unicodedata.normalize('NFC', text).split())
 
 
+def compact_fragment_matches(actual, gold):
+    """任意の部分文字列goldは、指定があるときだけ独立に検証する。"""
+    if 'compact_fragment' not in gold:
+        return True
+    fragment = gold['compact_fragment']
+    if not isinstance(fragment, str) or not fragment.strip():
+        raise ValueError('Compact fragment requires nonempty text')
+    return ''.join(fragment.split()) in ''.join(actual.split())
+
+
 def page_has_text_review(page):
     """Require review evidence on the checked page, not only on another page."""
     return (not any(block['text'].strip() for block in page['blocks'])
@@ -59,9 +69,16 @@ def check_gold(actual, gold):
     if kind != 'scalar_inventory':
         raise ValueError('Unknown semantic gold kind')
     codes, count = inventory_spec(gold)
+    forbidden = gold.get('forbidden_scalars', [])
+    if (not isinstance(forbidden, list) or len(forbidden) > 4096
+            or any(type(c) is not int or not 0 <= c <= 0x10ffff or 0xd800 <= c <= 0xdfff for c in forbidden)
+            or len(set(forbidden)) != len(forbidden)):
+        raise ValueError('Forbidden scalars require a bounded unique scalar list')
     selected = set(codes)
     observed = Counter(ord(c) for c in actual if ord(c) in selected)
     expected = {f'U+{c:05X}': count for c in codes}
     inventory = {f'U+{c:05X}': observed[c] for c in codes}
-    return dict(kind=kind, scope=gold['scope'], matches=inventory == expected,
-                expected_inventory=expected, actual_inventory=inventory)
+    forbidden_inventory = {f'U+{c:05X}': actual.count(chr(c)) for c in forbidden}
+    return dict(kind=kind, scope=gold['scope'], matches=inventory == expected and not any(forbidden_inventory.values()),
+                expected_inventory=expected, actual_inventory=inventory,
+                forbidden_inventory=forbidden_inventory)

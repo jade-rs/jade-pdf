@@ -7,7 +7,7 @@ from pathlib import Path
 import subprocess
 
 from pdf_corpus import ROOT, fetch
-from semantic_gold import check_gold
+from semantic_gold import check_gold, compact_fragment_matches
 
 
 def main():
@@ -29,13 +29,13 @@ def main():
         page = json.loads(run.stdout)['pages'][gold['page'] - 1]
         actual = '\n'.join(b['text'] for b in page['blocks'])
         check = check_gold(actual, gold)
-        fragment_matches = gold['compact_fragment'] in ''.join(actual.split())
+        fragment_matches = compact_fragment_matches(actual, gold)
         rows.append(dict(id=entry['id'], source_sha256=entry['sha256'], page=gold['page'],
-                         gold_check=check, expected_compact_fragment=gold['compact_fragment'],
+                         gold_check=check, expected_compact_fragment=gold.get('compact_fragment'),
                          compact_fragment_matches=fragment_matches,
                          private_f0a3=actual.count('\uf0a3'),
                          diagnostics={k: v for k, v in page.items() if k.startswith(('sdk_', 'source_')) or k == 'reading_order_requires_review'},
-                         passed=check['matches'] and fragment_matches and '\uf0a3' not in actual))
+                         passed=check['matches'] and fragment_matches))
     report = dict(binary_sha256=hashlib.sha256(binary.read_bytes()).hexdigest(),
                   manifest_sha256=hashlib.sha256((ROOT/'corpus/manifest.json').read_bytes()).hexdigest(),
                   source_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),

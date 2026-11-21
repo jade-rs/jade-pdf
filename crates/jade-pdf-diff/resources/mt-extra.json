@@ -1,0 +1,12 @@
+{
+  "sources": [
+    "https://www-archive.mozilla.org/projects/mathml/fonts/encoding/mtextra",
+    "https://docs.wiris.com/en_US/reference/font-knowledge",
+    "https://learn.microsoft.com/en-us/typography/font-list/mt-extra"
+  ],
+  "source_role": "Mozilla's original MathML font-encoding investigation, the manufacturer's font-encoding documentation, and Microsoft's font identity metadata.",
+  "source_mapping_date": "2001-03-09; Mozilla archive snapshot 2008-04-21",
+  "facts": { "0x4B": "U+2026", "0x6C": "U+2113" },
+  "scope": "Two standalone character correspondences only. No font file, outline or copied mapping table. Font variants can have different glyph IDs: every use must independently match the embedded Microsoft Symbol cmap, PDF Identity CID-to-GID map and ToUnicode, rather than a hard-coded glyph index. Names alone are insufficient.",
+  "excluded": "Bracket assembly pieces, accents, arrows, missing glyphs and all other positions remain unresolved. Do not apply Adobe Symbol's Kappa/lambda meanings to MT Extra."
+}

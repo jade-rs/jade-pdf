@@ -83,12 +83,12 @@ try {
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
       const symbolGold=[];
       for(const gold of entry.symbol_operator_gold??[]) {
-        const {checkGold}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const {checkGold,compactFragmentMatches:checkFragment}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=await window.client.run('inspect',[bytes]);
         const text=ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n');
         const inventory=checkGold(text,gold);
-        const compactFragmentMatches=text.replace(/\s/gu,'').includes(gold.compact_fragment);
-        const passed=inventory.matches&&compactFragmentMatches&&!text.includes('\uf0a3');
+        const compactFragmentMatches=checkFragment(text,gold);
+        const passed=inventory.matches&&compactFragmentMatches;
         symbolGold.push({page:gold.page,inventory,compact_fragment_matches:compactFragmentMatches,passed});
         checks.push({operation:'visibleOperatorGold',passed,worker_idle:window.client.activeWorkers===0});
       }
