@@ -585,11 +585,9 @@ fn extract_unrotated_runs(
         if run.text.is_empty() {
             run.advance.first = advance;
             run.outside_mark = content.outside;
-        } else {
-            if run.outside_mark != content.outside {
-                // Mixed structural marks are not an unambiguous orphan cell.
-                run.outside_mark = None;
-            }
+        } else if run.outside_mark != content.outside {
+            // Mixed structural marks are not an unambiguous orphan cell.
+            run.outside_mark = None;
         }
         run.text.push(c);
         run.tagged_cell = tagged_cell;
