@@ -3,4 +3,5 @@
 
 # SHA-256を照合するAdobe原本の文字表は、Windowsでも改行変換しない。
 crates/jade-pdf-diff/resources/adobe-glyphlist.txt -text
+crates/jade-pdf-diff/resources/adobe-symbol.txt -text
 crates/jade-pdf-diff/resources/unicode-license-v3.txt -text

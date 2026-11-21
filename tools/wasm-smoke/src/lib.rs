@@ -16,6 +16,62 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("symbol_unicode_") {
+        let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let layer = pdf_diff::text_layer_from_bytes(&new, 1)
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        let text = ir.pages[0].text();
+        let expected = match mode {
+            "valid" | "outside_actual" => Some("≤<σ"),
+            "edit" => Some("<<σ"),
+            _ => None,
+        };
+        if let Some(expected) = expected {
+            if !text.contains(expected) || ir.pages[0].source_unicode_accounting_unavailable {
+                return Err(JsValue::from_str(
+                    "Verified Symbol encoding was not recovered",
+                ));
+            }
+            for unit in [1., 3., 64.] {
+                for rotation in [0, 90, 180, 270] {
+                    for shear in [false, true] {
+                        let bytes =
+                            appearance_fixture::symbol_glyph_cells(mode, unit, rotation, shear);
+                        let ir = pdf_diff::load_document_from_bytes(
+                            &bytes,
+                            &pdf_diff::Limits::default(),
+                        )
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        let layer = pdf_diff::text_layer_from_bytes(&bytes, 1)
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        if !ir.pages[0].text().contains(expected)
+                            || !layer
+                                .iter()
+                                .map(|r| r.text.as_str())
+                                .collect::<String>()
+                                .contains(expected)
+                            || ir.pages[0].source_unicode_accounting_unavailable
+                        {
+                            return Err(JsValue::from_str(
+                                "Symbol glyph ownership changed under geometry transformation",
+                            ));
+                        }
+                    }
+                }
+            }
+        } else if text.contains('≤')
+            || text.contains('σ')
+            || !ir.pages[0].source_unicode_accounting_unavailable
+        {
+            return Err(JsValue::from_str(
+                "Unverified Symbol encoding was silently accepted",
+            ));
+        }
+        if layer.iter().map(|r| r.text.as_str()).collect::<String>() != text {
+            return Err(JsValue::from_str("Symbol IR and character layer disagree"));
+        }
+    }
     if let Some(mode) = name.strip_prefix("named_unicode_") {
         let expected = match mode {
             "edit" | "equivalent" => "A𐐌C",

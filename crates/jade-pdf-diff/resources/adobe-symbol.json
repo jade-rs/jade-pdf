@@ -1,0 +1,6 @@
+{
+  "source": "https://www.unicode.org/Public/MAPPINGS/VENDORS/ADOBE/symbol.txt",
+  "table_version": "1.0 (2011-07-12 terms update)",
+  "sha256": "deb78ca840a429311939b9d165890873f71fb23ef223ceeb144a6c6d641a7e52",
+  "use": "Bounded, unique non-private canonical mappings for verified embedded Microsoft Symbol fonts. Original notice retained in adobe-symbol.txt. No font data."
+}

@@ -2,6 +2,8 @@
 //! Run `python3 tools/pdf_corpus.py` before `cargo test --test public_corpus -- --ignored`.
 #[path = "support/sdk_text_oracle.rs"]
 mod sdk_text_oracle;
+#[path = "support/source_inventory.rs"]
+mod source_inventory;
 
 use std::collections::BTreeMap;
 use std::path::{Path, PathBuf};
@@ -41,6 +43,8 @@ struct Entry {
     #[serde(default)]
     actual_text_golds: Vec<ActualTextGold>,
     source_replacement_gold: Option<SourceReplacementGold>,
+    /// 固定原本で確認した所有MCIDと字体等価対応の資料。
+    source_inventory_gold: Option<String>,
 }
 
 #[derive(Deserialize)]
@@ -384,14 +388,34 @@ fn public_text_matches_sdk_and_independently_declared_source_gold() {
         .map(pdfium_render::prelude::Pdfium::new)
         .unwrap();
         let oracle = sdk_text_oracle::pages(&pdfium, &std::fs::read(&path).unwrap()).unwrap();
+        let inventory = entry.source_inventory_gold.as_ref().map(|name| {
+            assert!(
+                name.starts_with("source-inventory-")
+                    && name.ends_with(".json")
+                    && !name.contains(['/', '\\'])
+            );
+            let gold =
+                serde_json::from_slice(&std::fs::read(root().join("corpus").join(name)).unwrap())
+                    .unwrap();
+            source_inventory::pages(&pdfium, &std::fs::read(&path).unwrap(), &oracle, &gold)
+                .unwrap()
+        });
         for (i, page) in ir.pages.iter().enumerate() {
-            let expected = &oracle[i].0;
+            let aliases = inventory
+                .as_ref()
+                .map(|pages| &pages[i].aliases)
+                .cloned()
+                .unwrap_or_default();
+            let expected = inventory
+                .as_ref()
+                .map(|pages| pages[i].text.as_str())
+                .unwrap_or(&oracle[i].0);
             assert_eq!(
                 page.sdk_unicode_mapping_errors, oracle[i].1,
                 "SDK mapping diagnostic count differs"
             );
             let actual: String = page.blocks.iter().map(|b| b.text.as_str()).collect();
-            let mut expected = character_bag(expected);
+            let mut expected = character_bag(&source_inventory::normalize(expected, &aliases));
             if let Some(gold) = entry
                 .source_replacement_gold
                 .as_ref()
@@ -433,7 +457,7 @@ fn public_text_matches_sdk_and_independently_declared_source_gold() {
             characters += expected.values().sum::<usize>();
             assert_eq!(
                 expected,
-                character_bag(&actual),
+                character_bag(&source_inventory::normalize(&actual, &aliases)),
                 "{} page {} lost or duplicated characters",
                 entry.id,
                 i + 1

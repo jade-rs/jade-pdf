@@ -126,6 +126,33 @@ fn key(y: f64) -> u64 {
     }
 }
 
+/// 短い単語か括弧付き数値だけを添字候補にし、代替字体が生む括弧内空白を許す。
+/// 単語間の空白や改行は別行の手掛かりとして保持する。
+fn short_script(text: &str) -> bool {
+    if text.chars().count() > 8 || text.trim().is_empty() {
+        return false;
+    }
+    if !text.chars().any(char::is_whitespace) {
+        return true;
+    }
+    if text
+        .chars()
+        .any(|c| matches!(c, '\r' | '\n' | '\u{2028}' | '\u{2029}'))
+    {
+        return false;
+    }
+    let text = text.trim();
+    let inner = [('{', '}'), ('[', ']'), ('(', ')')]
+        .into_iter()
+        .find_map(|(left, right)| text.strip_prefix(left)?.strip_suffix(right));
+    inner.is_some_and(|inner| {
+        inner.chars().any(|c| c.is_ascii_digit())
+            && inner
+                .chars()
+                .all(|c| c.is_ascii_digit() || c.is_whitespace())
+    })
+}
+
 pub(super) fn sort(runs: &mut [ExtractedRun], point: f64) {
     let mut indices: Vec<_> = (0..runs.len()).collect();
     let em = |r: &ExtractedRun| r.size.unwrap_or(12.0 * point).max(point);
@@ -150,8 +177,7 @@ pub(super) fn sort(runs: &mut [ExtractedRun], point: f64) {
         let run_em = em(run);
         // Long/word-separated text is a separate line, not a script on a
         // nearby heading. Typical local indices and exponents are short.
-        let script_text =
-            run.text.chars().count() <= 8 && !run.text.chars().any(char::is_whitespace);
+        let script_text = short_script(&run.text);
         let coordinate = key(y);
         // Bound candidate work on hostile/sparse layouts. Four neighboring
         // baselines in each direction cover local scripts without a page scan.
@@ -287,6 +313,38 @@ mod tests {
         assert_eq!(runs[1].bounds, original_bounds);
         assert_eq!(runs[1].origin, original_origin);
         assert_eq!(runs[1].spans, original_spans);
+    }
+
+    /// 代替フォントで括弧の後に空白が推定されても、数値の上付き位置は変えない。
+    #[test]
+    fn bracketed_numeric_scripts_keep_their_order_with_inferred_spaces() {
+        for text in ["{256}", "{ 256}", "[ 12 ]", "( 3 )"] {
+            let mut base = run(100., 100., 12.);
+            base.text = "σ".into();
+            let mut lower = run(108., 96., 7.);
+            lower.text = "0".into();
+            let mut upper = run(109., 106., 7.);
+            upper.text = text.into();
+            let mut next = run(127., 100., 12.);
+            next.text = "(x)".into();
+            let mut runs = vec![upper, next, base, lower];
+            sort(&mut runs, 1.);
+            assert_eq!(
+                runs.iter().map(|r| r.text.as_str()).collect::<Vec<_>>(),
+                ["σ", "0", text, "(x)"],
+                "{text}"
+            );
+        }
+        let mut word = run(109., 106., 7.);
+        word.text = "a b".into();
+        let mut base = run(100., 100., 12.);
+        base.text = "σ".into();
+        let mut runs = vec![base, word];
+        sort(&mut runs, 1.);
+        assert_eq!(runs[0].text, "a b");
+        for text in ["{one two}", "1 2", "{ }", "{1\n2}", "( 1]", "[1234567]"] {
+            assert!(!short_script(text), "{text:?}");
+        }
     }
 
     proptest! {

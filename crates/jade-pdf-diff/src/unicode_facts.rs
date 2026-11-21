@@ -29,6 +29,8 @@ pub(crate) struct PageFacts {
     pub rtl_order: crate::rtl_order::Corrections,
     /// 原文と字形セルから検証した、Windowsの補助文字の復元。
     pub supplementary: crate::supplementary_glyph::Corrections,
+    /// 原文の埋め込みSymbol cmapとセルから検証した旧私用符号の復元。
+    pub symbol: crate::symbol_encoding::Corrections,
     pub actual_regions: Vec<crate::actual_text::Region>,
     pub projected_empty: bool,
     pub preserve_object_boundaries: bool,
@@ -284,6 +286,7 @@ pub(crate) fn read(
                     reading_order_requires_review: table_facts.requires_review,
                     rtl_order: crate::rtl_order::Corrections::default(),
                     supplementary: crate::supplementary_glyph::Corrections::default(),
+                    symbol: crate::symbol_encoding::Corrections::default(),
                     actual_regions: projection.regions.clone(),
                     projected_empty: false,
                     preserve_object_boundaries: projection
@@ -496,6 +499,17 @@ pub(crate) fn read(
                     units.source_unicode(number),
                 );
                 facts.reading_order_requires_review |= facts.rtl_order.requires_review;
+                facts.symbol = crate::symbol_encoding::read(
+                    pdfium,
+                    text.cast(),
+                    &facts,
+                    units.source_unicode(number),
+                    &observed_unicode,
+                );
+                facts.source_unicode_accounting_unavailable |= facts.symbol.requires_review;
+                if facts.symbol.verified {
+                    facts.source_unicode_scalars_unmatched = 0;
+                }
                 Ok(facts)
             })();
             b.FPDFText_ClosePage(text);

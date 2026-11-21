@@ -71,6 +71,7 @@ mod sdk_probes;
 mod source_text;
 mod strong_ltr;
 mod supplementary_glyph;
+mod symbol_encoding;
 mod tagged_table;
 mod text;
 mod unicode_facts;
@@ -96,6 +97,10 @@ pub const PDFIUM_LICENSE_NOTICES: &str = include_str!("../licenses/pdfium-8111.t
 
 /// License notice for the pinned Adobe Glyph List used by source diagnostics.
 pub const ADOBE_GLYPH_LIST_LICENSE: &str = include_str!("../licenses/adobe-glyphlist.txt");
+/// 旧Symbol符号表の、原本に付属する著作権・利用通知。
+pub const ADOBE_SYMBOL_ENCODING_LICENSE: &str = include_str!("../licenses/adobe-symbol.txt");
+/// 固定版のpure Rustフォント資料パーサーに付属するMIT利用通知。
+pub const TTF_PARSER_LICENSE: &str = include_str!("../licenses/ttf-parser-0.25.1.txt");
 #[cfg(not(target_arch = "wasm32"))]
 pub use parse::{load_document, load_document_blocking};
 pub use scan::{load_document_from_bytes, Limits};

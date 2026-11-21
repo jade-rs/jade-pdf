@@ -9,6 +9,7 @@ use lopdf::{content::Content, Dictionary, Document, Object, ObjectId, Stream};
 use std::collections::HashSet;
 
 pub(crate) mod structure;
+mod symbol_font;
 pub(crate) mod unicode;
 
 pub(crate) struct Facts {

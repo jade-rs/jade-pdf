@@ -24,12 +24,25 @@ pub(crate) struct Facts {
     pub named_supplementary_unavailable: bool,
     /// ActualTextによる置換があり、原文コード数とセルを直接照合できない。
     pub glyph_ownership_unavailable: bool,
+    /// 埋め込みSymbolの字形IDから独立に検証した私用符号と出現回数。
+    pub symbol_aliases: BTreeMap<char, SymbolAlias>,
+    /// 意味を復元する必要のある旧Symbol私用符号が使用された。
+    pub symbol_private: bool,
     /// 同じ文字集合を持つ複数字形の、原文に明記された論理順序。
     pub rtl_sequences: BTreeMap<String, RtlSequence>,
     /// 論理順序の補助資料が予算内に収まらなかったことを示す。
     pub rtl_unavailable: bool,
     /// 論理順序資料の保存量の保守的な上限。
     rtl_bytes: usize,
+}
+
+/// 同じ私用符号がすべて同じ標準文字を指す場合だけ使う証明資料。
+#[derive(Clone)]
+pub(crate) struct SymbolAlias {
+    /// フォント間で意味が衝突した場合は不明のまま残す。
+    pub scalar: Option<char>,
+    /// 字形IDまで照合できた原文コードの使用回数。
+    pub count: usize,
 }
 
 /// 一つの文字コードが持つ右から左への複数文字対応。
@@ -49,6 +62,18 @@ impl Facts {
         self.unavailable |= from.unavailable;
         self.glyphs = self.glyphs.saturating_add(from.glyphs);
         self.glyph_ownership_unavailable |= from.glyph_ownership_unavailable;
+        self.symbol_private |= from.symbol_private;
+        for (raw, alias) in from.symbol_aliases {
+            self.symbol_aliases
+                .entry(raw)
+                .and_modify(|old| {
+                    old.count = old.count.saturating_add(alias.count);
+                    if old.scalar != alias.scalar {
+                        old.scalar = None;
+                    }
+                })
+                .or_insert(alias);
+        }
         self.named_supplementary_unavailable |= from.named_supplementary_unavailable;
         if self.named_supplementary_unavailable {
             self.named_supplementary.clear();
@@ -432,8 +457,13 @@ fn charge(work: &mut usize, n: usize) -> Result<()> {
 
 enum Font {
     Cmap {
-        mapping: Cmap,
+        /// 有界の原文Unicode表を、フォント種別一覧から独立して保持する。
+        mapping: Box<Cmap>,
         encoding: CodeEncoding,
+        /// 原文のCIDと一致するMicrosoft Symbolの私用符号と標準文字。
+        symbol: BTreeMap<u32, (char, char)>,
+        /// Symbolを宣言するフォントの未検証私用符号も診断へ残す。
+        legacy_symbol: bool,
     },
     Unicode(CodeEncoding),
     Simple {
@@ -453,6 +483,8 @@ pub(super) struct Reader<'a> {
     fonts: HashMap<usize, Font>,
     work: usize,
     bytes: usize,
+    /// 元のToUnicodeの予算と独立に制限する、フォント名・cmapの展開量。
+    symbol_bytes: usize,
 }
 impl<'a> Reader<'a> {
     pub fn new(doc: &'a Document) -> Self {
@@ -461,6 +493,7 @@ impl<'a> Reader<'a> {
             fonts: HashMap::new(),
             work: 0,
             bytes: 0,
+            symbol_bytes: 0,
         }
     }
     fn resolve(&mut self, mut value: &'a Object) -> Result<&'a Object> {
@@ -507,9 +540,26 @@ impl<'a> Reader<'a> {
             }
             let bytes = stream.decompressed_content_with_limit(BYTES.saturating_sub(self.bytes))?;
             self.bytes += bytes.len();
+            let mapping = Cmap::parse(&bytes, &mut self.work)?;
+            let legacy_symbol = font
+                .get(b"BaseFont")
+                .and_then(Object::as_name)
+                .is_ok_and(super::symbol_font::family);
+            let mut symbol = if legacy_symbol {
+                super::symbol_font::read(self.doc, font, &mut self.symbol_bytes).unwrap_or_default()
+            } else {
+                BTreeMap::new()
+            };
+            symbol.retain(|&cid, (raw, _)| {
+                mapping.contains_code(cid, 2)
+                    && mapping.get(cid, 2).ok().flatten().as_deref()
+                        == Some(raw.encode_utf8(&mut [0; 4]))
+            });
             return Ok(Font::Cmap {
-                mapping: Cmap::parse(&bytes, &mut self.work)?,
+                mapping: Box::new(mapping),
                 encoding,
+                symbol,
+                legacy_symbol,
             });
         }
         if width != 1 {
@@ -677,6 +727,31 @@ impl<'a> Reader<'a> {
                         return;
                     }
                     facts.sequence(&text);
+                    if let Font::Cmap {
+                        symbol,
+                        legacy_symbol,
+                        ..
+                    } = font
+                    {
+                        facts.symbol_private |= *legacy_symbol
+                            && text.chars().any(|c| matches!(c, '\u{f000}'..='\u{f0ff}'));
+                        let code = code_bytes.iter().fold(0, |v, b| (v << 8) | u32::from(*b));
+                        if let Some(&(raw, scalar)) = symbol.get(&code) {
+                            facts
+                                .symbol_aliases
+                                .entry(raw)
+                                .and_modify(|old| {
+                                    old.count = old.count.saturating_add(1);
+                                    if old.scalar != Some(scalar) {
+                                        old.scalar = None;
+                                    }
+                                })
+                                .or_insert(SymbolAlias {
+                                    scalar: Some(scalar),
+                                    count: 1,
+                                });
+                        }
+                    }
                     if matches!(
                         font,
                         Font::Simple {

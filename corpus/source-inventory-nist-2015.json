@@ -1,0 +1,35 @@
+{
+  "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+  "actual_text": [],
+  "fonts": [
+    {
+      "object": [
+        69,
+        0
+      ],
+      "base_font": "Symbol",
+      "sdk_name": "Symbol",
+      "to_unicode_sha256": "5d79d53e0b7bca4dee2f60298a2c4c63c749d85417fa18e7ff2c696e02f22959",
+      "program_sha256": "f24312123ebcf4046c9eb8e9cec7d674a78ead696738b7dd7873280bd2b67942",
+      "aliases": {
+        "": "+",
+        "": "−",
+        "": "<",
+        "": "=",
+        "": "σ",
+        "": "′",
+        "": "≤",
+        "": "≥",
+        "": "×",
+        "": "≡",
+        "": "≈",
+        "": "⊕",
+        "": "¬",
+        "": "∧",
+        "": "∨",
+        "": "∑"
+      }
+    }
+  ],
+  "method": "Original PDF dictionaries and pypdf 6.10.0 strict UTF-16; raw MCID inventory from independent SDK bindings. Symbol cmap inspected in memory using FontTools 4.60.2; no outlines exported. Conservation equivalences only, not full-page Unicode gold."
+}
