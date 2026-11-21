@@ -1,0 +1,38 @@
+{
+  "document_id": "nist-fips180-4-2015",
+  "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+  "page": 15,
+  "review": "Font metadata inspected in memory with FontTools 4.60.2 and source dictionaries. No font file or outline exported or reused. Unicode Deseret chart font program was not read.",
+  "pdf_font": {
+    "BaseFont": "Symbol",
+    "Subtype": "Type0",
+    "Encoding": "Identity-H",
+    "descendant": "CIDFontType2",
+    "CIDToGIDMap": "Identity",
+    "descriptor_FontName": "Symbol",
+    "descriptor_Flags": 32,
+    "FontFile2_decoded_bytes": 27228
+  },
+  "font_program": {
+    "family_name": "Symbol",
+    "postscript_name": "SymbolMT",
+    "post_format": 3,
+    "post_glyph_names": false,
+    "cmap_platform": 3,
+    "cmap_encoding": 0,
+    "cmap_format": 4,
+    "raw_private_f0a3_glyph_id": 100,
+    "canonical_2264_alias_present": false
+  },
+  "source_tounicode": {
+    "CID_0064": "U+F0A3"
+  },
+  "interpretation": "The font supplies a private Microsoft Symbol encoding, not a canonical Unicode alias. Recovery additionally uses the unique official Adobe Symbol byte A3 -> U+2264 mapping, source use counts and SDK cell ownership. Font name alone is insufficient.",
+  "independent_backend": {
+    "pdfjs_version": "6.4.299",
+    "2012_less_equal": 9,
+    "2015_less_equal": 0,
+    "2015_private_f0a3": 10,
+    "backend_agreement_is_not_semantic_gold": true
+  }
+}

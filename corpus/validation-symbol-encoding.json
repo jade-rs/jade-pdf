@@ -1,0 +1,150 @@
+{
+  "version": 39,
+  "date": "2026-11-22",
+  "core_revision": "79b33edfedff011be5c8518b67be0fd5706111ce",
+  "base_revision": "103a614de3d0641b847cbe7ecbf90f7702db00e0",
+  "production_ready": false,
+  "scope": "Verified legacy Symbol projection and a bounded numerical-script order heuristic; runtime parity is not full semantic accuracy.",
+  "collection": {
+    "registered_documents": 84,
+    "regular_documents": 71,
+    "regular_pages": 606,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 2,
+    "new_documents": [
+      "nist-fips180-4-2012",
+      "nist-fips180-4-2015"
+    ],
+    "new_pages_visually_reviewed": 72
+  },
+  "visible_operator_gold": {
+    "scope": "Only U+2264 inventories and the introductory bound on printed page 10. No whole-page, highlight geometry or full natural-revision precision/recall gold.",
+    "before_correct": 1,
+    "after_correct": 2,
+    "cases": 2,
+    "2015_before_less_equal": 0,
+    "2015_before_private_f0a3": 10,
+    "2015_after_less_equal": 10,
+    "2015_after_private_f0a3": 0
+  },
+  "initial_runtime_failure": {
+    "chromium": "280/281",
+    "webkit": "280/281",
+    "cause": "Substitute-font-dependent inferred whitespace in a short bracketed numeric superscript prevented attachment to its baseline; native and WASM consequently disagreed about script order. Reproduced with an owned regression before the bounded numeric-script predicate change.",
+    "failure_reports": [
+      "results-browser-chromium-symbol-initial.json",
+      "results-browser-webkit-symbol-initial.json"
+    ]
+  },
+  "verification": {
+    "native": {
+      "passed": 283,
+      "ignored": 7,
+      "exit_code": 0,
+      "test_binary_groups": 23,
+      "log_sha256": "6ec168d8e5cea341b59da58f29317cb06468383f46cf55e95ba5fbf5f2f01a15",
+      "suite_cli_sha256": "929c252893bba50501b497eba1c1237bc33e313e8e47bb583c60e3eec7e84462"
+    },
+    "focused_native": {
+      "library_passed": 146,
+      "library_ignored": 1,
+      "cli_passed": 2,
+      "symbol_api_regressions": 4,
+      "geometry_combinations": 24
+    },
+    "fmt": true,
+    "clippy_warnings_denied": true,
+    "fixture_hygiene_passed": 2,
+    "python_harness_passed": 14,
+    "js_gold_and_browser_selector": true,
+    "browsers": [
+      {
+        "engine": "chromium",
+        "browser": "159.0.8154.6",
+        "passed": 281,
+        "cases": 281,
+        "native_reference_sha256": "d0aabaf29215b5dea7ede9a38b92a4450e41bba28e36cedb37ea8a43b8b3efeb",
+        "wasm_sha256": "4201c0d3606d500df71a3f39b4df10b8e2926346aa03106473925e703f506f91",
+        "operator_gold_pairs": 2
+      },
+      {
+        "engine": "webkit",
+        "browser": "27.2",
+        "passed": 281,
+        "cases": 281,
+        "native_reference_sha256": "d0aabaf29215b5dea7ede9a38b92a4450e41bba28e36cedb37ea8a43b8b3efeb",
+        "wasm_sha256": "4201c0d3606d500df71a3f39b4df10b8e2926346aa03106473925e703f506f91",
+        "operator_gold_pairs": 2
+      }
+    ],
+    "workers": {
+      "browser": "159.0.8154.6",
+      "documents": 83,
+      "passed_documents": 83,
+      "operation_checks": 1037,
+      "matching_operations": 1037,
+      "matching_successful_operations": 976,
+      "matching_rejections": 61,
+      "cases": 203,
+      "passed": 203,
+      "wasm_sha256": "4201c0d3606d500df71a3f39b4df10b8e2926346aa03106473925e703f506f91"
+    }
+  },
+  "unresolved": {
+    "full_page_arabic_correct": 0,
+    "full_page_arabic_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "known_failure_guard": "Both retain selected-page text diagnostics, incomplete comparison and no changes for equivalent rewrites. These are failures, not accurate extraction.",
+    "other_review": "NIST missing spaces/unobserved objects and reading-order diagnostics remain. Ambiguous Symbol encodings and unsupported source evidence remain reviewable."
+  },
+  "previous_validation": "validation-deseret-gold.json",
+  "previous_manifest": "manifest-deseret-gold.json",
+  "sha256": {
+    ".gitattributes": "27d6b29840cdb1a9b4d272b2bf022198904972552eba8a8e6d28f0cc023a865f",
+    ".github/workflows/ci.yml": "4c05eae15a63ea22764519ae1e8fd1b4541472c1dac728d0c6bc034c753e46a8",
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "README.md": "05798a2e77eb57d01e124457c90c6d268bd7e49f4ceeab20282a16a8dadaec8e",
+    "corpus/README.md": "6edbc5310aeb072e16baccec5c7831c913a97a3e17b958bf9ac9c4fd275efaf4",
+    "corpus/manifest-deseret-gold.json": "3657e1fc322309fec0302ad3a166d63003bc07073e60b98cf162eaf9e624b0f7",
+    "corpus/manifest.json": "7c01e9075d454d53f18f81c1a63064128f31d6255e9cfc1bc44ecb86db242cb1",
+    "corpus/results-browser-chromium-symbol-initial.json": "1f6143135e50cdfc12bc0b68021b9ff9772422d360203b45dcea2021505349f7",
+    "corpus/results-browser-chromium-symbol.json": "ec3d1150a244b73987f2e97c61c132f5d566886fe530d41daccb232bd90de96c",
+    "corpus/results-browser-webkit-symbol-initial.json": "f0d2e826cf2c7d57ab75e632548e6b636b605c71d9f3e1b55c68dda6010b0e06",
+    "corpus/results-browser-webkit-symbol.json": "c3cfd38311c2df33b80ea1ee5fe119fa7c857d6ec84c7e8b09cbaea23923caa1",
+    "corpus/results-pending-semantic-symbol.json": "d78fa62247b231a020f0be8993e1e3994a847c8e03939cfd80076871d19daa5b",
+    "corpus/results-symbol-operators-before.json": "37340d4a1164bef6afe737159dca4199bca95068d3a8c7247cc81f3ec34e9d29",
+    "corpus/results-symbol-operators.json": "78a151e14d1ae819d855c4be5ad20a75d734f6d83cd21e903f8c2d3eed70b1e6",
+    "corpus/results-workers-symbol.json": "54423dbf20e964c3eeb4fce9db21521e938bbe8a2774517e414bad951407b848",
+    "corpus/symbol-font-review.json": "b2583c976cbc20ac7df5f52e7f06487b0dd3e76a3ac8168b63e93fdbbca3611c",
+    "crates/jade-pdf-diff/Cargo.toml": "4070c168ff57846c5f5c0e67ba6e0c6ab88c76660548381d0847550a41e6473b",
+    "crates/jade-pdf-diff/licenses/adobe-symbol.txt": "36b310f8b35e5ab59d516842d2852ce669bef49d46960910c4dd1b2aa4100a56",
+    "crates/jade-pdf-diff/licenses/ttf-parser-0.25.1.txt": "3bc3cd567cd41870ef430c2d374fc520270818b587ce13be04d062252a0279bb",
+    "crates/jade-pdf-diff/resources/adobe-symbol.json": "683fc566d4c78355d941108e6b09ae72bca465c4f316b576cdcd3d51bc711754",
+    "crates/jade-pdf-diff/resources/adobe-symbol.txt": "deb78ca840a429311939b9d165890873f71fb23ef223ceeb144a6c6d641a7e52",
+    "crates/jade-pdf-diff/src/lib.rs": "0d143e007e1dd1216c25e204d630e3ed4ed97d8275189a053acd3c8343151255",
+    "crates/jade-pdf-diff/src/main.rs": "c840a3aef9ff85e2306367b1f5034bfcbc1af2ca229e28c79a74f9f56f9b848f",
+    "crates/jade-pdf-diff/src/source_text.rs": "ce5db364d1594449a24ed9c1a2b665754a89c38ee2c401479c13fd8138d46eb0",
+    "crates/jade-pdf-diff/src/source_text/symbol_font.rs": "5a7c953fb6edaf862f4f178392d91f748ae1656e243ffd9bdac9164497a2cc79",
+    "crates/jade-pdf-diff/src/source_text/unicode.rs": "30ba7b88edb2470e47f788cd0742e2c891da65a6e752a8314975954264abcd32",
+    "crates/jade-pdf-diff/src/symbol_encoding.rs": "00301a7ab5dd61cfde1208b8c5ea05e7795e37b85b46e3d3ea7a5426ac35a738",
+    "crates/jade-pdf-diff/src/text.rs": "52c6a3bfbf2dbb3278845ffc65146885deed89537a2215edc37ce200f44c9986",
+    "crates/jade-pdf-diff/src/text/inline.rs": "24fedd1501f9a4dd5ad9b30a67b60f74d3556f3bae24669f4e62ee68b534dc17",
+    "crates/jade-pdf-diff/src/unicode_facts.rs": "ee44ab3fad0d75082fd99cb8c73b37c85706e3497d5762a8b9abfbd7f8584236",
+    "crates/jade-pdf-diff/tests/cli.rs": "050e9ec481dcec0e74c33e579179797122babd2ea4b4e6081283346597b22eea",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "cd5b08d14c77183e4903da038c31a30d7e5dfad42c033c7918244959996afcdd",
+    "crates/jade-pdf-diff/tests/symbol_glyphs.rs": "f063815199410588068b98bfb84a708311a50c99d3753ca118c61203cfb366e1",
+    "docs/pdf_diff.md": "27cb4d851024678599546a6eb0533a2127d9c9bd3a6bb15216139cabf5156e04",
+    "tools/audit_symbol_operators.py": "3f9c68307af5a4bd39953e15450318890872fb1b4166637a6f12aaee539438a9",
+    "tools/generate_symbol_glyph_font.py": "db83cfef27afc1e4d95aa9e120e5387c15343a5e3507891ccb2e268002af1729",
+    "tools/semantic_gold.py": "f63e5f264bb56b160d6898f9c735c250c263eeb65629d5e1d9fd18adaf5509da",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/browser_smoke.mjs": "3b5a40a40b46e380bceafb29488b865bed2d805b36913d9d96cced4fecac74f9",
+    "tools/wasm-smoke/semantic_gold.mjs": "64468bc10c9f6a356a9dbcddb10cdcb9d0a47353a3cf71e1b9a41234d7880f61",
+    "tools/wasm-smoke/src/lib.rs": "8190716ba33cc83ef7c92ae01acf917487629ded9852229df599c44f292c8392",
+    "tools/wasm-smoke/worker_adapter.mjs": "f326bf38658f5a90cfee60dfe07f39425698918492e5b4cd45794e841f4aeba5",
+    "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
+    "tools/wasm-smoke/worker_smoke.mjs": "7253b6503b428d71d52e4238963d306d72086141b0756a454bab5bc6b99f4fbc"
+  }
+}
