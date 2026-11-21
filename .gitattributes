@@ -1,2 +1,5 @@
 # 公開PDFのxref固定長レコードとstreamのバイト列をそのまま保持する。
 *.pdf binary
+
+# SHA-256を照合するAdobe原本の文字表は、Windowsでも改行変換しない。
+crates/jade-pdf-diff/resources/adobe-glyphlist.txt -text
