@@ -1,9 +1,9 @@
 {
   "version": 40,
   "date": "2026-11-22",
-  "core_revision": "b847da09b4819b52c6aea7d2cb9dd357ff6f30e7",
-  "qualification_revision": "df9ca4aee58ce75db6bb9cf66a4a4346b1c34362",
-  "base_revision": "e856b9d7cd5ecf90deca17efec3c9ee2e75cb5e0",
+  "core_revision": "b9872bf75b768cf8bdae424143df3bcc6c909854",
+  "qualification_revision": "e057b650e9f3cea1bb0643bab4082b9b1533f15a",
+  "base_revision": "4f1828ca424619b1c34497d3cc336220d47da677",
   "production_ready": false,
   "scope": "Two independently reviewed MT Extra positions and explicitly assigned non-RTL source context. Full runtime parity and conservation do not establish whole-page semantic accuracy.",
   "collection": {
@@ -146,5 +146,8 @@
     "format_character_fe_ff_preserved": true,
     "empty_and_whitespace_only_fragments_rejected": true,
     "scope": "Audit reference validation; production and WASM binaries unchanged."
-  }
+  },
+  "qualified_core_tree": "00c1b87e38417e2bd724312a7afef9af794e47db",
+  "qualified_source_tree": "7190e8086df99570d685909b14f7fc2cad249f20",
+  "rebase_verification": "Core and qualification trees are byte-identical to the trees used for the local runs; only their history was rebased onto the merged PR #5 baseline."
 }
