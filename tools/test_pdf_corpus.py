@@ -40,6 +40,19 @@ class FetchTests(unittest.TestCase):
         self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
         self.assertFalse((self.root / 'fixture.pdf.part').exists())
 
+class SourceManifestTests(unittest.TestCase):
+    def test_pending_semantic_failures_are_fetched_without_being_normal_success_cases(self):
+        from pdf_corpus import sources
+        manifest = dict(documents=[dict(id='normal')], robustness=[dict(id='robust')],
+                        references=[dict(id='reference')], pending_semantic=[dict(id='pending')])
+        self.assertEqual([entry['id'] for entry in sources(manifest)], ['normal','robust','reference','pending'])
+        self.assertEqual(len(manifest['documents']), 1)
+
+    def test_duplicate_ids_across_semantic_groups_are_rejected(self):
+        from pdf_corpus import sources
+        with self.assertRaisesRegex(ValueError, 'Duplicate corpus ID'):
+            sources(dict(documents=[dict(id='same')], pending_semantic=[dict(id='same')]))
+
 
 if __name__ == '__main__':
     unittest.main()

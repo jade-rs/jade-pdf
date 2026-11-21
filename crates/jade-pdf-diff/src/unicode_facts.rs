@@ -25,6 +25,8 @@ pub(crate) struct PageFacts {
     tagged_cells: Vec<(usize, crate::tagged_table::Content)>,
     pub table_declarations: Vec<crate::tagged_table::Declaration>,
     pub reading_order_requires_review: bool,
+    /// 原文で一意に確認した、同一文字セル内の RTL 順序補正。
+    pub rtl_order: crate::rtl_order::Corrections,
     pub actual_regions: Vec<crate::actual_text::Region>,
     pub projected_empty: bool,
     pub preserve_object_boundaries: bool,
@@ -108,7 +110,13 @@ pub(crate) fn geometry_add(
     value
 }
 
-fn raw_geometry(pdfium: &Pdfium, text: *mut c_void, index: i32, fingerprint: u64) -> u64 {
+/// 二度の読み取りで、補正対象の文字セルと原点が一致することを確認する。
+pub(crate) fn raw_geometry(
+    pdfium: &Pdfium,
+    text: *mut c_void,
+    index: i32,
+    fingerprint: u64,
+) -> u64 {
     let b = pdfium.bindings();
     let (mut left, mut bottom, mut right, mut top) = (0.0, 0.0, 0.0, 0.0);
     let bounds = b
@@ -272,6 +280,7 @@ pub(crate) fn read(
                     tagged_cells: Vec::new(),
                     table_declarations: table_facts.declarations,
                     reading_order_requires_review: table_facts.requires_review,
+                    rtl_order: crate::rtl_order::Corrections::default(),
                     actual_regions: projection.regions.clone(),
                     projected_empty: false,
                     preserve_object_boundaries: projection
@@ -470,6 +479,13 @@ pub(crate) fn read(
                 } else {
                     facts.source_unicode_accounting_unavailable = true;
                 }
+                facts.rtl_order = crate::rtl_order::read(
+                    pdfium,
+                    text.cast(),
+                    &facts,
+                    units.source_unicode(number),
+                );
+                facts.reading_order_requires_review |= facts.rtl_order.requires_review;
                 Ok(facts)
             })();
             b.FPDFText_ClosePage(text);

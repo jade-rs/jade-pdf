@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "cases": 1,
+  "correct_cases": 0,
+  "failed_cases": 1,
+  "guarded_failures": 1,
+  "unguarded_or_false_change_failures": 0,
+  "execution_errors": [],
+  "results": [
+    {
+      "id": "pdfjs-arial-unicode-arabic",
+      "page": 1,
+      "source_sha256": "049a4330710d8470896061acf7ee486735e94cef2769f6cc13fec3cb13bb65aa",
+      "expected": "عربي",
+      "actual": "᧒ᥱᦎᦫ",
+      "semantic_gold_matches": false,
+      "comparison_exit": 3,
+      "mismatch_is_guarded": true,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 1,
+        "new_pages_with_unmapped_text": 1,
+        "old_pages_with_source_unicode_mismatch": 1,
+        "new_pages_with_source_unicode_mismatch": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    }
+  ],
+  "binary_sha256": "0f3b35fb9aeb05f4017b4728b7be9316f2c33257f8de54d39fd20742bf126798",
+  "manifest_sha256": "01fff2a268da2667bcf039f5255db4eea4477373e51b0aa5f87e922d1a9d60b0",
+  "method": "Full selected page text after NFC and whitespace collapse; character order, marks and joiners retained. Guarded failures are failures, not correct extractions."
+}

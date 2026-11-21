@@ -38,7 +38,9 @@
         "انواع",
         "الخطوط"
       ],
-      "right_to_left_spaces": true
+      "right_to_left_spaces": true,
+      "full_page_text": "انواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية",
+      "full_page_gold_source": "Complete one-page Poppler rendering and independent original ToUnicode declarations, reviewed 2026-11-21; all four lines read manually."
     },
     {
       "id": "ligatures",
@@ -2051,5 +2053,30 @@
         }
       ]
     }
-  ]
+  ],
+  "pending_semantic": [
+    {
+      "id": "pdfjs-arial-unicode-arabic",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/9f1775cd63021d0d135433bce6d10227a54946d3/test/pdfs/arial_unicode_ab_cidfont.pdf",
+      "category": "Arabic source mapping failure: invalid ToUnicode and no embedded Unicode cmap",
+      "sha256": "049a4330710d8470896061acf7ee486735e94cef2769f6cc13fec3cb13bb65aa",
+      "bytes": 13110,
+      "pages": 1,
+      "gold": {
+        "page": 1,
+        "text": "عربي",
+        "scope": "Complete one-word page; manually checked against independent Poppler rendering."
+      },
+      "known_failure": "SDK returns unrelated Unicode scalars; every used ToUnicode destination is U+FFFF and the embedded subset has no cmap table. Correct text is not recoverable from those declarations alone.",
+      "rights": "Public PDF.js regression input at a fixed commit; document and embedded font rights remain with their owners. PDF bytes are downloaded only, never redistributed in Git.",
+      "reviewed": "2026-11-21",
+      "baseline_diagnostics": {
+        "sdk_unicode_mapping_errors": 4,
+        "source_unicode_scalars_unmatched": 8
+      },
+      "retrieved": "2026-11-21"
+    }
+  ],
+  "updated": "2026-11-22"
 }

@@ -1,6 +1,19 @@
 # 公開 PDF による評価
 
 
+2026-11-22のRTL改善は [validation-rtl-unicode.json](validation-rtl-unicode.json) に記録する。通常69資料534ページの本文・座標・順序は保持し、接続形の正規化によるアラビア語の誤ったUnicode不一致92単位を解消した。残る通常資料の不一致は3ページ54単位で、他の欠落・解析不能・読み順の診断は保持する。一文字コード内でSDKが逆順にした文字列は、原文の一意な順序と同一文字セル・回数を確認できた場合だけ補正する。独立した10条件で正しいIR・文字レイヤーと実際の編集検出を確認し、Chrome263ケースが通過した。
+
+新たにPDF.jsのアラビア語サンプル1本を収集し、合計81本となった。原文のToUnicodeが不正で埋め込みフォントにUnicode cmapもなく、全ページ文字列の正解は未達（0/1）である。`pending_semantic` として通常資料の成功件数と分け、[意味精度の失敗](results-pending-semantic.json) を残す。等価な書き換えは要レビューになるが、それを正しい抽出とは数えない。CIも未達のexit 3を明示し、未診断の失敗・誤差分・実行エラーは失敗させる。
+
+独立検証は次のコマンドで再実行できる。`--baseline` は上記コミットの変更前CLIを別の場所へ保存したものを指定する。
+
+```sh
+.venv-corpus/bin/python tools/audit_rtl_unicode.py --binary target/release/pdf-diff --baseline /path/to/baseline-pdf-diff --report corpus/results-rtl-unicode-final.json
+python3 tools/audit_pending_semantic.py --binary target/release/pdf-diff
+```
+
+[RTLと原文の独立検証](results-rtl-unicode-final.json) は選定範囲の証拠であり、完全な双方向組版や本番対応の完了は示さない。過去の検証台帳とそのハッシュは変更せず、以前のmanifestは `manifest-adobe-glyphs.json` に保存した。
+
 `validation.json` と過去の評価台帳は、移植前のソース・成果物に対する固定記録です。現行のPDF→DOCXワークスペースへの統合では、SDK検証用PDFと契約書テストPDFをメモリ内生成へ変更しています。入力PDF本体やSDKはGitへ保存せず、取得先・ハッシュ・評価条件を記録しています。
 
 AGL字形をSDKが返せるかはホストの代替フォントにも依存します。ネイティブ回帰テストでは公開SDKの文字レコードを直接観測し、字形がない場合にも原文のUnicode対応と区別して、欠落数・テキストレイヤの拒否・比較の要レビュー診断を検証します。
@@ -11,7 +24,7 @@ AGL字形をSDKが返せるかはホストの代替フォントにも依存し�
 資料はコミット `9f1775cd63021d0d135433bce6d10227a54946d3` に固定している。
 Pdfium の切り抜き回帰資料はコミット `a84323421e94f484faca52dd9d027934eba42ab8` に固定する。
 PDF 本体と生成した改変版は Git に含めない。各資料の権利はそれぞれの権利者に属し、
-このリポジトリの MIT ライセンスへ変更するものではない。
+このリポジトリのライセンスへ変更するものではない。
 
 検証は継続中で、本番対応完了とはしていない。現在の集計と未完了の確認項目は
 [validation.json](validation.json) を参照。最初の 17 本での 108/148 → 148/148 という

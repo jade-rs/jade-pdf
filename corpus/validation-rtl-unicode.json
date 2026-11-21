@@ -1,0 +1,90 @@
+{
+  "version": 37,
+  "date": "2026-11-22",
+  "goal_status": "in_progress",
+  "production_ready": false,
+  "baseline_commit": "60493f275c390091dd1e62337c1556b727377659",
+  "historical_validation": "validation.json",
+  "historical_validation_sha256": "1685e6355068151cb5c23e4af0914c8043dff17f011d053c0251d2ea740edea8",
+  "historical_manifest": "manifest-adobe-glyphs.json",
+  "historical_manifest_sha256": "bba821ca0bce48e4ad626f4f77273247c73c4b10cb76c03d202bd5d27336f93a",
+  "manifest_sha256": "01fff2a268da2667bcf039f5255db4eea4477373e51b0aa5f87e922d1a9d60b0",
+  "corpus": {
+    "regular_documents": 69,
+    "regular_pages": 534,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 1,
+    "pending_semantic_pages": 1,
+    "collected_pdf_files": 81,
+    "scope": "Separate denominators: the pending semantic failure is not a successful extraction and the ISO reference is not an executable test."
+  },
+  "rtl_unicode": {
+    "details": "results-rtl-unicode-final.json",
+    "original_body_exact_documents": 69,
+    "original_body_exact_pages": 534,
+    "changed_diagnostic_documents": 1,
+    "independent_controls": 10,
+    "arabic_scalar_discrepancies_before": 92,
+    "arabic_scalar_discrepancies_after": 0,
+    "regular_remaining_scalar_discrepancies": 54,
+    "regular_remaining_mismatch_pages": 3,
+    "remaining_counts_method": "Historical 146 units on four pages minus the independently verified 92-unit Arabic false mismatch; all other original page bodies and diagnostics retained.",
+    "scope": "Selected source and SDK glyph ownership profile; not exhaustive Unicode, reading-order, natural-revision or production qualification."
+  },
+  "browser": {
+    "browser": "158.0.8127.36",
+    "cases": 263,
+    "passed": 263,
+    "wasm_sha256": "73837a81cd6e4d6acc3c44ed22b8376e09aeb86e57defe090499a5f1a15e0600",
+    "native_binary_sha256": "0f3b35fb9aeb05f4017b4728b7be9316f2c33257f8de54d39fd20742bf126798",
+    "report_sha256": "148767fe5e68c59453574dd45dcd72f98bd813874a9809423640a1d93071b3bf",
+    "scope": "Local Chrome only; exact selected native/WASM assertions, not exhaustive semantic accuracy or other-browser qualification."
+  },
+  "semantic_gold": {
+    "details": "results-pending-semantic.json",
+    "cases": 1,
+    "correct_cases": 0,
+    "failed_cases": 1,
+    "guarded_failures": 1,
+    "unguarded_or_false_change_failures": 0,
+    "execution_errors": [],
+    "scope": "Full selected page text after NFC and whitespace collapse; character order, marks and joiners retained. Guarded failures are failures, not correct extractions."
+  },
+  "rendering": {
+    "original_arabic_png_exact_between_baseline_and_current": true,
+    "png_sha256": "0484f9fe3a868f434481315d43df1f649f447876a16019891533b37ec8869e0b",
+    "visual_review": "Four complete lines remain legible and unchanged."
+  },
+  "native_binary_sha256": "0f3b35fb9aeb05f4017b4728b7be9316f2c33257f8de54d39fd20742bf126798",
+  "baseline_binary_sha256": "ce231d2f7f251ee862ea87a9d2f2f1312e7058deb09076525efb79d66ecd41c6",
+  "unicode_reference": "https://www.unicode.org/reports/tr15/",
+  "sdk_contract": {
+    "build": 8111,
+    "source_commit": "a50f1a5953264de698f398fe3a2ef6153677fafa",
+    "source_path": "core/fpdftext/cpdf_textpage.cpp",
+    "source_sha256": "8ec05058c99856537f3a26cfc247013110f1354e8df89758f359a45636bf2a64",
+    "evidence": "A source glyph CharInfo geometry is copied for every expanded ToUnicode/RTL-normalized scalar; no private SDK layout is accessed. Runtime correction also requires exact source glyph and physical cell counts, unique declared order, multiplicities and geometry fingerprints."
+  },
+  "remaining_gaps": [
+    "The newly collected Arabic page still has incorrect extracted Unicode: 0/1 full-page semantic gold; its equivalent rewrite is correctly guarded.",
+    "Historical source omissions, 75 Unicode-unavailable pages, unobserved text objects and reading-order review remain; a reduced mismatch count is not recovered source text.",
+    "Independent PDF.js discrepancies (19 documents and one resource limit), full natural-revision precision/recall, Windows/other browsers and deployment performance remain unqualified.",
+    "Ambiguous source sequences, direction/join controls, SDK UTF-16-pair reversals and unsupported source ownership remain review outcomes."
+  ],
+  "source_sha256": {
+    "crates/jade-pdf-diff/src/rtl_order.rs": "2c99d121e2cdcc824107bb573e6986fce9c14559c1c55ba25a486a45049faedf",
+    "crates/jade-pdf-diff/src/source_text/unicode.rs": "aebde0d65344a35bfa291879b4941051fb649306c5c779ade92204923471b3fc",
+    "crates/jade-pdf-diff/src/text.rs": "92e575c115754b51a2e00950772280f912b8c6023f30096079f6aa2964f8743f",
+    "crates/jade-pdf-diff/src/unicode_facts.rs": "6c05f3965c275abf146926230ba44a3b07b8f909e87b85616f78b36f827a7c46",
+    "tools/audit_rtl_unicode.py": "a972c7e5bc67302bb5e2ca427aaf8826a52811f27027372d4cfc9709e907e944",
+    "tools/audit_pending_semantic.py": "edee4928105a9581565dcc4477d670a89eaf9f515da1bffaa91bc4477be2c531",
+    "tools/wasm-smoke/src/lib.rs": "cf0af592aad19b3a4616acc5e44a95f4506649385037391c340cbb5522d25d54",
+    "tools/wasm-smoke/browser_smoke.mjs": "cddae49a239b902da704488ebe979d7f732e5df3d5fd71cdb7d83e1fa867f389",
+    "tools/wasm-smoke/worker_smoke.mjs": "ed7867f2dc10e3577e059760bc4c024c6f2582f691d42e6ba3b34697a9badaa7"
+  },
+  "report_sha256": {
+    "results-rtl-unicode-final.json": "d78345e54db8ed3461e057a47dcfa482543f92f71c053e273542ca8f2d14fae0",
+    "results-pending-semantic.json": "d40a90ff4bd46af94fbc892843d63d2ee6c6ac2a7bb11c3eea58ea1d93b47219"
+  }
+}

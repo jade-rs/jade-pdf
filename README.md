@@ -38,7 +38,7 @@ The comparison command writes JSON to stdout and exits with `0` when there are n
 
 PDF comparison uses the pinned Pdfium runtime described in the [comparison guide](docs/pdf_diff.md). For PDF→DOCX rendering with a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
 
-PDF comparison qualification uses 80 collected public PDFs (69 regular documents, 10 robustness inputs, and one specification reference). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
+PDF comparison qualification uses 81 collected public PDFs (69 regular documents, 10 robustness inputs, one specification reference, and one unresolved semantic gold case). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 
 ## Development
 
