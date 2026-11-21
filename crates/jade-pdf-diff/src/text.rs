@@ -171,6 +171,7 @@ fn extract_unrotated_runs(
     let mut projection_fingerprint = crate::unicode_facts::FINGERPRINT_START;
     let mut rtl_fingerprint = crate::unicode_facts::FINGERPRINT_START;
     let mut supplementary_fingerprint = crate::unicode_facts::FINGERPRINT_START;
+    let mut symbol_fingerprint = crate::unicode_facts::FINGERPRINT_START;
     let mut region_sizes = vec![None; unicode_facts.actual_regions.len()];
     let mut region_mixed = vec![false; unicode_facts.actual_regions.len()];
     let mut region_origins = vec![None; unicode_facts.actual_regions.len()];
@@ -233,11 +234,15 @@ fn extract_unrotated_runs(
         }
         let corrected_index = unicode_facts.rtl_order.reverse_index(ch.index());
         let supplementary_scalar = unicode_facts.supplementary.get(ch.index());
+        let symbol_scalar = unicode_facts.symbol.get(ch.index());
         ensure!(
-            corrected_index.is_none() || supplementary_scalar.is_none(),
+            usize::from(corrected_index.is_some())
+                + usize::from(supplementary_scalar.is_some())
+                + usize::from(symbol_scalar.is_some())
+                <= 1,
             "Overlapping source Unicode corrections"
         );
-        if corrected_index.is_some() || supplementary_scalar.is_some() {
+        if corrected_index.is_some() || supplementary_scalar.is_some() || symbol_scalar.is_some() {
             let bounds = ch.tight_bounds().ok().map(|r| {
                 [
                     r.left().value.min(r.right().value),
@@ -259,6 +264,14 @@ fn extract_unrotated_runs(
                     origin,
                 );
             }
+            if symbol_scalar.is_some() {
+                symbol_fingerprint = crate::unicode_facts::geometry_add(
+                    symbol_fingerprint,
+                    ch.index(),
+                    bounds,
+                    origin,
+                );
+            }
         }
         let mut character_errors = usize::from(raw_mapping_error);
         let scalar = if unicode_facts.is_paired_low(ch.index() + 1) {
@@ -271,7 +284,7 @@ fn extract_unrotated_runs(
                 crate::unicode_facts::surrogate_scalar(raw_unicode, low)
                     .context("Paired Unicode characters changed during extraction")?,
             )
-        } else if let Some(scalar) = supplementary_scalar {
+        } else if let Some(scalar) = supplementary_scalar.or(symbol_scalar) {
             Some(scalar)
         } else if let Some(index) = corrected_index {
             char::from_u32(
@@ -585,6 +598,7 @@ fn extract_unrotated_runs(
             && projection_fingerprint == unicode_facts.projection_fingerprint
             && rtl_fingerprint == unicode_facts.rtl_order.fingerprint
             && supplementary_fingerprint == unicode_facts.supplementary.fingerprint
+            && symbol_fingerprint == unicode_facts.symbol.fingerprint
             && sdk_unicode_mapping_errors == unicode_facts.errors,
         "Unicode diagnostics changed while opening the immutable PDF"
     );

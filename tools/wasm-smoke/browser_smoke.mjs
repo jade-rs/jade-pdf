@@ -215,6 +215,18 @@ try {
         if (fullText(expected)!==entry.full_page_text || fullText(actual.ir)!==entry.full_page_text)
           throw new Error('Declared full-page Unicode gold mismatch');
       }
+      for (const gold of (manifest.symbol_operator_gold??[]).filter(g=>g.id===entry.id)) {
+        const checks=[];
+        for (const [engine,ir] of [['native',expected],['WASM',actual.ir]]) {
+          const text=ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n');
+          const inventory=checkGold(text,gold);
+          const fragmentMatches=text.replace(/\s/gu,'').includes(gold.compact_fragment);
+          if(!inventory.matches||!fragmentMatches||text.includes('\uf0a3'))
+            throw new Error(`${engine} visible Symbol operator gold mismatch`);
+          checks.push({engine,inventory,compact_fragment_matches:fragmentMatches});
+        }
+        results.push({id:'symbol-operator-gold-'+entry.id,passed:true,page:gold.page,checks});
+      }
       for (const gold of entry.reading_order ?? []) {
         const normalized = text => text.normalize('NFC').replace(/\s/gu,'');
         for (const [engine,ir] of [['native',expected],['WASM',actual.ir]]) {
@@ -412,7 +424,13 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name.startsWith('named_unicode_')) {
+        if(name.startsWith('symbol_unicode_')) {
+          const mode=name.slice('symbol_unicode_'.length);
+          const complete=['valid','edit'].includes(mode);
+          passed&&=result.complete===complete&&result.text_complete===complete&&summary.pages_visual_changed===0;
+          if(mode==='edit') passed&&=summary.blocks_changed===1;
+          else passed&&=Object.values(summary).every(value=>value===0);
+        } else if(name.startsWith('named_unicode_')) {
           passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
           if(name==='named_unicode_edit') passed&&=summary.blocks_changed===1;
           else passed&&=Object.values(summary).every(value=>value===0);

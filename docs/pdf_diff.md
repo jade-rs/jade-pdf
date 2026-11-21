@@ -98,6 +98,10 @@ Windowsの固定SDKが正式な字形名の補助文字を下位16ビットへ�
 原文解析が完全で、欠落・未観測・SDK変換エラー・ActualText置換がなく、重複を除いたセル数が原文コード数と一致し、復元後の文字集合全体が一致することを必要とする。元の値と補助文字がともにUnicode 18.0.0の公式データで明示的な左から右の強い文字（Bidi_Class=L）の場合に限り、通常のBMP文字との衝突や同じ下位値を持つ複数候補は推測しない。
 ToUnicodeの明示対応から候補を作らず、正常に復元済みのUTF-16対も補正対象にしない。復元した文字も元のセル座標を保持し、二度の読み取りの生Unicode・座標を指紋で検証する。原文の補助文字資料は1,024種類、RTL補正を含むセル一覧は20万個を上限とする。
 未割当の既定値Lは復元の証明に使わない。公式の固定SHA-256・生成方法・Unicode License V3は `resources/unicode-bidi-ltr.json` に記録し、`tools/generate_strong_ltr.py` で再生成できる。追加の実行時依存は不要である。
+
+旧Microsoft Symbolの私用符号は、Type0／Identity-H／CIDFontType2／明示的なCIDToGIDMap Identity、PDF内の三つのSymbol名、埋め込みTrueTypeのfamily／PostScript名、Microsoft Symbol cmapの字形IDとToUnicodeの一致を確認した場合に限り復元する。フォント名だけで私用領域を一括置換しない。Unicode公式Adobe Symbol表から正準合成後も一意な非私用文字だけを採用し、Delta・mu・空白など意味の曖昧な符号は要確認に残す。表の原本通知・固定SHAは `resources/adobe-symbol.json` に記録している。
+この投影はASCII、明示的なLTR文字、省略記号と検証済みSymbol符号だけのページに限定する。原文の全使用回数、ページ全体の文字集合、重複のない一文字セルを確認し、同じ私用符号を他のフォントやActualTextも使う場合は復元しない。検証済みActualText領域の外の字形だけを対象にし、領域内の論理文字は保持する。二度の読み取りで生Unicodeと位置の座標を照合し、空白欠落・未観測オブジェクト・読み順などの診断を消さない。
+フォント資料はpure Rustの `ttf-parser = 0.25.1` で名前とcmapだけを読み、外部フォントや輪郭を保存・再利用しない。一つ2MiB、文書全体16MiB（展開失敗も予算を消費）、64表・128名・16cmap表、セル20万個を上限とする。元のToUnicode用の予算は独立して保持する。
 未対応の複合CMap、継承CMap、不正なUTF-16などを推測で補完しない。
 多重集合の一致も順序・位置・原文全体の完全性の証明ではない。
 構造要素のActualTextは、ページ・MCID・Formの名前空間、ParentTreeの逆参照と祖先関係を原文から確認して反映する。
@@ -219,7 +223,7 @@ WASMのPDF処理開始時には、同梱した855バイト・1文字の検査用
 `PDFIUM_NO_AUTO_DOWNLOAD=1` ではキャッシュが未取得・破損ならエラーを返し、埋め込み版は内蔵データから復元する。
 `JADE_PDFIUM_CACHE_DIR` でキャッシュ先を指定できる（旧 `PDFIUM_AUTO_CACHE_DIR` も受け付ける）。
 `PDFIUM_LIB_PATH` は実行時、`PDFIUM_BUNDLE_LIB` はビルド時のカスタムSDK指定で、固定版の検証対象から外れる。
-`pdfium_library_path()` で実際に利用するパス、`pdf-diff --licenses` で既定SDKとAdobe Glyph Listのライセンス表示を取得できる。ライブラリ配布では `ADOBE_GLYPH_LIST_LICENSE` も添付する。
+`pdfium_library_path()` で実際に利用するパス、`pdf-diff --licenses` で既定SDK、Adobe Glyph List、Adobe Symbol表、ttf-parserのライセンス表示を取得できる。ライブラリ配布では `ADOBE_GLYPH_LIST_LICENSE`、`ADOBE_SYMBOL_ENCODING_LICENSE`、`TTF_PARSER_LICENSE` も添付する。
 対応する配布物は macOS arm64/x64、Linux glibc arm64/x64、Windows arm64/x64/x86。
 WASM 8111用の初期化アダプターと検証付き取得例は `tools/wasm-smoke/prepare_runtime.py` にある。
 

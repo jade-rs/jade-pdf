@@ -1,6 +1,13 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "symbol_unicode_valid",
+    "symbol_unicode_edit",
+    "symbol_unicode_wrong_cid",
+    "symbol_unicode_wrong_program",
+    "symbol_unicode_ambiguous",
+    "symbol_unicode_outside_actual",
+    "symbol_unicode_actual_collision",
     "named_unicode_edit",
     "named_unicode_equivalent",
     "named_unicode_collision",
@@ -1159,6 +1166,18 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("symbol_unicode_") {
+        let mode = if mode == "edit" && !revised {
+            "valid"
+        } else {
+            mode
+        };
+        let mut bytes = symbol_glyph_cells(mode, 1., 0, false);
+        if revised && mode != "edit" {
+            bytes.extend_from_slice(b"\n% equivalent source rewrite\n");
+        }
+        return bytes;
+    }
     if let Some(mode) = case.strip_prefix("named_unicode_") {
         let names: &[&str] = match mode {
             "edit" if !revised => &["A", "B", "C"],
@@ -1928,5 +1947,100 @@ pub fn ambiguous_rtl_spellings() -> Vec<u8> {
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /ToUnicode 6 0 R >>".into(),
         stream("BT /F1 12 Tf 3 Tr 30 150 Td (A) Tj ET BT /F1 12 Tf 3 Tr 100 150 Td (B) Tj ET", ""),
         stream("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /AmbiguousOrder def /CMapType 2 def 1 begincodespacerange <00> <FF> endcodespacerange 2 beginbfchar <41> <0644062E> <42> <062E0644> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end", ""),
+    ])
+}
+
+/// 自作長方形のみのpost-3 TrueType。tools/generate_symbol_glyph_font.pyで再生成する。
+/// SHA-256: d9f07b15125599ae4edb8bb82e2c0341bf7e5d68deeeaed6efc65bd164bc333a.
+pub fn symbol_glyph_font() -> &'static str {
+    concat!(
+        "00010000000A0080000300204F532F3233EF44970000012800000060636D6170E0D6D1AE000001980000004C",
+        "676C79666B7D4EB0000001F400000090686561645955A49C000000AC000000366868656104B101F6000000E4",
+        "00000024686D747801F40000000001880000000E6C6F63610090006C000001E40000000E6D61787000080006",
+        "00000108000000206E616D6540146A45000002840000011A706F737400030000000003A00000002000010000",
+        "0001000063BDACC75F0F3CF5000303E8000000007C25B080000000007C25B0800000000001F402BC00000003",
+        "00020000000000000001000002BC0000000001F40000000001F4000100000000000000000000000000000001",
+        "0001000000060004000100000000000200000000000000000000000000000000000301F40190000500040000",
+        "0000000000000000000000000000000000000000000000000000000000000000000010000000000000000000",
+        "00003F3F3F3F0000F03CF0A302BC0000000002BC000000000000000000000000000000000020000001F40000",
+        "00000000000000000000000000000001000300000000000C000400400000000C000800020004F03CF044F06D",
+        "F073F0A3FFFF0000F03CF044F06DF073F0A3FFFF0FC60FC00F980F900F5E0001000000000000000000000000",
+        "0000000C001800240030003C0048000000010000000001F402BC000300003121112101F4FE0C02BC00010000",
+        "000001F402BC000300003121112101F4FE0C02BC00010000000001F402BC000300003121112101F4FE0C02BC",
+        "00010000000001F402BC000300003121112101F4FE0C02BC00010000000001F402BC000300003121112101F4",
+        "FE0C02BC00010000000001F402BC000300003121112101F4FE0C02BC0000000A007E00010000000000010006",
+        "00000001000000000002000700060001000000000003001F000D000100000000000400060000000100000000",
+        "00060008002C0003000104090001000C00340003000104090002000E00400003000104090003003E004E0003",
+        "000104090004000C003400030001040900060010008C53796D626F6C526567756C61724A61646520696E6465",
+        "70656E64656E742072656374616E676C65207465737453796D626F6C4D5400530079006D0062006F006C0052",
+        "006500670075006C00610072004A00610064006500200069006E0064006500700065006E00640065006E0074",
+        "002000720065006300740061006E0067006C00650020007400650073007400530079006D0062006F006C004D",
+        "005400000003000000000000000000000000000000000000000000000000000000000000>",
+    )
+}
+
+/// SymbolのCID、私用Unicode、Microsoft Symbol cmapを独立に宣言する自作入力。
+pub fn symbol_glyph_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
+    let family = if mode == "wrong_family" {
+        "Custom"
+    } else {
+        "Symbol"
+    };
+    let map = if mode == "wrong_cid" {
+        "<0001> <F073>\n<0002> <F03C>\n<0003> <F0A3>"
+    } else {
+        "<0001> <F0A3>\n<0002> <F03C>\n<0003> <F073>"
+    };
+    let text = if mode == "ambiguous" {
+        "00040005"
+    } else if mode == "edit" {
+        "000200020003"
+    } else {
+        "000100020003"
+    };
+    let cidmap = if mode == "wrong_cidmap" {
+        "/Other"
+    } else {
+        "/Identity"
+    };
+    let actual = if mode == "actual" {
+        "/Span << /ActualText <FEFFF0A3F03CF073> >> BDC"
+    } else {
+        ""
+    };
+    let end = if mode == "actual" { "EMC" } else { "" };
+    let outside = if matches!(mode, "outside_actual" | "actual_collision") {
+        format!(
+            "/Span << /ActualText <FEFF{}> >> BDC BT /F1 12 Tf 60 150 Td <0002> Tj ET EMC",
+            if mode == "actual_collision" {
+                "F0A3"
+            } else {
+                "0041"
+            }
+        )
+    } else {
+        String::new()
+    };
+    let mut font = symbol_glyph_font().to_owned();
+    if mode == "wrong_program" {
+        font = font
+            .replace("53796D626F6C", "437573746F6D")
+            .replace("00530079006D0062006F006C", "0043007500730074006F006D");
+    } else if mode == "unicode_cmap" {
+        font = font.replace(
+            "00000001000300000000000C0004",
+            "00000001000300010000000C0004",
+        );
+    }
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {side} {side}] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>", side=200. / unit),
+        format!("<< /Type /Font /Subtype /Type0 /BaseFont /{family} /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 9 0 R >>"),
+        stream(&format!("q {scale} 0 0 {scale} 0 0 cm {} {actual} BT /F1 12 Tf 30 150 Td <{text}> Tj ET {end} {outside} Q", if shear { "1 .2 .3 1 0 0 cm" } else { "" }, scale=1. / unit), ""),
+        format!("<< /Type /Font /Subtype /CIDFontType2 /BaseFont /{family} /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /FontDescriptor 7 0 R /CIDToGIDMap {cidmap} /DW 500 >>"),
+        format!("<< /Type /FontDescriptor /FontName /{family} /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile2 8 0 R >>"),
+        stream(&font, "/Filter /ASCIIHexDecode"),
+        stream(&format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /Test def /CMapType 2 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 5 beginbfchar {map} <0004> <F044> <0005> <F06D> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end"), ""),
     ])
 }

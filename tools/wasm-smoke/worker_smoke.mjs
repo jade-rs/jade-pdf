@@ -81,6 +81,17 @@ try {
       for(const dpi of [72,144]) checks.push(await checkPair('renderDpi',[bytes],{page:renderPage,dpi}));
       if(entry.invalid_page) checks.push(await checkPair('textLayer',[bytes],{page:entry.invalid_page}));
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
+      const symbolGold=[];
+      for(const gold of entry.symbol_operator_gold??[]) {
+        const {checkGold}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const ir=await window.client.run('inspect',[bytes]);
+        const text=ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n');
+        const inventory=checkGold(text,gold);
+        const compactFragmentMatches=text.replace(/\s/gu,'').includes(gold.compact_fragment);
+        const passed=inventory.matches&&compactFragmentMatches&&!text.includes('\uf0a3');
+        symbolGold.push({page:gold.page,inventory,compact_fragment_matches:compactFragmentMatches,passed});
+        checks.push({operation:'visibleOperatorGold',passed,worker_idle:window.client.activeWorkers===0});
+      }
       let semanticGold;
       if(entry.gold) {
         const {checkGold,pageHasTextReview}=await import('/tools/wasm-smoke/semantic_gold.mjs');
@@ -97,8 +108,8 @@ try {
       }
       return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle)
         &&(!semanticGold||semanticGold.matches||semanticGold.mismatch_is_guarded),
-        checks,...(semanticGold?{semantic_gold:semanticGold}:{})};
-    },entry);
+        checks,...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
+    },{...entry,symbol_operator_gold:(manifest.symbol_operator_gold??[]).filter(g=>g.id===entry.id)});
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
   }
   const fixtures=process.env.JADE_PDF_WORKER_FAULTS_ONLY ? [] : await page.evaluate(async()=>{
