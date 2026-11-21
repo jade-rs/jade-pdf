@@ -4,12 +4,13 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {checkScalarRevision} from './scalar_revision.mjs';
+import {semanticEntries,goldByCohort} from './semantic_gold.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(process.env.JADE_PDF_BROWSER_ENGINE && process.env.JADE_PDF_BROWSER_ENGINE!=='chromium')
   throw new Error('Full Worker termination qualification requires Chromium CDP; other engines need separate termination evidence');
 const {chromium}=await import(process.env.JADE_PDF_PLAYWRIGHT_PATH?pathToFileURL(process.env.JADE_PDF_PLAYWRIGHT_PATH).href:'playwright');
 const manifestBytes=await fs.readFile(path.join(root,'corpus/manifest.json')), manifest=JSON.parse(manifestBytes);
-const selected=process.argv.slice(2), entries=[...manifest.documents,...manifest.robustness,...(manifest.pending_semantic||[])].filter(d=>!selected.length||selected.includes(d.id));
+const selected=process.argv.slice(2), entries=[...semanticEntries(manifest),...manifest.robustness].filter(d=>!selected.length||selected.includes(d.id));
 if(!entries.length || selected.some(id=>!entries.some(d=>d.id===id))) throw new Error('Unknown corpus selection');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
 for(const d of entries) if(hash(await fs.readFile(path.join(root,'corpus/cache',d.id+'.pdf')))!==d.sha256) throw new Error('PDF checksum mismatch: '+d.id);
@@ -95,10 +96,9 @@ try {
       }
       let semanticGold;
       if(entry.gold) {
-        const {checkGold,pageHasTextReview}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const {checkPageGold,pageHasTextReview,goldOutcomeAccepted}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
-        const actual=ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
-        semanticGold=checkGold(actual,entry.gold);
+        semanticGold={...checkPageGold(ir,entry.gold),cohort:entry.semantic_gold_cohort};
         semanticGold.selected_page_has_text_review=pageHasTextReview(ir.pages[entry.gold.page-1]);
         if(!semanticGold.matches) {
           const guarded=JSON.parse(probe.compare_with_budget(bytes,rewritten,40000));
@@ -106,9 +106,10 @@ try {
             &&!guarded.complete&&checks[1].passed
             &&Object.values(guarded.diff.summary).every(n=>n===0);
         }
+        semanticGold.accepted=goldOutcomeAccepted(entry.semantic_gold_cohort,semanticGold.matches,semanticGold.mismatch_is_guarded);
       }
       return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle)
-        &&(!semanticGold||semanticGold.matches||semanticGold.mismatch_is_guarded),
+        &&(!semanticGold||semanticGold.accepted),
         checks,...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
     },{...entry,symbol_operator_gold:(manifest.symbol_operator_gold??[]).filter(g=>g.id===entry.id)});
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
@@ -274,7 +275,7 @@ try {
     const count=goldByKind[gold.kind]??={cases:0,correct:0,failed:0};
     count.cases++;count[gold.matches?'correct':'failed']++;
   }
-  const report={version:2,manifest_sha256:hash(manifestBytes),browser:browser.version(),wasm_sha256:hash(await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'))),source_sha256:sourceHashes,
+  const report={version:3,manifest_sha256:hash(manifestBytes),browser:browser.version(),wasm_sha256:hash(await fs.readFile(path.join(root,'corpus/wasm-runtime/probe/jade_pdf_wasm_smoke_bg.wasm'))),source_sha256:sourceHashes,
     methodology:'Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.',
     documents:documents.length,passed_documents:documents.filter(d=>d.passed).length,operation_checks:operations.length,matching_operations:operations.filter(x=>x.passed).length,matching_successful_operations:operations.filter(x=>x.passed&&!x.rejected).length,matching_rejections:operations.filter(x=>x.passed&&x.rejected).length,
     scalar_revision_operation_checks:revisionOperations.length,
@@ -282,6 +283,8 @@ try {
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_checks:documents.filter(d=>d.semantic_gold).length,semantic_gold_failures:documents.filter(d=>d.semantic_gold&&!d.semantic_gold.matches).length,
     semantic_gold_by_kind:goldByKind,
+    semantic_gold_by_cohort:goldByCohort(documents.filter(d=>d.semantic_gold).map(d=>({
+      cohort:d.semantic_gold.cohort,kind:d.semantic_gold.kind,matches:d.semantic_gold.matches}))),
     cases:results.length,passed:results.filter(x=>x.passed).length,results,document_results:documents};
   await fs.writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
   console.log(`${report.passed_documents}/${report.documents} documents, ${report.matching_operations}/${report.operation_checks} operations, ${report.passed}/${report.cases} additional cases`);

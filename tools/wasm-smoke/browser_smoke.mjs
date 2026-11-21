@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
-import {checkGold,pageHasTextReview,compactFragmentMatches} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort} from './semantic_gold.mjs';
 import {checkScalarRevision} from './scalar_revision.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -26,7 +26,7 @@ const loaderHash=createHash('sha256').update(await fs.readFile(path.join(root,'c
 const unpreparedLoaderHash=createHash('sha256').update(await fs.readFile(path.join(root,'corpus/wasm-runtime/release/node/pdfium-unprepared.esm.js'))).digest('hex');
 let contractProbe;
 const selected = process.argv.slice(2);
-const candidates=[...manifest.documents,...(manifest.pending_semantic??[])];
+const candidates=semanticEntries(manifest);
 if (selected.some(id => !candidates.some(e => e.id === id))) throw new Error('Unknown corpus ID');
 const documents = candidates.filter(e => !selected.length || selected.includes(e.id));
 // Use one native executable for the complete run, even if Cargo rebuilds it.
@@ -287,13 +287,14 @@ try {
         }
       }
       if(entry.gold) {
-        const text=ir=>ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
-        const nativeCheck=checkGold(text(expected),entry.gold), wasmCheck=checkGold(text(actual.ir),entry.gold);
-        semanticGold={kind:nativeCheck.kind,native_check:nativeCheck,wasm_check:wasmCheck,
+        const nativeCheck=checkPageGold(expected,entry.gold), wasmCheck=checkPageGold(actual.ir,entry.gold);
+        semanticGold={cohort:entry.semantic_gold_cohort,kind:nativeCheck.kind,native_check:nativeCheck,wasm_check:wasmCheck,
           native_matches:nativeCheck.matches,wasm_matches:wasmCheck.matches,
           selected_page_has_text_review:pageHasTextReview(expected.pages[entry.gold.page-1])
             &&pageHasTextReview(actual.ir.pages[entry.gold.page-1])};
         if(!semanticGold.native_matches || !semanticGold.wasm_matches) {
+          if(!goldOutcomeAccepted(entry.semantic_gold_cohort,false,true))
+            throw new Error('Regular document semantic gold mismatch: '+entry.id);
           const suffix='\n% Semantic gold equivalent rewrite\n';
           const rewritten=path.join(binaryDirectory,entry.id+'-semantic-rewrite.pdf');
           await fs.writeFile(rewritten,Buffer.concat([data,Buffer.from(suffix)]));
@@ -767,7 +768,7 @@ try {
     const row=results.find(r=>r.id===entry.id);
     count[row?.semantic_gold?.native_matches&&row?.semantic_gold?.wasm_matches?'correct':'failed']++;
   }
-  const report = {version:5,browser_engine:engine,browser:browser.version(),pdfium:runtime.pdfium.version,
+  const report = {version:6,browser_engine:engine,browser:browser.version(),pdfium:runtime.pdfium.version,
     pdfium_archive_sha256:runtime.pdfium.sha256,pdfium_wasm_sha256:runtime.pdfium.members['lib/pdfium.wasm'].sha256,
     wasm_sha256:createHash('sha256').update(wasm).digest('hex'),
     runtime_adapter_sha256:adapterHash,pdfium_loader_sha256:loaderHash,
@@ -781,10 +782,13 @@ try {
     scalar_revision_gold_checks:results.filter(r=>r.id.startsWith('scalar-revision-gold-')).length,
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_by_kind:goldByKind,
+    semantic_gold_by_cohort:goldByCohort(documents.filter(e=>e.gold).map(e=>({
+      cohort:e.semantic_gold_cohort,kind:e.gold.kind??'full_page_text',
+      matches:results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)}))),
     semantic_gold_checks:documents.filter(e=>e.gold).length,
     semantic_gold_passed:documents.filter(e=>e.gold).filter(e=>results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)).length,
     semantic_gold_failures:documents.filter(e=>e.gold).filter(e=>!results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)).length,
-    scope:'Runtime parity and selected declared golds. Full-page text and scoped scalar inventories are reported separately; inventory success does not validate page prose, order or geometry. A guarded mismatch is not correct extraction.',
+    scope:'Runtime parity and selected declared golds. Regular documents and unresolved pending_semantic gold are reported separately by cohort and kind. Regular mismatches fail the gate; only pending cases may pass runtime guarding while still counting as semantic failures. Legacy full_page_text is restricted to one-page documents. Inventory success does not validate page prose, order or geometry.',
     cases:results.length,passed:results.filter(r=>r.passed).length,results};
   await fs.writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
   console.log(`${report.passed}/${report.cases} passed`);

@@ -1757,6 +1757,37 @@
       ],
       "confidentiality": "Public NIST technical publication; no private user documents.",
       "source_inventory_gold": "source-inventory-nist-2015.json"
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=911344",
+      "sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+      "bytes": 203967,
+      "pages": 5,
+      "reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "citation": "Radack, S. (2012), Secure Hash Standard: Updated Specifications Approved and Issued as Federal Information Processing Standard (FIPS) 180-4, ITL Bulletin, NIST, https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=911344. Republished courtesy of the National Institute of Standards and Technology.",
+      "gold": {
+        "page": 5,
+        "kind": "full_page_text",
+        "text": "Disclaimer\nAny mention of commercial products or reference to commercial organizations is for information\nonly; it does not imply recommendation or endorsement by NIST, nor does it imply that the\nproducts mentioned are necessarily the best available for the purpose.",
+        "scope": "All text on page 5 transcribed manually from the original rendered page before native extraction. Canonical spelling and whitespace only; no claim about pages 1-4, source encoding, or highlight geometry."
+      },
+      "source": "https://www.nist.gov/publications/secure-hash-standard-updated-specifications-approved-and-issued-federal-information",
+      "retrieved": "2026-11-22",
+      "rights_source": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-software-and-technical-series-publications",
+      "rights": "NIST-authored, non-SRD technical bulletin; use the NIST non-SRD/technical-publication terms with attribution. Original PDF and notices are preserved unchanged in the ignored internal cache; no font program or outline is exported or reused.",
+      "confidentiality": "Public technical publication. Only published NIST institutional author/editor details and public links were found; no private user document or confidential information.",
+      "review_method": "All five original pages rendered with Poppler at 100 dpi and inspected. Page 1 carries NIST/ITL/Computer Security Division authorship; page 5 retains the original disclaimer. No third-party authored content notice was found.",
+      "category": "NIST ITL technical bulletin / page-scoped independent full text",
+      "text_fragments": [
+        "Disclaimer"
+      ]
     }
   ],
   "revision_pairs": [
