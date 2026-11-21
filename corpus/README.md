@@ -6,6 +6,8 @@ NIST ITL Bulletinの1ページ目で見つけた `FIPS 180-3` → `FIPS 1 80-3` 
 
 初期の実装では、空白の補正で8ページの添字の並びまで変わった。原本を目視し、一部の改善と未解決の数式配置を確認したため、読み順を決めた後に生成空白だけを除く構成とした。数式全体の論理順は依然として保証できず、独立した改善課題に残す。原本の文字、字面の座標、SDK・原文の診断を保持し、文字列とセル・原文領域の添字を同時に更新する。
 
+[v43検証台帳](validation-advance-spacing.json) に、Rust302件（8件ignored）、公開PDF6件、Python39件、Chromium・WebKit各293条件、Worker84資料1,053操作＋212条件の通過を記録する。[限定した文脈goldの変更前](results-page-gold-advance-before.json) は0/1、[修正後](results-page-gold-advance.json) は1/1で、既存の全文gold9/9・記号gold4/4・実改訂gold1/1も保持した。[全資料の対照](results-advance-impact.json) では空白が55ページで変わり、全611ページの文字順・ブロックの座標と文字の所有・診断が一致した。[公開セルの対照](results-advance-cells.json) では、その55ページの119,178文字の順序・セル・診断・原文領域の所有も完全一致した。原文領域が明示された87文字を含む。これは既存出力の保存の検証であり、元の字面への正解位置goldではない。
+
 2026-11-22にNISTの2012年5月ITL Bulletinを追加収集し、原本5ページすべてを100dpiで目視確認した。登録85本（通常72・堅牢性10・参照1・未達2）、通常資料611ページとなる。NISTの著者・公開元・利用条件・謝辞をmanifestに記録し、通知付きの原本はignoredの内部キャッシュだけで扱う。前の84本の入力一覧は `manifest-baseline-grid.json` に保持し、v41の分母とレポートは変更しない。
 
 5ページ目のDisclaimer全体を原本画像から抽出前に転記し、`gold.kind=full_page_text` とした。NFCと連続空白だけを揃え、選択ページの全テキストが一致することを要求する。1〜4ページや強調位置のgoldではない。`python3 tools/audit_page_gold.py --binary target/release/pdf-diff` は通常資料の明示goldを厳格に検査し、以前の一ページ限定 `full_page_text` 8件も同じ範囲で照合する。複数ページを旧形式の部分文字列へ落とす指定や二重指定は拒否する。
