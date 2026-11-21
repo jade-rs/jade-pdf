@@ -94,6 +94,9 @@ Unicode側の予算は文書全体で展開CMap8MiB、400万作業単位、512�
 単純フォントのDifferencesは、コミットとSHA-256を固定したAdobe Glyph List 2.0の4,281名と、AGLの `uni`／`u` 命名規則で照合する。
 `union` や `uacute` など、表にある正式名を汎用の接頭辞規則より先に扱う。小文字の16進数、`uni` 内のサロゲート、非標準の別名、不明な複合名は確定した原文Unicodeにしない。
 グリフ名は4,096バイト・対応先はUTF-8で1,024バイトまで。名前の読み取りを文書の作業予算に、単純フォント表を8MiBのUnicode対応保存予算に含める。
+Windowsの固定SDKが正式な字形名の補助文字を下位16ビットへ切り詰める場合は、原文の使用字形名・使用回数と、同一オブジェクト・矩形・原点のセルを照合して復元する。
+原文解析が完全で、欠落・未観測・SDK変換エラー・ActualText置換がなく、重複を除いたセル数が原文コード数と一致し、復元後の文字集合全体が一致することを必要とする。元の値と補助文字がともに左から右の強い文字（Bidi_Class=L）の場合に限り、通常のBMP文字との衝突や同じ下位値を持つ複数候補は推測しない。
+ToUnicodeの明示対応から候補を作らず、正常に復元済みのUTF-16対も補正対象にしない。復元した文字も元のセル座標を保持し、二度の読み取りの生Unicode・座標を指紋で検証する。原文の補助文字資料は1,024種類、RTL補正を含むセル一覧は20万個を上限とする。
 未対応の複合CMap、継承CMap、不正なUTF-16などを推測で補完しない。
 多重集合の一致も順序・位置・原文全体の完全性の証明ではない。
 構造要素のActualTextは、ページ・MCID・Formの名前空間、ParentTreeの逆参照と祖先関係を原文から確認して反映する。
@@ -293,3 +296,5 @@ JADE_PDF_BROWSER_ENGINE=webkit JADE_PDF_BINARY=target/release/pdf-diff JADE_PDF_
 
 実行前に公開PDFの取得と `python3 tools/wasm-smoke/prepare_runtime.py --build` が必要である。エンジン指定を省略するとChromiumを使い、不明な名前は明示的に拒否する。`JADE_PDF_BROWSER` は選択したエンジンの実行ファイルを指定する。
 直接WASMの精度検証とWorkerの強制終了検証は別の証拠である。Workerの既存全監査はChromium CDPで対象の消滅まで観測するため、Firefox/WebKitを指定した実行では成功扱いにせず拒否する。WebKitの検証はPlaywrightのWebKitビルドであり、Safari製品全体の保証ではない。
+
+ブラウザーの実行レポートでは、`passed` / `cases` は実行比較と選定した条件の結果である。通常資料に加えて `pending_semantic` の未達資料も実行し、`semantic_gold_checks` / `semantic_gold_passed` / `semantic_gold_failures` へ全ページ文字列の正誤を別途記録する。既知の誤抽出が両経路で要レビューになっていても、文字列の正解には数えない。未診断の誤抽出や等価書き換えの誤差分は検証を失敗させる。

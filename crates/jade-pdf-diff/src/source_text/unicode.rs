@@ -18,6 +18,12 @@ pub(crate) struct Facts {
     pub unavailable: bool,
     /// 原文の文字コードを厳密に数えた個数。
     pub glyphs: usize,
+    /// 単純フォントの正式な字形名が宣言する、一文字の補助文字と使用回数。
+    pub named_supplementary: BTreeMap<char, usize>,
+    /// 補助文字の所有資料が保存予算を超えたことを示す。
+    pub named_supplementary_unavailable: bool,
+    /// ActualTextによる置換があり、原文コード数とセルを直接照合できない。
+    pub glyph_ownership_unavailable: bool,
     /// 同じ文字集合を持つ複数字形の、原文に明記された論理順序。
     pub rtl_sequences: BTreeMap<String, RtlSequence>,
     /// 論理順序の補助資料が予算内に収まらなかったことを示す。
@@ -42,6 +48,15 @@ impl Facts {
     pub fn merge(&mut self, from: Self) {
         self.unavailable |= from.unavailable;
         self.glyphs = self.glyphs.saturating_add(from.glyphs);
+        self.glyph_ownership_unavailable |= from.glyph_ownership_unavailable;
+        self.named_supplementary_unavailable |= from.named_supplementary_unavailable;
+        if self.named_supplementary_unavailable {
+            self.named_supplementary.clear();
+        } else {
+            for (scalar, count) in from.named_supplementary {
+                self.note_named_supplementary(scalar, count);
+            }
+        }
         self.rtl_unavailable |= from.rtl_unavailable;
         for (c, count) in from.scalars {
             *self.scalars.entry(c).or_default() += count;
@@ -54,6 +69,21 @@ impl Facts {
         for (key, sequence) in from.rtl_sequences {
             self.merge_sequence(key, sequence);
         }
+    }
+
+    /// 原文字形名の候補だけを最大1,024種類に保持する。
+    fn note_named_supplementary(&mut self, scalar: char, count: usize) {
+        if self.named_supplementary_unavailable {
+            return;
+        }
+        if !self.named_supplementary.contains_key(&scalar) && self.named_supplementary.len() >= 1024
+        {
+            self.named_supplementary.clear();
+            self.named_supplementary_unavailable = true;
+            return;
+        }
+        let old = self.named_supplementary.entry(scalar).or_default();
+        *old = old.saturating_add(count);
     }
 
     /// 一意な論理順序と出現回数を保ち、曖昧さを単語集合の一致で隠さない。
@@ -406,7 +436,12 @@ enum Font {
         encoding: CodeEncoding,
     },
     Unicode(CodeEncoding),
-    Simple(Box<[Option<String>; 256]>),
+    Simple {
+        /// 原文の標準符号化と字形名から得た対応表。
+        mapping: Box<[Option<String>; 256]>,
+        /// SDKがwchar_tの字形名変換を使うフォント種別かどうか。
+        narrowed_names: bool,
+    },
     Unknown,
 }
 pub(super) struct ActualValue {
@@ -583,7 +618,13 @@ impl<'a> Reader<'a> {
             "Simple Unicode mappings exceed cache budget"
         );
         self.bytes += bytes;
-        Ok(Font::Simple(table))
+        Ok(Font::Simple {
+            mapping: table,
+            narrowed_names: matches!(
+                font.get(b"Subtype").and_then(Object::as_name).ok(),
+                Some(b"Type1" | b"MMType1" | b"TrueType")
+            ),
+        })
     }
     pub fn show(&mut self, key: Option<usize>, bytes: &[u8], facts: &mut Facts) {
         if bytes.is_empty() {
@@ -598,7 +639,7 @@ impl<'a> Reader<'a> {
             return;
         };
         let encoding = match font {
-            Font::Simple(_) => CodeEncoding::Fixed(1),
+            Font::Simple { .. } => CodeEncoding::Fixed(1),
             Font::Cmap { encoding, .. } | Font::Unicode(encoding) => *encoding,
             Font::Unknown => {
                 facts.unavailable = true;
@@ -618,7 +659,7 @@ impl<'a> Reader<'a> {
             at += width;
             facts.glyphs = facts.glyphs.saturating_add(1);
             let decoded = match font {
-                Font::Simple(table) => Ok(table[code_bytes[0] as usize].clone()),
+                Font::Simple { mapping, .. } => Ok(mapping[code_bytes[0] as usize].clone()),
                 Font::Cmap { mapping, .. } => {
                     let code = code_bytes.iter().fold(0, |v, b| (v << 8) | u32::from(*b));
                     if !mapping.contains_code(code, width) {
@@ -636,6 +677,20 @@ impl<'a> Reader<'a> {
                         return;
                     }
                     facts.sequence(&text);
+                    if matches!(
+                        font,
+                        Font::Simple {
+                            narrowed_names: true,
+                            ..
+                        }
+                    ) {
+                        let mut chars = text.chars();
+                        if let Some(scalar) = chars.next() {
+                            if chars.next().is_none() && scalar as u32 > 0xffff {
+                                facts.note_named_supplementary(scalar, 1);
+                            }
+                        }
+                    }
                     for c in text.chars() {
                         add_scalar(&mut facts.scalars, c);
                     }
@@ -645,6 +700,7 @@ impl<'a> Reader<'a> {
         }
     }
     pub fn actual_text(&mut self, object: &Object, facts: &mut Facts) -> ActualValue {
+        facts.glyph_ownership_unavailable = true;
         let decoded = actual_bytes(self.doc, object).and_then(|bytes| {
             charge(&mut self.work, bytes.len())?;
             decode_actual_bytes(bytes).map(|text| (text, bytes.len()))
@@ -1020,6 +1076,65 @@ mod tests {
     }
 
     use super::*;
+
+    /// 単純フォントの字形名だけを資料にし、既存ToUnicodeを推測で書き換えない。
+    #[test]
+    fn supplementary_name_evidence_excludes_explicit_tounicode() {
+        let mut doc = Document::with_version("1.7");
+        let map = doc.add_object(lopdf::Stream::new(dictionary! {}, b"/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <00> <ff> endcodespacerange 1 beginbfchar <41> <D801DC0C> endbfchar endcmap end end".to_vec()));
+        let simple: Object = dictionary! {"Type"=>"Font","Subtype"=>"Type1","BaseFont"=>"Helvetica","Encoding"=>dictionary! {"BaseEncoding"=>"WinAnsiEncoding","Differences"=>vec![65.into(),Object::Name(b"u1040C".to_vec())]}}.into();
+        let mapped: Object = dictionary! {"Type"=>"Font","Subtype"=>"Type1","BaseFont"=>"Helvetica","ToUnicode"=>map}.into();
+        let type3: Object = dictionary! {"Type"=>"Font","Subtype"=>"Type3","Encoding"=>dictionary! {"BaseEncoding"=>"WinAnsiEncoding","Differences"=>vec![65.into(),Object::Name(b"u1040C".to_vec())]}}.into();
+        let mut reader = Reader::new(&doc);
+        let simple = reader.font(&simple, 1);
+        let mapped = reader.font(&mapped, 1);
+        let type3 = reader.font(&type3, 1);
+        let mut facts = Facts::default();
+        reader.show(Some(simple), b"AA", &mut facts);
+        assert!(!facts.unavailable);
+        assert_eq!(facts.glyphs, 2);
+        assert_eq!(facts.named_supplementary, BTreeMap::from([('𐐌', 2)]));
+        let mut other_kind = Facts::default();
+        reader.show(Some(type3), b"A", &mut other_kind);
+        assert!(!other_kind.unavailable);
+        assert!(other_kind.named_supplementary.is_empty());
+        let mut explicit = Facts::default();
+        reader.show(Some(mapped), b"A", &mut explicit);
+        assert!(!explicit.unavailable);
+        assert_eq!(explicit.scalars, BTreeMap::from([('𐐌', 1)]));
+        assert!(explicit.named_supplementary.is_empty());
+        facts.merge(explicit);
+        assert_eq!(facts.glyphs, 3);
+        assert_eq!(facts.named_supplementary, BTreeMap::from([('𐐌', 2)]));
+    }
+
+    /// 空の置換も原文字形との直接対応から外し、結合時にも失わない。
+    #[test]
+    fn empty_actual_text_disables_direct_glyph_ownership_proof() {
+        let doc = Document::with_version("1.7");
+        let mut reader = Reader::new(&doc);
+        let mut replacement = Facts::default();
+        reader.actual_text(&Object::string_literal(""), &mut replacement);
+        assert!(replacement.glyph_ownership_unavailable);
+        let mut page = Facts::default();
+        page.merge(replacement);
+        assert!(page.glyph_ownership_unavailable);
+    }
+
+    /// 補助資料の超過は復元だけを止め、原文のUnicode集合を失わない。
+    #[test]
+    fn supplementary_name_evidence_has_an_independent_budget() {
+        let mut facts = Facts::default();
+        for code in 0x10000..0x10401 {
+            let scalar = char::from_u32(code).unwrap();
+            add_scalar(&mut facts.scalars, scalar);
+            facts.note_named_supplementary(scalar, 1);
+        }
+        assert!(facts.named_supplementary_unavailable);
+        assert!(facts.named_supplementary.is_empty());
+        assert!(!facts.unavailable);
+        assert!(!facts.scalars.is_empty());
+    }
     fn cmap(body: &str) -> Cmap {
         let data=format!("/CIDInit /ProcSet findresource begin 12 dict begin begincmap 1 begincodespacerange <00> <ff> endcodespacerange {body} endcmap CMapName currentdict /CMap defineresource pop end end");
         Cmap::parse(data.as_bytes(), &mut 0).unwrap()

@@ -6,6 +6,7 @@ import os from 'node:os';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
+import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
@@ -23,8 +24,9 @@ const loaderHash=createHash('sha256').update(await fs.readFile(path.join(root,'c
 const unpreparedLoaderHash=createHash('sha256').update(await fs.readFile(path.join(root,'corpus/wasm-runtime/release/node/pdfium-unprepared.esm.js'))).digest('hex');
 let contractProbe;
 const selected = process.argv.slice(2);
-if (selected.some(id => !manifest.documents.some(e => e.id === id))) throw new Error('Unknown corpus ID');
-const documents = manifest.documents.filter(e => !selected.length || selected.includes(e.id));
+const candidates=[...manifest.documents,...(manifest.pending_semantic??[])];
+if (selected.some(id => !candidates.some(e => e.id === id))) throw new Error('Unknown corpus ID');
+const documents = candidates.filter(e => !selected.length || selected.includes(e.id));
 // Use one native executable for the complete run, even if Cargo rebuilds it.
 const binaryDirectory = await fs.mkdtemp(path.join(os.tmpdir(),'jade-pdf-wasm-native-'));
 const binary = path.join(binaryDirectory,'pdf-diff');
@@ -153,6 +155,7 @@ try {
   results.push(glyphBoxGold);
   for (const entry of documents) {
     const started = Date.now();
+    let semanticGold;
     try {
       const file = path.join(root,'corpus/cache',entry.id+'.pdf');
       const data = await fs.readFile(file);
@@ -251,6 +254,12 @@ try {
           throw new Error('Native/WASM reading-order diagnostics mismatch on page '+(i+1));
         if (a.sdk_unicode_mapping_errors !== b.sdk_unicode_mapping_errors)
           throw new Error('Native/WASM Unicode mapping diagnostics mismatch on page '+(i+1));
+        for(const [key,fallback] of [
+          ['sdk_text_objects_without_characters',0],['source_text_characters_missing',0],
+          ['source_text_accounting_unavailable',false],['source_unicode_scalars_unmatched',0],
+          ['source_unicode_accounting_unavailable',false],
+        ]) if((a[key]??fallback)!==(b[key]??fallback))
+          throw new Error('Native/WASM '+key+' mismatch on page '+(i+1));
         if (['x0','y0','x1','y1'].some(k=>Math.abs(a.view_box[k]-b.view_box[k])>.01))
           throw new Error('Native/WASM view box mismatch on page '+(i+1));
         const text = p => compact(p.blocks.map(b=>b.text).join(''));
@@ -261,6 +270,35 @@ try {
           throw new Error('Native/WASM text mismatch on page '+(i+1)+' '+JSON.stringify({
             native_length:old.length,wasm_length:next.length,same_characters:sorted(old)===sorted(next),
             at,native:old.slice(Math.max(0,at-30),at+60),wasm:next.slice(Math.max(0,at-30),at+60)}));
+        }
+      }
+      if(entry.gold) {
+        const normalize=text=>text.normalize('NFC').replace(/\s+/gu,' ').trim();
+        const text=ir=>ir.pages[entry.gold.page-1].blocks.map(b=>b.text).join('\n');
+        semanticGold={expected:entry.gold.text,native_text:text(expected),wasm_text:text(actual.ir),
+          native_matches:normalize(text(expected))===normalize(entry.gold.text),
+          wasm_matches:normalize(text(actual.ir))===normalize(entry.gold.text)};
+        if(!semanticGold.native_matches || !semanticGold.wasm_matches) {
+          const suffix='\n% Semantic gold equivalent rewrite\n';
+          const rewritten=path.join(binaryDirectory,entry.id+'-semantic-rewrite.pdf');
+          await fs.writeFile(rewritten,Buffer.concat([data,Buffer.from(suffix)]));
+          const native=spawnSync(binary,[file,rewritten],{encoding:'utf8',timeout:60000,maxBuffer:32*1024*1024});
+          if(native.status!==3) throw new Error('Incorrect semantic gold is not guarded by native comparison');
+          const reference=JSON.parse(native.stdout);
+          const guarded=await page.evaluate(async ({id,suffix})=>{
+            const bytes=new Uint8Array(await(await fetch('/corpus/cache/'+id+'.pdf')).arrayBuffer());
+            const tail=new TextEncoder().encode(suffix), next=new Uint8Array(bytes.length+tail.length);
+            next.set(bytes);next.set(tail,bytes.length);
+            return JSON.parse(window.jadeProbe.compare_with_budget(bytes,next,40000));
+          },{id:entry.id,suffix});
+          const same=key=>isDeepStrictEqual(guarded.diff[key],reference[key]);
+          semanticGold.mismatch_is_guarded=!guarded.complete&&same('diagnostics')&&same('comparison')
+            &&same('summary')&&Object.values(reference.summary).every(n=>n===0);
+          if(!semanticGold.mismatch_is_guarded) throw new Error('Incorrect semantic gold is not guarded equally by WASM '+JSON.stringify({
+            complete:guarded.complete,native_summary:reference.summary,wasm_summary:guarded.diff.summary,
+            native_diagnostics:reference.diagnostics,wasm_diagnostics:guarded.diff.diagnostics,
+            native_comparison:reference.comparison,wasm_comparison:guarded.diff.comparison,
+          }));
         }
       }
       if(['w3c-complex-table','w3c-rowspan-table'].includes(entry.id)) {
@@ -289,8 +327,10 @@ try {
           reading_order_review_pages:result.diagnostics.old_pages_with_uncertain_reading_order??0};
         results.push(gold);console.log('PASS '+JSON.stringify(gold));
       }
-      results.push({id:entry.id,passed:true,pages:expected.pages.length,png_bytes:actual.png_bytes,ms:Date.now()-started});
-    } catch(error) { results.push({id:entry.id,passed:false,error:String(error),ms:Date.now()-started}); }
+      results.push({id:entry.id,passed:true,pages:expected.pages.length,png_bytes:actual.png_bytes,ms:Date.now()-started,
+        ...(semanticGold?{semantic_gold:semanticGold}:{})});
+    } catch(error) { results.push({id:entry.id,passed:false,error:String(error),ms:Date.now()-started,
+      ...(semanticGold?{semantic_gold:semanticGold}:{})}); }
     console.log((results.at(-1).passed?'PASS ':'FAIL ')+entry.id+' '+JSON.stringify(results.at(-1)));
   }
   const geometryResults = await page.evaluate(async () => {
@@ -369,7 +409,11 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name.startsWith('rtl_unicode_')) {
+        if(name.startsWith('named_unicode_')) {
+          passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
+          if(name==='named_unicode_edit') passed&&=summary.blocks_changed===1;
+          else passed&&=Object.values(summary).every(value=>value===0);
+        } else if(name.startsWith('rtl_unicode_')) {
           const mode=name.slice('rtl_unicode_'.length);
           const complete=!['ambiguous','mixed'].includes(mode);
           passed&&=result.complete===complete&&result.text_complete===complete&&summary.pages_visual_changed===0;
@@ -670,6 +714,10 @@ try {
     unprepared_loader_sha256:unpreparedLoaderHash,contract_probe_sha256:createHash('sha256').update(contractProbe).digest('hex'),
     manifest_sha256:createHash('sha256').update(manifestBytes).digest('hex'),native_binary_sha256:binaryHash,
     selected_documents:documents.map(e=>e.id),
+    semantic_gold_checks:documents.filter(e=>e.gold).length,
+    semantic_gold_passed:documents.filter(e=>e.gold).filter(e=>results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)).length,
+    semantic_gold_failures:documents.filter(e=>e.gold).filter(e=>!results.some(r=>r.id===e.id&&r.semantic_gold?.native_matches&&r.semantic_gold?.wasm_matches)).length,
+    scope:'Runtime parity and selected declared golds. Unresolved full-page semantic gold failures are reported separately; a guarded mismatch is not correct extraction.',
     cases:results.length,passed:results.filter(r=>r.passed).length,results};
   await fs.writeFile(reportPath,JSON.stringify(report,null,2)+'\n');
   console.log(`${report.passed}/${report.cases} passed`);

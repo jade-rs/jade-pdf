@@ -1,6 +1,11 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "named_unicode_edit",
+    "named_unicode_equivalent",
+    "named_unicode_collision",
+    "named_unicode_bmp_collision",
+    "named_unicode_direction",
     "rtl_unicode_equivalent",
     "rtl_unicode_edit",
     "rtl_unicode_ambiguous",
@@ -1154,6 +1159,21 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("named_unicode_") {
+        let names: &[&str] = match mode {
+            "edit" if !revised => &["A", "B", "C"],
+            "edit" | "equivalent" => &["A", "u1040C", "C"],
+            "collision" => &["u1040C", "u2040C"],
+            "bmp_collision" => &["u1040C", "uni040C"],
+            "direction" => &["u1F600"],
+            _ => panic!("Unknown named Unicode case"),
+        };
+        let mut bytes = named_glyph_cells(names, 1., 0, false);
+        if revised && mode != "edit" {
+            bytes.extend_from_slice(b"\n% equivalent source rewrite\n");
+        }
+        return bytes;
+    }
     if let Some(mode) = case.strip_prefix("rtl_unicode_") {
         let mut bytes = match mode {
             "equivalent" => unicode_spelling(if revised { "لخ" } else { "\u{fccb}" }),
@@ -1835,6 +1855,46 @@ pub fn glyph_named_text(mode: &str, revised: bool) -> Vec<u8> {
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>".into(),
         format!("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 /{name}] >> >>"),
         stream("BT /F1 12 Tf 3 Tr 30 150 Td (A) Tj ET", ""),
+    ])
+}
+
+/// 自作の長方形だけを含むCFF。生成元は tools/generate_named_glyph_font.py。
+/// 生CFFのSHA-256: a513b1b6c302510b5dc3c0acf1b03fa2f1c826295f4f50539928d1f18c924f07。
+fn named_glyph_font() -> &'static str {
+    concat!(
+        "0100040200010101104A6164654E616D6564476C79706873000101011BF82102F82103F818048B8BF888F950",
+        "05F70E0F8BF79B12F7151100070101070D141A202637753130343043753230343043756E6930343043753146",
+        "3630307531443430307531443135454A616465204E616D656420476C79706873000001002202018705000A01",
+        "010D1925313D4955616D79F8888B16F888F950FC88060EF8888B16F888F950FC88060EF8888B16F888F950FC",
+        "88060EF8888B16F888F950FC88060EF8888B16F888F950FC88060EF8888B16F888F950FC88060EF8888B16F8",
+        "88F950FC88060EF8888B16F888F950FC88060EF8888B16F888F950FC88060EF8888B16F888F950FC88060E>",
+    )
+}
+
+/// ホストフォントへ依存せず、字形名とUnicodeだけを変える埋め込みType1C入力。
+pub fn named_glyph_cells(names: &[&str], unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
+    assert!(!names.is_empty() && names.len() <= 8);
+    assert!(names.iter().all(|n| [
+        "A", "B", "C", "u1040C", "u2040C", "uni040C", "u1F600", "u1D400", "u1D15E"
+    ]
+    .contains(n)));
+    let differences = names
+        .iter()
+        .map(|n| format!("/{n}"))
+        .collect::<Vec<_>>()
+        .join(" ");
+    let widths = vec!["500"; names.len()].join(" ");
+    let text: String = (0..names.len())
+        .map(|i| char::from(b'A' + i as u8))
+        .collect();
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {side} {side}] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>", side=200. / unit),
+        format!("<< /Type /Font /Subtype /Type1 /BaseFont /JadeNamedGlyphs /FontDescriptor 6 0 R /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [65 {differences}] >> /FirstChar 65 /LastChar {} /Widths [{widths}] >>", 64 + names.len()),
+        stream(&format!("q {scale} 0 0 {scale} 0 0 cm {} BT /F1 12 Tf 30 150 Td ({text}) Tj ET Q", if shear { "1 .2 .3 1 0 0 cm" } else { "" }, scale=1. / unit), ""),
+        "<< /Type /FontDescriptor /FontName /JadeNamedGlyphs /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile3 7 0 R >>".into(),
+        stream(named_glyph_font(), "/Subtype /Type1C /Filter /ASCIIHexDecode"),
     ])
 }
 
