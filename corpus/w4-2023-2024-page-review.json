@@ -1,0 +1,140 @@
+{
+  "date": "2026-11-22",
+  "status": "Completed original first-page visual review before product edit-span inspection",
+  "old_id": "irs-w4-2023",
+  "new_id": "irs-w4-2024",
+  "old_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+  "new_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+  "page": 1,
+  "images": {
+    "corpus/wasm-runtime/w4-natural-qualification/next-source-review/w4-2023-page1.png": "0a3f1fcde8743f388cd84ebc11d489e0393ef12380c3603036375f5cfc2804ce",
+    "corpus/wasm-runtime/w4-natural-qualification/w4-2024-1.png": "eadcc483438f7f92b50db170fbd718d961e3d9ad4efa224ea0501560449b9535"
+  },
+  "known_visible_text_regions": [
+    {
+      "id": "header-year",
+      "old": "3",
+      "new": "4",
+      "zone": "upper_quarter"
+    },
+    {
+      "id": "page2-reference-clause",
+      "old": "other details, and privacy.",
+      "new": "and when to use the estimator at www.irs.gov/W4App."
+    },
+    {
+      "id": "step2a",
+      "old": "Reserved for future use.",
+      "new": "Use the estimator at www.irs.gov/W4App for most accurate withholding for this step (and Steps 3–4). If you or your spouse have self-employment income, use this option; or"
+    },
+    {
+      "id": "removed-tip",
+      "old": "TIP: If you have self-employment income, see page 2.",
+      "new": ""
+    },
+    {
+      "id": "footer-year",
+      "old": "3",
+      "new": "4",
+      "zone": "lower_quarter"
+    }
+  ],
+  "unresolved_before_registration": [],
+  "extraction_boundary": "No engine edit spans or extracted paragraph contents from this revision were consulted for these observations. Earlier all-pair structural audit reported only page/group counts and equality booleans. Do not use product output as source gold.",
+  "privacy": "Full first page visually reviewed: blank public tax form, no filled personal data. These original PDFs were already registered and reviewed in the corpus; no new source added.",
+  "production_ready": false,
+  "dot_leader_resolution": "Both original zooms show the same 18 leader periods. Source Tj metadata independently confirms 18 literal 0x2E source codes under the corresponding HelveticaNeueLTStd-Roman font, without reading font programs. The apparent addition at smaller display scale was a visual review uncertainty, not a product defect or a sixth text edit.",
+  "source_leader_metadata": [
+    {
+      "year": "2023",
+      "source_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "source_metadata": {
+        "context": "higher paying job. Otherwise, (b) is more accurate ",
+        "context_operation": 490,
+        "leader_operations": [
+          492,
+          494,
+          496,
+          498,
+          500,
+          502,
+          504,
+          506,
+          508,
+          510,
+          512,
+          514,
+          516,
+          518,
+          520,
+          522,
+          524,
+          526
+        ],
+        "leader_count": 18,
+        "font": "/T1_0",
+        "base_font": "/VKNPED+HelveticaNeueLTStd-Roman",
+        "encoding": "/WinAnsiEncoding",
+        "font_program_read": false,
+        "only_ascii_periods_confirmed": true
+      }
+    },
+    {
+      "year": "2024",
+      "source_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "source_metadata": {
+        "context": "higher paying job. Otherwise, (b) is more accurate ",
+        "context_operation": 504,
+        "leader_operations": [
+          506,
+          508,
+          510,
+          512,
+          514,
+          516,
+          518,
+          520,
+          522,
+          524,
+          526,
+          528,
+          530,
+          532,
+          534,
+          536,
+          538,
+          540
+        ],
+        "leader_count": 18,
+        "font": "/T1_0",
+        "base_font": "/TTGXPG+HelveticaNeueLTStd-Roman",
+        "encoding": "/WinAnsiEncoding",
+        "font_program_read": false,
+        "only_ascii_periods_confirmed": true
+      }
+    }
+  ],
+  "zoom_sha256": {
+    "2023-step2c.png": "d97a12809ce2a845f8a69a854098c8c6475ed25b50141f77ff45b713941b8f0f",
+    "2024-step2c.png": "27201348ab9adb80b343f0fac387044305f06846a9b0aa3f42ffd4bb88853a37"
+  },
+  "source_metadata_interpretation": "Raw PDF string decoding is used only for literal ASCII periods; it is not a font-aware Unicode oracle for other text. En dash in the paragraph was transcribed visually, not from the PDFDocEncoding display of the raw stream.",
+  "sources": {
+    "old": {
+      "id": "irs-w4-2023",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2023.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "bytes": 188715,
+      "pages": 4
+    },
+    "new": {
+      "id": "irs-w4-2024",
+      "url": "https://www.irs.gov/pub/irs-prior/fw4--2024.pdf",
+      "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+      "sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "bytes": 189925,
+      "pages": 4
+    }
+  }
+}

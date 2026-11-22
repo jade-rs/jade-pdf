@@ -299,6 +299,52 @@ pub fn normalize(text: &str, aliases: &BTreeMap<char, char>) -> String {
         .collect()
 }
 
+/// 同じSDK字形・原点・矩形に属する非生成のUTF-16対だけを厳格に復号する。
+fn paired_scalar(
+    pdfium: &Pdfium,
+    text: *mut std::ffi::c_void,
+    index: i32,
+    count: i32,
+) -> Option<char> {
+    let next_index = index.checked_add(1)?;
+    if index < 0 || next_index >= count {
+        return None;
+    }
+    let b = pdfium.bindings();
+    let text = text.cast();
+    let high = b.FPDFText_GetUnicode(text, index);
+    let low = b.FPDFText_GetUnicode(text, next_index);
+    if !(0xd800..=0xdbff).contains(&high) || !(0xdc00..=0xdfff).contains(&low) {
+        return None;
+    }
+    let object = b.FPDFText_GetTextObject(text, index);
+    if object.is_null() || object != b.FPDFText_GetTextObject(text, next_index) {
+        return None;
+    }
+    let mut geometry = Vec::new();
+    for at in [index, next_index] {
+        if b.FPDFText_IsGenerated(text, at) != 0 || b.FPDFText_HasUnicodeMapError(text, at) != 0 {
+            return None;
+        }
+        let (mut l, mut r, mut y0, mut y1) = (0., 0., 0., 0.);
+        let (mut x, mut y) = (0., 0.);
+        if b.FPDFText_GetCharBox(text, at, &mut l, &mut r, &mut y0, &mut y1) == 0
+            || b.FPDFText_GetCharOrigin(text, at, &mut x, &mut y) == 0
+        {
+            return None;
+        }
+        let values = [l as f32, r as f32, y0 as f32, y1 as f32, x as f32, y as f32];
+        if !values.into_iter().all(f32::is_finite) {
+            return None;
+        }
+        geometry.push(values);
+    }
+    if geometry[0] != geometry[1] {
+        return None;
+    }
+    char::decode_utf16([high as u16, low as u16]).next()?.ok()
+}
+
 /// 原本の所有資料でSDK参照を補正する。製品の文字復元器は参照しない。
 pub fn pages(
     pdfium: &Pdfium,
@@ -344,13 +390,26 @@ pub fn pages(
                     );
                     let mut used = BTreeMap::<char, usize>::new();
                     let mut names = HashMap::new();
-                    for i in 0..b.FPDFText_CountChars(text) {
+                    let count = b.FPDFText_CountChars(text);
+                    let mut paired_low = None;
+                    for i in 0..count {
+                        if paired_low == Some(i) {
+                            paired_low = None;
+                            continue;
+                        }
                         let value = b.FPDFText_GetUnicode(text, i);
-                        ensure!(
-                            !(0xd800..=0xdfff).contains(&value),
-                            "This reference cohort requires a supplementary decoder"
-                        );
-                        let scalar = char::from_u32(value);
+                        let scalar = if (0xd800..=0xdbff).contains(&value) {
+                            let scalar = paired_scalar(pdfium, text.cast(), i, count)
+                                .context("Source inventory has an unwitnessed surrogate pair")?;
+                            paired_low = Some(i + 1);
+                            Some(scalar)
+                        } else {
+                            ensure!(
+                                !(0xdc00..=0xdfff).contains(&value),
+                                "Source inventory has an unpaired low surrogate"
+                            );
+                            char::from_u32(value)
+                        };
                         let error = b.FPDFText_HasUnicodeMapError(text, i);
                         ensure!(matches!(error, 0 | 1), "Invalid SDK mapping flag");
                         let scalar = if error == 1

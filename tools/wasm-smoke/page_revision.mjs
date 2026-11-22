@@ -12,6 +12,12 @@ export async function loadPageRevisionGold(root,ref) {
   const gold=JSON.parse(bytes);
   for(const key of ['id','old_id','new_id','old_sha256','new_sha256'])
     if(gold[key]!==ref[key]) throw new Error('Page gold registration disagrees with its source identity');
+  if(gold.source_review!==undefined) {
+    const review=path.resolve(root,gold.source_review);
+    if(!review.startsWith(path.resolve(root,'corpus')+path.sep)) throw new Error('Page source review escapes corpus');
+    if(createHash('sha256').update(await fs.readFile(review)).digest('hex')!==gold.source_review_sha256)
+      throw new Error('Page source review SHA mismatch');
+  }
   return gold;
 }
 

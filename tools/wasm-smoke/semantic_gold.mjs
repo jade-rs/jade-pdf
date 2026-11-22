@@ -111,3 +111,11 @@ export function compactFragmentMatches(actual,gold) {
   if(!expected.length) throw new Error('Compact fragment requires nonempty text');
   return compact(actual).includes(expected);
 }
+
+// Preserve legacy identifiers and distinguish independently declared rules on one page.
+export function operatorGoldCaseId(gold) {
+  if(Object.hasOwn(gold,"case_id") && (typeof gold.case_id!=="string"
+    || !/^[A-Za-z0-9_-]{1,128}$/.test(gold.case_id)))
+    throw new Error("Invalid operator gold case_id");
+  return "symbol-operator-gold-"+(gold.case_id ?? `${gold.id}-page-${gold.page}`);
+}

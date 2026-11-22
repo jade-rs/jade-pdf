@@ -138,6 +138,8 @@ def page_observations(page,texts):
 
 def check_page_revision(diff,gold):
     """明示された全編集と一意に対応する差分だけを正解とし、残りを誤検出に残す。"""
+    kind=gold.get('kind','atomic_hunks')
+    if kind not in ['atomic_hunks','source_regions']:raise ValueError('Unknown page revision gold kind')
     if not positive(gold.get('old_page')) or not positive(gold.get('new_page')):raise ValueError('Invalid selected pages')
     pages=[p for p in diff.get('pages',[]) if positive(p.get('old_index')) and positive(p.get('new_index')) and p['old_index']==gold['old_page'] and p['new_index']==gold['new_page']]
     if len(pages)!=1:raise ValueError('Selected page pair is missing or ambiguous')
@@ -151,6 +153,9 @@ def check_page_revision(diff,gold):
         if normalize_text(e['old'])==normalize_text(e['new']):raise ValueError('Gold must declare a logical text edit')
         if e.get('zone') not in [None,'upper_quarter','lower_quarter']:raise ValueError('Unknown source zone')
     page=pages[0];rows,texts,bounds=observations(page);raw_count=len(rows);limited=False;view='blocks'
+    if kind=='source_regions':
+        from page_region_gold import check_regions
+        return check_regions(page,gold,rows,texts,bounds)
     if page.get('text_diff') is not None:
         rows,limited=page_observations(page,texts);view='page_text'
     proposals=[];work=0
@@ -201,7 +206,7 @@ def check_page_revision(diff,gold):
     accepted=[p for p in proposals if len(p['matches'])==1 and all(len(claims[i])==1 for i in p['matches'][0])]
     used={i for p in accepted for i in p['matches'][0]};unexpected=[r for i,r in enumerate(rows) if i not in used]
     tp=len(accepted);fp=len(unexpected);fn=len(edits)-tp
-    return dict(passed=fp==fn==0 and not limited,view=view,alignment_limited=limited,
+    return dict(passed=fp==fn==0 and not limited,gold_kind='atomic_hunks',view=view,alignment_limited=limited,
                 raw_block_observations=raw_count,true_positives=tp,false_positives=fp,false_negatives=fn,
                 precision=tp/(tp+fp) if tp+fp else None,recall=tp/len(edits),
                 raw_observations=len(rows),expected_edit_regions=len(edits),

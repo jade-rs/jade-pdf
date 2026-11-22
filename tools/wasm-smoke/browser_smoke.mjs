@@ -8,7 +8,7 @@ import { spawnSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
-import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort,operatorGoldCaseId} from './semantic_gold.mjs';
 import {checkScalarRevision} from './scalar_revision.mjs';
 import {loadPageRevisionGold,checkPageRevision} from './page_revision.mjs';
 
@@ -228,7 +228,7 @@ try {
             throw new Error(`${engine} visible Symbol operator gold mismatch`);
           checks.push({engine,inventory,compact_fragment_matches:fragmentMatches});
         }
-        results.push({id:'symbol-operator-gold-'+entry.id+'-page-'+gold.page,passed:true,page:gold.page,checks});
+        results.push({id:operatorGoldCaseId(gold),passed:true,page:gold.page,checks});
       }
       for (const gold of entry.reading_order ?? []) {
         const normalized = text => text.normalize('NFC').replace(/\s/gu,'');
@@ -843,6 +843,7 @@ try {
     scalar_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_scalar_revision.py'))).digest('hex'),
     scalar_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/scalar_revision.mjs'))).digest('hex'),
     page_revision_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/page_revision_gold.py'))).digest('hex'),
+    page_region_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/page_region_gold.py'))).digest('hex'),
     page_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_page_revision.py'))).digest('hex'),
     page_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/page_revision.mjs'))).digest('hex'),
     page_revision_gold_checks:results.filter(r=>r.id.startsWith('page-revision-gold-')).length,

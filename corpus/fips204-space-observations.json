@@ -1,0 +1,235 @@
+{
+  "id": "nist-fips204-2024",
+  "page": 2,
+  "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+  "source_font_key": "/T1_0",
+  "source_base_font": "/Times-Roman",
+  "source_subtype": "/Type1",
+  "source_encoding": "/WinAnsiEncoding",
+  "font_dictionary_keys": [
+    "/BaseFont",
+    "/Encoding",
+    "/Subtype",
+    "/ToUnicode",
+    "/Type"
+  ],
+  "font_descriptor_present": false,
+  "source_text_shows": 78,
+  "source_shows_all_single_literal_0x20": true,
+  "source_to_unicode_space_line": "<20> <0020>",
+  "baseline_native_binary_sha256": "0f977a0cc6f63dcef9d886a1b7ee6f07e1545c19ca23ce90c150a914bc56f803",
+  "baseline_sdk_unobserved_text_objects": 78,
+  "baseline_source_characters_missing": 63,
+  "baseline_source_unicode_scalars_unmatched": 0,
+  "baseline_foreword_matches_corrected_independent_full_page_gold": true,
+  "classification": "Cause candidate, not a sufficient ownership proof and not a diagnostic exemption.",
+  "remaining_proof": [
+    "Query actual unobserved SDK object font/base-name/embed status and geometry through public APIs; do not assume all78 use Times-Roman just from matching counts.",
+    "FPDFTextObj_GetText uses the same SDK character list and cannot prove absence. Existing missing-meaningful-glyph controls must remain reviewed.",
+    "Do not clear warnings just because source nonwhitespace counts match. Preserve source-coded U+0020 word boundaries, including separate-font zero-advance and repeated-space controls; prove or retain review when ambiguous.",
+    "Any bounded exemption must reject embedded/custom/Differences fonts, alias-name collisions, other codes/Unicode mappings, incomplete source evidence and unmatched geometry/boundary ownership. Do not rely on BaseFont name alone.",
+    "Investigate a source-to-existing-normalized-whitespace boundary witness or exact source-space projection; direct zero-area box containment fails on this original. Preserve zero-advance coded-space controls. The source minimum deficit63 is not the same quantity as78 unobserved objects."
+  ],
+  "font_programs_read": false,
+  "public_sdk_probe": {
+    "pdfium_library_sha256": "baf7fdfd71c887c268224dd9fe102818ace962339875d78c2fcb0a55ba29d967",
+    "text_objects": 156,
+    "observed_text_objects": 78,
+    "unobserved": 78,
+    "unobserved_fonts": {
+      "Times-Roman:embedded=0": 78
+    },
+    "sdk_whitespace_records": 85,
+    "sdk_whitespace_by_scalar": {
+      "13": 8,
+      "10": 8,
+      "32": 69
+    },
+    "unobserved_with_exactly_one_whitespace_witness": 0,
+    "unobserved_without_whitespace_witness": 78
+  },
+  "public_sdk_probe_sha256": "5a044cbb3e47d74b1f9f5c724fd9f0916fbdb9fe51e22677ae116bf0ea920772",
+  "public_sdk_probe_script_sha256": "4b57b19b3d7926427431b5d6424285380eacaee9de6c75d58e35f272f9121b56",
+  "unobserved_object_sample": [
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        334.5245361328125,
+        708.5089721679688,
+        334.5245361328125,
+        708.5089721679688
+      ],
+      "matrix": {
+        "a": 14.346199989318848,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 14.346199989318848,
+        "e": 334.5245361328125,
+        "f": 708.5089721679688
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    },
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        93.89620208740234,
+        682.1909790039062,
+        93.89620208740234,
+        682.1909790039062
+      ],
+      "matrix": {
+        "a": 11.105500221252441,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 10.909099578857422,
+        "e": 93.89620208740234,
+        "f": 682.1909790039062
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    },
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        129.70033264160156,
+        682.1909790039062,
+        129.70033264160156,
+        682.1909790039062
+      ],
+      "matrix": {
+        "a": 11.105500221252441,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 10.909099578857422,
+        "e": 129.70033264160156,
+        "f": 682.1909790039062
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    }
+  ],
+  "sdk_whitespace_sample": [
+    {
+      "index": 8,
+      "scalar": 13,
+      "generated": 1,
+      "box": [
+        327.3709716796875,
+        327.3709716796875,
+        708.5089721679688,
+        708.5089721679688
+      ]
+    },
+    {
+      "index": 9,
+      "scalar": 10,
+      "generated": 1,
+      "box": [
+        327.3709716796875,
+        327.3709716796875,
+        708.5089721679688,
+        708.5089721679688
+      ]
+    },
+    {
+      "index": 13,
+      "scalar": 32,
+      "generated": 1,
+      "box": [
+        88.87377166748047,
+        88.87377166748047,
+        682.1909790039062,
+        682.1909790039062
+      ]
+    },
+    {
+      "index": 21,
+      "scalar": 32,
+      "generated": 1,
+      "box": [
+        127.38617706298828,
+        127.38617706298828,
+        682.1909790039062,
+        682.1909790039062
+      ]
+    }
+  ],
+  "geometry_finding": "All78 SDK-unobserved objects use nonembedded Times-Roman, confirming the source-font candidate. Their bounds are zero-area at their text matrices. Generated SDK whitespace boxes are also zero-area and do not contain these source points (0/78 under0.02pt). Font-name/count agreement is not a boundary ownership proof. Do not suppress warnings using this observation alone.",
+  "ordered_sdk_boundary_probe": {
+    "page": 2,
+    "unobserved_objects": 78,
+    "observed_object_order_monotonic": true,
+    "intervening_whitespace_records_present": 77,
+    "trailing_object_without_next_observed_object": 1,
+    "probe_report_sha256": "8a6e117fa5b357a4d1bb70c38e8f8cedf4f88409b56209117bdf50f82ebdce38",
+    "probe_script_sha256": "ac60cd23000c3fb9848ee5d8f76915a6166085e2df3a3b30531535e07de705e1",
+    "scope": "Exploratory public SDK evidence only.77 objects lie between consecutive observed text objects with intervening whitespace; the last object is trailing. This does not prove source font/encoding/ToUnicode ownership, object-source correspondence, normalized geometry or word-boundary completeness. No runtime suppression.",
+    "required_controls": "A source-coded U+0020 between touching A/B must remain reviewable when SDK gives AB. Meaningful blank-like glyphs, font aliases/subset collisions, custom Differences, embedded fonts, unknown source and ambiguous/nonmonotonic object order remain guarded. Repeated spaces and leading/trailing policy require explicit normalization controls."
+  },
+  "owned_space_controls_before_runtime_change": {
+    "runtime_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+    "cases": [
+      {
+        "mode": "separated",
+        "source_sha256": "13f18f1eb4c8bec78e621207f01184aa107b8bb0fc793a4c14ef2e887ad7af1b",
+        "text": "A\nB",
+        "unobserved": 1,
+        "missing": 1,
+        "source_unicode_unmatched": 0,
+        "diff_exit": 3
+      },
+      {
+        "mode": "touching",
+        "source_sha256": "ecea818ca98ee730a8996690513d556c7908ccfb0565e0e825681a75d7368431",
+        "text": "AB",
+        "unobserved": 1,
+        "missing": 1,
+        "source_unicode_unmatched": 0,
+        "diff_exit": 3
+      },
+      {
+        "mode": "repeated",
+        "source_sha256": "5909ed9df0a6bef6b9cf438ff93789374a56b1acc77a64859424c9cabca89c02",
+        "text": "A B",
+        "unobserved": 0,
+        "missing": 1,
+        "source_unicode_unmatched": 0,
+        "diff_exit": 3
+      },
+      {
+        "mode": "trailing",
+        "source_sha256": "ece5359f8381f6c8bf787733a40faee6ed0d68bf49b901856a2681bb67a391ef",
+        "text": "A",
+        "unobserved": 1,
+        "missing": 1,
+        "source_unicode_unmatched": 0,
+        "diff_exit": 3
+      },
+      {
+        "mode": "meaningful-blank",
+        "source_sha256": "f39e5fcce556312b46684352dbcf5f08357fb7167f0b646e90f73c2896ed5162",
+        "text": "A\nB",
+        "unobserved": 1,
+        "missing": 1,
+        "source_unicode_unmatched": 1,
+        "diff_exit": 3
+      },
+      {
+        "mode": "custom-differences",
+        "source_sha256": "b1d49847753ddfda600fc93a5a06bb5feb6a1bcd60ebaf61c60d1726b01d9c05",
+        "text": "A B",
+        "unobserved": 0,
+        "missing": 0,
+        "source_unicode_unmatched": 0,
+        "diff_exit": 0
+      }
+    ],
+    "report_sha256": "2d837ead5153112abfe60c649e04438bbc2bc60da2b3e6e409c1ea77ffa84c17",
+    "script_sha256": "2cd21d87715d67e21b8ed9d3a13c6f6d29337f0d01fbd385e90cf8eb3025cb06",
+    "scope": "Exploratory baseline only, not new product tests or a fix. Touching A/B hides a declared source space and remains reviewable. Meaningful blank U+0043 remains guarded. Repeated spaces have a different observed-object/lower-bound pattern. The custom-Differences source explicitly declares U+0020, is already clean, and is not claimed as a guarded negative. Any future exemption must establish source Unicode ownership and preserve normalized word boundaries."
+  }
+}

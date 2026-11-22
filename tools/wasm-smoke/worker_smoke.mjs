@@ -86,14 +86,14 @@ try {
       else for(let p=1;p<=(entry.pages||1);p++) checks.push(await checkPair('textLayer',[bytes],{page:p}));
       const symbolGold=[];
       for(const gold of entry.symbol_operator_gold??[]) {
-        const {checkGold,compactFragmentMatches:checkFragment}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const {checkGold,compactFragmentMatches:checkFragment,operatorGoldCaseId}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=await window.client.run('inspect',[bytes]);
         const text=ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n');
         const inventory=checkGold(text,gold);
         const compactFragmentMatches=checkFragment(text,gold);
         const passed=inventory.matches&&compactFragmentMatches;
-        symbolGold.push({page:gold.page,inventory,compact_fragment_matches:compactFragmentMatches,passed});
-        checks.push({operation:'visibleOperatorGold',passed,worker_idle:window.client.activeWorkers===0});
+        symbolGold.push({id:operatorGoldCaseId(gold),page:gold.page,inventory,compact_fragment_matches:compactFragmentMatches,passed});
+        checks.push({operation:'visibleOperatorGold',gold_case_id:operatorGoldCaseId(gold),passed,worker_idle:window.client.activeWorkers===0});
       }
       const readingGold=[];
       for(const gold of entry.reading_order??[]) {
@@ -319,7 +319,7 @@ try {
     await page.waitForTimeout(20);
   }
   results.push({id:'no-remaining-worker-targets',passed:remainingTargets.length===0,remainingTargets});
-  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/audit_page_revision.py'];
+  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/page_region_gold.py','tools/audit_page_revision.py'];
   const sourceHashes=Object.fromEntries(await Promise.all(sourceFiles.map(async f=>[f,hash(await fs.readFile(path.join(root,f)))])));
   const operations=[...documents.flatMap(d=>d.checks),...revisionOperations];
   const goldByKind={};

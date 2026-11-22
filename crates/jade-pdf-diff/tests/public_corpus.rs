@@ -1,5 +1,8 @@
 //! Network-free tests over the separately fetched, SHA-256-pinned corpus.
 //! Run `python3 tools/pdf_corpus.py` before `cargo test --test public_corpus -- --ignored`.
+#[path = "support/appearance_fixture.rs"]
+#[allow(dead_code)]
+mod inventory_fixture;
 #[path = "support/sdk_text_oracle.rs"]
 mod sdk_text_oracle;
 #[path = "support/source_inventory.rs"]
@@ -495,5 +498,36 @@ fn public_sdk_mapping_errors_require_review_after_a_harmless_rewrite() {
                 .any(|run| run.sdk_unicode_mapping_errors > 0),
             "{id}"
         );
+    }
+}
+
+/// 原文置換の参照も同じ所有字形のUTF-16対だけを扱い、別字形の対を拒否する。
+#[test]
+fn source_inventory_accepts_owned_surrogate_pairs_and_rejects_split_glyphs() {
+    use sha2::{Digest, Sha256};
+    let pdfium =
+        pdfium_render::prelude::Pdfium::bind_to_library(pdf_diff::pdfium_library_path().unwrap())
+            .map(pdfium_render::prelude::Pdfium::new)
+            .unwrap();
+    for mode in [
+        "valid",
+        "split",
+        "coincident",
+        "lone-high",
+        "lone-low",
+        "bad-order",
+    ] {
+        let bytes = inventory_fixture::supplementary_unicode_mode(1.0, 0, mode);
+        let raw = sdk_text_oracle::pages(&pdfium, &bytes).unwrap();
+        let gold=serde_json::from_value(serde_json::json!({"source_sha256":format!("{:x}",Sha256::digest(&bytes)),"actual_text":[],"fonts":[]})).unwrap();
+        let result = source_inventory::pages(&pdfium, &bytes, &raw, &gold);
+        if mode == "valid" {
+            let result = result.unwrap();
+            assert_eq!(result[0].text, raw[0].0);
+            assert!(result[0].text.contains('😀'));
+            assert_eq!(result[0].text.chars().filter(|&c| c == '𝑐').count(), 2);
+        } else {
+            assert!(result.is_err(), "{mode}");
+        }
     }
 }
