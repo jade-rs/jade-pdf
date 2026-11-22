@@ -1,6 +1,6 @@
 //! PDF subset が Unicode cmap に存在しない glyph を宣言していないか検査する。
 
-/// Unicode BMP cmap の非空白文字に実際の TrueType outline がある subset だけを採用する。
+/// Unicode BMP cmap の描画対象文字に実際の TrueType outline がある subset だけを採用する。
 /// 未対応の cmap・outline 形式は外部フォントへの fallback に任せる。
 pub(crate) fn subset_unicode_cmap_is_complete(bytes: &[u8]) -> bool {
     complete(bytes).unwrap_or(false)
@@ -77,7 +77,9 @@ fn complete(bytes: &[u8]) -> Option<bool> {
                 let end = offset(glyph.checked_add(1)?)?;
                 if start > end
                     || end > glyf.len()
-                    || (start == end && !char::from_u32(u32::from(code))?.is_whitespace())
+                    || (start == end
+                        && !char::from_u32(u32::from(code))
+                            .is_some_and(|c| c.is_whitespace() || c.is_control()))
                 {
                     return Some(false);
                 }
