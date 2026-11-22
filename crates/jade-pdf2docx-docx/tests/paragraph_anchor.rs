@@ -34,6 +34,22 @@ fn near_centre_line_keeps_its_right_shift() {
     check_centre(170.0);
 }
 
+/// 中心の補正だけで、同じフォントが使える書き込み領域を狭めない。
+#[test]
+fn centre_shift_keeps_legacy_writable_width() {
+    let text = format!("Shifted{}", "x".repeat(53));
+    let bytes = owned_pdf(90.0, &text);
+    let docx = convert_minimum_pdf_bytes_to_docx_bytes("owned-width.pdf", &bytes).unwrap();
+    let (width, margin_left, margin_right, paragraphs) = geometry(docx);
+    let paragraph = paragraphs.iter().find(|p| p.text == text).unwrap();
+    let legacy_width = width - margin_right - 2.0 * margin_left;
+    let actual_width = width - margin_right - margin_left - paragraph.left - paragraph.right;
+    assert!(
+        actual_width >= legacy_width,
+        "centre correction narrowed the writable region from {legacy_width} to {actual_width} twips"
+    );
+}
+
 /// PDF由来の実中心と、出力Word段落領域の中心を独立に比較する。
 fn check_centre(left: f32) {
     let text = format!("Shifted{}", "x".repeat(53));
