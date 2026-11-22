@@ -14,6 +14,10 @@ pub(crate) struct PageFacts {
     pub source_text_accounting_unavailable: bool,
     pub source_unicode_scalars_unmatched: usize,
     pub source_unicode_accounting_unavailable: bool,
+    /// 非生成SDK文字recordのうち、mode3またはmode7で直接描画されない件数。
+    pub nonpainting_text_characters: usize,
+    /// 非生成recordのobjectまたは描画modeが取得不能。色・透明度・clipの検証済みを意味しない。
+    pub text_visibility_accounting_unavailable: bool,
     pub fingerprint: u64,
     pub projection_fingerprint: u64,
     pub coordinate_scale: f64,
@@ -278,6 +282,8 @@ pub(crate) fn read(
                     source_text_accounting_unavailable: false,
                     source_unicode_scalars_unmatched: 0,
                     source_unicode_accounting_unavailable: false,
+                    nonpainting_text_characters: 0,
+                    text_visibility_accounting_unavailable: false,
                     fingerprint: FINGERPRINT_START,
                     projection_fingerprint: FINGERPRINT_START,
                     coordinate_scale: scale,
@@ -317,6 +323,7 @@ pub(crate) fn read(
                 let mut uncovered_records = 0usize;
                 let mut previous_cell = crate::tagged_table::Content::default();
                 let mut inventory = Vec::new();
+                let mut visibility = crate::text_visibility::Counter::default();
                 for index in 0..characters {
                     // Preserve object boundaries without allocating font names
                     // or one handle per character. Only relative boundaries
@@ -377,6 +384,9 @@ pub(crate) fn read(
                         1 => {}
                         _ => anyhow::bail!("Failed to read SDK generated-character status"),
                     }
+                    visibility.observe(object as usize, generated == 1, || {
+                        b.FPDFTextObj_GetTextRenderMode(object)
+                    });
                     let scalar = b.FPDFText_GetUnicode(text, index);
                     let paired_high =
                         can_pair_surrogates(pdfium, text.cast(), index, characters, scalar);
@@ -522,6 +532,8 @@ pub(crate) fn read(
                 if facts.symbol.inventory_verified {
                     facts.source_unicode_scalars_unmatched = 0;
                 }
+                facts.nonpainting_text_characters = visibility.nonpainting;
+                facts.text_visibility_accounting_unavailable = visibility.unavailable;
                 Ok(facts)
             })();
             b.FPDFText_ClosePage(text);

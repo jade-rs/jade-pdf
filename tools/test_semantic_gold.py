@@ -27,10 +27,10 @@ class SemanticGoldTests(unittest.TestCase):
         clean = dict(blocks=[dict(text='wrong')], user_unit=None)
         self.assertFalse(page_has_text_review(clean))
         for field in ['sdk_unicode_mapping_errors', 'sdk_text_objects_without_characters',
-                      'source_text_characters_missing', 'source_unicode_scalars_unmatched']:
+                      'source_text_characters_missing', 'source_unicode_scalars_unmatched', 'nonpainting_text_characters']:
             self.assertTrue(page_has_text_review(clean | {field: 1}))
         for field in ['source_text_accounting_unavailable',
-                      'source_unicode_accounting_unavailable', 'reading_order_requires_review']:
+                      'source_unicode_accounting_unavailable', 'reading_order_requires_review', 'text_visibility_accounting_unavailable']:
             self.assertTrue(page_has_text_review(clean | {field: True}))
         self.assertTrue(page_has_text_review(dict(blocks=[])))
         self.assertTrue(page_has_text_review(dict(blocks=[dict(text=' \n')])) )

@@ -346,6 +346,19 @@ pub struct DiffSummary {
 /// 出すと誤読につながるので、取り出せたかどうかを添えて返す。
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct Diagnostics {
+    /// 非生成SDK文字に非表示またはclipのみのmodeがある旧ページの件数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_nonpainting_text: usize,
+    /// 非生成SDK文字の描画modeを取得できない旧ページの件数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub old_pages_with_unavailable_text_visibility: usize,
+    /// 非生成SDK文字に非表示またはclipのみのmodeがある新ページの件数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_nonpainting_text: usize,
+    /// 非生成SDK文字の描画modeを取得できない新ページの件数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub new_pages_with_unavailable_text_visibility: usize,
+
     pub old_pages: usize,
     pub new_pages: usize,
     /// テキストが 1 つも取り出せなかったページ数。
@@ -418,6 +431,13 @@ impl Diagnostics {
             || self.old_pages_with_unavailable_source_unicode > 0
             || self.new_pages_with_unavailable_source_unicode > 0
     }
+    /// 非描画文字または取得不能があり、文字層を可視本文の確認済みとして扱えないか。
+    pub fn has_unverified_text_visibility(&self) -> bool {
+        self.old_pages_with_nonpainting_text > 0
+            || self.new_pages_with_nonpainting_text > 0
+            || self.old_pages_with_unavailable_text_visibility > 0
+            || self.new_pages_with_unavailable_text_visibility > 0
+    }
     pub fn has_uncertain_reading_order(&self) -> bool {
         self.old_pages_with_uncertain_reading_order > 0
             || self.new_pages_with_uncertain_reading_order > 0
@@ -487,17 +507,19 @@ impl DocumentDiff {
                     && !self.diagnostics.has_unmapped_text()
                     && !self.diagnostics.has_unobserved_text_objects()
                     && !self.diagnostics.has_incomplete_source_text()
-                    && !self.diagnostics.has_uncertain_reading_order()))
+                    && !self.diagnostics.has_uncertain_reading_order()
+                    && !self.diagnostics.has_unverified_text_visibility()))
     }
-    /// Whether all pages supplied extractable text without replacement glyphs,
-    /// and alignment completed within the configured work budget.
-    /// This does not establish image, drawing or annotation equivalence.
+    /// SDK文字の対応付け・網羅性・読み順・非描画modeに既知の不確かさがなく、
+    /// 対応付けが予算内で完了したか。任意の色・透明度・clipの可視性や、
+    /// 画像に重ねられたOCR本文の正しさ、図版・注釈の同一性を証明するものではない。
     pub fn is_text_comparison_complete(&self) -> bool {
         !self.diagnostics.has_pages_without_text()
             && !self.diagnostics.has_unmapped_text()
             && !self.diagnostics.has_unobserved_text_objects()
             && !self.diagnostics.has_incomplete_source_text()
             && !self.diagnostics.has_uncertain_reading_order()
+            && !self.diagnostics.has_unverified_text_visibility()
             && !self.diagnostics.alignment_limited()
     }
     pub fn has_changes(&self) -> bool {
@@ -687,6 +709,27 @@ pub fn diff_documents(
     }
 
     let diagnostics = Diagnostics {
+        old_pages_with_nonpainting_text: old
+            .pages
+            .iter()
+            .filter(|p| p.nonpainting_text_characters > 0)
+            .count(),
+        old_pages_with_unavailable_text_visibility: old
+            .pages
+            .iter()
+            .filter(|p| p.text_visibility_accounting_unavailable)
+            .count(),
+        new_pages_with_nonpainting_text: new
+            .pages
+            .iter()
+            .filter(|p| p.nonpainting_text_characters > 0)
+            .count(),
+        new_pages_with_unavailable_text_visibility: new
+            .pages
+            .iter()
+            .filter(|p| p.text_visibility_accounting_unavailable)
+            .count(),
+
         page_alignment_limited,
         block_alignment_limited_pages: pages.iter().filter(|p| p.block_alignment_limited).count(),
         page_text_alignment_limited_pages: pages
@@ -1709,6 +1752,8 @@ mod tests {
             source_text_accounting_unavailable: false,
             source_unicode_scalars_unmatched: 0,
             source_unicode_accounting_unavailable: false,
+            nonpainting_text_characters: 0,
+            text_visibility_accounting_unavailable: false,
             reading_order_requires_review: false,
             blocks,
         }

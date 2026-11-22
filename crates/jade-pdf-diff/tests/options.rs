@@ -31,6 +31,8 @@ fn document() -> DocumentIr {
             source_text_accounting_unavailable: false,
             source_unicode_scalars_unmatched: 0,
             source_unicode_accounting_unavailable: false,
+            nonpainting_text_characters: 0,
+            text_visibility_accounting_unavailable: false,
             reading_order_requires_review: false,
             blocks: vec![
                 block(

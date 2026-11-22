@@ -66,9 +66,9 @@ const normalizeText=text=>text.normalize('NFC').replace(/[\u0009-\u000d\u001c-\u
 export function pageHasTextReview(page) {
   return !page.blocks.some(b=>normalizeText(b.text).length>0)
     ||['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
-      'source_text_characters_missing','source_unicode_scalars_unmatched'].some(key=>(page[key]??0)>0)
+      'source_text_characters_missing','source_unicode_scalars_unmatched','nonpainting_text_characters'].some(key=>(page[key]??0)>0)
     ||['source_text_accounting_unavailable','source_unicode_accounting_unavailable',
-      'reading_order_requires_review'].some(key=>page[key]===true);
+      'reading_order_requires_review','text_visibility_accounting_unavailable'].some(key=>page[key]===true);
 }
 
 export function checkGold(actual,gold) {

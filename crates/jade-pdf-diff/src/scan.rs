@@ -158,6 +158,9 @@ pub(crate) fn scan_document(
                 .source_unicode_scalars_unmatched,
             source_unicode_accounting_unavailable: unicode[usize::from(number)]
                 .source_unicode_accounting_unavailable,
+            nonpainting_text_characters: unicode[usize::from(number)].nonpainting_text_characters,
+            text_visibility_accounting_unavailable: unicode[usize::from(number)]
+                .text_visibility_accounting_unavailable,
             reading_order_requires_review: extracted.reading_order_requires_review,
             blocks,
         });

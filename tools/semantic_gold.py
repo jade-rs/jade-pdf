@@ -24,10 +24,10 @@ def page_has_text_review(page):
     return (not any(block['text'].strip() for block in page['blocks'])
             or any(page.get(key, 0) > 0 for key in (
                 'sdk_unicode_mapping_errors', 'sdk_text_objects_without_characters',
-                'source_text_characters_missing', 'source_unicode_scalars_unmatched'))
+                'source_text_characters_missing', 'source_unicode_scalars_unmatched', 'nonpainting_text_characters'))
             or any(page.get(key, False) for key in (
                 'source_text_accounting_unavailable', 'source_unicode_accounting_unavailable',
-                'reading_order_requires_review')))
+                'reading_order_requires_review', 'text_visibility_accounting_unavailable')))
 
 
 def inventory_spec(gold):

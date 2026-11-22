@@ -48,9 +48,9 @@ for(const context_gold of [null,{},Array(33).fill(context),[{kind:'full_page_tex
   assert.throws(()=>semanticEntries({documents:[{id:'bad',context_gold}]}));
 assert.equal(pageHasTextReview(clean),false);
 for(const field of ['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
-  'source_text_characters_missing','source_unicode_scalars_unmatched'])
+  'source_text_characters_missing','source_unicode_scalars_unmatched','nonpainting_text_characters'])
   assert.equal(pageHasTextReview({...clean,[field]:1}),true);
-for(const field of ['source_text_accounting_unavailable','source_unicode_accounting_unavailable','reading_order_requires_review'])
+for(const field of ['source_text_accounting_unavailable','source_unicode_accounting_unavailable','reading_order_requires_review','text_visibility_accounting_unavailable'])
   assert.equal(pageHasTextReview({...clean,[field]:true}),true);
 assert.equal(pageHasTextReview({blocks:[]}),true);
 assert.equal(pageHasTextReview({blocks:[{text:' \n'}]}),true);
