@@ -1,9 +1,9 @@
 {
   "version": 44,
   "date": "2026-11-22",
-  "core_revision": "cc4496cd0b779eb0b533dc9b21bc560fe9b98c9a",
-  "qualification_revision": "8175df57c5d14275fbb8a9b44e0b19d8045871df",
-  "base_revision": "ad1f47f83a562b01b1fc7907e2c3455233e67d30",
+  "core_revision": "c42602b4c5f6f6f637e5ade2cfec619f8b80ded2",
+  "qualification_revision": "ad7341b95b2f5c040863a3620a0f02948cc75a90",
+  "base_revision": "3c93f5bc2d6a042d8312ff4269dfa089d13e0c83",
   "production_ready": false,
   "scope": "Recover four source-verified minus signs while retaining opaque Symbol pieces/review, and correct decimal subscript order on one new original page. The twenty opaque components are ownership context, not Unicode semantic substitutions. Decimal candidates are bounded to eight ASCII digits after removing only verified false generated U+0020 spaces.",
   "collection": {
@@ -271,5 +271,7 @@
     "corpus/results-script-impact.json": "84c32f0f1283396846ac3e0a7b9c5a05940be26bad0edbd9a3b22fe419207548",
     "corpus/results-reading-order-components-before.json": "8004b4d46bed6c46be13a7700aab7f4a94a3c20726c5eb519a8dc9b74138e304",
     "corpus/results-components-operators-before.json": "7e7abcc7a06dfe5b6cc19463a438b605dbb3a7b48fbec93b986c8fef330b9134"
-  }
+  },
+  "qualified_result_tree": "86c091c1b4457f9add7cd7f3c99d8786161e465f",
+  "rebase_verification": "All nine qualified source/result trees are byte-identical before/after replay onto merged PR8. Only this ledger history metadata was subsequently updated. The 43 pinned product/checker/manifest/report files and frozen native/WASM artifacts remain unchanged."
 }
