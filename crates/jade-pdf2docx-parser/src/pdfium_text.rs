@@ -46,8 +46,10 @@ pub(crate) fn extract(
         let mut font_size = bounds.y1 - bounds.y0;
         let mut font_name = None;
         let mut fill_color = None;
+        let mut baseline_y = None;
         if let Some(first) = first_in_rect(characters, segment.bounds()) {
             font_size = first.scaled_font_size().value;
+            baseline_y = horizontal_baseline(&first);
             let name = first.font_name();
             font_name = copy(budget, (!name.is_empty()).then_some(name.as_str()))?;
             let color = first.fill_color().ok().map(|color| color.to_hex());
@@ -58,6 +60,7 @@ pub(crate) fn extract(
             budget,
             &mut elements,
             ParsedTextElement {
+                baseline_y,
                 page: page_number,
                 bounds,
                 font_size,
@@ -106,4 +109,14 @@ fn parsed_bounds_from_pdf_rect(rect: PdfRect) -> ParsedBounds {
         x1: rect.right().value,
         y1: rect.top().value,
     }
+}
+
+/// 回転のない水平glyphでSDKが返す有限の原点だけを、字面矩形と区別して保持する。
+pub(crate) fn horizontal_baseline(character: &PdfPageTextChar<'_>) -> Option<f32> {
+    let angle = character.angle_degrees().ok()?;
+    if !angle.is_finite() || angle.rem_euclid(360.0) != 0.0 {
+        return None;
+    }
+    let y = character.origin_y().ok()?.value;
+    y.is_finite().then_some(y)
 }

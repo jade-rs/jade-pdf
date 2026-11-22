@@ -20,14 +20,15 @@ pub(super) fn with_interior_spaces<'a>(
         .fold(f32::NEG_INFINITY, f32::max);
     let low = row
         .iter()
-        .map(|text| text.bounds.y0)
+        .map(|text| native_baseline::line_y(text))
         .fold(f32::INFINITY, f32::min);
     let high = row
         .iter()
-        .map(|text| text.bounds.y0)
+        .map(|text| native_baseline::line_y(text))
         .fold(f32::NEG_INFINITY, f32::max);
     row.extend(elements.iter().filter(|text| {
         let b = text.bounds;
+        let baseline = native_baseline::line_y(text);
         text.page == page
             && is_space(text)
             && [b.x0, b.x1, b.y0, b.y1]
@@ -37,7 +38,7 @@ pub(super) fn with_interior_spaces<'a>(
             && b.x1 <= right
             && b.x0 < b.x1
             && b.y0 < b.y1
-            && high.max(b.y0) - low.min(b.y0) <= TEXT_ROW_Y_TOLERANCE_PT
+            && high.max(baseline) - low.min(baseline) <= TEXT_ROW_Y_TOLERANCE_PT
     }));
     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
     let mut kept = Vec::with_capacity(row.len());
@@ -98,6 +99,7 @@ mod tests {
     /// 検証用に正立した文字矩形を作る。
     fn fragment(text: &str, x: f32, width: f32) -> ParsedTextElement {
         ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds {
                 x0: x,

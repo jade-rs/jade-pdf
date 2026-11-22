@@ -29,6 +29,7 @@ mod conversion_cancellation_tests;
 mod conversion_control;
 
 mod html_table;
+mod native_baseline;
 mod native_spacing;
 mod ocr_reconcile;
 mod output;
@@ -1636,9 +1637,8 @@ fn text_lines_by_page_from_pdf_text_elements(
                 return None;
             }
             texts.sort_by(|a, b| {
-                b.bounds
-                    .y0
-                    .total_cmp(&a.bounds.y0)
+                native_baseline::line_y(b)
+                    .total_cmp(&native_baseline::line_y(a))
                     .then(a.bounds.x0.total_cmp(&b.bounds.x0))
             });
             let page_width = page_width_for_layout(parsed, page, &texts);
@@ -1651,7 +1651,8 @@ fn text_lines_by_page_from_pdf_text_elements(
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
                 if let Some(row) = rows.iter_mut().find(|row| {
-                    (row[0].bounds.y0 - text.bounds.y0).abs() <= TEXT_ROW_Y_TOLERANCE_PT
+                    (native_baseline::line_y(row[0]) - native_baseline::line_y(text)).abs()
+                        <= TEXT_ROW_Y_TOLERANCE_PT
                 }) {
                     row.push(text);
                 } else {

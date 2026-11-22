@@ -193,6 +193,7 @@ pub(crate) fn extract(
             budget,
             &mut elements,
             ParsedTextElement {
+                baseline_y: crate::pdfium_text::horizontal_baseline(&character),
                 page,
                 bounds: crate::ParsedBounds {
                     x0: rect.left().value,

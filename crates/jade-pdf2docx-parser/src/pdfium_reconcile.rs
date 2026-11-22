@@ -92,6 +92,7 @@ pub(super) fn reconcile(
         let font_name = crate::text_result_storage::copy(budget, element.font_name.as_deref())?;
         let fill_color = crate::text_result_storage::copy(budget, element.fill_color.as_deref())?;
         output.push(ParsedTextElement {
+            baseline_y: element.baseline_y,
             page: element.page,
             bounds: element.bounds,
             font_size: element.font_size,

@@ -184,6 +184,7 @@ fn native_segment_reference(text: &PdfPageText<'_>) -> Vec<ParsedTextElement> {
             }
             let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
             let mut result = ParsedTextElement {
+                baseline_y: None,
                 page: 7,
                 bounds,
                 font_size: bounds.y1 - bounds.y0,
@@ -195,6 +196,13 @@ fn native_segment_reference(text: &PdfPageText<'_>) -> Vec<ParsedTextElement> {
                 && let Some(first) = chars.iter().next()
             {
                 result.font_size = first.scaled_font_size().value;
+                // referenceは独立したSDK segment.charsの先頭を使う。
+                result.baseline_y = first
+                    .angle_degrees()
+                    .ok()
+                    .filter(|a| a.is_finite() && a.rem_euclid(360.0) == 0.0)
+                    .and_then(|_| first.origin_y().ok().map(|p| p.value))
+                    .filter(|y| y.is_finite());
                 let name = first.font_name();
                 result.font_name = (!name.is_empty()).then_some(name);
                 result.fill_color = first.fill_color().ok().map(|color| color.to_hex());
@@ -375,4 +383,22 @@ fn native_reconciliation_keeps_source_spaces_when_sdk_coalesces_them() {
             .collect::<String>(),
         "   "
     );
+}
+
+/// baselineを報告しても元のink矩形は変えず、回転文字へ水平座標を推測しない。
+#[test]
+fn baseline_metadata_preserves_ink_and_rejects_rotated_glyphs() {
+    with_page("BT /F 12 Tf 10 80 Td (-) Tj ET", |text| {
+        let rect = text.segments().iter().next().unwrap().bounds();
+        let output = run(&budget(65536), 7, text).unwrap();
+        assert_eq!(output.len(), 1);
+        assert_eq!(output[0].baseline_y, Some(80.0));
+        assert_eq!(output[0].bounds, parsed_bounds_from_pdf_rect(rect));
+        assert_ne!(output[0].bounds.y0, 80.0);
+    });
+    with_page("BT /F 12 Tf 0 1 -1 0 40 80 Tm (-) Tj ET", |text| {
+        let output = run(&budget(65536), 7, text).unwrap();
+        assert!(!output.is_empty());
+        assert!(output.iter().all(|e| e.baseline_y.is_none()));
+    });
 }

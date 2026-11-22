@@ -13,6 +13,7 @@ fn budget(capacity: u64) -> DecodeBudget {
 /// 既存の幾何/style回帰と同じ要素を作る。
 fn element(text: &str, page: usize) -> ParsedTextElement {
     ParsedTextElement {
+        baseline_y: None,
         page,
         bounds: crate::ParsedBounds {
             x0: 10.,
