@@ -104,6 +104,7 @@ jobs:
       - run: python3 tools/audit_symbol_operators.py --binary target/release/pdf-diff --offline
       - run: python3 tools/audit_scalar_revision.py --binary target/release/pdf-diff
       - run: python3 tools/audit_page_revision.py --binary target/release/pdf-diff
+      - run: python3 tools/audit_page_text_contract.py --binary target/release/pdf-diff
       - run: python3 tools/audit_page_gold.py --binary target/release/pdf-diff
       - run: |
           python3 -m venv .venv-corpus
