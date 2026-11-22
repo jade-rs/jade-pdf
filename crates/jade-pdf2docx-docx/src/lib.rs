@@ -2954,7 +2954,7 @@ struct PositionedTable {
     row_heights_pt: Vec<f32>,
     /// 上から順の各行で、1 セル内に並ぶ最大の行数。
     row_line_counts: Vec<usize>,
-    /// 左寄せセルで観測した、セル左端から文字までの最小距離（pt）。
+    /// 左寄せ・中央揃えのセルで観測した、セル左端から文字までの最小距離（pt）。
     cell_padding_pt: Option<f32>,
     /// 上から順の各マスの文字サイズ（pt、マス内の中央値）。
     cell_font_sizes: Vec<Vec<Option<f32>>>,
@@ -5126,7 +5126,7 @@ fn infer_positioned_table_from_graphics(
         .iter()
         .zip(cell_alignments.iter())
         .flat_map(|(bounds, alignments)| bounds.iter().zip(alignments.iter()).enumerate())
-        .filter(|(_, (_, alignment))| **alignment == ParagraphAlignment::Left)
+        .filter(|(_, (_, alignment))| **alignment != ParagraphAlignment::Right)
         .filter_map(|(col, (bounds, _))| bounds.map(|bounds| bounds.x0 - xs[col] as f32))
         .filter(|gap| gap.is_finite() && *gap >= 0.0)
         .reduce(f32::min);
