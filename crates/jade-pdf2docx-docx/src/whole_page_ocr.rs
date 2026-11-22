@@ -59,8 +59,6 @@ impl Lines {
                     .v_anchor("page")
                     .wrap("none")
                     .h_rule("atLeast")
-                    .h_space(0)
-                    .v_space(0)
                     .frame_x(frame.x)
                     .frame_y(frame.y)
                     .frame_width(frame.width)

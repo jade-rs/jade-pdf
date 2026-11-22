@@ -815,6 +815,14 @@ fn whole_page_positioned_ocr_keeps_frames_and_column_order() {
         4,
         "whole-page OCR coordinates were lost: {xml}"
     );
+    assert!(
+        !xml.contains("w:h_space="),
+        "OOXML requires hSpace, not h_space"
+    );
+    assert!(
+        !xml.contains("w:v_space="),
+        "OOXML requires vSpace, not v_space"
+    );
     let mut cursor = 0;
     for (text, [x0, y0, x1, y1]) in expected {
         let at = cursor
