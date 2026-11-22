@@ -1,3 +1,4 @@
+import {checkNonpaintingControls} from './nonpainting_controls.mjs';
 import fs from 'node:fs/promises';
 import http from 'node:http';
 import path from 'node:path';
@@ -75,6 +76,11 @@ try {
         worker_idle:window.client.activeWorkers===0};
     };
   });
+  if(!process.env.JADE_PDF_WORKER_FAULTS_ONLY) {
+    const visibility=await checkNonpaintingControls(page,{worker:true});
+    results.push(...visibility);
+    for(const check of visibility) console.log((check.passed?'PASS ':'FAIL ')+JSON.stringify(check));
+  }
   for(const entry of process.env.JADE_PDF_WORKER_FAULTS_ONLY ? [] : entries) {
     const row=await page.evaluate(async entry=>{
       const bytes=new Uint8Array(await(await fetch('/corpus/cache/'+entry.id+'.pdf')).arrayBuffer());
@@ -327,7 +333,7 @@ try {
     await page.waitForTimeout(20);
   }
   results.push({id:'no-remaining-worker-targets',passed:remainingTargets.length===0,remainingTargets});
-  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/page_region_gold.py','tools/audit_page_revision.py'];
+  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/nonpainting_controls.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/page_region_gold.py','tools/audit_page_revision.py'];
   const sourceHashes=Object.fromEntries(await Promise.all(sourceFiles.map(async f=>[f,hash(await fs.readFile(path.join(root,f)))])));
   const operations=[...documents.flatMap(d=>d.checks),...revisionOperations];
   const goldByKind={};

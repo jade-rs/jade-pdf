@@ -1,0 +1,1033 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T19:22:49.460370+00:00",
+  "production_ready": false,
+  "source_revision": "d4b83767875474bbfedb679f057e86311f44e53c",
+  "crates_tree": "646dd80fcf998a60067e98ff32347a5da112766d",
+  "test_scope": {
+    "full_workspace_before_body_fix": {
+      "source_revision": "89c781efb2565150718be0d56e8dd731089df93c",
+      "passed": 2292,
+      "failed": 0,
+      "ignored": 12,
+      "groups": 144
+    },
+    "changed_converter_default": {
+      "passed": 1929,
+      "failed": 0,
+      "ignored": 4,
+      "groups": 112,
+      "source_scope": "Body qualification replay has identical entire tree to original; diff crate unchanged."
+    },
+    "changed_converter_OCR": {
+      "source_revision": "ad208d96a2c1cb5357fdecfb096f5a21103e77db",
+      "groups": 112,
+      "passed": 1985,
+      "failed": 0,
+      "ignored": 4,
+      "scope": "--workspace --exclude jade-pdf-diff --features ocr-onnx; isolatedq/ocr-target; no actualOCRrecognition improvement claim"
+    },
+    "python": 86,
+    "fixture_hygiene": 2,
+    "native_additional": {
+      "native-public-audits": {
+        "groups": 1,
+        "passed": 9,
+        "failed": 0,
+        "ignored": 0
+      },
+      "runtime-cold": {
+        "groups": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0
+      },
+      "bundled-runtime": {
+        "groups": 1,
+        "passed": 2,
+        "failed": 0,
+        "ignored": 1
+      },
+      "public_audit_scope": "--include-ignored executes5 public-source/CLI audits and4 owned source-inventory controls; not9 independent public datasets.",
+      "summary_history": "Initial expected6 count was incorrect; first summary assertion failed. Actual completed target9success retained without rerun or product change."
+    },
+    "clippy": "Diff all targets -D warnings passed; parser/DOCX standard Clippy passed with existing warnings retained."
+  },
+  "dependency_identity": {
+    "package_count": 447,
+    "versions_sources_checksums_unchanged": true,
+    "lock_sha256": "4b8fcc9aad503d65c37d8b3253e13666b05362f87f6d46175cbd710eb47811a2",
+    "only_dependency_graph_addition": "DOCX directly uses already-transitive quick-xml0.41.0"
+  },
+  "production_DOCX_WASM": {
+    "before": {
+      "engine": "chromium",
+      "browser": "159.0.8154.6",
+      "cases": 16,
+      "passed": 10,
+      "scope": "Actual production byte-PDF conversion default/strict and inspection exports; owned geometry/default page bounds, resized strict rejection and real copy-permitted encrypted source rejected by pure/WASM API. No rendered-PNG API, Word rendering or font-fidelity proof.",
+      "input_sha256": {
+        "plain": "f9ee9f52f476ead9ad8cf9c50ef5fa815c75d11da625bbd238eb4019dd81624c",
+        "body-overhang": "c06873f1ca36c16969e990ef959a0fb300ed79dd6a301996022d1cc7c2bf12d3",
+        "graphic-left": "1684c6c5b645cd4b5600a1ddcc41fc16e2ead6d2f04e2d6db81265f8acac83c7",
+        "table-overhang": "6e1187b322f466416d3bcdc7897b5878b400d1bb9b683be14094bdd8972e9687",
+        "centre-control": "2c48fc4f0f36d2a243ce4c8b3e7e74e16ae97b3c04f1f91c8acfea47c1e14aa1",
+        "word-limit": "46b322d72ecea865229f7e36582f426d17f7a7bd5b2e7a2f1d0b5e48f06bdee8",
+        "empty": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "encrypted": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0"
+      },
+      "WASM_sha256": "b076752d7cb8ea5bcb9bf66a0a59b76c486ccadc8736817d3b41f592774af571",
+      "rows": [
+        {
+          "id": "plain",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "plain",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "default",
+          "passed": false,
+          "failure": "{'text': 'Anchor', 'expected': 72, 'actual': 60.0}",
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 60.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "strict",
+          "passed": false,
+          "failure": "{'text': 'Anchor', 'expected': 72, 'actual': 60.0}",
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 60.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "default",
+          "passed": false,
+          "failure": "{'text': 'Anchor', 'expected': 72, 'actual': 30.0}",
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 30.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "strict",
+          "passed": false,
+          "failure": "{'text': 'Anchor', 'expected': 72, 'actual': 30.0}",
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 30.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "default",
+          "passed": false,
+          "failure": "{'table_expected': 100, 'actual': 88.0}",
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 88.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "strict",
+          "passed": false,
+          "failure": "{'table_expected': 100, 'actual': 88.0}",
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 88.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 57.024,
+              "actual": 57.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "detected quality loss rejected"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        }
+      ],
+      "production_ready": false
+    },
+    "chromium": {
+      "engine": "chromium",
+      "browser": "159.0.8154.6",
+      "cases": 16,
+      "passed": 16,
+      "scope": "Actual production byte-PDF conversion default/strict and inspection exports; owned geometry/default page bounds, resized strict rejection and real copy-permitted encrypted source rejected by pure/WASM API. No rendered-PNG API, Word rendering or font-fidelity proof.",
+      "input_sha256": {
+        "plain": "f9ee9f52f476ead9ad8cf9c50ef5fa815c75d11da625bbd238eb4019dd81624c",
+        "body-overhang": "c06873f1ca36c16969e990ef959a0fb300ed79dd6a301996022d1cc7c2bf12d3",
+        "graphic-left": "1684c6c5b645cd4b5600a1ddcc41fc16e2ead6d2f04e2d6db81265f8acac83c7",
+        "table-overhang": "6e1187b322f466416d3bcdc7897b5878b400d1bb9b683be14094bdd8972e9687",
+        "centre-control": "2c48fc4f0f36d2a243ce4c8b3e7e74e16ae97b3c04f1f91c8acfea47c1e14aa1",
+        "word-limit": "46b322d72ecea865229f7e36582f426d17f7a7bd5b2e7a2f1d0b5e48f06bdee8",
+        "empty": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "encrypted": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0"
+      },
+      "WASM_sha256": "28d7112de53ff5a7b4d0a13816044bd0cba30dac16d456d9f6cfd9519a08abd0",
+      "rows": [
+        {
+          "id": "plain",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "plain",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "text": "Offset body",
+              "expected": 84,
+              "actual": 84.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "text": "Offset body",
+              "expected": 84,
+              "actual": 84.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 100.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 100.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 57.024,
+              "actual": 57.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "detected quality loss rejected"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        }
+      ],
+      "production_ready": false
+    },
+    "webkit": {
+      "engine": "webkit",
+      "browser": "27.2",
+      "cases": 16,
+      "passed": 16,
+      "scope": "Actual production byte-PDF conversion default/strict and inspection exports; owned geometry/default page bounds, resized strict rejection and real copy-permitted encrypted source rejected by pure/WASM API. No rendered-PNG API, Word rendering or font-fidelity proof.",
+      "input_sha256": {
+        "plain": "f9ee9f52f476ead9ad8cf9c50ef5fa815c75d11da625bbd238eb4019dd81624c",
+        "body-overhang": "c06873f1ca36c16969e990ef959a0fb300ed79dd6a301996022d1cc7c2bf12d3",
+        "graphic-left": "1684c6c5b645cd4b5600a1ddcc41fc16e2ead6d2f04e2d6db81265f8acac83c7",
+        "table-overhang": "6e1187b322f466416d3bcdc7897b5878b400d1bb9b683be14094bdd8972e9687",
+        "centre-control": "2c48fc4f0f36d2a243ce4c8b3e7e74e16ae97b3c04f1f91c8acfea47c1e14aa1",
+        "word-limit": "46b322d72ecea865229f7e36582f426d17f7a7bd5b2e7a2f1d0b5e48f06bdee8",
+        "empty": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "encrypted": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0"
+      },
+      "WASM_sha256": "28d7112de53ff5a7b4d0a13816044bd0cba30dac16d456d9f6cfd9519a08abd0",
+      "rows": [
+        {
+          "id": "plain",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "plain",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "text": "Offset body",
+              "expected": 84,
+              "actual": 84.0
+            }
+          ]
+        },
+        {
+          "id": "body-overhang",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "text": "Offset body",
+              "expected": 84,
+              "actual": 84.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "graphic-left",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 100.0
+            }
+          ]
+        },
+        {
+          "id": "table-overhang",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "table_expected": 100,
+              "actual": 100.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "centre-control",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 72,
+              "actual": 72.0
+            },
+            {
+              "centre_expected": 306,
+              "actual": 306.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            {
+              "text": "Anchor",
+              "expected": 57.024,
+              "actual": 57.0
+            }
+          ]
+        },
+        {
+          "id": "word-limit",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "detected quality loss rejected"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "empty",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "default",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        },
+        {
+          "id": "encrypted",
+          "mode": "strict",
+          "passed": true,
+          "failure": null,
+          "checks": [
+            "explicit rejection"
+          ]
+        }
+      ],
+      "production_ready": false
+    },
+    "build": {
+      "command": [
+        "cargo",
+        "build",
+        "-p",
+        "jade-pdf2docx-wasm",
+        "--lib",
+        "--locked",
+        "--release",
+        "--target",
+        "wasm32-unknown-unknown",
+        "--target-dir",
+        "/Users/bokuweb/.codex/worktrees/pdf-layout-visibility-quality/jade-pdf/corpus/wasm-runtime/layout-visibility-qualification/docx-wasm-target",
+        "--message-format=json"
+      ],
+      "raw_wasm_sha256": "95a36f6041187f40be03ecac2673bed2e34f89c195765d2a5572f5da5cc2ce1a",
+      "generated": {
+        "jade_pdf2docx_wasm.d.ts": "6ab6d0b303eeb61a6320779245942f3b14a52d82f088a6409b009b386898d5fe",
+        "jade_pdf2docx_wasm.js": "867f948966a8884d782e137c87cbe16db6190106cdba9358314a5f9f5fbabbbe",
+        "jade_pdf2docx_wasm_bg.wasm": "28d7112de53ff5a7b4d0a13816044bd0cba30dac16d456d9f6cfd9519a08abd0",
+        "jade_pdf2docx_wasm_bg.wasm.d.ts": "3c219a3c9867963a2f6c742bfb4006603ea76e5d04780d23f18e9816e97439c4"
+      }
+    },
+    "oracle_history": {
+      "initial_log": "docx-browser-before.log",
+      "initial_output": "docx-browser-before",
+      "initial_passed": 8,
+      "total": 16,
+      "correction_before_product_WASM_changed": true,
+      "invalid_input": "Initial expectation said empty; actual source/API returns invalid pdf header. Corrected only that error-label oracle.",
+      "table_control": "Separate table leading edge from the duplicate Anchor assertion so original grid drift is directly witnessed.",
+      "source_inputs_normalization_and_coordinate_thresholds_unchanged": true
+    },
+    "firefox": "Final-head CI required; local OS profile-launch failure is not qualification."
+  },
+  "public_OCR": {
+    "source_revision": "d4b83767875474bbfedb679f057e86311f44e53c",
+    "binary_sha256": "8934d0dd0e783ad0aa13766ef6ff51bcc1423e715f0a0cfcdc6f2ae5f72d9e7f",
+    "assets": {
+      "libpdfium.dylib": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+      "parseq.onnx": "49cea9db4552f19eb05c8ee202fcf74714977749b2f4c9376b127fde41b07a99",
+      "NDLmoji.yaml": "f6ad5a2de444b495155866af811cf1a98309dcae3225db802767ea531a2dc529"
+    },
+    "DPI": 150,
+    "minimum_confidence": 0.5,
+    "production_ready": false,
+    "independent_visible_pages": 1,
+    "results": [
+      {
+        "reused_completed_conversion": true,
+        "source": "w3c-pdf7-ocr-example-2026",
+        "input_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+        "strict": false,
+        "exit": 0,
+        "output_preserved": false,
+        "cases": [
+          {
+            "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+            "check": {
+              "kind": "reading_order",
+              "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+              "matches": true,
+              "expected_anchors": [
+                "Schnitzelbank Pot",
+                "Minnesota Blue",
+                "Pineapple"
+              ],
+              "matched_prefix": 3
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/8",
+              "actual_values": [
+                "1/8"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/8"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-example-2026-butter",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/4",
+              "actual_values": [
+                "1/4"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/4"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-example-2026-olives",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/2",
+              "actual_values": [
+                "1/2"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/2"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/4",
+              "actual_values": [
+                "1/4"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/4"
+              ]
+            }
+          }
+        ],
+        "DOCX_sha256": "7cd5a36f02917fbdd170c35baa62e56df9bc4134d63e8e61f6f16341ea65523d",
+        "stderr_scope": "First default conversion stderr unavailable after checker exception; other stderr retained in private raw report."
+      },
+      {
+        "reused_completed_conversion": false,
+        "source": "w3c-pdf7-ocr-example-2026",
+        "input_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+        "strict": true,
+        "exit": 1,
+        "output_preserved": true,
+        "stderr_scope": "First default conversion stderr unavailable after checker exception; other stderr retained in private raw report."
+      },
+      {
+        "reused_completed_conversion": false,
+        "source": "w3c-pdf7-ocr-tagged-2026",
+        "input_sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+        "strict": false,
+        "exit": 0,
+        "output_preserved": false,
+        "cases": [
+          {
+            "case_id": "w3c-pdf7-ocr-tagged-2026-heading-order",
+            "check": {
+              "kind": "reading_order",
+              "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+              "matches": true,
+              "expected_anchors": [
+                "Schnitzelbank Pot",
+                "Minnesota Blue",
+                "Pineapple"
+              ],
+              "matched_prefix": 3
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-tagged-2026-roquefort",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/8",
+              "actual_values": [
+                "1/8"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/8"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-tagged-2026-butter",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/4",
+              "actual_values": [
+                "1/4"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/4"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-tagged-2026-olives",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/2",
+              "actual_values": [
+                "1/2"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/2"
+              ]
+            }
+          },
+          {
+            "case_id": "w3c-pdf7-ocr-tagged-2026-pimiento",
+            "check": {
+              "kind": "quantity_context",
+              "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+              "matches": true,
+              "expected_value": "1/4",
+              "actual_values": [
+                "1/4"
+              ],
+              "context_occurrences": 1,
+              "numeric_lexemes": [
+                "1/4"
+              ]
+            }
+          }
+        ],
+        "DOCX_sha256": "7cd5a36f02917fbdd170c35baa62e56df9bc4134d63e8e61f6f16341ea65523d",
+        "stderr_scope": "First default conversion stderr unavailable after checker exception; other stderr retained in private raw report."
+      },
+      {
+        "reused_completed_conversion": false,
+        "source": "w3c-pdf7-ocr-tagged-2026",
+        "input_sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+        "strict": true,
+        "exit": 1,
+        "output_preserved": true,
+        "stderr_scope": "First default conversion stderr unavailable after checker exception; other stderr retained in private raw report."
+      }
+    ],
+    "checker_history": "Initial checker used passed instead of matches after first conversion exit0. Preserved and evaluated its DOCX without rerunning that conversion; stderr was not persisted. Other three conversions ran normally.",
+    "complete": true,
+    "originals_unchanged": true,
+    "recognition_gain_claimed": false
+  },
+  "rendering": {
+    "unique_DOCX_SHA256": "7cd5a36f02917fbdd170c35baa62e56df9bc4134d63e8e61f6f16341ea65523d",
+    "pages": 1,
+    "renderer": "Bundled LibreOffice26.8 alpha; not actual Microsoft Word",
+    "visual_review": "All output pages inspected. No overlap or clipping observed; small substituted font, sparse layout and OCR word spacing remain. No full fidelity claim.",
+    "PNG_sha256": "b15f576809a40d687db3e7dbc9341c5b7cc00a4ace7d4ccda87daa2925e1bf81"
+  },
+  "component_reports": [
+    "results-native-text-spacing.json",
+    "results-native-text-baseline.json",
+    "results-paragraph-anchor.json",
+    "results-native-body-anchor.json",
+    "results-word-page-fit.json",
+    "results-whole-page-ocr-layout.json",
+    "results-nonpainting-text.json",
+    "results-corpus-transient-downloads.json"
+  ],
+  "failures_retained": [
+    "NTA English14IDs missing",
+    "Arabic and Deseret primary semantic gold unresolved",
+    "Pending primary gold0/3",
+    "Font/artwork/form fidelity and actual Microsoft Word not established",
+    "WASM rendered-PNG converter API and host-wide memory/cancellation not covered by new DOCX browser suite"
+  ],
+  "history_scope": "Prior component reports and their nested hashes refer to their declared historical revisions. Current publication hashes are independently recorded in validation-layout-visibility.json. No 2295-count synthetic full-workspace claim.",
+  "diff_chromium": {
+    "browser": "159.0.8154.6",
+    "cases": 337,
+    "passed": 337,
+    "wasm_sha256": "3f32c44b1b088de1c0b9177664f2b66eca179756f4d7420cec6bc7b9191f95bd",
+    "semantic_gold_checks": 15,
+    "semantic_gold_passed": 12,
+    "semantic_gold_failures": 3
+  },
+  "diff_webkit": {
+    "browser": "27.2",
+    "cases": 337,
+    "passed": 337,
+    "wasm_sha256": "3f32c44b1b088de1c0b9177664f2b66eca179756f4d7420cec6bc7b9191f95bd",
+    "semantic_gold_checks": 15,
+    "semantic_gold_passed": 12,
+    "semantic_gold_failures": 3
+  },
+  "diff_worker": {
+    "documents": 89,
+    "passed_documents": 89,
+    "operation_checks": 1217,
+    "matching_operations": 1217,
+    "cases": 247,
+    "passed": 247,
+    "wasm_sha256": "3f32c44b1b088de1c0b9177664f2b66eca179756f4d7420cec6bc7b9191f95bd",
+    "semantic_gold_failures": 3
+  }
+}

@@ -1,0 +1,876 @@
+{
+  "version": 1,
+  "date": "2026-11-22T12:22:29.925344+00:00",
+  "production_ready": false,
+  "registered": false,
+  "independent_gold_declared_revision": "a55f738",
+  "evaluator_revision": "5d0a3877d305fccd5ece56010ffd72d6edcf5a69",
+  "source_family": "Two original containers with the same one-page visual content, not independent semantic samples.",
+  "scope": "All5 predeclared visible-heading/quantity cases per source retained. Exact rational equivalence accepts1/8 for⅛, never1/4. No new product code or OCR correction.",
+  "measurements": {
+    "initial-product-baseline.json": {
+      "version": 1,
+      "time_utc": "2026-11-22T12:11:57.512826+00:00",
+      "production_ready": false,
+      "binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+      "gold_declared_revision": "a55f738",
+      "evaluator_revision": "5d0a387",
+      "scope": "Initial product baseline; both originals are correlated variants of one visible page. All5 independently declared cases retained for each original. Numeric equivalence is exact rational value, not glyph spelling.",
+      "results": [
+        {
+          "id": "w3c-pdf7-ocr-example-2026",
+          "sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+          "gold_sha256": "fac518b9fdf44e295f74871964c4ebb5962f23c384b8663eb534c395a2b6a350",
+          "observations": {
+            "IR": {
+              "exit": 0,
+              "correct": 4,
+              "cases": [
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+                  "check": {
+                    "kind": "reading_order",
+                    "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                    "matches": true,
+                    "expected_anchors": [
+                      "Schnitzelbank Pot",
+                      "Minnesota Blue",
+                      "Pineapple"
+                    ],
+                    "matched_prefix": 3
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": false,
+                    "expected_value": "1/8",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-butter",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-olives",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/2",
+                    "actual_values": [
+                      "1/2"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "½"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                }
+              ]
+            },
+            "text_layer": {
+              "exit": 0,
+              "correct": 4,
+              "cases": [
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+                  "check": {
+                    "kind": "reading_order",
+                    "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                    "matches": true,
+                    "expected_anchors": [
+                      "Schnitzelbank Pot",
+                      "Minnesota Blue",
+                      "Pineapple"
+                    ],
+                    "matched_prefix": 3
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": false,
+                    "expected_value": "1/8",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-butter",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-olives",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/2",
+                    "actual_values": [
+                      "1/2"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "½"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "equivalent_rewrite": {
+            "exit": 0,
+            "summary": {
+              "canonical_form_fields_changed": 0,
+              "pages_visual_changed": 0,
+              "form_fields_changed": 0,
+              "pages_added": 0,
+              "pages_removed": 0,
+              "pages_moved": 0,
+              "pages_modified": 0,
+              "pages_geometry_changed": 0,
+              "blocks_added": 0,
+              "blocks_removed": 0,
+              "blocks_changed": 0,
+              "blocks_moved": 0,
+              "blocks_resized": 0,
+              "blocks_format_changed": 0,
+              "blocks_minor": 0
+            },
+            "diagnostics": {
+              "old_pages": 1,
+              "new_pages": 1,
+              "old_pages_without_text": 0,
+              "new_pages_without_text": 0,
+              "old_pages_with_unmapped_text": 0,
+              "new_pages_with_unmapped_text": 0,
+              "old_pages_with_unknown_units": 0,
+              "new_pages_with_unknown_units": 0,
+              "page_alignment_limited": false,
+              "block_alignment_limited_pages": 0
+            }
+          },
+          "selected_page_has_text_review": false,
+          "mismatch_is_guarded": false
+        },
+        {
+          "id": "w3c-pdf7-ocr-tagged-2026",
+          "sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+          "gold_sha256": "a7a58cbd3e9a038f327bddfa0dab7c52310b6994bf6669479c2a4b14f4462f3f",
+          "observations": {
+            "IR": {
+              "exit": 0,
+              "correct": 4,
+              "cases": [
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-heading-order",
+                  "check": {
+                    "kind": "reading_order",
+                    "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                    "matches": true,
+                    "expected_anchors": [
+                      "Schnitzelbank Pot",
+                      "Minnesota Blue",
+                      "Pineapple"
+                    ],
+                    "matched_prefix": 3
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-roquefort",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": false,
+                    "expected_value": "1/8",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-butter",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-olives",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/2",
+                    "actual_values": [
+                      "1/2"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "½"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-pimiento",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                }
+              ]
+            },
+            "text_layer": {
+              "exit": 0,
+              "correct": 4,
+              "cases": [
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-heading-order",
+                  "check": {
+                    "kind": "reading_order",
+                    "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                    "matches": true,
+                    "expected_anchors": [
+                      "Schnitzelbank Pot",
+                      "Minnesota Blue",
+                      "Pineapple"
+                    ],
+                    "matched_prefix": 3
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-roquefort",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": false,
+                    "expected_value": "1/8",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-butter",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-olives",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/2",
+                    "actual_values": [
+                      "1/2"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "½"
+                    ]
+                  }
+                },
+                {
+                  "case_id": "w3c-pdf7-ocr-tagged-2026-pimiento",
+                  "check": {
+                    "kind": "quantity_context",
+                    "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                    "matches": true,
+                    "expected_value": "1/4",
+                    "actual_values": [
+                      "1/4"
+                    ],
+                    "context_occurrences": 1,
+                    "numeric_lexemes": [
+                      "¼"
+                    ]
+                  }
+                }
+              ]
+            }
+          },
+          "equivalent_rewrite": {
+            "exit": 3,
+            "summary": {
+              "canonical_form_fields_changed": 0,
+              "pages_visual_changed": 0,
+              "form_fields_changed": 0,
+              "pages_added": 0,
+              "pages_removed": 0,
+              "pages_moved": 0,
+              "pages_modified": 0,
+              "pages_geometry_changed": 0,
+              "blocks_added": 0,
+              "blocks_removed": 0,
+              "blocks_changed": 0,
+              "blocks_moved": 0,
+              "blocks_resized": 0,
+              "blocks_format_changed": 0,
+              "blocks_minor": 0
+            },
+            "diagnostics": {
+              "old_pages": 1,
+              "new_pages": 1,
+              "old_pages_without_text": 0,
+              "new_pages_without_text": 0,
+              "old_pages_with_unmapped_text": 0,
+              "new_pages_with_unmapped_text": 0,
+              "old_pages_with_unknown_units": 0,
+              "new_pages_with_unknown_units": 0,
+              "page_alignment_limited": false,
+              "block_alignment_limited_pages": 0
+            }
+          },
+          "selected_page_has_text_review": false,
+          "mismatch_is_guarded": false
+        }
+      ],
+      "complete": true,
+      "all10_declared_cases_pass_in_both_views": false
+    },
+    "CLI-initial.json": {
+      "version": 1,
+      "time_utc": "2026-11-22T12:11:57.518761+00:00",
+      "production_ready": false,
+      "binary_sha256": "cf4985e49f50bb8b16f2d90a065f9451eae31b11494b2572b83682d6c4d9360a",
+      "native_SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+      "results": [
+        {
+          "id": "w3c-pdf7-ocr-example-2026",
+          "mode": "default",
+          "exit": 0,
+          "existing_output_preserved": false,
+          "stderr": "quality warning: unverified image text: page 1 (ocr_required; OCR or render review required)\n",
+          "editable_text_characters": 0,
+          "image_files": 2,
+          "cases": [
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+              "check": {
+                "kind": "reading_order",
+                "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                "matches": false,
+                "expected_anchors": [
+                  "Schnitzelbank Pot",
+                  "Minnesota Blue",
+                  "Pineapple"
+                ],
+                "matched_prefix": 0
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/8",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-butter",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/4",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-olives",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/2",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/4",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            }
+          ],
+          "correct_selected_cases": 0
+        },
+        {
+          "id": "w3c-pdf7-ocr-example-2026",
+          "mode": "strict",
+          "exit": 1,
+          "existing_output_preserved": true,
+          "stderr": "conversion failed: parse error: quality rejected: /Users/bokuweb/.codex/worktrees/pdf-w3c-ocr-source/jade-pdf/corpus/wasm-runtime/w3c-ocr-source-qualification/jade-pdf2docx-supervised-l4Gd8kXLUM1n7Nxy/jade-pdf2docx-input-0W8CLp/input.pdf (1 issue(s)); unverified image text: page 1 (ocr_required; OCR or render review required)\nconversion failed: worker failed: exit status: 1\nconversion failed: worker failed: exit status: 1\n"
+        },
+        {
+          "id": "w3c-pdf7-ocr-tagged-2026",
+          "mode": "default",
+          "exit": 0,
+          "existing_output_preserved": false,
+          "stderr": "quality warning: unverified image text: page 1 (ocr_required; OCR or render review required)\n",
+          "editable_text_characters": 0,
+          "image_files": 2,
+          "cases": [
+            {
+              "case_id": "w3c-pdf7-ocr-tagged-2026-heading-order",
+              "check": {
+                "kind": "reading_order",
+                "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                "matches": false,
+                "expected_anchors": [
+                  "Schnitzelbank Pot",
+                  "Minnesota Blue",
+                  "Pineapple"
+                ],
+                "matched_prefix": 0
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-tagged-2026-roquefort",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/8",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-tagged-2026-butter",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/4",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-tagged-2026-olives",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/2",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-tagged-2026-pimiento",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": false,
+                "expected_value": "1/4",
+                "actual_values": [],
+                "context_occurrences": 0,
+                "numeric_lexemes": []
+              }
+            }
+          ],
+          "correct_selected_cases": 0
+        },
+        {
+          "id": "w3c-pdf7-ocr-tagged-2026",
+          "mode": "strict",
+          "exit": 1,
+          "existing_output_preserved": true,
+          "stderr": "conversion failed: parse error: quality rejected: /Users/bokuweb/.codex/worktrees/pdf-w3c-ocr-source/jade-pdf/corpus/wasm-runtime/w3c-ocr-source-qualification/jade-pdf2docx-supervised-8zWH9lHPTMlP4Gz7/jade-pdf2docx-input-dDdz5E/input.pdf (1 issue(s)); unverified image text: page 1 (ocr_required; OCR or render review required)\nconversion failed: worker failed: exit status: 1\nconversion failed: worker failed: exit status: 1\n"
+        }
+      ],
+      "all_original_source_hashes_unchanged": true,
+      "complete": true
+    },
+    "CLI-OCR-initial.json": {
+      "time_utc": "2026-11-22T12:12:41.490974+00:00",
+      "source_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+      "binary_sha256": "cf4985e49f50bb8b16f2d90a065f9451eae31b11494b2572b83682d6c4d9360a",
+      "production_ready": false,
+      "results": [
+        {
+          "mode": "OCR-default",
+          "exit": 1,
+          "stderr": "conversion failed: OCR failed: page 1: OCR pixel budget exceeded (page=38946411, total=38946411)\nconversion failed: worker failed: exit status: 1\nconversion failed: worker failed: exit status: 1\n",
+          "existing_output_preserved": true
+        },
+        {
+          "mode": "OCR-strict",
+          "exit": 1,
+          "stderr": "conversion failed: OCR failed: page 1: OCR pixel budget exceeded (page=38946411, total=38946411)\nconversion failed: worker failed: exit status: 1\nconversion failed: worker failed: exit status: 1\n",
+          "existing_output_preserved": true
+        }
+      ],
+      "original_unchanged": true,
+      "complete": true
+    },
+    "CLI-OCR150-initial.json": {
+      "time_utc": "2026-11-22T12:14:28.191768+00:00",
+      "source_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+      "binary_sha256": "cf4985e49f50bb8b16f2d90a065f9451eae31b11494b2572b83682d6c4d9360a",
+      "production_ready": false,
+      "default_DPI": 150,
+      "default_minimum_confidence": 0.5,
+      "results": [
+        {
+          "mode": "OCR150-default",
+          "exit": 0,
+          "stderr": "",
+          "existing_output_preserved": false,
+          "editable_text_characters": 3945,
+          "cases": [
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+              "check": {
+                "kind": "reading_order",
+                "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                "matches": true,
+                "expected_anchors": [
+                  "Schnitzelbank Pot",
+                  "Minnesota Blue",
+                  "Pineapple"
+                ],
+                "matched_prefix": 3
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/8",
+                "actual_values": [
+                  "1/8"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/8"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-butter",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/4",
+                "actual_values": [
+                  "1/4"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/4"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-olives",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/2",
+                "actual_values": [
+                  "1/2"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/2"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/4",
+                "actual_values": [
+                  "1/4"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/4"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "mode": "OCR150-strict",
+          "exit": 0,
+          "stderr": "",
+          "existing_output_preserved": false,
+          "editable_text_characters": 3945,
+          "cases": [
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-heading-order",
+              "check": {
+                "kind": "reading_order",
+                "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order.",
+                "matches": true,
+                "expected_anchors": [
+                  "Schnitzelbank Pot",
+                  "Minnesota Blue",
+                  "Pineapple"
+                ],
+                "matched_prefix": 3
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-roquefort",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/8",
+                "actual_values": [
+                  "1/8"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/8"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-butter",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/4",
+                "actual_values": [
+                  "1/4"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/4"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-olives",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/2",
+                "actual_values": [
+                  "1/2"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/2"
+                ]
+              }
+            },
+            {
+              "case_id": "w3c-pdf7-ocr-example-2026-pimiento",
+              "check": {
+                "kind": "quantity_context",
+                "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity.",
+                "matches": true,
+                "expected_value": "1/4",
+                "actual_values": [
+                  "1/4"
+                ],
+                "context_occurrences": 1,
+                "numeric_lexemes": [
+                  "1/4"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "original_unchanged": true,
+      "complete": true
+    }
+  },
+  "output_visual_review": {
+    "rendered_with": "bundled LibreOfficeDev26.8.0.0.alpha0 (AARCH64) and canonical documents/render_docx.py",
+    "all_output_pages_inspected": true,
+    "rendered_pages": 1,
+    "layout_passed": false,
+    "finding": "OCR text is clustered at the upper-left in a small font; original line positions, extent, blank spacing and typography are not retained. Numeric/heading success is not full DOCX fidelity.",
+    "source_page_points": [
+      2176.36,
+      1117.96
+    ],
+    "DOCX_page_twips": [
+      43527,
+      22359
+    ],
+    "Word_page_dimension_max_twips": 31680,
+    "Word_dimension_compatible": false,
+    "Word_limit_source": "https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/e7017520-06b4-438f-97d2-3e49f247ca9f",
+    "font_and_layout_reference": "Full original source page; not the internally generated OCR XML text alone."
+  },
+  "qualification": {
+    "Python_tests_passed": 81,
+    "fixture_hygiene_passed": 2,
+    "JS_semantic_tests_passed": true,
+    "numeric_property_combinations_per_language": 1632,
+    "existing_corpus_manifest_unchanged": true
+  },
+  "evidence_sha256": {
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/initial-product-baseline.json": "c1a6c301988e4c28d8c6e6d0b407d496827be40cf4b0ddca52eaea58ac35db27",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/CLI-initial.json": "bc7c59843996d05446649ae320c9730fe0729bff8aaad4eac96615dc15ff7bd4",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/CLI-OCR-initial.json": "16d64cb1598d284a8fb285f42306fa5078d6ec0a4466ea17d02bedb78a40aa7a",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/CLI-OCR150-initial.json": "4d40f35baaf357c5aacf9e8a05962c64cb208b3042f53732bd70f55a2e3562f3",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/render-OCR150-strict/page-1.png": "dd8c113627d3b60e190b3ce38561d1f27c985735d1da2975ee9a539a69fdaeeb",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/render-OCR150-strict/w3c-pdf7-ocr-example-2026-OCR150-strict.pdf": "aacbee010af98a3e4d47c3eb588f7196344e3243ab47ca0a0c9d4443c9257893",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/render-OCR150-strict.log": "871c1ba7ee39f58a71380465c89ef6ad6ea3ca58dc7c7ed538e2b63d69c1b549",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/check_default_OCR_CLI.py": "58aee8f51d760dded88e2d778996aba2be3b00a3e1d0208d14dafbf1df5f54a8",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/quantity-python-red.log": "eb4ce97b566fd6e7b8b5d75c56a2fdd58480b21dc35176cb867fcb432671603c",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/quantity-js-red.log": "86f249b6ae796c63203e42b0d3f25ea565801f10c3ba6dc899d0cbd04fc85a9c",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/quantity-python-green.log": "e11bbb630c1a6ea91f4322ac92d7ce2a6c043ad84d3e41ecf0d0f5a73e9c9fd0",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/quantity-js-green.log": "91b354954c964114525a96628d9bd5d7952c184af1638b2964f8c11c814d1dd5",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/python-all.log": "8b270441aa62c9b6f0c69f9769af01e2820963e54b87f984b7aa7648716e75e0",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/js-all.log": "1c182560142b3b336221a82d7d1cd575e6ce992f1f42766aafaa07b9dfaa707a",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/hygiene.log": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658"
+  },
+  "remaining": [
+    "Both source originals remain unregistered until all declared cases and provenance are enforceable; do not silently add to regular accuracy coverage",
+    "Raw PDF diff/text-layer preserves the source OCR quantity1/4 despite visible1/8; selected-page semantic mismatch is not guarded. Encoded source fidelity and visible-image correctness differ.",
+    "Existing optional OCR at default150DPI/minconfidence0.5 recovers all5 selected cases on one original in default+strict, but whole-page layout still fails",
+    "288DPI exceeds configured pixel budget and correctly rejects without replacing output; do not raise limits just to pass this sample",
+    "Preserve provided whole-page OCR line coordinates and order in generated DOCX; current target.image=None path discards positions",
+    "Fit oversized pages and all dependent coordinates/typography within Word constraints with explicit quality policy, rather than emitting unsupported dimensions or cropping content",
+    "Whole prose, hand illustration, font/style and complete image/OCR fidelity remain unverified"
+  ]
+}

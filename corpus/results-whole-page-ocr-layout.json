@@ -1,0 +1,125 @@
+{
+  "version": 1,
+  "date": "2026-11-22T12:44:25.013409+00:00",
+  "production_ready": false,
+  "runtime_source_revision": "c82b9afb26e0b635dfb4fcf21c3279a5a99fabe7",
+  "parent_source_revision": "8972954",
+  "scope": "Preserve valid whole-page OCR line rectangles and caller reading order. This fixes discarded coordinates; it does not improve recognition text, recover original fonts/artwork or solve oversized Word page dimensions.",
+  "owned_red_green": {
+    "original_before_passed": 0,
+    "after_passed": 1,
+    "fixture": "Owned3-page PDF generated in memory/temp, no added PDF binary",
+    "nonmonotonic_column_order": "Right one,Right two,Left one,Left two retained in logical document order",
+    "physical_frames": 4,
+    "all3_rendered_pages_individually_viewed": true,
+    "normal_pages_before_and_after_preserved": true
+  },
+  "geometry_tests": {
+    "rotations": 4,
+    "DPI_range": [
+      1,
+      600
+    ],
+    "frame_twip_roundtrip_error_max": 1,
+    "nonfinite_negative_zero_width_oversized_and_mismatched_counts_rejected": true
+  },
+  "fresh_validation": {
+    "DOCX_initial_suite": {
+      "passed": 198,
+      "failed": 0,
+      "ignored": 0,
+      "groups": 13
+    },
+    "WASM_conversion_crate_check": "passed",
+    "Clippy": "Final DOCX all-targets passed with repository flags; preexisting warnings remain, -D warnings not claimed",
+    "formatting_and_diff_check": "passed",
+    "conversion_workspace_ocr_onnx_serial": {
+      "passed": 1951,
+      "failed": 0,
+      "ignored": 4,
+      "groups": 109,
+      "scope": "Converter workspace only; the retained log starts with jade_pdf2docx and does not contain jade-pdf-diff test binaries. The earlier key full_workspace_ocr_onnx_serial was too broad; counts and original logs are unchanged."
+    }
+  },
+  "retained_failure": {
+    "initial_full_parallel": "Unchanged supervisor deadline test failed with childPID file missing after500ms;108/109root binary tests passed. Original log retained.",
+    "isolated_same_test": "passed with identical500ms limit",
+    "full_serial": "All1951 passed including same test; no production timeout, test expectation or skip relaxed",
+    "changed_supervisor_test_or_runtime_code": false
+  },
+  "actual_public_OCR": {
+    "source_id": "w3c-pdf7-ocr-example-2026",
+    "source_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+    "default_DPI": 150,
+    "minimum_confidence": 0.5,
+    "modes": [
+      "default",
+      "strict"
+    ],
+    "each_selected_cases_correct": 5,
+    "each_selected_cases": 5,
+    "editable_text_characters": 3945,
+    "explicit_frames": 34,
+    "original_source_and_gold_unchanged": true,
+    "recognition_accuracy_gain_claimed": false,
+    "model_assets_frozen_before_final_invocation": true,
+    "model_assets_unchanged_after_invocation": true,
+    "model_sha256": "49cea9db4552f19eb05c8ee202fcf74714977749b2f4c9376b127fde41b07a99",
+    "charset_sha256": "f6ad5a2de444b495155866af811cf1a98309dcae3225db802767ea531a2dc529",
+    "model_provenance": "Local asset bytes only; not newly independently authenticated against upstream release"
+  },
+  "visual_QA": {
+    "public_output_pages": 1,
+    "all_latest_pages_viewed": true,
+    "final_PNG_matches_inspected_initial_frame_output_exactly": true,
+    "vertical_position_collapse_fixed": true,
+    "full_visual_fidelity_passed": false,
+    "Word_page_compatibility_proved": false,
+    "remaining": "Generic text size still differs and hand illustration is not restored. Page width43527twips exceeds Word31680; the bundled renderer accepting it does not establish Word compatibility."
+  },
+  "implementation_review": {
+    "module": "crates/jade-pdf2docx-docx/src/whole_page_ocr.rs",
+    "typed_state": "Paired caller text and validated page frames; no coordinate sorting or glyph/text substitution.",
+    "unpositioned_and_blank_APIs": "Existing paragraph/blank/resource/output-preservation contracts retained.",
+    "attribute_fix": "docx-rs emits h_space/v_space for explicit frame padding; omit optional zero fields instead of generating invalid OOXML spellings. Red/green retained.",
+    "new_production_dependencies": false,
+    "unsafe_code_added": false
+  },
+  "inherited_runtime": {
+    "scope": "Unchanged parser/native-encryption tests and PDF diff runtime; not newly run external native control/render tests in this DOCX iteration. New source evaluator/harness changes require their own future registration qualification.",
+    "all_diff_Rust_Cargo_probe_inputs_unchanged": true,
+    "all_parser_native_encryption_inputs_unchanged": true
+  },
+  "evidence_sha256": {
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/position-red.log": "3eed734f2f3c8ebef82277effdd7c5cad350b6fc89adf7b3b74dd527039e616f",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/position-green.log": "d75bb86b7ae6c6a26325ba17a9423f0659678c33248b812df6eea3606ea6e494",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/frame-attributes-red.log": "0ea8b7816a88e0b81888077c6fc809dfeab450a053ea5b527a940d5fe8586dd8",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/frame-attributes-green.log": "b23544c5fbf4f70c3f34507baaf81fe88693a81d41f30df9b3a6d0dbe68e04b8",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/docx-full.log": "fde183b331f45534e4c1a5af894c4d79c1dc86840ebf3ea75a065d0e358e43fb",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/workspace-ocr-tests.log": "ac0167868940a9cd3a6f1db50d38e96337c59e7cd9723019b7bf387cb342b9db",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/deadline-isolated.log": "3db671ddd3c5cc5af1a6477c0bd25f4f792fb677673057f936014f6ede95ce09",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/workspace-serial.log": "1c513338fba84011b94e7167bbf0b67629ec71efb2e30a349d64d59b5e26fc21",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/wasm-check.log": "3efe757e05276b5adca6cd8bd0f2cd492d3b6e739f6f3b1a589ccd3d0aa9743d",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/clippy-final.log": "bfe9848fd45d66733d3b34ac171d94249a2c6eb192abac32df1df915c0bd8087",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/qualified-final-inputs.json": "5b26c61a3d66a003e3bc33f846c252b7b5e5b75c84bedfb294e0689add71f5f8",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/frozen-assets-inputs.json": "ba28142ee666d4ed5d273bde8c745e6eeca07a0065c431598bb39f48764cd49a",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/CLI-OCR150-frozen-assets.json": "6462b4fe688b6d924fd7c326453279bab65914710918f5c5e2fbac2d31bd8d31",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-final-frames.log": "7cef52d5dee3d37ee570c4c9f1ffa02487554db20c17aeb0a6cc43a03d2e94af",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-final-frames/page-1.png": "89d34ec105d57298e563a1f50d23070b7aa756919619978fcdb0f5f0ebc21806",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/owned-render-probe-complete.log": "a7a00920c2ef97d094c1ccda734856a9378b596e3810c9f0f4a61de18722fc4a",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/owned-render-probe/src/main.rs": "d3b95bdbf1b065d3115b984586d0fc8787c7d4f79f5151f241196a97d854e9fa",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/owned-render-probe/Cargo.lock": "c02bd8af71a4eb3363cedd84ca427054f3e71a1be17368e630a00ffd0fae29e4",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-owned-columns-complete.log": "2bf1abdc310861973c601b2f0e0044195ad4493fc5cb0f117e06408373492cbf",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-owned-columns/page-1.png": "9ae5c774a2fb0a497177bae6e5af70f52674ef2899dde96e9b21ce33de339aee",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-owned-columns/page-2.png": "f449fe74701e2de638b0b14ebd001b8a734a539f1b5e20644d7b1d813731f9b9",
+    "corpus/wasm-runtime/whole-page-ocr-layout-qualification/render-owned-columns/page-3.png": "9b40b5a61c3124abdced4b77914b4a2efdb743082c3e4b0c2e662aac0fd94f78"
+  },
+  "remaining": [
+    "PR16CI and merge, then native-encryption PR17 with exact-head16 gates; no new permission needed",
+    "This layout branch and W3C source branch are not pushed and have no PR or current publication ledger",
+    "Two W3C originals remain unregistered; enforce all5 cases per original and provenance. Current raw visible1/8 mismatch must not be hidden or omitted to enter regular coverage",
+    "Fit oversized page dimensions and dependent geometry/content within Word bounds with a documented explicit quality policy; never clamp dimensions alone and crop content",
+    "Original typography/artwork/full prose fidelity and generic OCR/table/column segmentation remain incomplete",
+    "Existing Arabic/Deseret/raster14-ID pending gold remain unresolved; production_ready=false"
+  ]
+}

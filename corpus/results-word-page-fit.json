@@ -1,0 +1,221 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T14:11:02.591049+00:00",
+  "production_ready": false,
+  "source_revision": "b88ae16",
+  "runtime_revision": "fc9d5c015b5ca24ee5f39d83df061def177075db",
+  "scope": "Word-compatible proportional output geometry and mixed-section chrome preservation; no new OCR recognition accuracy, model, DPI, confidence threshold or source/gold edits.",
+  "policy": {
+    "max_page_edge_twips": 31680,
+    "default": "Fit page, text sizes, margins, columns, tables, drawings, images, OCR frames and referenced header/footer XML by the same rational scale; preserve PNG/font payloads and source IR geometry.",
+    "strict": "Report page_resized_for_word and reject before layout/OCR or output publication.",
+    "normal_pages": "Unchanged package bytes when no page needs fitting; normal sections retain original scale and header/footer parts when mixed with fitted pages.",
+    "API": "docx_quality_report exposes conversion-specific diagnostics without changing PDF parser reports; browser inspectPdfJson includes page_resized_for_word; rendered PNG API fits page and image without resampling."
+  },
+  "red_green": {
+    "public_API": "40000-twip page and incorrectly successful strict conversion reproduced, then fit31680x15840 and strict preserves input/output.",
+    "XML_geometry": "Genuine failures for table border scaling, implicit complex-script size inheritance and header/footer ordering retained.",
+    "mixed_chrome": "Default-size mixed-section footer loss reproduced before staged header/footer finalization; both normal and oversized public bytes API tests pass.",
+    "properties": "u32-wide source dimensions; equal rational scaling; bounded integer rounding and signed/zero positions; normal no-op and idempotent package fitting; inherited part clones and media payload identity; whole-page OCR keeps original pixel coordinates and caller order; strict skips callback."
+  },
+  "fresh": {
+    "conversion_workspace_ocr_onnx": {
+      "command": "cargo test --workspace --exclude jade-pdf-diff --features ocr-onnx --locked --offline -- --test-threads=1",
+      "passed": 1966,
+      "failed": 0,
+      "ignored": 4,
+      "groups": 110
+    },
+    "DOCX": {
+      "passed": 212,
+      "failed": 0,
+      "ignored": 0,
+      "groups": 14
+    },
+    "fixture_hygiene": {
+      "passed": 2,
+      "failed": 0
+    },
+    "WASM_conversion_check": "passed on wasm32-unknown-unknown after footer fix",
+    "Clippy": "DOCX all-targets passed with repository flags; existing warnings retained; -D warnings not claimed",
+    "formatting_and_diff_check": "passed",
+    "default_conversion_workspace": {
+      "command": "CARGO_TARGET_DIR=corpus/wasm-runtime/word-page-fit-qualification/native-default-target cargo test --workspace --exclude jade-pdf-diff --locked --offline -- --test-threads=1",
+      "passed": 1910,
+      "failed": 0,
+      "ignored": 4,
+      "groups": 110,
+      "dedicated_feature_output": true,
+      "explicit_ocr_requires_runtime_feature": "passed"
+    }
+  },
+  "retained_test_control_corrections": [
+    "Initial owned OCR PDF used unsupported unfiltered RGB; changed generated control to valid FlateDecode, rather than changing product diagnostics or accepting extra issues. All original failures retained.",
+    "Initial PNG-payload test could select the ZIP directory entry; now selects an actual media file. Original failure retained.",
+    "Initial type-annotation compile errors retained; not counted as behavioral red."
+  ],
+  "actual_originals": {
+    "independent_visible_contents": 1,
+    "original_packaging_variants": 2,
+    "default_DPI": 150,
+    "default_minimum_confidence": 0.5,
+    "results": [
+      {
+        "source_id": "w3c-pdf7-ocr-example-2026",
+        "source_sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+        "default_exit": 0,
+        "passed_selected_cases": 5,
+        "total_selected_cases": 5,
+        "editable_text_characters": 3945,
+        "positioned_frames": 34,
+        "page_size_twips": {
+          "w": "31680",
+          "h": "16273",
+          "orient": "landscape"
+        },
+        "strict_exit": 1,
+        "strict_existing_output_preserved": true,
+        "original_unchanged": true,
+        "qualification": "CLI-OCR150-final.json"
+      },
+      {
+        "source_id": "w3c-pdf7-ocr-tagged-2026",
+        "source_sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+        "default_exit": 0,
+        "passed_selected_cases": 5,
+        "total_selected_cases": 5,
+        "editable_text_characters": 3945,
+        "positioned_frames": 34,
+        "page_size_twips": {
+          "w": "31680",
+          "h": "16273",
+          "orient": "landscape"
+        },
+        "strict_exit": 1,
+        "strict_existing_output_preserved": true,
+        "original_unchanged": true,
+        "qualification": "CLI-OCR150-tagged-final.json"
+      }
+    ],
+    "full_fidelity_pass": false,
+    "remaining": [
+      "OCR uses default font size instead of original typography.",
+      "The pointing-hand illustration is absent from editable OCR output.",
+      "Selected heading/quantity gold does not establish complete prose or full-page reading order."
+    ]
+  },
+  "owned_native": {
+    "input_sizes_points": [
+      [
+        2000,
+        1000
+      ],
+      [
+        1000,
+        500
+      ],
+      [
+        1000,
+        2000
+      ],
+      [
+        3000,
+        1000
+      ]
+    ],
+    "rendered_pages": 4,
+    "tables": 4,
+    "all_four_pages_individually_viewed": true,
+    "headers_and_footers_present_on_all_pages": true,
+    "original_unchanged": true
+  },
+  "visual_QA": {
+    "renderer": "Bundled LibreOfficeDev26.8 through canonical documents/render_docx.py; no user desktop LibreOffice used.",
+    "pages_individually_viewed": 6,
+    "Word_application_executed": false,
+    "qualification": "Rendered page counts and XML dimension/coordinate assertions, not a claim of testing the Microsoft Word application."
+  },
+  "dependencies": {
+    "new_direct_edge": "quick-xml=0.41.0, already transitive; default-features=false",
+    "new_package_versions_or_checksums": false,
+    "packages_updated": false,
+    "jade_core_revision": "953b085 (unchanged)",
+    "PDF_font_model_binaries_added_to_Git": false
+  },
+  "frozen_assets": {
+    "model_sha256": "49cea9db4552f19eb05c8ee202fcf74714977749b2f4c9376b127fde41b07a99",
+    "charset_sha256": "f6ad5a2de444b495155866af811cf1a98309dcae3225db802767ea531a2dc529",
+    "changed_from_preceding_frozen_snapshot": false,
+    "fresh_upstream_release_authentication": false
+  },
+  "source_visibility_investigation": {
+    "report": "corpus/wasm-runtime/word-page-fit-qualification/source-render-mode-probe.json",
+    "SDK": "7961",
+    "all_source_characters": 4155,
+    "nonpainting_mode3": 4088,
+    "unknown_mode_records": 67,
+    "applies_to_both_packaging_variants": true,
+    "meaning": "Recorded OCR text is not a proof of the visible scanned quantity. Further diff review diagnostics need owned controls and ABI/browser qualification; not implemented or counted as improved accuracy here."
+  },
+  "whole_page_report_scope_correction": "Earlier full_workspace_ocr_onnx_serial key referred to converter crates only. Renamed to conversion_workspace_ocr_onnx_serial with explicit exclusion note; historical1951 counts and raw logs unchanged.",
+  "publication": "Local only. Requires source/main replay, current validation ledger and exact-head CI gates before merge.",
+  "remaining": [
+    "W3C source-gold registration remains blocked by unguarded raw OCR-layer visible-quantity mismatch; neither failed rule is removed.",
+    "Original NTA fourteen-field raster reading-order case still fails.",
+    "Full DOCX illustration and font fidelity, broader bidi/math/spacing/layout and resource coverage remain incomplete."
+  ],
+  "sha256": {
+    "corpus/wasm-runtime/word-page-fit-qualification/initial-red.log": "c8cefc6800dcf04fb57d6e5dec1df91e17e061e7336f5076bc646f571da46039",
+    "corpus/wasm-runtime/word-page-fit-qualification/initial-green-attempt.log": "5632a77c4bf7a3b659bc09172671eaf9b7d96aa519eb3c3c773fbce665bbf56b",
+    "corpus/wasm-runtime/word-page-fit-qualification/green-basic.log": "a048f979ad7c921a6ff860dbfea70aab7193b4ebac6a0b32b0630de94179bdd2",
+    "corpus/wasm-runtime/word-page-fit-qualification/geometry-red.log": "adb80c7f5f45e3f3776d37e4813ef73a45071f7899fa84f49b93c5bf99b0a4d0",
+    "corpus/wasm-runtime/word-page-fit-qualification/geometry-green.log": "7632d07bc46e966e1d2375ff823cbab927e351c3ed09150a08615771a83d4248",
+    "corpus/wasm-runtime/word-page-fit-qualification/reference-order-red.log": "4ea6281dd6a13b410c1cab1eaf172636ff251da3f02e61d47c4959ded724a11d",
+    "corpus/wasm-runtime/word-page-fit-qualification/mixed-footer-red.log": "94d04d6cba4324b99eb692ca6ce0d7e8a5c802e066ceeab6b0990d2c2d2ea65f",
+    "corpus/wasm-runtime/word-page-fit-qualification/mixed-footer-runtime-red.log": "bb66cb4dc2489e3180431cb76358ba2b736dd5913023d32b263bc8d6d813547d",
+    "corpus/wasm-runtime/word-page-fit-qualification/ocr-frame-tests.log": "5433f47cc82a2c6f2fb82c7d63bff5b9603d587bb74fe2c9869d39c75d0614d4",
+    "corpus/wasm-runtime/word-page-fit-qualification/ocr-frame-diagnostic2.log": "d571442b9376e6518e78a14a322cd16654c59087c4158e4297c06cf1c53ac60a",
+    "corpus/wasm-runtime/word-page-fit-qualification/ocr-frame-green.log": "2c1692feb91d62baaacec1bf5d12f6af46154424baeff61bc2293e9588c584eb",
+    "corpus/wasm-runtime/word-page-fit-qualification/docx-with-chrome.log": "1acfa531895037a5637a68d035410860d12bf4105b3ceafcaa7db33ec9283281",
+    "corpus/wasm-runtime/word-page-fit-qualification/docx-qualified.log": "373345d05b9fe7c912dfad526082d7c6c1967846c7ba795982702a7df227e0e2",
+    "corpus/wasm-runtime/word-page-fit-qualification/conversion-workspace-final.log": "0290bd9fa50292468f1dc6df80ca71fa9a5d9e1a0571ae19f5e9da69c0419808",
+    "corpus/wasm-runtime/word-page-fit-qualification/clippy.log": "b3f58d284b8c4d981d9c522f78f94612070da6c215a79ccfd5fc1fba2b184bee",
+    "corpus/wasm-runtime/word-page-fit-qualification/wasm-final-check.log": "f5b1f8ea473e008d34eb538dd294d706ddc3be992b4fd9aa28d7520145648ab0",
+    "corpus/wasm-runtime/word-page-fit-qualification/qualified-final-inputs.json": "d534593898da7b538c5aa1635f657d2aa9a68c1d8ecbd8f77b0c94960ae1ac7c",
+    "corpus/wasm-runtime/word-page-fit-qualification/qualified-final-cli": "d6785677dafff3b4858cbb14a111ea977b03d0316e3a4ecf22f50b809238b1b2",
+    "corpus/wasm-runtime/word-page-fit-qualification/check_final_CLI.py": "a7027996f56c59b2c21b489112b03840f0ecbe9034bf2254ecfb90d1e0f555e0",
+    "corpus/wasm-runtime/word-page-fit-qualification/CLI-OCR150-final.json": "70fe7dbd6a9f2693be14c5d79e0da9d2a16928561c63035fb576164acec23d35",
+    "corpus/wasm-runtime/word-page-fit-qualification/check_tagged_final_CLI.py": "2ede7784bccecdd91fa34962f6b033790c6050a6859f312368482d8a1ac1556e",
+    "corpus/wasm-runtime/word-page-fit-qualification/CLI-OCR150-tagged-final.json": "e46b6503f05f6bf014ae097efe7c5a7bf5df4ecd1cd7f587cbce2c0eab3ca64c",
+    "corpus/wasm-runtime/word-page-fit-qualification/check-owned-native-final.py": "2c01bb779f64fff4f35d64eb7149ac38d1b1087cb246f02574b77af5e26e52b4",
+    "corpus/wasm-runtime/word-page-fit-qualification/owned-native-final-result.json": "a4425bfb546e03bb50f7f2d8537f6ce65399624f3d12197824e36030c147df05",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final.log": "cb838d1876451eac8265a04815c7e684881ce7d1ad5723d0dd803bfd5f157526",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-final.log": "f26dc9d9bf07d49c59ea99e06c1a84b7d329d7bb0f99124761f51a4f757c4ecf",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-tagged-final.log": "200d08f6475356f4075fee987c8b3ddd1f8287d272977ab684abc7e4844bb349",
+    "corpus/wasm-runtime/word-page-fit-qualification/source-render-mode-initial-error.json": "f04c656d65eeb5c4707fd45a43e0bdc35674b99ec697259767c751685f42a080",
+    "corpus/wasm-runtime/word-page-fit-qualification/source-render-mode-probe.json": "8066abc64e2f5b47043094eb910b553c3cee2ed973d7c02963888391ac8c4c4e",
+    "corpus/wasm-runtime/word-page-fit-qualification/probe-source-render-mode.py": "b6a4440760a346f66f02c6b5c5331b218b142c4c16cdc7495ef656b3edb66c6e",
+    "corpus/wasm-runtime/word-page-fit-qualification/lock-check.json": "b69620e6b996e19b178ee9a7391e26260a5c72e6878ca9e151b338175f3e2334",
+    "corpus/wasm-runtime/word-page-fit-qualification/hygiene.log": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-1.png": "d59cfcf794062af5d334f55923c9d3efecadbb6e8cbaf2009ab7afe0af985ea0",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-2.png": "b11dfae5d59f201dfde6f1306afd733b52ba91251dec89fe6b6a43ad3a2971e1",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-3.png": "1dab516aefb3fb05729142f4a77dfd3d48e2a919c04bdc69d0c05165cd172b5a",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-4.png": "8173005e81a6d6c20bbc45c711dde43ad63c2c4f68889d9cb30414d4cc0502d6",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-final/page-1.png": "e7ac0b3319b4962953c9da780b5a2075f2fde95f7f5548a44d879779be3e30f4",
+    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-tagged-final/page-1.png": "e7ac0b3319b4962953c9da780b5a2075f2fde95f7f5548a44d879779be3e30f4",
+    "corpus/wasm-runtime/word-page-fit-qualification/conversion-default-isolated.log": "733a49cdc979d10116aed069cdac400a2a77417aa8a998a82e3dc60aa3f93a18",
+    "corpus/wasm-runtime/word-page-fit-qualification/workspace-serial.log": "ee376954729b1d33ebd2918afa619689438bca18ef722cfe6fa032873acb50e0"
+  },
+  "retained_mixed_feature_run": {
+    "path": "corpus/wasm-runtime/word-page-fit-qualification/workspace-serial.log",
+    "command": "cargo test --workspace --locked --offline -- --test-threads=1",
+    "session": 82091,
+    "scope": "Old snapshot and mixed CLI feature output; excluded from qualification.",
+    "hashed": false,
+    "terminal": true,
+    "qualified": false,
+    "failed_test": "explicit_ocr_requires_runtime_feature",
+    "reason": "While the old default-feature run was in diff tests, a separate ocr-onnx CLI build overwrote target/debug/jade-pdf2docx in the same target. The later default-feature CLI test therefore invoked an incompatible-feature executable. This was a test orchestration mistake, not a qualifying product regression result.",
+    "corrective_evidence": "Dedicated native-default-target rerun passed1910 including the same runtime-feature refusal test; ocr-onnx1966 remains independently passed."
+  }
+}

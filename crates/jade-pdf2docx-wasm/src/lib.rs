@@ -100,7 +100,7 @@ pub fn inspect_pdf_json(pdf_bytes: &[u8]) -> Result<String, JsValue> {
         inferred_cols,
         inferred_non_empty_cells,
         json_string(&parsed.text_preview),
-        quality_json(&parsed.quality),
+        quality_json(&jade_pdf2docx_docx::docx_quality_report(&parsed)),
     ))
 }
 
@@ -110,6 +110,7 @@ fn quality_json(report: &jade_pdf2docx_parser::QualityReport) -> String {
         .issues
         .iter()
         .map(|issue| match issue {
+            jade_pdf2docx_parser::QualityIssue::PageResizedForWord { page } => format!("{{\"kind\":\"page_resized_for_word\",\"page\":{page}}}"),
             jade_pdf2docx_parser::QualityIssue::MissingPageGeometry { page } => format!(
                 "{{\"kind\":\"missing_page_geometry\",\"page\":{page}}}"
             ),
@@ -183,5 +184,18 @@ mod tests {
         )
         .unwrap();
         assert!(json.contains("\"quality_issues\":[]"), "{json}");
+    }
+    /// browserにもWord固有の縮小診断を出し、元PDF解析器の幾何は変えない。
+    #[test]
+    fn inspection_reports_oversized_word_page() {
+        let pdf = b"%PDF-1.7\n1 0 obj << /Type /Page /MediaBox [0 0 2000 1000] >> endobj\n";
+        let json = inspect_pdf_json(pdf).unwrap();
+        assert!(
+            json.contains("\"quality_issues\":[{\"kind\":\"page_resized_for_word\",\"page\":0}]"),
+            "{json}"
+        );
+        let parsed = jade_pdf2docx_parser::parse_pdf_bytes("source.pdf", pdf).unwrap();
+        assert!(parsed.quality.issues.is_empty());
+        assert_eq!(parsed.pages[0].width, 2000.0);
     }
 }

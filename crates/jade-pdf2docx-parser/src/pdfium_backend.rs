@@ -501,6 +501,7 @@ mod tests {
             }],
             graphics: Vec::new(),
             text_elements: vec![ParsedTextElement {
+                baseline_y: None,
                 page: 3,
                 bounds: ParsedBounds {
                     x0: 0.0,
@@ -549,6 +550,7 @@ mod tests {
     /// テスト用の座標付き文字要素を作る。
     fn text_element(text: &str) -> ParsedTextElement {
         ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds {
                 x0: 10.0,

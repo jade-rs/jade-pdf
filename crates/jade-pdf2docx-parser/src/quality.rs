@@ -27,6 +27,11 @@ pub struct QualityReport {
 /// 解析結果に含まれる品質欠落の種類。
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum QualityIssue {
+    /// Wordの22in上限に合わせた等比縮小により原本の物理寸法が変わる。
+    PageResizedForWord {
+        /// 0始まりの元ページ番号。解析器自身はこの変換診断を追加しない。
+        page: usize,
+    },
     /// 曲線・複合・非凸または64頂点を超えるpath clipの可視性を検証できない。
     UnsupportedClippingPath {
         /// 0始まりのページ番号。同じページに一度だけ記録する。
@@ -101,7 +106,8 @@ pub(crate) fn refresh_ocr_diagnostics(
     }
     parsed.quality.issues.retain(|issue| match issue {
         QualityIssue::OcrRequired { page } => visible_image_pages.contains(page),
-        QualityIssue::MissingPageGeometry { .. }
+        QualityIssue::PageResizedForWord { .. }
+        | QualityIssue::MissingPageGeometry { .. }
         | QualityIssue::ImageReplaced { .. }
         | QualityIssue::ImageRepaired { .. }
         | QualityIssue::UnsupportedFont { .. }
@@ -289,6 +295,11 @@ impl Display for QualityIssue {
                 }
                 write!(f, " (image_repaired; {damaged_rows} damaged CCITT rows)")
             }
+            Self::PageResizedForWord { page } => write!(
+                f,
+                "page {} resized proportionally to fit Word (page_resized_for_word; original physical size changed)",
+                page.saturating_add(1)
+            ),
             Self::OcrRequired { page } => write!(
                 f,
                 "unverified image text: page {} (ocr_required; OCR or render review required)",

@@ -1,6 +1,7 @@
 """Keep full-page text gold and explicitly scoped scalar inventories distinct."""
 from collections import Counter
 import unicodedata
+from quantity_gold import check_quantity_gold
 
 
 def normalize_text(text):
@@ -23,10 +24,10 @@ def page_has_text_review(page):
     return (not any(block['text'].strip() for block in page['blocks'])
             or any(page.get(key, 0) > 0 for key in (
                 'sdk_unicode_mapping_errors', 'sdk_text_objects_without_characters',
-                'source_text_characters_missing', 'source_unicode_scalars_unmatched'))
+                'source_text_characters_missing', 'source_unicode_scalars_unmatched', 'nonpainting_text_characters'))
             or any(page.get(key, False) for key in (
                 'source_text_accounting_unavailable', 'source_unicode_accounting_unavailable',
-                'reading_order_requires_review')))
+                'reading_order_requires_review', 'text_visibility_accounting_unavailable')))
 
 
 def inventory_spec(gold):
@@ -60,6 +61,8 @@ def inventory_spec(gold):
 def check_gold(actual, gold):
     """Return the exact check kind and evidence; an inventory is not full-page gold."""
     kind = gold.get('kind', 'full_page_text')
+    if kind == 'quantity_context':
+        return check_quantity_gold(actual, gold, normalize_text)
     if kind == 'reading_order':
         anchors, scope = gold.get('anchors'), gold.get('scope')
         if (not isinstance(anchors, list) or not 1 <= len(anchors) <= 256

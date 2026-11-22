@@ -28,6 +28,8 @@ fn rotated_page_furniture_uses_the_unrotated_text_coordinate_space() {
             source_text_accounting_unavailable: false,
             source_unicode_scalars_unmatched: 0,
             source_unicode_accounting_unavailable: false,
+            nonpainting_text_characters: 0,
+            text_visibility_accounting_unavailable: false,
             reading_order_requires_review: false,
             blocks: vec![
                 block(1, "契約書", 610.0, 640.0),
@@ -53,6 +55,8 @@ fn document() -> DocumentIr {
             source_text_accounting_unavailable: false,
             source_unicode_scalars_unmatched: 0,
             source_unicode_accounting_unavailable: false,
+            nonpainting_text_characters: 0,
+            text_visibility_accounting_unavailable: false,
             reading_order_requires_review: false,
             blocks: vec![BlockIr {
                 index: 1,

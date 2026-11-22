@@ -42,7 +42,13 @@ Rustでは `jade_pdf2docx_ocr::run_page_ocr` の `OcrPageContent::Blank(Verified
 `convert_minimum_pdf_to_docx_with_bounded_page_ocr_content` でこの区別を渡せる。
 callbackは同じPDFの該当ページ全体を検証する責任を持つ。
 本文専用の既存 `run_ocr` は白紙を空本文の成功として返さない。
+全ページOCRでも、座標付き認識行はページ基準の独立したテキストframeへ保持する。
+行を座標順へ並べ替えず、認識器が返した読み順と空白を維持する。
+座標なしcallbackは従来の段落出力を使う。OCRから元のfont・装飾を復元するものではない。
 認識本文はページ内の行順と空白を保持するが、縦書き・段組み・表構造の復元は未対応。
+Wordの各辺22in上限を超えるページは、OCR枠・文字・表・画像・余白を出力時に等比縮小する。
+原寸の物理サイズが変わるため `page_resized_for_word` を報告し、`--strict` では推論前に拒否する。
+原本PDF・描画DPI・callbackの原寸座標・読み順・認識本文は変更しない。
 `--strict` はOCR以外の品質欠落を推論前に拒否し、必要な全ページの認識成功後だけ
 `ocr_required` を解消する。成功は原文との完全一致を保証しない。
 

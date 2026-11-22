@@ -3,9 +3,11 @@ import io
 from pathlib import Path
 import tempfile
 import unittest
-from unittest.mock import patch
+import urllib.error
+import ssl
+from unittest.mock import MagicMock, patch
 
-from pdf_corpus import fetch
+from pdf_corpus import MAX_BYTES, fetch
 
 
 class FetchTests(unittest.TestCase):
@@ -39,6 +41,62 @@ class FetchTests(unittest.TestCase):
             fetch(self.entry, self.root)
         self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
         self.assertFalse((self.root / 'fixture.pdf.part').exists())
+
+    def test_connect_timeout_retries_with_original_request_bounds(self):
+        error = urllib.error.URLError(TimeoutError('_ssl.c:1129: The handshake operation timed out'))
+        with patch('urllib.request.urlopen', side_effect=[error, io.BytesIO(self.data)]) as opening:
+            fetch(self.entry, self.root)
+        self.assertEqual(opening.call_count, 2)
+        for call in opening.call_args_list:
+            self.assertEqual(call.args[0].full_url, self.entry['url'])
+            self.assertEqual(call.args[0].get_header('User-agent'), 'jade-pdf-corpus/1')
+            self.assertEqual(call.kwargs, dict(timeout=45))
+        self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
+        self.assertFalse((self.root / 'fixture.pdf.part').exists())
+
+    def test_read_timeout_closes_response_and_restarts_download(self):
+        response = MagicMock()
+        response.__enter__.return_value = response
+        response.read.side_effect = TimeoutError('The read operation timed out')
+        with patch('urllib.request.urlopen', side_effect=[response, io.BytesIO(self.data)]) as opening:
+            fetch(self.entry, self.root)
+        response.read.assert_called_once_with(MAX_BYTES + 1)
+        response.__exit__.assert_called_once()
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
+        self.assertFalse((self.root / 'fixture.pdf.part').exists())
+
+    def test_timeout_retry_is_bounded_and_preserves_final_error(self):
+        error = urllib.error.URLError(TimeoutError('handshake timed out'))
+        with patch('urllib.request.urlopen', side_effect=error) as opening:
+            with self.assertRaises(urllib.error.URLError) as raised:
+                fetch(self.entry, self.root)
+        self.assertIs(raised.exception, error)
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_non_timeout_errors_are_not_retried(self):
+        errors = [
+            urllib.error.HTTPError(self.entry['url'], 404, 'Not found', {}, None),
+            urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, None),
+            urllib.error.URLError(ssl.SSLCertVerificationError('certificate verification failed')),
+        ]
+        for error in errors:
+            with self.subTest(error=error), patch('urllib.request.urlopen', side_effect=error) as opening:
+                with self.assertRaises(urllib.error.URLError) as raised:
+                    fetch(self.entry, self.root)
+                self.assertIs(raised.exception, error)
+                self.assertEqual(opening.call_count, 1)
+                self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_changed_source_after_timeout_is_not_installed(self):
+        error = urllib.error.URLError(TimeoutError('handshake timed out'))
+        changed = self.data.replace(b'test', b'fail')
+        with patch('urllib.request.urlopen', side_effect=[error, io.BytesIO(changed)]) as opening:
+            with self.assertRaisesRegex(ValueError, 'unexpected PDF'):
+                fetch(self.entry, self.root)
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual(list(self.root.iterdir()), [])
 
 class SourceManifestTests(unittest.TestCase):
     def test_pending_semantic_failures_are_fetched_without_being_normal_success_cases(self):

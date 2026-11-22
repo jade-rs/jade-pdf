@@ -1,0 +1,115 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T15:36:10.968833+00:00",
+  "production_ready": false,
+  "runtime_revision": "7b8867c42fcebb427833371a123ce6afa83ec654",
+  "source_review": "corpus/w3c-pdf3-tab-order-source-review.json",
+  "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+  "source_unchanged": true,
+  "source_registered": false,
+  "independent_visible_contents": 1,
+  "source_gold_unchanged": true,
+  "word_boundary_gold_declared_after_initial_baseline": true,
+  "word_boundary_gold_declared_before_any_fix": true,
+  "implementation": {
+    "native_segments": "Preserve SDK-reported edge and standalone whitespace; trim only CR/LF at segment edges. Do not invent source spaces missing from SDK records.",
+    "DOCX_spacing": "Use a finite positive font em height for a whitespace fragment when bounding a gap, rather than its near-zero glyph ink height. Keep neighbor text ink, row/page/column bounds and gap limits.",
+    "unchanged": "No source-specific word, punctuation or spelling correction; no OCR model/charset/threshold or dependency version change."
+  },
+  "validation": {
+    "converter_default_workspace": {
+      "groups": 110,
+      "passed": 1915,
+      "failed": 0,
+      "ignored": 4,
+      "scope": "cargo test --workspace --exclude jade-pdf-diff --locked --offline -- --test-threads=1; dedicated worktree target, default features only"
+    },
+    "native_extraction_budget_tests": {
+      "groups": 1,
+      "passed": 11,
+      "failed": 0,
+      "ignored": 0
+    },
+    "DOCX_spacing_tests_including_PBT": {
+      "groups": 1,
+      "passed": 5,
+      "failed": 0,
+      "ignored": 0
+    },
+    "Clippy": "Parser and DOCX all targets passed standard Clippy; pre-existing warnings retained.",
+    "WASM": "jade-pdf2docx-wasm --lib wasm32-unknown-unknown passed",
+    "fmt_and_diff_check": "passed"
+  },
+  "actual_source": {
+    "same_SDK_and_flags_as_initial_baseline": true,
+    "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "frozen_CLI_sha256": "a51cbec3f9f758e2699dcc55b34a53ea666ab6494f6dc0e1f684515d79f8ce0e",
+    "selected_word_boundaries_before": 3,
+    "selected_word_boundaries_after": 5,
+    "selected_word_boundaries_total": 6,
+    "failed_after": [
+      "dash-and-word-boundaries"
+    ],
+    "original_selected_reading_order": {
+      "passed": 2,
+      "total": 3,
+      "unchanged": true
+    },
+    "default_and_strict_exit": 0,
+    "strict_still_accepts_remaining_failure": true,
+    "first_auto_SDK_run": "Retained separately; matched7961 run, not the auto-SDK run, is used to attribute the gain."
+  },
+  "visual_QA": {
+    "original_full_page_viewed": true,
+    "unique_output_pages_rendered_and_viewed": 1,
+    "strict_output_bytes_identical_to_default": true,
+    "renderer": "Bundled documents/render_docx.py with LibreOffice; no Microsoft Word application test",
+    "remaining": [
+      "Em dash splits into a separate row; item4 text and punctuation order remain wrong.",
+      "Indentation and vertical spacing still differ from original; full-page fidelity not established.",
+      "Interactive source form keyboard behavior and editable DOCX fields untested."
+    ]
+  },
+  "red_green_history": {
+    "initial_red": "Native extractor dropped declared edge spaces.",
+    "retained_failed_intermediates": "first-green, SDK-space-observation, native-extract-green/final logs retain incorrect raw-SDK fixture assumptions, not silent gold corrections. SDK folds a page containing three source spaces into one reported record and a single isolated source space into no text. Final raw-extractor controls check actual reported spaces around/in words; a separate full native-reconciliation test still requires all three original source spaces and passes.",
+    "DOCX_red_green": "0.012pt whitespace ink caused a real word separator to be dropped; font em geometry fixes it, with invalid-font negative controls and bounded-gap PBT."
+  },
+  "sha256": {
+    "corpus/wasm-runtime/native-text-spacing-qualification/initial-red.log": "4deba33649d696ff23eef8d5faca7a6f3d13ea08ee7ab37db1e3cafba9e6acb2",
+    "corpus/wasm-runtime/native-text-spacing-qualification/first-green.log": "80a2c2b79cc5a7c0d79b84896bbcb61e992a47c1a9a0c9b7f48e5c6e5252795c",
+    "corpus/wasm-runtime/native-text-spacing-qualification/SDK-space-observation.log": "545fdf65e5ba3026853f95847193bab94c66489115818f3891389d2526966807",
+    "corpus/wasm-runtime/native-text-spacing-qualification/native-extract-green.log": "c7a9b6a78771fd7737ebd2ae76c03ad64aa20719d581a4f86dcfeafbd9b78228",
+    "corpus/wasm-runtime/native-text-spacing-qualification/native-extract-final.log": "a96afa5c0e550a9ad3f74d6e6ce4c1eedac032d287a39ff376f3321d2294a894",
+    "corpus/wasm-runtime/native-text-spacing-qualification/native-extract-qualified.log": "fc0da705e94e132bf4eb48415bb56fe2603c61d1ba4b109682bafed683ed5008",
+    "corpus/wasm-runtime/native-text-spacing-qualification/docx-space-ink-red.log": "e402b20513df244e5f4c7f6e70b14d8562616a9dc6819fe87ce813d37e7f9581",
+    "corpus/wasm-runtime/native-text-spacing-qualification/docx-space-ink-green.log": "8d695dfebdfc4b5ad146013f124ee13b7dce222fd43a5f3817cb5f8a2ce4243b",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-build.log": "22929ce3ea66a4697da318d087d227a24efce8a78bb02d5b367a5d6086f3fb2b",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-results.json": "3f988514436c4db23d1243e7665a65ad9ddeb29816d162d3a0cd2153b6eea6b1",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-default.log": "ca65b8c0aa23d61726836f0e95726df33f3f9ca72e1faa8a1ccc4b11a21ae2dd",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-strict.log": "61503c31f5cba80dc53cef89240bc18eaa1445eee4d68101bdadf8219a7c2a01",
+    "corpus/wasm-runtime/native-text-spacing-qualification/word-boundaries-after.json": "7818194fbf4ce3ce34541b2f3678daef6ffeda9429afb5d3aa94319add2bfe9e",
+    "corpus/wasm-runtime/native-text-spacing-qualification/word-boundaries-after.log": "b7bb0206a17ca7c1f64cc6bc4db77f6ab4c0d39ac893d1d550f9d572f367360f",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-7961-results.json": "f505a6852003002924effcdc462944ce4574b8866eedb3a44c28a007abc0810f",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-7961-default.log": "060ae4c78a8eaa09c797dee6ba1c3a22c4fd80f609ac7582137206c2efa4f820",
+    "corpus/wasm-runtime/native-text-spacing-qualification/CLI-7961-strict.log": "80cc516de4aabe51429521b56696a2011e107246cd23464809ee1c0e1451452b",
+    "corpus/wasm-runtime/native-text-spacing-qualification/word-boundaries-after-7961.json": "7818194fbf4ce3ce34541b2f3678daef6ffeda9429afb5d3aa94319add2bfe9e",
+    "corpus/wasm-runtime/native-text-spacing-qualification/word-boundaries-after-7961.log": "b7bb0206a17ca7c1f64cc6bc4db77f6ab4c0d39ac893d1d550f9d572f367360f",
+    "corpus/wasm-runtime/native-text-spacing-qualification/reading-order-after-7961.json": "b8c233d5ff9abf9fc0e53bcb19a07df35234e063206968b4a7bfc015a425e2fe",
+    "corpus/wasm-runtime/native-text-spacing-qualification/render-7961-default.log": "140b382427e2b7bd1a699d9d78f2120d4a71d21cadb618f03ffa35c66ded7c2e",
+    "corpus/wasm-runtime/native-text-spacing-qualification/render-7961-default/page-1.png": "2bb24ffda258f53a99fc13ab4915a577f93eaa3fe77d44ca31354fda1056c644",
+    "corpus/wasm-runtime/native-text-spacing-qualification/converter-default-workspace.log": "109e57801be9a5a41b4a5d557f1cb8ea606d94ba74d780e660a34c26162d9841",
+    "corpus/wasm-runtime/native-text-spacing-qualification/clippy.log": "3962f62df668cf1a1f506d3d7104a2855a6021509169531c2bd1ffa927ec7bee",
+    "corpus/wasm-runtime/native-text-spacing-qualification/wasm-check.log": "c4f1ddc2db605631d9fcc17eeb44c81d6ec892a3605d7b8c84182667a0424383",
+    "corpus/wasm-runtime/native-text-spacing-qualification/qualified-native-spacing-cli": "a51cbec3f9f758e2699dcc55b34a53ea666ab6494f6dc0e1f684515d79f8ce0e",
+    "corpus/wasm-runtime/native-text-spacing-qualification/build-result.py": "79da6fbe62c706dba38dced9225bc006711459e86894cf176e1a76273e85b55a",
+    "crates/jade-pdf2docx-parser/src/pdfium_text.rs": "779a105fa1ba79d1f4e8b6a3ca828a27c7bada4a83a5f7b368bc9ceaeab24236",
+    "crates/jade-pdf2docx-parser/src/pdfium_text_budget_tests.rs": "6a7c592785414210706ad8edcb7f091ba34ce4b6a87b259c7f84aa514fee87a9",
+    "crates/jade-pdf2docx-docx/src/native_spacing.rs": "4ca17a99f5fdfa3f1cf42d66a71e877335facf408fd6beb304271d0cd651a73f",
+    "corpus/w3c-pdf3-word-boundary-gold.json": "e3014c433f6c6aa0d8124356abc5e3ac28c0084d687cc48f66ef1ec038d756a3",
+    "corpus/w3c-pdf3-tab-order-2026-gold.json": "138518693822df1ade68bfa9bdbad00d2f4fd20c28053ee4e1de97a16502a042",
+    "corpus/w3c-pdf3-tab-order-source-review.json": "7314f76a3c8a7cb852ed75fc787b7a743c64998d1c058130613a36fbceed7075",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/word-boundaries-initial.json": "4eba97b3af3668fe9e1dc5e810c463412d21d7f8da771e4982d893752935dc20",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/w3c-pdf3-tab-order-2026-default.docx": "f9e1bcbdf32194e9bb603e9cbf73e63a0018c7ca4b8c24bb6a871bddbe4a0c9d"
+  }
+}

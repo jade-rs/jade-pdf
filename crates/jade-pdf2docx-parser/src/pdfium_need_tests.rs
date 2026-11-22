@@ -17,6 +17,7 @@ fn parsed(preview: String, texts: Vec<String>) -> ParsedDocument {
     parsed.text_elements = texts
         .into_iter()
         .map(|text| ParsedTextElement {
+            baseline_y: None,
             page: usize::MAX,
             bounds: crate::ParsedBounds {
                 x0: f32::NAN,

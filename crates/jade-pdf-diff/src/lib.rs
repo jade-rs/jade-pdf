@@ -76,6 +76,7 @@ mod supplementary_glyph;
 mod symbol_encoding;
 mod tagged_table;
 mod text;
+mod text_visibility;
 mod unicode_facts;
 mod widget_values;
 

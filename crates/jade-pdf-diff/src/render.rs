@@ -79,6 +79,12 @@ pub struct TextRun {
     /// Source font/ActualText Unicode mapping could not be fully verified.
     #[serde(default, skip_serializing_if = "crate::ir::is_false")]
     pub source_unicode_accounting_unavailable: bool,
+    /// 非生成SDK文字recordのうち、mode3またはmode7で直接描画されない件数。
+    #[serde(default, skip_serializing_if = "crate::ir::is_zero")]
+    pub nonpainting_text_characters: usize,
+    /// 非生成recordのobjectまたは描画modeが取得不能。色・透明度・clipの検証済みを意味しない。
+    #[serde(default, skip_serializing_if = "crate::ir::is_false")]
+    pub text_visibility_accounting_unavailable: bool,
 
     /// Page-level tagged reading-order uncertainty, including inferred cells.
     #[serde(default, skip_serializing_if = "crate::ir::is_false")]
@@ -361,6 +367,15 @@ fn text_layer_loaded(
         !runs.runs.is_empty() || (unicode.source_text_characters_missing == 0 && !unicode.source_text_accounting_unavailable && unicode.source_unicode_scalars_unmatched == 0 && !unicode.source_unicode_accounting_unavailable),
         "Source text accounting is incomplete; an empty text layer cannot represent this uncertainty"
     );
+    anyhow::ensure!(
+        // 原文で全ての本文を空に置き換えた場合、非表示のSDKアンカーを再び本文へ戻さない。
+        // 空出力は文字比較の完了を主張せず、PageIrには生SDK recordの診断を保持する。
+        !runs.runs.is_empty()
+            || unicode.projected_empty
+            || (unicode.nonpainting_text_characters == 0
+                && !unicode.text_visibility_accounting_unavailable),
+        "Text visibility is unverified; an empty text layer cannot represent this uncertainty"
+    );
     let reading_order_requires_review = runs.reading_order_requires_review;
     Ok(runs
         .runs
@@ -379,6 +394,8 @@ fn text_layer_loaded(
             source_text_accounting_unavailable: unicode.source_text_accounting_unavailable,
             source_unicode_scalars_unmatched: unicode.source_unicode_scalars_unmatched,
             source_unicode_accounting_unavailable: unicode.source_unicode_accounting_unavailable,
+            nonpainting_text_characters: unicode.nonpainting_text_characters,
+            text_visibility_accounting_unavailable: unicode.text_visibility_accounting_unavailable,
             reading_order_requires_review,
             bounds: run.bounds,
             chars: run

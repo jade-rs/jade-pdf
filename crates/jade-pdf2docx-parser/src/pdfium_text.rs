@@ -37,26 +37,30 @@ pub(crate) fn extract(
         crate::metadata_workspace::ensure_active(budget)?;
         // API内部の一時Stringは現APIで確保前の正確な容量取得ができない。
         let raw = segment.text();
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
+        // 描画された空白を単語境界として保持し、SDKの端の改行だけを除く。
+        let content = raw.trim_matches(|ch| matches!(ch, '\r' | '\n'));
+        if content.is_empty() {
             continue;
         }
         let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
         let mut font_size = bounds.y1 - bounds.y0;
         let mut font_name = None;
         let mut fill_color = None;
+        let mut baseline_y = None;
         if let Some(first) = first_in_rect(characters, segment.bounds()) {
             font_size = first.scaled_font_size().value;
+            baseline_y = horizontal_baseline(&first);
             let name = first.font_name();
             font_name = copy(budget, (!name.is_empty()).then_some(name.as_str()))?;
             let color = first.fill_color().ok().map(|color| color.to_hex());
             fill_color = copy(budget, color.as_deref())?;
         }
-        let text = copy(budget, Some(trimmed))?.unwrap_or_default();
+        let text = copy(budget, Some(content))?.unwrap_or_default();
         crate::metadata_workspace::push(
             budget,
             &mut elements,
             ParsedTextElement {
+                baseline_y,
                 page: page_number,
                 bounds,
                 font_size,
@@ -105,4 +109,14 @@ fn parsed_bounds_from_pdf_rect(rect: PdfRect) -> ParsedBounds {
         x1: rect.right().value,
         y1: rect.top().value,
     }
+}
+
+/// 回転のない水平glyphでSDKが返す有限の原点だけを、字面矩形と区別して保持する。
+pub(crate) fn horizontal_baseline(character: &PdfPageTextChar<'_>) -> Option<f32> {
+    let angle = character.angle_degrees().ok()?;
+    if !angle.is_finite() || angle.rem_euclid(360.0) != 0.0 {
+        return None;
+    }
+    let y = character.origin_y().ok()?.value;
+    y.is_finite().then_some(y)
 }

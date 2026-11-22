@@ -29,10 +29,12 @@ mod conversion_cancellation_tests;
 mod conversion_control;
 
 mod html_table;
+mod native_baseline;
 mod native_spacing;
 mod ocr_reconcile;
 mod output;
 mod package;
+mod paragraph_anchor;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -40,6 +42,8 @@ mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
 mod region_ocr;
+mod whole_page_ocr;
+mod word_page_fit;
 pub use page_ocr::{
     convert_minimum_pdf_to_docx_with_bounded_page_ocr,
     convert_minimum_pdf_to_docx_with_bounded_page_ocr_content,
@@ -47,6 +51,7 @@ pub use page_ocr::{
     convert_minimum_pdf_to_docx_with_page_ocr,
 };
 pub use page_ocr_budget::{PageOcrLimits, PageOcrRaster};
+pub use word_page_fit::docx_quality_report;
 #[cfg(not(target_arch = "wasm32"))]
 mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
@@ -318,6 +323,7 @@ fn convert_pdf_file_with_check(
     check(Stage::Start)?;
     output::validate_distinct_paths(&request.input_pdf_path, &request.output_docx_path)?;
     let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
+    word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
@@ -428,7 +434,8 @@ fn convert_pdf_bytes_with_check(
 ) -> Result<Vec<u8>, ConvertError> {
     use conversion_control::Stage;
     check(Stage::Start)?;
-    let parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
@@ -704,7 +711,7 @@ fn build_structured_docx_with_page_ocr(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-    recognized: &BTreeMap<usize, Vec<String>>,
+    recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
 ) -> Result<Docx, ConvertError> {
     build_structured_docx_with_image_payloads(
@@ -722,7 +729,7 @@ fn build_structured_docx_with_image_payloads(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-    recognized: &BTreeMap<usize, Vec<String>>,
+    recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
@@ -822,7 +829,6 @@ fn build_structured_docx_with_image_payloads(
         if has_mixed_page_sizes && page_index + 1 < pages.len() {
             let section =
                 structured_section_with_page_layout(parsed, positioned_tables, page, &page_chrome);
-            let section = add_repeated_page_chrome_to_section(section, &page_chrome);
             let section = if let Some(lines) = recognized.get(&page.page) {
                 page_ocr::add_lines(section, lines)
             } else {
@@ -836,7 +842,7 @@ fn build_structured_docx_with_image_payloads(
                     image_payloads,
                 )?
             };
-            docx = docx.add_section(section);
+            docx = append_section_with_repeated_chrome(docx, section, &page_chrome)?;
         } else {
             let text_column_layout = (pages.len() == 1)
                 .then_some(document_text_columns.as_ref())
@@ -943,7 +949,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
-    let origin_x = page_layout_origin_x(page.page, &page.lines, positioned_tables, parsed);
+    let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
+    let origin_x = if section_origin_x.is_finite() {
+        section_origin_x
+    } else {
+        0.0
+    };
     let page_width = parsed
         .pages
         .iter()
@@ -1002,8 +1013,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
                 }
-                let mut paragraph =
-                    paragraph_from_structured_line(&line, paragraph_origin_x, page_width);
+                let mut paragraph = paragraph_from_structured_line(
+                    &line,
+                    paragraph_origin_x,
+                    page_width,
+                    Some(section_origin_x),
+                );
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {
                         previous_nonparagraph_bottom_y.and_then(|bottom_y| {
@@ -1310,18 +1325,13 @@ fn apply_landscape_orientation_to_section(section: Section, width: u32, height: 
     }
 }
 
-/// 指定 PDF ページの page size と content 原点由来の margin を返す。
-fn structured_page_layout(
+/// 見出し・画像・図形も含め、実際のセクション左余白に使う最小座標を返す。
+fn structured_page_left_x(
     parsed: &ParsedDocument,
     positioned_tables: &[PositionedTable],
     page: &StructuredTextPage,
-    chrome: &RepeatedPageChrome,
-) -> Option<((u32, u32), PageMargin)> {
-    let parsed_page = parsed
-        .pages
-        .iter()
-        .find(|parsed_page| parsed_page.page_number == page.page)?;
-    let min_x = positioned_tables
+) -> f32 {
+    positioned_tables
         .iter()
         .filter(|table| table.page == page.page)
         .map(|table| table.bounds.x0)
@@ -1341,7 +1351,21 @@ fn structured_page_layout(
                 .map(|graphic| graphic.bounds.x0.min(graphic.bounds.x1)),
         )
         .filter(|value| value.is_finite() && *value >= 0.0)
-        .fold(f32::INFINITY, f32::min);
+        .fold(f32::INFINITY, f32::min)
+}
+
+/// 指定 PDF ページの page size と content 原点由来の margin を返す。
+fn structured_page_layout(
+    parsed: &ParsedDocument,
+    positioned_tables: &[PositionedTable],
+    page: &StructuredTextPage,
+    chrome: &RepeatedPageChrome,
+) -> Option<((u32, u32), PageMargin)> {
+    let parsed_page = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)?;
+    let min_x = structured_page_left_x(parsed, positioned_tables, page);
     let max_y = positioned_tables
         .iter()
         .filter(|table| table.page == page.page)
@@ -1512,40 +1536,6 @@ fn pdf_points_to_floor_twips(points: f32) -> Option<i32> {
     Some((points * 20.0).floor() as i32)
 }
 
-/// DOCX の余白と二重計上しないためのページ内 layout 原点を推定する。
-fn page_layout_origin_x(
-    page: usize,
-    lines: &[StructuredTextLine],
-    positioned_tables: &[PositionedTable],
-    parsed: &ParsedDocument,
-) -> f32 {
-    let min_line_x = lines
-        .iter()
-        .filter(|line| line.alignment == ParagraphAlignment::Left)
-        .map(|line| line.left_x)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    let min_table_x = positioned_tables
-        .iter()
-        .filter(|table| table.page == page)
-        .map(|table| table.bounds.x0)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    let min_image_x = parsed
-        .image_elements
-        .iter()
-        .filter(|image| image.page == page && !image.floating)
-        .map(|image| image.bounds.x0)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    min_line_x
-        .min(min_table_x)
-        .min(min_image_x)
-        .is_finite()
-        .then_some(min_line_x.min(min_table_x).min(min_image_x))
-        .unwrap_or(0.0)
-}
-
 /// parser の画像要素から DOCX picture を構築する。
 fn pic_from_parsed_image(mut image: ParsedImageElement) -> Pic {
     let mut pic = Pic::new_with_dimensions(
@@ -1632,9 +1622,8 @@ fn text_lines_by_page_from_pdf_text_elements(
                 return None;
             }
             texts.sort_by(|a, b| {
-                b.bounds
-                    .y0
-                    .total_cmp(&a.bounds.y0)
+                native_baseline::line_y(b)
+                    .total_cmp(&native_baseline::line_y(a))
                     .then(a.bounds.x0.total_cmp(&b.bounds.x0))
             });
             let page_width = page_width_for_layout(parsed, page, &texts);
@@ -1647,7 +1636,8 @@ fn text_lines_by_page_from_pdf_text_elements(
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
                 if let Some(row) = rows.iter_mut().find(|row| {
-                    (row[0].bounds.y0 - text.bounds.y0).abs() <= TEXT_ROW_Y_TOLERANCE_PT
+                    (native_baseline::line_y(row[0]) - native_baseline::line_y(text)).abs()
+                        <= TEXT_ROW_Y_TOLERANCE_PT
                 }) {
                     row.push(text);
                 } else {
@@ -1859,11 +1849,12 @@ fn infer_paragraph_alignment(left_x: f32, right_x: f32, page_width: f32) -> Para
     ParagraphAlignment::Left
 }
 
-/// structured line から配置情報つき DOCX 段落を作る。
+/// 本文の相対原点と実セクション余白を区別して配置情報つき段落を作る。
 fn paragraph_from_structured_line(
     line: &StructuredTextLine,
     origin_x: f32,
     page_width: Option<f32>,
+    section_origin_x: Option<f32>,
 ) -> Paragraph {
     let paragraph = line.runs.iter().fold(Paragraph::new(), |paragraph, run| {
         paragraph.add_run(docx_run_from_structured_run(run))
@@ -1871,6 +1862,16 @@ fn paragraph_from_structured_line(
     match line.alignment {
         ParagraphAlignment::Center => {
             let paragraph = paragraph.align(AlignmentType::Center);
+            if let Some((left, right)) = page_width.and_then(|width| {
+                paragraph_anchor::centred_indents(
+                    line.left_x,
+                    line.right_x,
+                    section_origin_x.unwrap_or(origin_x),
+                    width,
+                )
+            }) {
+                return paragraph.indent(Some(left), None, Some(right), None);
+            }
             if let Some(indent) = pdf_points_to_indent_twips(origin_x)
                 && indent > 0
             {
@@ -2524,7 +2525,7 @@ fn structured_line_max_font_size(line: &StructuredTextLine) -> f32 {
 
 /// 反復 page chrome 行を PDF の右端余白も含む DOCX paragraph へ変換する。
 fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine) -> Paragraph {
-    let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None);
+    let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None, None);
     if chrome_line.line.alignment == ParagraphAlignment::Right && chrome_line.right_indent_twips > 0
     {
         paragraph.indent(None, None, Some(chrome_line.right_indent_twips), None)
@@ -2546,20 +2547,31 @@ fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome)
     docx
 }
 
-/// 反復 page chrome を中間 DOCX section の header/footer part へ追加する。
-fn add_repeated_page_chrome_to_section(
+/// 反復header/footerを順に確定し、混在ページの中間sectionへ本文とともに追加する。
+/// docx-rs 0.4.22の同時設定は未確定footerを落とすため、footer確定後にheaderを追加する。
+/// 一時追加した同じsectionをmoveして戻し、本文・画像payloadの複製を避ける。
+fn append_section_with_repeated_chrome(
+    mut docx: Docx,
     mut section: Section,
     chrome: &RepeatedPageChrome,
-) -> Section {
-    if let Some(header) = chrome.header.as_ref() {
-        section = section
-            .header(Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)));
-    }
+) -> Result<Docx, ConvertError> {
     if let Some(footer) = chrome.footer.as_ref() {
         section = section
             .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
     }
-    section
+    docx = docx.add_section(section);
+    if let Some(header) = chrome.header.as_ref() {
+        let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
+            return Err(ConvertError::Pack(
+                "missing intermediate DOCX section".into(),
+            ));
+        };
+        docx =
+            docx.add_section(section.header(
+                Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)),
+            ));
+    }
+    Ok(docx)
 }
 
 /// DOCX header/footer に移した PDF 行を本文 flow から除外する。

@@ -5,6 +5,23 @@ mod fixture;
 use pdf_diff::{diff_bytes, load_document_from_bytes, text_layer_from_bytes, DiffOptions, Limits};
 use unicode_normalization::UnicodeNormalization;
 
+/// このfixtureの非描画1文字と原文復元の成功を区別し、可視本文の確定を拒む。
+fn assert_hidden_source_requires_visible_review(diff: &pdf_diff::DocumentDiff) {
+    assert_eq!(diff.diagnostics.old_pages_with_nonpainting_text, 1);
+    assert_eq!(diff.diagnostics.new_pages_with_nonpainting_text, 1);
+    assert_eq!(
+        diff.diagnostics.old_pages_with_unavailable_text_visibility,
+        0
+    );
+    assert_eq!(
+        diff.diagnostics.new_pages_with_unavailable_text_visibility,
+        0
+    );
+    assert!(diff.diagnostics.has_unverified_text_visibility());
+    assert!(!diff.is_comparison_complete(), "{:?}", diff.diagnostics);
+    assert!(!diff.is_text_comparison_complete());
+}
+
 /// 接続形と基底文字の表記差は原文欠落にせず、実際の文字変更は差分として残す。
 #[test]
 fn arabic_contextual_spelling_agrees_with_sdk_and_keeps_real_edits() {
@@ -46,11 +63,7 @@ fn arabic_contextual_spelling_agrees_with_sdk_and_keeps_real_edits() {
             &DiffOptions::default(),
         )
         .unwrap();
-        assert!(
-            equal.is_comparison_complete(),
-            "{presentation:?}: {:?}",
-            equal.diagnostics
-        );
+        assert_hidden_source_requires_visible_review(&equal);
         assert!(
             !equal.has_changes(),
             "{presentation:?}: {:?}",
@@ -65,11 +78,7 @@ fn arabic_contextual_spelling_agrees_with_sdk_and_keeps_real_edits() {
             &DiffOptions::default(),
         )
         .unwrap();
-        assert!(
-            edited.is_comparison_complete(),
-            "{presentation:?}: {:?}",
-            edited.diagnostics
-        );
+        assert_hidden_source_requires_visible_review(&edited);
         assert!(edited.has_changes(), "{presentation:?}");
         assert_eq!(edited.summary.blocks_changed, 1, "{presentation:?}");
     }
@@ -170,11 +179,7 @@ fn source_owned_mixed_words_and_marks_keep_their_logical_order() {
             &DiffOptions::default(),
         )
         .unwrap();
-        assert!(
-            diff.is_comparison_complete(),
-            "{target:?}: {:?}",
-            diff.diagnostics
-        );
+        assert_hidden_source_requires_visible_review(&diff);
         assert!(!diff.has_changes(), "{target:?}");
     }
 }
@@ -225,11 +230,7 @@ fn verified_permutations_keep_real_edits_and_canonical_marks() {
             &DiffOptions::default(),
         )
         .unwrap();
-        assert!(
-            diff.is_comparison_complete(),
-            "{before:?} {after:?}: {:?}",
-            diff.diagnostics
-        );
+        assert_hidden_source_requires_visible_review(&diff);
         assert_eq!(diff.summary.blocks_changed, 1);
         assert_eq!(diff.summary.pages_visual_changed, 0);
         assert!(diff.has_changes());

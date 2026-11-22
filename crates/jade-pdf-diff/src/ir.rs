@@ -111,6 +111,12 @@ pub struct PageIr {
     /// Source font/ActualText Unicode mapping could not be fully verified.
     #[serde(default, skip_serializing_if = "crate::ir::is_false")]
     pub source_unicode_accounting_unavailable: bool,
+    /// 非生成SDK文字recordのうち、mode3またはmode7で直接描画されない件数。
+    #[serde(default, skip_serializing_if = "crate::ir::is_zero")]
+    pub nonpainting_text_characters: usize,
+    /// 非生成recordのobjectまたは描画modeが取得不能。色・透明度・clipの検証済みを意味しない。
+    #[serde(default, skip_serializing_if = "crate::ir::is_false")]
+    pub text_visibility_accounting_unavailable: bool,
 
     /// Tagged structure was inconsistent/unsupported, or a missing table cell
     /// was assigned geometrically. Text remains best effort and needs review.
@@ -370,6 +376,8 @@ mod tests {
             source_text_accounting_unavailable: false,
             source_unicode_scalars_unmatched: 0,
             source_unicode_accounting_unavailable: false,
+            nonpainting_text_characters: 0,
+            text_visibility_accounting_unavailable: false,
             reading_order_requires_review: false,
             blocks: blocks
                 .into_iter()

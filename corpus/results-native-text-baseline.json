@@ -1,0 +1,150 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T16:49:29.640484+00:00",
+  "production_ready": false,
+  "runtime_revision": "fde004245e1f99d7231c36b953d4cb902a2e22b2",
+  "source_review": "corpus/w3c-pdf3-tab-order-source-review.json",
+  "source_registered": false,
+  "independent_original_contents": 1,
+  "implementation": {
+    "API": "ParsedTextElement::baseline_y is an optional finite SDK origin for the first horizontal glyph, in the same page coordinates as bounds. Bounds remain unchanged. Pure bytes/WASM and custom initializers may useNone; README and JapaneseRustdoc describe the field.",
+    "native": "Ordinary and visible extraction retain the observed horizontal origin; reconciliation preserves source metadata. No guessed baseline is published for rotated glyphs.",
+    "DOCX": "Row sorting/grouping and interior-space row checks use the finite baseline with the prior bounds.y0 fallback. No source-specific word, punctuation or glyph correction."
+  },
+  "validation": {
+    "converter_default_workspace": {
+      "groups": 111,
+      "passed": 1918,
+      "failed": 0,
+      "ignored": 4,
+      "scope": "--workspace --exclude jade-pdf-diff --locked --offline -- --test-threads=1; default features in this worktree target"
+    },
+    "owned_public_file_route": {
+      "groups": 1,
+      "passed": 2,
+      "failed": 0,
+      "ignored": 0,
+      "geometric_PBT_cases": 8,
+      "paired_plain_and_authored_ActualText_cases": true,
+      "temporary_inputs_only": true,
+      "originals_unchanged": true
+    },
+    "native_extraction_budget_and_metadata_tests": {
+      "groups": 1,
+      "passed": 12,
+      "failed": 0,
+      "ignored": 0
+    },
+    "Clippy": "Parser and DOCX all targets passed standard Clippy; pre-existing warnings retained. Duplicate allow attribute in the new shared-test module was removed; final log retained.",
+    "WASM": "jade-pdf2docx-wasm --lib wasm32-unknown-unknown passed",
+    "fmt_diff": "passed"
+  },
+  "actual_source": {
+    "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+    "source_unchanged": true,
+    "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "frozen_CLI_sha256": "b2f49c7660b6a749f945dad4fd4c8530fccf83b93494689acb3955be596d1ec0",
+    "same_SDK_CLI_flags_and_gold": true,
+    "original_selected_word_boundary_baseline": {
+      "passed": 3,
+      "total": 6
+    },
+    "immediate_spacing_parent": {
+      "passed": 5,
+      "total": 6
+    },
+    "after_baseline_fix": {
+      "word_boundaries_passed": 6,
+      "word_boundaries_total": 6,
+      "reading_order_passed": 3,
+      "reading_order_total": 3
+    },
+    "original_reading_order_baseline": {
+      "passed": 2,
+      "total": 3
+    },
+    "default_and_strict_exit": 0,
+    "default_and_strict_identical_bytes": true,
+    "word_boundary_gold_declared_after_initial_baseline": true,
+    "word_boundary_gold_declared_before_any_fix": true,
+    "original_reading_order_gold_unchanged": true,
+    "normalization_and_thresholds_unchanged": true
+  },
+  "visual_QA": {
+    "complete_original_page_reviewed": true,
+    "unique_output_pages_rendered_and_individually_viewed": 1,
+    "strict_output_bytes_identical": true,
+    "renderer": "Bundled documents/render_docx.py LibreOffice; Microsoft Word application not tested",
+    "fixed": "Fourth list item and em dash now occupy one paragraph/visual line with original words and order.",
+    "remaining": [
+      "Fourth numbered item is still shifted right; XML has centre alignment while original numbered lines share a left anchor. See remaining-indent-observation.json.",
+      "Bullet/list indentation and vertical spacing still differ. Semantic selected-gold success is not full-page fidelity.",
+      "Interactive form keyboard behavior and editable DOCX field semantics untested."
+    ]
+  },
+  "history": {
+    "owned_red_before_implementation": true,
+    "fixture_control": "Before runtime changes, approximate glyph positions50/64 were corrected to exact Base14 advances49.352/61.352. Both versions retain plain-text pass/native-fallback fail, and approximate outputs/logs remain archived. This is not an external gold correction.",
+    "patch_error": "An early property-test patch failed before tests were added; owned-affine-green.log contains only the old1case. owned-affine-qualified.log is the real2case/PBT result.",
+    "artifact_recovery": "A completed Cargo build artifact was collected by the shared cache before freezing. build-frozen-cli.py copies on the compiler-artifact notification using unchanged build flags; the final exact executable SHA is pinned."
+  },
+  "no_new_dependencies": true,
+  "PDF_font_model_binaries_added_to_Git": false,
+  "sha256": {
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-initial-red.log": "6c8e017f53a36308db98ada2013726994ba8f2400f0391d5cd576d982b097f25",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-exact-initial-red.log": "b9b9f897f251fecc1cee1e994842146dd229f0ead87e0be75c830b60268a8a67",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-rust-initial-red.log": "c59ba923f607dcec558ed447c8d6e979b78711c6ac2753939242110755114979",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-rust-exact-red.log": "8a92604a317e988d83d31ef7676c61f96fd226dfca6850d6cd482b5e318d981b",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-first-green.log": "dbd27a76cdfb9c5377e5fe73a1a8323de2fb94cca4fccb79f2e4bc5ee997ca25",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-affine-green.log": "91e4cbb21d5c33111bb8b111150a646e89225bb95c6ad6a1425ca994a58997eb",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-affine-qualified.log": "710c76e6d6cf67188205065158427a1ea2141d67710d05d388bc2f1d950b5b88",
+    "corpus/wasm-runtime/native-text-baseline-qualification/native-budget-green.log": "3f2f4b479d8cfd9c32a2f35444338ce41dfe76b491e1997c895d6a1e86a49bfb",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-sdk-origins.json": "25500f74938f20a97ebe35778183d543d5359821e70fd70ceeed1a7de33d8563",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-sdk-exact-origins.log": "374cff8cf7058b8fee84477e353874c3072a93d3f072cdc7965fcdd3d1255326",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-sdk-origins.py": "5f41200772c68bfa5e90ff0ef4b923d20a7f1cf37783799c20cf1edbd964a6a6",
+    "corpus/wasm-runtime/native-text-baseline-qualification/owned-baseline-red.py": "21e72c31afd11b1d2c420d46da698ae833ba2e1bcb1b07771de06055b1988746",
+    "corpus/wasm-runtime/native-text-baseline-qualification/converter-default-workspace.log": "dde9c7b3ac3e4df4f5ee1b2a6c8c98258124ed3821f7e0a52c0dfa737611551e",
+    "corpus/wasm-runtime/native-text-baseline-qualification/clippy.log": "3e24bedf96739294cad1cb55f7ff11eb10b440604b97ea8505eff4b0061ef4e8",
+    "corpus/wasm-runtime/native-text-baseline-qualification/clippy-final.log": "8e9b18f3ddf382f74b72af856c6f3157bfcda6e09330af97ac6c098e5ab52486",
+    "corpus/wasm-runtime/native-text-baseline-qualification/wasm-check.log": "7fd045fad6aac57e2b0b6ef21b78278c57349d1f82ecdd7dc09f4e6fc3444a51",
+    "corpus/wasm-runtime/native-text-baseline-qualification/CLI-build.log": "b539099f6aaad411330c0e546c4994cd631f17b88abbe4b7b518bd69d3ca5e4c",
+    "corpus/wasm-runtime/native-text-baseline-qualification/CLI-build-and-freeze.log": "406e6d1ecc4bc46493eb7f2bd21259273839233565eedf9528beefce22685890",
+    "corpus/wasm-runtime/native-text-baseline-qualification/CLI-frozen.json": "7f27502446a6ebdfbad06496ce6d4d6ab9d949dbc95df0224b82f4d6da595b9b",
+    "corpus/wasm-runtime/native-text-baseline-qualification/build-frozen-cli.py": "686cda77ec03a4c19bfc169c0d32b9a9aadb9a47ad4a4c9180d263320e4d3ae4",
+    "corpus/wasm-runtime/native-text-baseline-qualification/check-source-7961.py": "59db2bf63c3d2d8adea429d7c877434652a1eb3a12e7849acff1502ed4240ed3",
+    "corpus/wasm-runtime/native-text-baseline-qualification/actual-source-7961.log": "f7794af2c86dd08cec6641a923a26d393220ffb3e6df6c9efd0954466b55e04e",
+    "corpus/wasm-runtime/native-text-baseline-qualification/actual-source-7961-results.json": "6816adf99d1ebcafe8b7d7c883a8b6a96b24d7ef98e6698e8c0ca2c004e88b12",
+    "corpus/wasm-runtime/native-text-baseline-qualification/word-boundaries-7961-default.json": "f73e31b1cac7a93e3b8415060b924f97c287eb5724a07a6a9b89bc0d021d1d1e",
+    "corpus/wasm-runtime/native-text-baseline-qualification/word-boundaries-7961-default.log": "06b29c097bd5d3cc178eaa83b14155e76f98c90f4ea2f03c1c2425f1c86ff0af",
+    "corpus/wasm-runtime/native-text-baseline-qualification/word-boundaries-7961-strict.json": "f73e31b1cac7a93e3b8415060b924f97c287eb5724a07a6a9b89bc0d021d1d1e",
+    "corpus/wasm-runtime/native-text-baseline-qualification/word-boundaries-7961-strict.log": "06b29c097bd5d3cc178eaa83b14155e76f98c90f4ea2f03c1c2425f1c86ff0af",
+    "corpus/wasm-runtime/native-text-baseline-qualification/render-7961-default.log": "cf305bc13d3fdfdf266b074bc54695ec8df0d93dcb8464ff36d62feec6f817b2",
+    "corpus/wasm-runtime/native-text-baseline-qualification/render-7961-default/page-1.png": "8e93921644f64a861585b0dd8a2491c9fdaccae5b06c1744937994066eae1a54",
+    "corpus/wasm-runtime/native-text-baseline-qualification/remaining-indent-observation.json": "fb52efc53b4089f6d366b53289af0dd1fc6e8d9bf7f515831ebab5be2b1d8ba0",
+    "corpus/wasm-runtime/native-text-baseline-qualification/qualified-baseline-cli": "b2f49c7660b6a749f945dad4fd4c8530fccf83b93494689acb3955be596d1ec0",
+    "corpus/wasm-runtime/native-text-baseline-qualification/build-result.py": "6ee111cbbdeedffbcef3b7e40c3bd06fba8538eb67fe9b51e01245533e6496d0",
+    "README.md": "a44255201c022935dffcf4ca052e0c5738fcd1b02093455c36e48980b2273b2f",
+    "crates/jade-pdf2docx-docx/src/lib.rs": "fe1f6247e63977899a5f43f3ea719acd14e6a04c54b6d800e6c6a3b7598e6ae0",
+    "crates/jade-pdf2docx-docx/src/native_baseline.rs": "b8a439d858b6657331c5f59bc235e7bcadc7d50c83789e8839bf979a2c174589",
+    "crates/jade-pdf2docx-docx/src/native_spacing.rs": "dda3912f704f4ee64c8735eb2e0411ba38969619364526a2fb355aeb98b148b9",
+    "crates/jade-pdf2docx-docx/src/ocr_reconcile.rs": "cb3536e9b1fb5d28e612bc448a62076e8b4e2e344ddd865571fe6a3eb76b4cf4",
+    "crates/jade-pdf2docx-docx/tests/minimum_conversion_core.rs": "2ad0c6b34a0401ea1e38270157c75bad1a7834ced35149b13bfed523b04b5bb8",
+    "crates/jade-pdf2docx-docx/tests/native_baseline.rs": "c61a9bf327322084220e6822a1832de288cf933a12a12b6c564b0f989faa5862",
+    "crates/jade-pdf2docx-parser/src/model.rs": "479c8244270d5af3d8f58865e14de04af991a1d781b6dc8cf016edf0f08a7abb",
+    "crates/jade-pdf2docx-parser/src/ocr_diagnostic_budget_tests.rs": "7965a69325f2b2fb5f74edd31458f979c7a5da3f558da2e6c0cbbf72cbbfa0af",
+    "crates/jade-pdf2docx-parser/src/parser.rs": "2499c133bdd71b4d2344976cd3c94040cb9b81c9cb4a71e6046d43e53b9d309d",
+    "crates/jade-pdf2docx-parser/src/pdfium_backend.rs": "854ee614dd56f046e709aa75c203310c5c1559cf36ff5ea013f22edee25e43cb",
+    "crates/jade-pdf2docx-parser/src/pdfium_need_tests.rs": "a551dd077187b5c6378221d0d82856414d35d68bdd885a99f8abdedc35d100b0",
+    "crates/jade-pdf2docx-parser/src/pdfium_reconcile.rs": "a3be4ddcf456e7c80ac2570b3977e1eb84e18094634166bbe952e152d8b9098e",
+    "crates/jade-pdf2docx-parser/src/pdfium_reconcile_budget_tests.rs": "1a6e79cd57a91aa1e2664362a059c9228d92285083368c43242d34d5416590f4",
+    "crates/jade-pdf2docx-parser/src/pdfium_text.rs": "e92c7a12752c22c5c6ca9d97a6f19c7891a5ce3dca8d676803c45590b0a5a688",
+    "crates/jade-pdf2docx-parser/src/pdfium_text_budget_tests.rs": "dc5b2910caf65d2d052fdd90b1f2494cdc432f89fcbe6e5b9cc0eaeedeb5f286",
+    "crates/jade-pdf2docx-parser/src/pdfium_visible_text.rs": "d1b9e928d6425f27803e38746d217f162811d83b4f0138cbe18753d00dee5720",
+    "crates/jade-pdf2docx-parser/src/text_aggregate_budget_tests.rs": "1b8a5f3f1e0e9a9e4d58a27b8f4703920168b5c9b046d9a88e51cc618a3681e4",
+    "examples/support/minimum_pdf_to_docx_with_ocr_cli.rs": "5e7c15b61717ccdc75192eb3e8fed6cb370f7b98d2f2f9d9d24ccbcdaccf9ea6",
+    "corpus/w3c-pdf3-word-boundary-gold.json": "e3014c433f6c6aa0d8124356abc5e3ac28c0084d687cc48f66ef1ec038d756a3",
+    "corpus/w3c-pdf3-tab-order-2026-gold.json": "138518693822df1ade68bfa9bdbad00d2f4fd20c28053ee4e1de97a16502a042",
+    "corpus/w3c-pdf3-tab-order-source-review.json": "7314f76a3c8a7cb852ed75fc787b7a743c64998d1c058130613a36fbceed7075",
+    "Cargo.lock": "4b8fcc9aad503d65c37d8b3253e13666b05362f87f6d46175cbd710eb47811a2"
+  }
+}

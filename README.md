@@ -25,7 +25,11 @@ cargo run -p jade-pdf2docx -- input.pdf output.docx --strict --timeout-ms 60000
 cargo run -p jade-pdf2docx -- --help
 ```
 
+Pages larger than Word's 22-inch limit are scaled proportionally on output, including text, tables, images, OCR frames, headers, and footers. File conversion reports `page_resized_for_word`; `--strict` rejects this physical size change before OCR or publication. Rust callers can inspect `docx_quality_report`; browser inspection exposes the same diagnostic. The bytes API returns the fitted document, and rendered PNG page conversion fits the page and image together without resampling its payload.
+
 Native file conversion also accepts standard encrypted PDFs that open without a password and permit text copying. It keeps the original input unchanged and bounds the internal decrypted representation with the input/allocation limits. Password-protected or copy-restricted inputs remain errors; the pure Rust bytes/WASM parser still rejects encryption.
+
+Whole-page OCR preserves supplied line rectangles as page-anchored text frames and keeps the recognizer’s reading order. OCR does not recover the original fonts or page artwork.
 
 Strict mode rejects detected quality loss instead of publishing the output. OCR is opt-in and requires the `ocr-onnx` feature, external model files, and `pdftoppm`; see the [OCR setup guide](docs/ocr_runtime.md).
 
@@ -40,7 +44,13 @@ The comparison command writes JSON to stdout and exits with `0` when there are n
 
 PDF comparison uses the pinned Pdfium runtime described in the [comparison guide](docs/pdf_diff.md). For PDF→DOCX rendering with a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
 
-PDF comparison qualification uses 81 collected public PDFs (69 regular documents, 10 robustness inputs, one specification reference, and one unresolved semantic gold case). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
+Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite origin reported by the SDK for the first horizontal glyph. DOCX row grouping uses this separately from `bounds`, which remains unchanged. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping; pure bytes/WASM parsing leaves it unset.
+
+Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
+
+Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
+
+PDF comparison qualification uses 90 registered public PDFs (76 regular documents with 717 pages, 10 robustness inputs, one specification reference, and three unresolved semantic gold cases). Three additional reviewed W3C files represent two independent visible contents and remain outside the registered corpus. See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 
 ## Development
 
@@ -62,6 +72,8 @@ Detailed guides are currently written in Japanese.
 - [PDF comparison](docs/pdf_diff.md): comparison, text extraction, and rendering
 - [Development](docs/development.md): workspace structure, builds, and tests
 - [Test fixtures](fixtures/README.md): public PDF sources, attribution, and update policy
+
+PDF comparison keeps nonpainting source text while reporting its SDK record count and unavailable render modes separately from Unicode mapping errors. Text comparisons with these diagnostics require review; byte-identical source proof remains valid for appearance identity. These checks do not verify OCR accuracy or arbitrary color, opacity, and clipping. See the [comparison guide](docs/pdf_diff.md).
 
 PDF comparison returns an ordered page-text view in `PageDiff.text_diff`, alongside the original line text, segments, and geometry. This separates line wrapping from text edits while retaining form and visual changes. Check the comparison-completeness diagnostics; old JSON without this field represents an uncomputed text view. See the [comparison guide](docs/pdf_diff.md) for source ranges, normalization, and alignment limits.
 
