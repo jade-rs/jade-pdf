@@ -1,4 +1,7 @@
 //! 罫線表の DOCX 変換で、セル本文・列・行高が PDF の見た目を保つことを確認する。
+use std::io::Write;
+
+use flate2::{Compression, write::ZlibEncoder};
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
 
 mod support;
@@ -6,29 +9,56 @@ use support::docx_assert::read_document_xml;
 use support::paths::temp_file_path;
 
 /// 非圧縮 content stream の 1 ページ PDF（300x200pt、等幅の Courier）を作る。
+///
+/// `/Im1` として 2x2 の白い RGB 画像、`/Im2` として黒い画素を含む画像も参照できる。
 fn pdf_with_content(content: &str) -> Vec<u8> {
-    let objects = [
-        "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
-        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_owned(),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".to_owned(),
-        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".to_owned(),
+    let image = |pixels: &[u8]| {
+        let mut encoder = ZlibEncoder::new(Vec::new(), Compression::default());
+        encoder.write_all(pixels).unwrap();
+        let data = encoder.finish().unwrap();
+        let mut object = format!(
+            "<< /Type /XObject /Subtype /Image /Width 2 /Height 2 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode /Length {} >>\nstream\n",
+            data.len()
+        )
+        .into_bytes();
+        object.extend_from_slice(&data);
+        object.extend_from_slice(b"\nendstream");
+        object
+    };
+    let mut inked = vec![255u8; 12];
+    inked[0] = 0;
+    let objects: Vec<Vec<u8>> = vec![
+        b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
+        b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
+        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> /XObject << /Im1 6 0 R /Im2 7 0 R >> >> >>".to_vec(),
+        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()).into_bytes(),
+        b"<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".to_vec(),
+        image(&[255; 12]),
+        image(&inked),
     ];
-    let mut source = "%PDF-1.4\n".to_owned();
+    let mut source = b"%PDF-1.4\n".to_vec();
     let mut offsets = Vec::new();
     for (index, object) in objects.iter().enumerate() {
         offsets.push(source.len());
-        source.push_str(&format!("{} 0 obj\n{object}\nendobj\n", index + 1));
+        source.extend_from_slice(format!("{} 0 obj\n", index + 1).as_bytes());
+        source.extend_from_slice(object);
+        source.extend_from_slice(b"\nendobj\n");
     }
     let xref = source.len();
-    source.push_str("xref\n0 6\n0000000000 65535 f \n");
+    source.extend_from_slice(
+        format!("xref\n0 {}\n0000000000 65535 f \n", objects.len() + 1).as_bytes(),
+    );
     for offset in offsets {
-        source.push_str(&format!("{offset:010} 00000 n \n"));
+        source.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
     }
-    source.push_str(&format!(
-        "trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n"
-    ));
-    source.into_bytes()
+    source.extend_from_slice(
+        format!(
+            "trailer << /Size {} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n",
+            objects.len() + 1
+        )
+        .as_bytes(),
+    );
+    source
 }
 
 /// PDF を変換して document.xml を返す。
@@ -107,4 +137,28 @@ fn row_heights_follow_each_pdf_row() {
         xml[alpha..beta].contains("</w:p>"),
         "short cell lines must stay separate paragraphs: {xml}"
     );
+}
+
+/// 本文のあるページ全面に敷かれた白一色の画像は、本文を押し下げないよう出力しない。
+#[test]
+fn blank_page_background_image_is_dropped() {
+    let xml = convert(
+        "table_fidelity_blank_background",
+        "q 300 0 0 200 0 0 cm /Im1 Do Q BT /F1 10 Tf 1 0 0 1 20 150 Tm (Body text) Tj ET",
+    );
+    assert!(xml.contains(">Body text<"), "body must remain: {xml}");
+    assert!(
+        !xml.contains("<w:drawing>"),
+        "blank full-page background must not become a picture: {xml}"
+    );
+}
+
+/// 描画のある全面画像は残す。
+#[test]
+fn inked_page_image_is_kept() {
+    let xml = convert(
+        "table_fidelity_inked_background",
+        "q 300 0 0 200 0 0 cm /Im2 Do Q BT /F1 10 Tf 1 0 0 1 20 150 Tm (Body text) Tj ET",
+    );
+    assert!(xml.contains("<w:drawing>"), "inked image must stay: {xml}");
 }

@@ -98,7 +98,7 @@ pub use model::{
 };
 pub use parser::{
     parse_pdf, parse_pdf_bytes, parse_pdf_bytes_with_limits, parse_pdf_bytes_with_options,
-    parse_pdf_with_limits, parse_pdf_with_options,
+    parse_pdf_with_limits, parse_pdf_with_options, png_is_blank_white,
 };
 pub use quality::{
     ImageReplacementReason, ParseOptions, QualityIssue, QualityReport, UnsupportedFontReason,

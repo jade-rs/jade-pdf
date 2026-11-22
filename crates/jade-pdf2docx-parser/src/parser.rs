@@ -551,6 +551,10 @@ fn parse_page_viewports(decode_budget: &DecodeBudget, bytes: &[u8]) -> Vec<Parse
 }
 
 #[cfg(test)]
+#[path = "blank_png_tests.rs"]
+mod blank_png_tests;
+
+#[cfg(test)]
 #[path = "legacy_page_geometry_tests.rs"]
 mod legacy_page_geometry_tests;
 
@@ -1437,6 +1441,22 @@ fn pdf_points_to_display_px(points: f32) -> Option<u32> {
         return None;
     }
     Some((points * 96.0 / 72.0).round() as u32)
+}
+
+/// parser が出力した PNG が、白（または完全透明）だけで塗られた画像か判定する。
+///
+/// 解読できない PNG や上限を超える画像は `false`（内容あり）として扱う。
+pub fn png_is_blank_white(png: &[u8]) -> bool {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let Some(image) = decode_filter0_png_to_rgba(&budget, png) else {
+        return false;
+    };
+    image.width > 0
+        && image.height > 0
+        && image
+            .rgba
+            .chunks_exact(4)
+            .all(|pixel| pixel[3] == 0 || pixel[..3].iter().all(|channel| *channel >= 250))
 }
 
 /// RGBA8 の PNG pixel buffer。

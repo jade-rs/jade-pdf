@@ -328,6 +328,7 @@ fn convert_pdf_file_with_check(
     let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
+    drop_blank_page_backgrounds(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
     let normalized_text_preview =
@@ -440,6 +441,7 @@ fn convert_pdf_bytes_with_check(
     let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
+    drop_blank_page_backgrounds(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
     let mut request = MinimumPdfToDocxBytesRequest {
@@ -707,6 +709,37 @@ fn build_structured_docx_from_owned_images(
         &BTreeMap::new(),
         &mut images,
     )
+}
+
+/// 本文のあるページで、ページの半分以上を覆う白一色の背景画像を取り除く。
+///
+/// 白い全面画像を inline 画像として出すと、見た目を変えずに本文を次ページへ押し出してしまう。
+/// 本文のないページ（スキャン・OCR 対象）や小さな画像は対象にしない。
+fn drop_blank_page_backgrounds(parsed: &mut ParsedDocument) {
+    let pages_with_text = parsed
+        .text_elements
+        .iter()
+        .filter(|text| !text.text.trim().is_empty())
+        .map(|text| text.page)
+        .collect::<BTreeSet<_>>();
+    let page_areas = parsed
+        .pages
+        .iter()
+        .map(|page| {
+            let (width, height) = parsed_page_display_size_points(page);
+            (page.page_number, width * height)
+        })
+        .collect::<BTreeMap<_, _>>();
+    parsed.image_elements.retain(|image| {
+        let Some(page_area) = page_areas.get(&image.page) else {
+            return true;
+        };
+        let bounds = normalized_bounds(image.bounds);
+        let area = (bounds.x1 - bounds.x0) * (bounds.y1 - bounds.y0);
+        !(pages_with_text.contains(&image.page)
+            && area >= page_area * 0.5
+            && jade_pdf2docx_parser::png_is_blank_white(&image.png_bytes))
+    });
 }
 
 /// OCRで補ったページとnativeのページを同じページ順に構築する。
