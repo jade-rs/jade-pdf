@@ -372,6 +372,47 @@ pub(crate) fn split_across_boundaries(
     pieces
 }
 
+/// セル内の文字範囲から、横配置と縦位置を推定する。
+///
+/// 左右（上下）の余白がほぼ等しければ中央、片側だけ狭ければその側へ寄せる。
+/// 文字がセル幅いっぱいに広がる場合は左寄せとする。縦位置は、上下の余白の差が
+/// 小さい場合や余白の合計が 1 行分に満たない場合は中央とする。
+pub(crate) fn infer_cell_alignment(
+    text: ParsedBounds,
+    cell: ParsedBounds,
+) -> (
+    crate::ParagraphAlignment,
+    Option<crate::CellVerticalAlignment>,
+) {
+    use crate::{CellVerticalAlignment, ParagraphAlignment};
+    let width = (cell.x1 - cell.x0).max(0.0);
+    let left = (text.x0 - cell.x0).max(0.0);
+    let right = (cell.x1 - text.x1).max(0.0);
+    let horizontal = if width <= 0.0 || (left < 0.15 * width && right < 0.15 * width) {
+        ParagraphAlignment::Left
+    } else if (left - right).abs() <= (0.08 * width).max(2.0) {
+        ParagraphAlignment::Center
+    } else if right < left / 2.0 {
+        ParagraphAlignment::Right
+    } else {
+        ParagraphAlignment::Left
+    };
+    let height = (cell.y1 - cell.y0).max(0.0);
+    let line = (text.y1 - text.y0).max(1.0);
+    let top = (cell.y1 - text.y1).max(0.0);
+    let bottom = (text.y0 - cell.y0).max(0.0);
+    // 文字矩形の取り方（ベースライン基準か字面か）で 1 行分程度ずれるため、その差までは中央とみなす。
+    let tolerance = (0.2 * height).max(line.min(12.0));
+    let vertical = if height <= 0.0 || top + bottom < line || (top - bottom).abs() <= tolerance {
+        CellVerticalAlignment::Center
+    } else if top < bottom {
+        CellVerticalAlignment::Top
+    } else {
+        CellVerticalAlignment::Bottom
+    };
+    (horizontal, Some(vertical))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -529,6 +570,37 @@ mod tests {
         assert_eq!(
             compose_cell_text(&fragments, 0.0, 101.0),
             "１級地\t1.061\n２級地\t1.049"
+        );
+    }
+
+    /// 余白の偏りから横配置と縦位置を推定する。
+    #[test]
+    fn infers_alignment_from_cell_margins() {
+        use crate::{CellVerticalAlignment, ParagraphAlignment};
+        let cell = ParsedBounds {
+            x0: 0.0,
+            y0: 0.0,
+            x1: 100.0,
+            y1: 60.0,
+        };
+        let at = |x0: f32, x1: f32, y0: f32, y1: f32| ParsedBounds { x0, y0, x1, y1 };
+        assert_eq!(
+            infer_cell_alignment(at(3.0, 30.0, 45.0, 55.0), cell),
+            (ParagraphAlignment::Left, Some(CellVerticalAlignment::Top))
+        );
+        assert_eq!(
+            infer_cell_alignment(at(40.0, 60.0, 25.0, 35.0), cell),
+            (
+                ParagraphAlignment::Center,
+                Some(CellVerticalAlignment::Center)
+            )
+        );
+        assert_eq!(
+            infer_cell_alignment(at(70.0, 97.0, 3.0, 13.0), cell),
+            (
+                ParagraphAlignment::Right,
+                Some(CellVerticalAlignment::Bottom)
+            )
         );
     }
 }

@@ -2810,6 +2810,8 @@ struct PositionedTable {
     cell_underlines: Vec<Vec<bool>>,
     /// PDF座標から推定したセル内テキストの水平配置。
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
+    /// PDF座標から推定したセル内テキストの縦位置（`None` は従来どおり中央）。
+    cell_vertical_alignments: Vec<Vec<Option<CellVerticalAlignment>>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
     /// 外側セル内に含まれる子表。
@@ -2818,6 +2820,8 @@ struct PositionedTable {
     row_heights_pt: Vec<f32>,
     /// 上から順の各行で、1 セル内に並ぶ最大の行数。
     row_line_counts: Vec<usize>,
+    /// 左寄せセルで観測した、セル左端から文字までの最小距離（pt）。
+    cell_padding_pt: Option<f32>,
 }
 
 /// DOCX 出力用の表モデル。
@@ -2836,6 +2840,8 @@ struct DocxTableCellModel {
     underlined: bool,
     /// セル段落の水平配置。
     alignment: ParagraphAlignment,
+    /// セル内の縦位置（`None` は中央）。
+    vertical_alignment: Option<CellVerticalAlignment>,
     /// 横方向の結合セル数。
     grid_span: usize,
     /// 縦方向の結合種別。
@@ -2877,6 +2883,17 @@ impl DocxCellBorders {
             size_eighths_pt,
         }
     }
+}
+
+/// セル内の縦位置。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CellVerticalAlignment {
+    /// 上寄せ。
+    Top,
+    /// 中央。
+    Center,
+    /// 下寄せ。
+    Bottom,
 }
 
 /// DOCX 出力用の縦結合種別。
@@ -3077,6 +3094,7 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
                     text: table.rows[row][col].clone(),
                     underlined: false,
                     alignment: ParagraphAlignment::Left,
+                    vertical_alignment: None,
                     grid_span: root_span.col_span,
                     vertical_merge: (root_span.row_span > 1).then_some(DocxVerticalMerge::Restart),
                     width_twips: None,
@@ -3087,6 +3105,7 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
                     text: String::new(),
                     underlined: false,
                     alignment: ParagraphAlignment::Left,
+                    vertical_alignment: None,
                     grid_span: root_span.col_span,
                     vertical_merge: (root_span.row_span > 1).then_some(DocxVerticalMerge::Continue),
                     width_twips: None,
@@ -3114,7 +3133,6 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
         .map(|model| {
             let model = docx_table_model_with_column_widths(model, &table.column_widths_twips);
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
-            let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
             let model = docx_table_model_with_border_size(&model, border_size);
             docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         })
@@ -3125,6 +3143,10 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
             );
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
             let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
+            let model = docx_table_model_with_cell_vertical_alignments(
+                &model,
+                &table.cell_vertical_alignments,
+            );
             let model = docx_table_model_with_border_size(&model, border_size);
             docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         });
@@ -3235,6 +3257,37 @@ fn docx_table_model_with_cell_alignments(
     DocxTableModel { rows }
 }
 
+/// 結合のない DOCX 表モデルへ、マスごとに推定した縦位置を割り当てる。
+fn docx_table_model_with_cell_vertical_alignments(
+    model: &DocxTableModel,
+    vertical_alignments: &[Vec<Option<CellVerticalAlignment>>],
+) -> DocxTableModel {
+    if vertical_alignments.is_empty() {
+        return model.clone();
+    }
+    let rows = model
+        .rows
+        .iter()
+        .enumerate()
+        .map(|(row_index, row)| {
+            let mut column = 0usize;
+            row.iter()
+                .map(|cell| {
+                    let mut cell = cell.clone();
+                    cell.vertical_alignment = vertical_alignments
+                        .get(row_index)
+                        .and_then(|row| row.get(column))
+                        .copied()
+                        .flatten();
+                    column += cell.grid_span.max(1);
+                    cell
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    DocxTableModel { rows }
+}
+
 /// DOCX 表モデル内の罫線サイズを PDF 由来の代表線幅に合わせる。
 fn docx_table_model_with_border_size(
     model: &DocxTableModel,
@@ -3328,6 +3381,14 @@ fn apply_positioned_table_layout(
         .filter(|font_name| !table.font_embedded && pdf_font_name_is_ms_pgothic(font_name))
         .map(|_| MS_PGOTHIC_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS)
         .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    // PDF のセル内余白が既定より狭い表は、同じ左余白にし、右余白は半分にして
+    // 代替フォントの字幅の差で列の中の文字が折り返さないよう余裕を残す。
+    let (horizontal_cell_margin, right_cell_margin) = table
+        .cell_padding_pt
+        .and_then(pdf_points_to_twips)
+        .filter(|padding| *padding < horizontal_cell_margin)
+        .map(|padding| (padding, padding / 2))
+        .unwrap_or((horizontal_cell_margin, horizontal_cell_margin));
     let mut docx_table = docx_table
         .align(TableAlignmentType::Left)
         .layout(TableLayoutType::Fixed)
@@ -3335,7 +3396,7 @@ fn apply_positioned_table_layout(
             top_cell_margin,
             horizontal_cell_margin,
             0,
-            horizontal_cell_margin,
+            right_cell_margin,
         ));
     if !table.column_widths_twips.is_empty() {
         docx_table = docx_table.set_grid(table.column_widths_twips.clone());
@@ -3423,7 +3484,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                             table_cell.add_paragraph(table_cell_paragraph(line, cell, parent));
                     }
                     if parent.is_some() {
-                        table_cell = table_cell.vertical_align(VAlignType::Center);
+                        table_cell = table_cell.vertical_align(match cell.vertical_alignment {
+                            Some(CellVerticalAlignment::Top) => VAlignType::Top,
+                            Some(CellVerticalAlignment::Bottom) => VAlignType::Bottom,
+                            Some(CellVerticalAlignment::Center) | None => VAlignType::Center,
+                        });
                     }
                     for nested_table in nested_tables {
                         table_cell = table_cell.add_table(docx_table_from_structured_table(
@@ -3766,6 +3831,7 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
             text: String::new(),
             underlined: false,
             alignment: ParagraphAlignment::Left,
+            vertical_alignment: None,
             grid_span: 1,
             vertical_merge: None,
             width_twips: None,
@@ -3783,10 +3849,12 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         table: OcrTable::new(vec![vec![String::new(); cols]]),
         cell_underlines: vec![vec![false; cols]],
         cell_alignments: vec![vec![ParagraphAlignment::Left; cols]],
+        cell_vertical_alignments: vec![vec![Some(CellVerticalAlignment::Top); cols]],
         docx_table: Some(DocxTableModel { rows: vec![row] }),
         nested_tables: members,
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
+        cell_padding_pt: None,
     }
 }
 
@@ -4185,10 +4253,12 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
+        cell_vertical_alignments: Vec::new(),
         docx_table: None,
         nested_tables: Vec::new(),
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
+        cell_padding_pt: None,
     }
 }
 
@@ -4216,20 +4286,47 @@ fn positioned_table_with_cell_underlines(
         vec![vec![false; col_count]; row_count]
     };
     let bounds = normalized_bounds(table.bounds);
-    let xs = (0..=col_count)
-        .map(|col| bounds.x0 + (bounds.x1 - bounds.x0) * col as f32 / col_count as f32)
-        .collect::<Vec<_>>();
-    let ys = (0..=row_count)
-        .map(|row| bounds.y0 + (bounds.y1 - bounds.y0) * row as f32 / row_count as f32)
-        .collect::<Vec<_>>();
+    // 列幅・行高が分かる場合は実際の境界、分からない場合は等分の境界を使う。
+    let xs = if table.column_widths_twips.len() == col_count {
+        std::iter::once(bounds.x0)
+            .chain(
+                table
+                    .column_widths_twips
+                    .iter()
+                    .scan(bounds.x0, |x, twips| {
+                        *x += *twips as f32 / 20.0;
+                        Some(*x)
+                    }),
+            )
+            .collect::<Vec<_>>()
+    } else {
+        (0..=col_count)
+            .map(|col| bounds.x0 + (bounds.x1 - bounds.x0) * col as f32 / col_count as f32)
+            .collect::<Vec<_>>()
+    };
+    let ys = if table.row_heights_pt.len() == row_count {
+        let mut ys = std::iter::once(bounds.y1)
+            .chain(table.row_heights_pt.iter().scan(bounds.y1, |y, height| {
+                *y -= height;
+                Some(*y)
+            }))
+            .collect::<Vec<_>>();
+        ys.reverse();
+        ys
+    } else {
+        (0..=row_count)
+            .map(|row| bounds.y0 + (bounds.y1 - bounds.y0) * row as f32 / row_count as f32)
+            .collect::<Vec<_>>()
+    };
     let x_edges = float_edges_to_i32(&xs);
     let y_edges = float_edges_to_i32(&ys);
+    let underline_graphics = graphics_without_row_rules(graphics, &ys);
     for text in parsed
         .text_elements
         .iter()
         .filter(|text| text.page == table.page && !text.text.trim().is_empty())
     {
-        if !parsed_text_has_underline(text, graphics) {
+        if !parsed_text_has_underline(text, &underline_graphics) {
             continue;
         }
         let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
@@ -4526,6 +4623,10 @@ fn infer_positioned_table_from_graphics(
         .map(|x| *x as f32)
         .collect::<Vec<_>>();
     let (_, vertical_rules) = grid_rules_from_graphics(&page_graphics);
+    let underline_graphics = graphics_without_row_rules(
+        &page_graphics,
+        &ys.iter().map(|y| *y as f32).collect::<Vec<_>>(),
+    );
     for text in parsed
         .text_elements
         .iter()
@@ -4559,7 +4660,7 @@ fn infer_positioned_table_from_graphics(
             };
             let bounds = piece.bounds;
             cell_fragments[row][col].push(piece);
-            cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
+            cell_underlines[row][col] |= parsed_text_has_underline(text, &underline_graphics);
             cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
                 Some(existing) => ParsedBounds {
                     x0: existing.x0.min(bounds.x0),
@@ -4595,6 +4696,37 @@ fn infer_positioned_table_from_graphics(
         .rev()
         .map(|pair| (pair[1] - pair[0]) as f32)
         .collect::<Vec<_>>();
+    // 各マスの文字範囲とマスの位置から、セル内の横配置と縦位置を推定する。
+    let (mut cell_alignments, mut cell_vertical_alignments): (Vec<Vec<_>>, Vec<Vec<_>>) =
+        cell_text_bounds
+            .iter()
+            .enumerate()
+            .map(|(row, row_bounds)| {
+                row_bounds
+                    .iter()
+                    .enumerate()
+                    .map(|(col, bounds)| {
+                        let cell = ParsedBounds {
+                            x0: xs[col] as f32,
+                            y0: ys[rows - row - 1] as f32,
+                            x1: xs[col + 1] as f32,
+                            y1: ys[rows - row] as f32,
+                        };
+                        bounds
+                            .map(|bounds| table_cell_text::infer_cell_alignment(bounds, cell))
+                            .unwrap_or((ParagraphAlignment::Left, None))
+                    })
+                    .unzip()
+            })
+            .unzip();
+    let cell_padding_pt = cell_text_bounds
+        .iter()
+        .zip(cell_alignments.iter())
+        .flat_map(|(bounds, alignments)| bounds.iter().zip(alignments.iter()).enumerate())
+        .filter(|(_, (_, alignment))| **alignment == ParagraphAlignment::Left)
+        .filter_map(|(col, (bounds, _))| bounds.map(|bounds| bounds.x0 - xs[col] as f32))
+        .filter(|gap| gap.is_finite() && *gap >= 0.0)
+        .reduce(f32::min);
     let flipped_rows = should_flip_table_rows_from_text_order(&assigned_rows)
         || should_flip_table_rows_from_text_y_order(&assigned_text_ys)
         || should_flip_table_rows_from_cell_text(&cells);
@@ -4604,35 +4736,21 @@ fn infer_positioned_table_from_graphics(
         cell_text_bounds.reverse();
         row_line_counts.reverse();
         row_heights_pt.reverse();
+        cell_alignments.reverse();
+        cell_vertical_alignments.reverse();
     }
-    let cell_alignments = cell_text_bounds
-        .iter()
-        .map(|row| {
-            row.iter()
-                .enumerate()
-                .map(|(col, bounds)| {
-                    if rows != 1 || cols != 1 {
-                        return ParagraphAlignment::Left;
-                    }
-                    let Some(bounds) = bounds else {
-                        return ParagraphAlignment::Left;
-                    };
-                    let cell_left = xs[col] as f32;
-                    let cell_width = (xs[col + 1] - xs[col]) as f32;
-                    infer_paragraph_alignment(
-                        bounds.x0 - cell_left,
-                        bounds.x1 - cell_left,
-                        cell_width,
-                    )
-                })
-                .collect::<Vec<_>>()
-        })
-        .collect::<Vec<_>>();
     let docx_table = if text_augmented_columns || flipped_rows {
         None
     } else {
-        docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines)
-            .filter(|model| model_preserves_grid_cell_texts(model, &cells))
+        docx_table_model_from_grid(
+            &page_graphics,
+            &xs,
+            &ys,
+            &cells,
+            &cell_underlines,
+            &cell_text_bounds,
+        )
+        .filter(|model| model_preserves_grid_cell_texts(model, &cells))
     };
     let table = if let Some(model) = docx_table.as_ref() {
         OcrTable::with_spans(cells, ocr_spans_from_docx_table_model(model, rows, cols))
@@ -4662,10 +4780,12 @@ fn infer_positioned_table_from_graphics(
         table,
         cell_underlines,
         cell_alignments,
+        cell_vertical_alignments,
         docx_table,
         nested_tables: Vec::new(),
         row_heights_pt,
         row_line_counts,
+        cell_padding_pt,
     })
 }
 
@@ -4849,6 +4969,22 @@ fn parsed_text_has_underline(text: &ParsedTextElement, graphics: &[ParsedGraphic
             && bounds.x0 <= text_bounds.x1 + x_tolerance
             && bounds.x1 >= text_bounds.x0 - x_tolerance
     })
+}
+
+/// 表の行境界に重なる横罫線を除いた graphics を返す（セル罫線を文字の下線と取り違えない）。
+fn graphics_without_row_rules(
+    graphics: &[ParsedGraphicElement],
+    row_edges: &[f32],
+) -> Vec<ParsedGraphicElement> {
+    graphics
+        .iter()
+        .filter(|graphic| {
+            let bounds = normalized_bounds(graphic.bounds);
+            !(is_horizontal_line(&bounds)
+                && row_edges.iter().any(|edge| (bounds.y0 - edge).abs() <= 1.5))
+        })
+        .cloned()
+        .collect()
 }
 
 /// 2 つの text fragment の間に空白を補うべきか判定する。
@@ -5124,6 +5260,7 @@ fn docx_table_model_from_grid(
     ys: &[i32],
     cells: &[Vec<String>],
     cell_underlines: &[Vec<bool>],
+    cell_text_bounds: &[Vec<Option<ParsedBounds>>],
 ) -> Option<DocxTableModel> {
     if cells.is_empty() || cells.iter().any(|row| row.len() + 1 != xs.len()) {
         return None;
@@ -5186,10 +5323,36 @@ fn docx_table_model_from_grid(
                     .unwrap_or(false)
             });
             let (left, right) = (xs[rect.col0], xs[rect.col1 + 1]);
+            // 結合セルは、結合した範囲全体に対する文字の位置で配置を決める。
+            let rect_text = (rect.row0..=rect.row1)
+                .flat_map(|r| (rect.col0..=rect.col1).map(move |c| (r, c)))
+                .filter_map(|(r, c)| {
+                    cell_text_bounds
+                        .get(r)
+                        .and_then(|row| row.get(c))
+                        .copied()
+                        .flatten()
+                })
+                .reduce(|a, b| ParsedBounds {
+                    x0: a.x0.min(b.x0),
+                    y0: a.y0.min(b.y0),
+                    x1: a.x1.max(b.x1),
+                    y1: a.y1.max(b.y1),
+                });
+            let rect_bounds = ParsedBounds {
+                x0: left,
+                y0: bottom_of(rect.row1),
+                x1: right,
+                y1: top_of(rect.row0),
+            };
+            let (alignment, vertical_alignment) = rect_text
+                .map(|text| table_cell_text::infer_cell_alignment(text, rect_bounds))
+                .unwrap_or((ParagraphAlignment::Left, Some(CellVerticalAlignment::Top)));
             modeled_row.push(DocxTableCellModel {
                 text,
                 underlined,
-                alignment: ParagraphAlignment::Left,
+                alignment,
+                vertical_alignment,
                 grid_span: span,
                 vertical_merge,
                 width_twips: None,
@@ -5498,10 +5661,12 @@ fn infer_positioned_table_from_text_grid_page(
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
+        cell_vertical_alignments: Vec::new(),
         docx_table: None,
         nested_tables: Vec::new(),
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
+        cell_padding_pt: None,
     })
 }
 
@@ -5931,6 +6096,7 @@ mod tests {
                         text: "merged".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 2,
                         vertical_merge: Some(DocxVerticalMerge::Restart),
                         width_twips: None,
@@ -5940,6 +6106,7 @@ mod tests {
                         text: "right".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 1,
                         vertical_merge: None,
                         width_twips: None,
@@ -5951,6 +6118,7 @@ mod tests {
                         text: String::new(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 1,
                         vertical_merge: Some(DocxVerticalMerge::Continue),
                         width_twips: None,
@@ -5960,6 +6128,7 @@ mod tests {
                         text: "wide".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 2,
                         vertical_merge: None,
                         width_twips: None,

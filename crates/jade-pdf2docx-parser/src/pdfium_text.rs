@@ -97,7 +97,7 @@ fn first_in_rect<'a>(
 ///
 /// Pdfium の `scaled_font_size` は行列の `d` 成分だけを掛けるため、90 度回転した文字では 0 になる。
 /// 回転に依らない縦ベクトル `(c, d)` の長さを使い、取得できない場合は未拡大の値を返す。
-fn effective_font_size(character: &PdfPageTextChar<'_>) -> f32 {
+pub(crate) fn effective_font_size(character: &PdfPageTextChar<'_>) -> f32 {
     let unscaled = character.unscaled_font_size().value;
     let scale = character
         .matrix()
