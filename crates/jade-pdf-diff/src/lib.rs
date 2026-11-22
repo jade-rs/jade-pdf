@@ -57,6 +57,7 @@ pub mod isolation;
 mod legacy_context;
 #[cfg(not(target_arch = "wasm32"))]
 mod native_runtime;
+mod page_text;
 mod page_units;
 #[cfg(not(target_arch = "wasm32"))]
 mod parse;
@@ -91,6 +92,7 @@ pub use geometry::{AffineTransform, PageViewport};
 pub use ir::{BlockIr, Bounds, DocumentIr, PageIr};
 #[cfg(not(target_arch = "wasm32"))]
 pub use native_runtime::pdfium_library_path;
+pub use page_text::{PageTextChangeGroup, PageTextDiff};
 #[cfg(not(target_arch = "wasm32"))]
 pub use pdfium_assets::PDFIUM_VERSION;
 /// License notices distributed with the default Pdfium SDK.

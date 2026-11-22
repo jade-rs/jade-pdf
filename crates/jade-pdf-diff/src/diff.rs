@@ -311,6 +311,9 @@ pub struct PageDiff {
     pub block_alignment_limited: bool,
     pub visual: Option<crate::VisualPageDiff>,
     pub form_changes: Vec<crate::FormFieldChange>,
+    /// 抽出順に沿うページ本文の差分。旧JSONで未計算の場合はNone。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_diff: Option<crate::PageTextDiff>,
     pub blocks: Vec<BlockChange>,
 }
 
@@ -383,6 +386,9 @@ pub struct Diagnostics {
     pub new_pages_with_unknown_units: usize,
     pub page_alignment_limited: bool,
     pub block_alignment_limited_pages: usize,
+    /// ページ本文の対応付けが計算予算に制限されたページ数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub page_text_alignment_limited_pages: usize,
 }
 
 fn is_zero(value: &usize) -> bool {
@@ -391,7 +397,9 @@ fn is_zero(value: &usize) -> bool {
 
 impl Diagnostics {
     pub fn alignment_limited(&self) -> bool {
-        self.page_alignment_limited || self.block_alignment_limited_pages > 0
+        self.page_alignment_limited
+            || self.block_alignment_limited_pages > 0
+            || self.page_text_alignment_limited_pages > 0
     }
     pub fn has_unmapped_text(&self) -> bool {
         self.old_pages_with_unmapped_text > 0 || self.new_pages_with_unmapped_text > 0
@@ -681,6 +689,10 @@ pub fn diff_documents(
     let diagnostics = Diagnostics {
         page_alignment_limited,
         block_alignment_limited_pages: pages.iter().filter(|p| p.block_alignment_limited).count(),
+        page_text_alignment_limited_pages: pages
+            .iter()
+            .filter(|p| p.text_diff.as_ref().is_some_and(|t| t.alignment_limited))
+            .count(),
         old_pages: old.pages.len(),
         new_pages: new.pages.len(),
         old_pages_without_text: old.pages.iter().filter(|p| p.blocks.is_empty()).count(),
@@ -867,6 +879,11 @@ fn one_sided_page(page: &PageIr, removed: bool) -> PageDiff {
         block_alignment_limited: false,
         visual: None,
         form_changes: Vec::new(),
+        text_diff: Some(if removed {
+            crate::page_text::compare(&page.blocks, &[], &[])
+        } else {
+            crate::page_text::compare(&[], &page.blocks, &[])
+        }),
         blocks,
     }
 }
@@ -975,6 +992,7 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         options,
     );
 
+    let text_diff = crate::page_text::compare(&raw_old.blocks, &raw_new.blocks, &matched);
     let mut blocks: Vec<BlockChange> = Vec::new();
     for (o, n) in matched {
         let mut change = diff_block(&old.blocks[o], &new.blocks[n], options);
@@ -1007,7 +1025,28 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
     });
 
     let geometry_changed = page_geometry_changed(raw_old, raw_new, options.position_tolerance);
+    let minor_old: HashSet<_> = blocks
+        .iter()
+        .filter(|block| block.minor)
+        .filter_map(|block| block.old_index)
+        .collect();
+    let minor_new: HashSet<_> = blocks
+        .iter()
+        .filter(|block| block.minor)
+        .filter_map(|block| block.new_index)
+        .collect();
+    let text_changed = text_diff.groups.iter().any(|group| {
+        !group
+            .old_blocks
+            .iter()
+            .all(|index| minor_old.contains(index))
+            || !group
+                .new_blocks
+                .iter()
+                .all(|index| minor_new.contains(index))
+    });
     let changed = geometry_changed
+        || text_changed
         || blocks
             .iter()
             .any(|block| block.kind != ChangeKind::Unchanged && !block.minor);
@@ -1043,6 +1082,7 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         block_alignment_limited,
         visual: None,
         form_changes: Vec::new(),
+        text_diff: Some(text_diff),
         blocks,
     }
 }

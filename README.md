@@ -61,6 +61,8 @@ Detailed guides are currently written in Japanese.
 - [Development](docs/development.md): workspace structure, builds, and tests
 - [Test fixtures](fixtures/README.md): public PDF sources, attribution, and update policy
 
+PDF comparison returns an ordered page-text view in `PageDiff.text_diff`, alongside the original line text, segments, and geometry. This separates line wrapping from text edits while retaining form and visual changes. Check the comparison-completeness diagnostics; old JSON without this field represents an uncomputed text view. See the [comparison guide](docs/pdf_diff.md) for source ranges, normalization, and alignment limits.
+
 ## License
 
 Project code is licensed under [PolyForm Noncommercial 1.0.0](LICENSE). Commercial use requires a separate license from the author; see the full terms in `LICENSE`.

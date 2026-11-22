@@ -4,6 +4,7 @@ use wasm_bindgen::prelude::*;
 #[path = "../../../crates/jade-pdf-diff/tests/support/appearance_fixture.rs"]
 mod appearance_fixture;
 mod japanese_tracking;
+mod page_text;
 
 #[wasm_bindgen]
 pub fn appearance_cases() -> String {
@@ -17,6 +18,9 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("page_text_") {
+        page_text::check(mode)?;
+    }
     if let Some(mode) = name.strip_prefix("japanese_tracking_") {
         japanese_tracking::check(mode)?;
     }
