@@ -1,0 +1,55 @@
+{
+  "id": "irs-w4-2024-2025-page1-text-edits",
+  "old_id": "irs-w4-2024",
+  "new_id": "irs-w4",
+  "old_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+  "new_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+  "old_page": 1,
+  "new_page": 1,
+  "declared_before_current_comparison": true,
+  "scope": "Exhaustive visible textual edit regions on the first page only, independently reviewed against both complete original renders. Two year digits and one inserted TIP paragraph. All remaining visible page1 wording is unchanged. Layout/line wrapping/blank-field geometry and page2-4 changes are outside this textual metric. This does not prove whole-document precision/recall or rendered highlight ink accuracy.",
+  "edits": [
+    {
+      "id": "header-year",
+      "kind": "replace",
+      "old": "4",
+      "new": "5",
+      "old_context": "2024",
+      "new_context": "2025",
+      "region": "Top-right year badge, adjacent to OMB number; not footer"
+    },
+    {
+      "id": "estimator-tip",
+      "kind": "insert",
+      "old": "",
+      "new": "TIP: Consider using the estimator at www.irs.gov/W4App to determine the most accurate withholding for the rest of the year if: you are completing this form after the beginning of the tax year; expect to work only part of the year; or have changes during the year in your marital status, number of jobs for you (and/or your spouse if married filing jointly), dependents, other income (not from jobs), deductions, or credits. Have your most recent pay stub(s) from this year available when using the estimator. At the beginning of next year, use the estimator again to recheck your withholding.",
+      "region": "New paragraph below Step1 and before Complete Steps2-4 instruction"
+    },
+    {
+      "id": "footer-year",
+      "kind": "replace",
+      "old": "4",
+      "new": "5",
+      "old_context": "Form W-4 (2024)",
+      "new_context": "Form W-4 (2025)",
+      "region": "Bottom-right form identifier; not header year badge"
+    }
+  ],
+  "unchanged_visual_review": [
+    "Title, OMB number, agency, pay/IRS instructions and all Step1 personal-information labels and filing-status options",
+    "Complete Steps2-4 instruction, Step2 instructions and all three alternatives plus only-one-job instruction",
+    "Step3 income and dependent thresholds/values, Step4(a)-(c) text and field labels",
+    "Step5 certification, signature/date labels, employer fields, privacy/paperwork and catalog number"
+  ],
+  "reviewed": "2026-11-22",
+  "privacy": "Original official blank public forms, no filled individual identifiers or user data. No tax advice is given by this evaluation.",
+  "original_render_sha256": {
+    "old": "eadcc483438f7f92b50db170fbd718d961e3d9ad4efa224ea0501560449b9535",
+    "new": "d52b080bb0b50c1bbfb291fadc125173f245145523d6ad71e6dd26ba2a8b7055"
+  },
+  "rights_review": {
+    "source": "https://www.irs.gov/prior-year-forms-and-instructions",
+    "publication_policy": "https://www.irs.gov/irm/part1/irm_01-017-008#idm140010526029824",
+    "basis": "Official unfilled US government tax forms; no third-party copyright notice, photograph, external illustration or actual personal information on the reviewed pages. Original bytes and embedded font data remain in ignored cache, no extraction/reuse or Git redistribution of PDF/font payload."
+  }
+}
