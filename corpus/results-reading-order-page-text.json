@@ -1,0 +1,954 @@
+{
+  "version": 1,
+  "methodology": "Check visually declared public reading-order anchors and baseline failures.\n\nSelected public-page geometric order, not full text/table/bidi/tagged-PDF gold.\nCharacter inventory conservation against the prior extractor is separate from\nthe reading-order assertions. Source bytes and executable identities are pinned.\n",
+  "manifest_sha256": "b5977bb5fc8cdbd08c51f8f0172d45e4cd31fa722bffdbdba7c58e71d80a9514",
+  "binary_sha256": "0f977a0cc6f63dcef9d886a1b7ee6f07e1545c19ca23ce90c150a914bc56f803",
+  "baseline_binary_sha256": null,
+  "documents": 14,
+  "passed": 14,
+  "selected_gold_pages": 17,
+  "selected_anchor_checks": 193,
+  "baseline_failing_documents": null,
+  "results": [
+    {
+      "id": "tracemonkey",
+      "passed": true,
+      "pages": 14,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Abstract",
+            "Categories and Subject Descriptors",
+            "General Terms",
+            "Keywords",
+            "1. Introduction",
+            "and is used for the application logic"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            557,
+            1305,
+            1412,
+            1472,
+            1526,
+            2249
+          ],
+          "baseline_passed": null,
+          "positions": [
+            557,
+            1305,
+            1412,
+            1472,
+            1526,
+            2249
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "freeculture",
+      "passed": true,
+      "pages": 352,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 2,
+          "anchors": [
+            "This PDF version of Free Culture is licensed"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            0
+          ],
+          "baseline_passed": null,
+          "positions": [
+            0
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "acl-bleu-2002",
+      "passed": true,
+      "pages": 8,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Abstract",
+            "1 Introduction",
+            "1.1 Rationale",
+            "fruitful research ideas",
+            "the evaluation bottleneck.",
+            "1.2 Viewpoint",
+            "metric performance"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            319,
+            778,
+            791,
+            1392,
+            1492,
+            1691,
+            2728
+          ],
+          "baseline_passed": null,
+          "positions": [
+            319,
+            778,
+            791,
+            1392,
+            1492,
+            1691,
+            2728
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "passed": true,
+      "pages": 1,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Internet:",
+            "irc:",
+            "Adresse:",
+            "Österreich",
+            "Bankverbindung:",
+            "IBAN:",
+            "BIC:"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            888,
+            933,
+            964,
+            1011,
+            1021,
+            1065,
+            1115
+          ],
+          "baseline_passed": null,
+          "positions": [
+            888,
+            933,
+            964,
+            1011,
+            1021,
+            1065,
+            1115
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "passed": true,
+      "pages": 1,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "A3",
+            "A1",
+            "A2"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            0,
+            2,
+            4
+          ],
+          "baseline_passed": null,
+          "positions": [
+            0,
+            2,
+            4
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "neurips-attention-2017",
+      "passed": true,
+      "pages": 11,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Ashish Vaswani",
+            "Noam Shazeer",
+            "Niki Parmar",
+            "Jakob Uszkoreit",
+            "Llion Jones",
+            "Aidan N. Gomez",
+            "Łukasz Kaiser",
+            "Illia Polosukhin",
+            "Abstract",
+            "Introduction"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            21,
+            65,
+            103,
+            144,
+            187,
+            230,
+            281,
+            330,
+            371,
+            1212
+          ],
+          "baseline_passed": null,
+          "positions": [
+            21,
+            65,
+            103,
+            144,
+            187,
+            230,
+            281,
+            330,
+            371,
+            1212
+          ],
+          "baseline_positions": null
+        },
+        {
+          "page": 4,
+          "anchors": [
+            "While for small values of dk the two mechanisms perform similarly",
+            "Instead of performing a single attention function with dmodel-dimensional keys, values and queries",
+            "linear projections to dk, dk and dv dimensions, respectively.",
+            "yielding dv-dimensional output values."
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            925,
+            1278,
+            1452,
+            1602
+          ],
+          "baseline_passed": null,
+          "positions": [
+            925,
+            1278,
+            1452,
+            1602
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "bipm-si-concise",
+      "passed": true,
+      "pages": 5,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "• the unperturbed ground state hyperfine transition frequency of the caesium 133 atom ∆νCs is 9 192 631 770 Hz,",
+            "• the speed of light in vacuum c is 299 792 458 m/s,",
+            "• the Planck constant h is 6.626 070 15 × 10−34 J s,",
+            "• the elementary charge e is 1.602 176 634 × 10−19 C,",
+            "• the Boltzmann constant k is 1.380 649 × 10−23 J/K,",
+            "• the Avogadro constant NA is 6.022 140 76 × 1023 mol−1,",
+            "• the luminous efficacy of monochromatic radiation of frequency 540 × 1012 Hz, Kcd, is 683 lm/W,",
+            "according to Hz = s–1, J = kg m2 s–2, C = A s, lm = cd m2 m–2 = cd sr, and W = kg m2 s–3."
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            1345,
+            1437,
+            1477,
+            1517,
+            1559,
+            1601,
+            1646,
+            1932
+          ],
+          "baseline_passed": null,
+          "positions": [
+            1345,
+            1437,
+            1477,
+            1517,
+            1559,
+            1601,
+            1646,
+            1932
+          ],
+          "baseline_positions": null
+        },
+        {
+          "page": 2,
+          "anchors": [
+            "Quantity",
+            "SI unit",
+            "time",
+            "The second, symbol s, is the SI unit of time. It is defined by taking the fixed numerical value of the caesium frequency ∆νCs, the unperturbed ground-state hyperfine transition frequency of the caesium 133 atom, to be 9 192 631 770 when expressed in the unit Hz, which is equal to s−1.",
+            "length",
+            "The metre, symbol m, is the SI unit of length. It is defined by taking the fixed numerical value of the speed of light in vacuum c to be 299 792 458 when expressed in the unit m s−1, where the second is defined in terms of ∆νCs.",
+            "mass",
+            "The kilogram, symbol kg, is the SI unit of mass. It is defined by taking the fixed numerical value of the Planck constant h to be 6.626 070 15 ×10−34 when expressed in the unit J s, which is equal to kg m2 s−1, where the metre and the second are defined in terms of c and ∆νCs.",
+            "electric current",
+            "The ampere, symbol A, is the SI unit of electric current. It is defined by taking the fixed numerical value of the elementary charge e to be 1.602 176 634 ×10−19 when expressed in the unit C, which is equal to A s, where the second is defined in terms of ∆νCs.",
+            "thermodynamic temperature",
+            "The kelvin, symbol K, is the SI unit of thermodynamic temperature. It is defined by taking the fixed numerical value of the Boltzmann constant k to be 1.380 649 ×10−23 when expressed in the unit J K−1, which is equal to kg m2 s−2 K−1, where the kilogram, metre and second are defined in terms of h, c and ∆νCs.",
+            "amount of substance",
+            "The mole, symbol mol, is the SI unit of amount of substance. One mole contains exactly 6.022 140 76 × 1023 elementary entities. This number is the fixed numerical value of the Avogadro constant, NA, when expressed in the unit mol−1 and is called the Avogadro number. The amount of substance, symbol n, of a system is a measure of the number of specified elementary entities. An elementary entity may be an atom, a molecule, an ion, an electron, any other particle or specified group of particles.",
+            "luminous intensity",
+            "The candela, symbol cd, is the SI unit of luminous intensity in a given direction. It is defined by taking the fixed numerical value of the luminous efficacy of monochromatic radiation of frequency 540 ×1012 Hz, Kcd, to be 683 when expressed in the unit lm W−1, which is equal to cd sr W−1, or cd sr kg−1 m−2 s3, where the kilogram, metre and second are defined in terms of h, c and ∆νCs.",
+            "Derived quantity",
+            "Name of derived unit",
+            "Symbol for unit",
+            "Expression in terms of other units",
+            "plane angle",
+            "radian",
+            "rad",
+            "m/m",
+            "solid angle",
+            "steradian",
+            "sr",
+            "m2/m2",
+            "frequency",
+            "hertz",
+            "Hz",
+            "s−1",
+            "force",
+            "newton",
+            "N",
+            "kg m s−2",
+            "pressure, stress",
+            "pascal",
+            "Pa",
+            "N/m2 = kg m−1 s−2",
+            "energy, work, amount of heat",
+            "joule",
+            "J",
+            "N m = kg m2 s−2",
+            "power, radiant flux",
+            "watt",
+            "W",
+            "J/s = kg m2 s−3",
+            "electric charge",
+            "coulomb",
+            "C",
+            "A s",
+            "electric potential difference",
+            "volt",
+            "V",
+            "W/A = kg m2 s−3 A−1",
+            "capacitance",
+            "farad",
+            "F",
+            "C/V = kg−1 m−2 s4 A2",
+            "electric resistance",
+            "ohm",
+            "Ω",
+            "V/A = kg m2 s−3 A−2",
+            "electric conductance",
+            "siemens",
+            "S",
+            "A/V = kg−1 m−2 s3 A2",
+            "magnetic flux",
+            "weber",
+            "Wb",
+            "V s = kg m2 s−2 A−1",
+            "magnetic flux density",
+            "tesla",
+            "T",
+            "Wb/m2 = kg s−2 A−1",
+            "inductance",
+            "henry",
+            "H",
+            "Wb/A = kg m2 s−2 A−2",
+            "Celsius temperature",
+            "degree Celsius",
+            "oC",
+            "K",
+            "luminous flux",
+            "lumen",
+            "lm = cd sr",
+            "cd sr",
+            "illuminance",
+            "lux",
+            "lx =cd sr m−2",
+            "lm/m2",
+            "activity referred to a radionuclide",
+            "becquerel",
+            "Bq",
+            "s−1",
+            "absorbed dose, kerma",
+            "gray",
+            "Gy",
+            "J/kg = m2 s−2",
+            "dose equivalent",
+            "sievert",
+            "Sv",
+            "J/kg = m2 s−2",
+            "catalytic activity",
+            "katal",
+            "kat",
+            "mol s−1"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            30,
+            38,
+            44,
+            48,
+            282,
+            288,
+            469,
+            473,
+            693,
+            708,
+            917,
+            941,
+            1192,
+            1209,
+            1619,
+            1636,
+            2178,
+            2193,
+            2210,
+            2223,
+            2252,
+            2262,
+            2268,
+            2271,
+            2274,
+            2284,
+            2293,
+            2295,
+            2300,
+            2309,
+            2314,
+            2316,
+            2319,
+            2324,
+            2330,
+            2331,
+            2337,
+            2352,
+            2358,
+            2360,
+            2373,
+            2397,
+            2402,
+            2403,
+            2413,
+            2430,
+            2434,
+            2435,
+            2446,
+            2460,
+            2467,
+            2468,
+            2470,
+            2497,
+            2501,
+            2502,
+            2516,
+            2527,
+            2532,
+            2533,
+            2548,
+            2566,
+            2569,
+            2570,
+            2584,
+            2603,
+            2610,
+            2611,
+            2626,
+            2638,
+            2643,
+            2645,
+            2658,
+            2677,
+            2682,
+            2683,
+            2697,
+            2707,
+            2712,
+            2713,
+            2728,
+            2746,
+            2759,
+            2761,
+            2762,
+            2774,
+            2779,
+            2786,
+            2790,
+            2801,
+            2804,
+            2814,
+            2819,
+            2850,
+            2859,
+            2861,
+            2864,
+            2882,
+            2886,
+            2888,
+            2898,
+            2912,
+            2919,
+            2921,
+            2931,
+            2948,
+            2953,
+            2956
+          ],
+          "baseline_passed": null,
+          "positions": [
+            30,
+            38,
+            44,
+            48,
+            282,
+            288,
+            469,
+            473,
+            693,
+            708,
+            917,
+            941,
+            1192,
+            1209,
+            1619,
+            1636,
+            2178,
+            2193,
+            2210,
+            2223,
+            2252,
+            2262,
+            2268,
+            2271,
+            2274,
+            2284,
+            2293,
+            2295,
+            2300,
+            2309,
+            2314,
+            2316,
+            2319,
+            2324,
+            2330,
+            2331,
+            2337,
+            2352,
+            2358,
+            2360,
+            2373,
+            2397,
+            2402,
+            2403,
+            2413,
+            2430,
+            2434,
+            2435,
+            2446,
+            2460,
+            2467,
+            2468,
+            2470,
+            2497,
+            2501,
+            2502,
+            2516,
+            2527,
+            2532,
+            2533,
+            2548,
+            2566,
+            2569,
+            2570,
+            2584,
+            2603,
+            2610,
+            2611,
+            2626,
+            2638,
+            2643,
+            2645,
+            2658,
+            2677,
+            2682,
+            2683,
+            2697,
+            2707,
+            2712,
+            2713,
+            2728,
+            2746,
+            2759,
+            2761,
+            2762,
+            2774,
+            2779,
+            2786,
+            2790,
+            2801,
+            2804,
+            2814,
+            2819,
+            2850,
+            2859,
+            2861,
+            2864,
+            2882,
+            2886,
+            2888,
+            2898,
+            2912,
+            2919,
+            2921,
+            2931,
+            2948,
+            2953,
+            2956
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "w3c-tagged-table",
+      "passed": true,
+      "pages": 1,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "School First grade Second grade Third grade Fourth grade Elm Street 23 24 26 22 Spruce Street 25 30 26 23 Locust Street 24 28 22 27 Maple Street 26 26 21 29"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            0
+          ],
+          "baseline_passed": null,
+          "positions": [
+            0
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "w3c-complex-table",
+      "passed": true,
+      "pages": 1,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Disability Category Participants Ballots Completed Ballots Incomplete/ Terminated Results Accuracy Time to complete Blind 5 1 4 34.5%, n=1 1199 sec, n=1 Low Vision 5 2 3 98.3% n=2 (97.7%, n=3) 1716 sec, n=3 (1934 sec, n=2) Dexterity 5 4 1 98.3%, n=4 1672.1 sec, n=4 Mobility 3 3 0 95.4%, n=3 1416 sec, n=3"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            40
+          ],
+          "baseline_passed": null,
+          "positions": [
+            40
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "w3c-rowspan-table",
+      "passed": true,
+      "pages": 1,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "Disability Category Participants Ballots Completed Ballots Incomplete/ Terminated Results Accuracy Time to complete Blind 5 1 4 34.5%, n=1 1199 sec, n=1 Low Vision 5 2 3 98.3% n=2 (97.7%, n=3) 1716 sec, n=3 (1934 sec, n=2) Dexterity 5 4 1 98.3%, n=4 1672.1 sec, n=4 Mobility 3 3 0 95.4%, n=3 1416 sec, n=3"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            40
+          ],
+          "baseline_passed": null,
+          "positions": [
+            40
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "passed": true,
+      "pages": 5,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 2,
+          "anchors": [
+            "Quantity",
+            "SI unit",
+            "time",
+            "The second, symbol s",
+            "length",
+            "The metre, symbol m",
+            "mass",
+            "The kilogram, symbol kg",
+            "electric current",
+            "The ampere, symbol A",
+            "thermodynamic temperature",
+            "The kelvin, symbol K",
+            "amount of substance",
+            "The mole, symbol mol",
+            "luminous intensity",
+            "The candela, symbol cd"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            30,
+            38,
+            44,
+            48,
+            283,
+            289,
+            472,
+            476,
+            698,
+            713,
+            924,
+            948,
+            1201,
+            1218,
+            1628,
+            1645
+          ],
+          "baseline_passed": null,
+          "positions": [
+            30,
+            38,
+            44,
+            48,
+            283,
+            289,
+            472,
+            476,
+            698,
+            713,
+            924,
+            948,
+            1201,
+            1218,
+            1628,
+            1645
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "passed": true,
+      "pages": 5,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 2,
+          "anchors": [
+            "Grandeur",
+            "Unité SI",
+            "temps",
+            "La seconde, symbole s",
+            "longueur",
+            "Le mètre, symbole m",
+            "masse",
+            "Le kilogramme, symbole kg",
+            "courant électrique",
+            "L’ampère, symbole A",
+            "température thermodynamique",
+            "Le kelvin, symbole K",
+            "quantité de matière",
+            "La mole, symbole mol",
+            "intensité lumineuse",
+            "La candela, symbole cd"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            31,
+            39,
+            46,
+            51,
+            307,
+            315,
+            516,
+            521,
+            750,
+            767,
+            986,
+            1012,
+            1278,
+            1295,
+            1750,
+            1768
+          ],
+          "baseline_passed": null,
+          "positions": [
+            31,
+            39,
+            46,
+            51,
+            307,
+            315,
+            516,
+            521,
+            750,
+            767,
+            986,
+            1012,
+            1278,
+            1295,
+            1750,
+            1768
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "nist-fips202-2015",
+      "passed": true,
+      "pages": 37,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 35,
+          "anchors": [
+            "Thus, T = b00 b01 b02 b03 b04 b05 b06 b07 b10 b11 b12 b13 b14 b15 b16 b17 = 1100 0101 0111 0100, and",
+            "S = Trunc14(T) = 1100 0101 0111 01, as described in Steps 3 and 4."
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            24,
+            100
+          ],
+          "baseline_passed": null,
+          "positions": [
+            24,
+            100
+          ],
+          "baseline_positions": null
+        }
+      ]
+    },
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "passed": true,
+      "pages": 3,
+      "all_page_character_inventory_unchanged": null,
+      "all_page_character_inventory_retained_after_declared_utf16": null,
+      "declared_utf16_inventory_adjustments": [],
+      "checks": [
+        {
+          "page": 1,
+          "anchors": [
+            "この申請書は、令和五年十月一日から令和十二年九月二十九日までの間に提出する場合に使用します。"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            608
+          ],
+          "baseline_passed": null,
+          "positions": [
+            608
+          ],
+          "baseline_positions": null
+        },
+        {
+          "page": 2,
+          "anchors": [
+            "この申請書は、令和五年十月一日から令和十二年九月二十九日までの間に提出する場合に使用します。"
+          ],
+          "passed": true,
+          "text_layer_passed": true,
+          "text_layer_positions": [
+            1245
+          ],
+          "baseline_passed": null,
+          "positions": [
+            1245
+          ],
+          "baseline_positions": null
+        }
+      ]
+    }
+  ]
+}
