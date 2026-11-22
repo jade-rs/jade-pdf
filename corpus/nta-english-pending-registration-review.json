@@ -22,7 +22,7 @@
   "OCR_recovery_implemented": false,
   "production_ready": false,
   "runtime_artifacts": {
-    "qualification": "PR15 v51, frozen artifacts reused; candidate branch still based on main14 until replay after15 merge",
+    "qualification": "PR15 v51 exact frozen artifacts; source branch replayed on960f502 and all Rust/Cargo/probe inputs equal; PR15 remote CI pending",
     "native_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
     "wasm_sha256": "382062b1fc3752fbd32b881de80296fc33b032ac17c8c3046f8a50266082597f"
   },
@@ -35,11 +35,11 @@
     "primary_pending_failed": 3,
     "primary_pending_guarded": 3
   },
-  "qualification_complete": false,
+  "qualification_complete": true,
   "pending_work": [
-    "Full browser and Worker run after source commit",
-    "Replay onto main after PR15 merge; prove runtime inputs identical before reusing v51 qualification",
-    "Publish separate current evidence ledger/PR after checks"
+    "PR15 exact-head16 CI + fresh read-only merge gate and user-authorized merge",
+    "Replay8 source commits onto PR15 squash main and prove tree identity",
+    "Publish current v52 source evidence ledger in separate PR with fresh exact-head CI"
   ],
   "source_refs": {
     "gold_file": "nta-invoice-domestic-english-gold.json",
@@ -50,7 +50,29 @@
   "sha256": {
     "corpus/manifest.json": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
     "corpus/results-nta-english-pending-integration.json": "91d2d30b24aab27331906e4ae0e39e521d6ebf19d5f083c7be717d0566e6a9f5",
-    "corpus/results-nta-english-reading-integration.json": "1cf205d610f22b8fb1ec80e572b885df1c5cb93c39efadbe04474c2a78675c83"
+    "corpus/results-nta-english-reading-integration.json": "1cf205d610f22b8fb1ec80e572b885df1c5cb93c39efadbe04474c2a78675c83",
+    "corpus/results-nta-english-chromium.json": "e12d7e7c1175581c2f34b46d17791d277b51d0b3492320c8282db9770bf8ef6f",
+    "corpus/results-nta-english-webkit.json": "671692a9d7255412f180b293aaededc7f09a55f7ed557a919219c40dfdcdb863",
+    "corpus/results-nta-english-workers.json": "eeeb55faf82582bcd171131e1a619ba98ead030adb5dfdd205e519cecfa6de23",
+    "corpus/results-nta-english-page-gold.json": "3a807658845e9f0aa21d00fb0fff54380c45f7259225b2d5ecc3e5544903c4ce",
+    "corpus/results-nta-english-operators.json": "f3f78d3d1d1e8b8a06c0f64300ba69ff5d3f322c21db7007d207bc359d47c565",
+    "corpus/results-nta-english-scalar-revision.json": "1604462fc37de11f8da16cdeee5aeed28dccf95ceb9d06e3898e04cc22c7c40f",
+    "corpus/results-nta-english-page-revision.json": "52406e0f0a87612d5c2d8cc779981d684c13e8eea7bbfe9bcfd1b430c436b002",
+    "corpus/results-nta-english-natural-contract.json": "21a76368c3772b00b0ac904c441f3a417a5f278ea0f154a72e043e6473fb8ffd"
   },
-  "scope": "Collection/evaluation coverage only. All3 independently declared rules are enforced; pending primary mismatch remains semantic failure despite guarded runtime outcome. The guard is existing source completeness evidence, not proof of recognized raster field IDs."
+  "scope": "Collection/evaluation coverage only. All3 independently declared rules are enforced; pending primary mismatch remains semantic failure despite guarded runtime outcome. The guard is existing source completeness evidence, not proof of recognized raster field IDs.",
+  "qualification_scope": "Local source/harness qualification complete; runtime-only native354/public6/717-page invariance inherited explicitly from identical PR15 inputs, not rerun or counted as fresh coverage. No extraction improvement is claimed.",
+  "fresh_local_checks": {
+    "Python": 75,
+    "fixture_hygiene": 2,
+    "chromium": 334,
+    "webkit": 334,
+    "worker_documents": 89,
+    "worker_operations": 1217,
+    "worker_successes": 1156,
+    "worker_rejections": 61,
+    "worker_additional": 244,
+    "offline_sources": 90,
+    "native_audits": "six exit0, pending exit3 expected; all3 pending semantic failures guarded"
+  }
 }

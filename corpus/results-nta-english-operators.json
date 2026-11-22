@@ -1,0 +1,208 @@
+{
+  "binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "manifest_sha256": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
+  "source_sha256": "669b2f1a9475b38c369d3b576cd36f6d4d17b36e2b724edd54f6c991dba68649",
+  "semantic_gold_sha256": "97e3d71f56b218c9194c8e75fa8fc91d3d0f68e7ffa03815336e94a77b4544f8",
+  "scope": "Selected visible operator inventory and introductory bound only; not full-page accuracy, reading order, geometry, or full natural-revision precision/recall.",
+  "checks": 7,
+  "passed": 7,
+  "results": [
+    {
+      "id": "nist-fips180-4-2012",
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "page": 16,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "Visible less-equal operators on printed page 10; one in introductory bound and eight in piecewise rows. Other symbols, whole-page text/order and coordinates are not gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02264": 9
+        },
+        "actual_inventory": {
+          "U+02264": 9
+        },
+        "forbidden_inventory": {
+          "U+0F0A3": 0
+        }
+      },
+      "expected_compact_fragment": "0≤t<79",
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 159,
+        "source_text_characters_missing": 189,
+        "source_unicode_accounting_unavailable": true,
+        "reading_order_requires_review": true
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "page": 15,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "Visible less-equal operators on printed page 10; two in introductory bound and eight in piecewise rows. The erratum on PDF page 36 independently identifies the < to ≤ editorial correction. Other symbols, whole-page text/order and coordinates are not gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02264": 10
+        },
+        "actual_inventory": {
+          "U+02264": 10
+        },
+        "forbidden_inventory": {
+          "U+0F0A3": 0
+        }
+      },
+      "expected_compact_fragment": "0≤t≤79",
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 132,
+        "source_text_characters_missing": 135,
+        "reading_order_requires_review": true
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "page": 9,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "One visible script small l in the parameter list, defined as the length of message M in bits. Counted manually on the rendered page; not full-page text, order or geometry gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02113": 1
+        },
+        "actual_inventory": {
+          "U+02113": 1
+        },
+        "forbidden_inventory": {
+          "U+0F06C": 0
+        }
+      },
+      "expected_compact_fragment": null,
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 65,
+        "source_text_characters_missing": 114,
+        "reading_order_requires_review": true
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "page": 17,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "One horizontal ellipsis between the first two and last SHA-512 constants in the introductory sentence. Counted manually on the rendered page; not the surrounding hex constants, full-page order or geometry gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02026": 1
+        },
+        "actual_inventory": {
+          "U+02026": 1
+        },
+        "forbidden_inventory": {
+          "U+0F04B": 0
+        }
+      },
+      "expected_compact_fragment": null,
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 27,
+        "source_text_characters_missing": 29
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips202-2015",
+      "source_sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+      "page": 14,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "Only four printed minus signs on original PDFpage14/printedpage6: m−r,−11,−3.2,and−3. Independently counted from original high-resolution image and corroborated by Adobe Symbol code0x2D, original Identity CID16, ToUnicodeF02D and matching embedded Microsoft Symbol cmap. Other hyphens, opaque ceiling/bracket pieces, page prose/order/geometry are outside this gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02212": 4
+        },
+        "actual_inventory": {
+          "U+02212": 4
+        },
+        "forbidden_inventory": {
+          "U+0F02D": 0
+        }
+      },
+      "expected_compact_fragment": null,
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 108,
+        "source_text_characters_missing": 109,
+        "source_unicode_accounting_unavailable": true
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips204-2024",
+      "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+      "page": 15,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "All five visible plus signs on original PDFpage15/printed5: one in prime q, two in the R row, two in the R_m row. Visually counted before product extraction. Not full prose, formula AST, reading order or geometry.",
+        "matches": true,
+        "expected_inventory": {
+          "U+0002B": 5
+        },
+        "actual_inventory": {
+          "U+0002B": 5
+        },
+        "forbidden_inventory": {}
+      },
+      "expected_compact_fragment": null,
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 195,
+        "source_text_characters_missing": 161
+      },
+      "passed": true
+    },
+    {
+      "id": "nist-fips204-2024",
+      "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+      "page": 15,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "Both visible math minus signs on original PDFpage15/printed5: prime q expression and m−1 in Z_m set. Also require flattened scalar order of the q formula, with exponents linearized after their bases and whitespace ignored. Not source-glyph identity, AST/exponent semantics, word spacing, whole-page order or highlight geometry.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02212": 2
+        },
+        "actual_inventory": {
+          "U+02212": 2
+        },
+        "forbidden_inventory": {}
+      },
+      "expected_compact_fragment": "223−213+1=8380417.",
+      "compact_fragment_matches": true,
+      "private_f0a3": 0,
+      "diagnostics": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 195,
+        "source_text_characters_missing": 161
+      },
+      "passed": true
+    }
+  ]
+}
