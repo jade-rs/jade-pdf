@@ -60,6 +60,7 @@ pub use output_path::resolve_output_parent;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
 mod table_cell_text;
+mod table_grid;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
 
@@ -4925,7 +4926,9 @@ fn augment_xs_from_partial_verticals(
     augmented
 }
 
-/// 罫線の欠損から横結合を反映した DOCX 表モデルを作る。
+/// 罫線の欠損から縦横の結合を反映した DOCX 表モデルを作る。
+///
+/// 結合がない場合は `None` を返し、呼び出し側の単純な表モデルに任せる。
 fn docx_table_model_from_grid(
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
@@ -4936,47 +4939,67 @@ fn docx_table_model_from_grid(
     if cells.is_empty() || cells.iter().any(|row| row.len() + 1 != xs.len()) {
         return None;
     }
-    let border_size = table_border_size_for_pdf_rule(table_rule_stroke_width(graphics, xs, ys));
-    let mut has_span = false;
-    let mut rows = Vec::with_capacity(cells.len());
-    for (row_index, row) in cells.iter().enumerate() {
-        let band_index = ys.len().checked_sub(2 + row_index)?;
-        let bottom = ys[band_index];
-        let top = ys[band_index + 1];
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let xs = xs.iter().map(|x| *x as f32).collect::<Vec<_>>();
+    let ys = ys.iter().map(|y| *y as f32).collect::<Vec<_>>();
+    let has_text = cells
+        .iter()
+        .map(|row| row.iter().map(|cell| !cell.trim().is_empty()).collect())
+        .collect::<Vec<Vec<bool>>>();
+    let rects = table_grid::merged_cells(&horizontal, &vertical, &xs, &ys, &has_text);
+    if rects
+        .iter()
+        .all(|rect| rect.row0 == rect.row1 && rect.col0 == rect.col1)
+    {
+        return None;
+    }
+    let row_count = cells.len();
+    let col_count = xs.len() - 1;
+    let mut owner = vec![vec![None::<usize>; col_count]; row_count];
+    for (index, rect) in rects.iter().enumerate() {
+        for row in owner.iter_mut().take(rect.row1 + 1).skip(rect.row0) {
+            for cell in row.iter_mut().take(rect.col1 + 1).skip(rect.col0) {
+                *cell = Some(index);
+            }
+        }
+    }
+    let border_size = table_border_size_for_pdf_rule(table_rule_stroke_width(
+        graphics,
+        &xs.iter().map(|x| *x as i32).collect::<Vec<_>>(),
+        &ys.iter().map(|y| *y as i32).collect::<Vec<_>>(),
+    ));
+    let top_of = |row: usize| ys[row_count - row];
+    let bottom_of = |row: usize| ys[row_count - row - 1];
+    let mut rows = Vec::with_capacity(row_count);
+    for row in 0..row_count {
         let mut modeled_row = Vec::new();
         let mut col = 0usize;
-        while col < row.len() {
-            let mut span = 1usize;
-            let mut text = row[col].clone();
-            let mut underlined = cell_underlines
-                .get(row_index)
-                .and_then(|row| row.get(col))
-                .copied()
-                .unwrap_or(false);
-            while col + span < row.len()
-                && !has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top)
-                && should_merge_across_missing_vertical_boundary(row, col, span)
-            {
-                underlined |= cell_underlines
-                    .get(row_index)
-                    .and_then(|row| row.get(col + span))
+        while col < col_count {
+            let rect = rects[owner[row][col]?];
+            let span = rect.col1 - rect.col0 + 1;
+            let vertical_merge = (rect.row1 > rect.row0).then_some(if row == rect.row0 {
+                DocxVerticalMerge::Restart
+            } else {
+                DocxVerticalMerge::Continue
+            });
+            let text = if row == rect.row0 {
+                (rect.row0..=rect.row1)
+                    .flat_map(|r| (rect.col0..=rect.col1).map(move |c| (r, c)))
+                    .map(|(r, c)| cells[r][c].trim())
+                    .filter(|text| !text.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            } else {
+                String::new()
+            };
+            let underlined = (rect.col0..=rect.col1).any(|c| {
+                cell_underlines
+                    .get(row)
+                    .and_then(|row| row.get(c))
                     .copied()
-                    .unwrap_or(false);
-                if !row[col + span].trim().is_empty() {
-                    if !text.trim().is_empty() {
-                        text.push(' ');
-                    }
-                    text.push_str(row[col + span].trim());
-                }
-                span += 1;
-            }
-            if span > 1 {
-                has_span = true;
-            }
-            let vertical_merge = vertical_merge_for_cell(graphics, xs, ys, row_index, col, span);
-            if vertical_merge.is_some() {
-                has_span = true;
-            }
+                    .unwrap_or(false)
+            });
+            let (left, right) = (xs[rect.col0], xs[rect.col1 + 1]);
             modeled_row.push(DocxTableCellModel {
                 text,
                 underlined,
@@ -4985,20 +5008,10 @@ fn docx_table_model_from_grid(
                 vertical_merge,
                 width_twips: None,
                 borders: Some(DocxCellBorders {
-                    top: has_horizontal_boundary_in_column_band(
-                        graphics,
-                        top,
-                        xs[col],
-                        xs[col + span],
-                    ),
-                    left: has_vertical_boundary_in_band(graphics, xs[col], bottom, top),
-                    bottom: has_horizontal_boundary_in_column_band(
-                        graphics,
-                        bottom,
-                        xs[col],
-                        xs[col + span],
-                    ),
-                    right: has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top),
+                    top: table_grid::is_ruled(&horizontal, top_of(row), left, right),
+                    left: table_grid::is_ruled(&vertical, left, bottom_of(row), top_of(row)),
+                    bottom: table_grid::is_ruled(&horizontal, bottom_of(row), left, right),
+                    right: table_grid::is_ruled(&vertical, right, bottom_of(row), top_of(row)),
                     size_eighths_pt: border_size,
                 }),
             });
@@ -5006,48 +5019,32 @@ fn docx_table_model_from_grid(
         }
         rows.push(modeled_row);
     }
-    has_span.then_some(DocxTableModel { rows })
+    Some(DocxTableModel { rows })
 }
 
-/// 欠けた縦罫線を結合として扱ってよいか判定する。
-fn should_merge_across_missing_vertical_boundary(row: &[String], col: usize, span: usize) -> bool {
-    let current_has_text = row[col..col + span]
-        .iter()
-        .any(|cell| !cell.trim().is_empty());
-    let next_has_text = row
-        .get(col + span)
-        .is_some_and(|cell| !cell.trim().is_empty());
-    !(current_has_text && next_has_text)
-}
-
-/// セルの縦結合状態を判定する。
-fn vertical_merge_for_cell(
+/// ページ graphics を水平・垂直の罫線区間へ分ける。
+fn grid_rules_from_graphics(
     graphics: &[ParsedGraphicElement],
-    xs: &[i32],
-    ys: &[i32],
-    row_index: usize,
-    col: usize,
-    span: usize,
-) -> Option<DocxVerticalMerge> {
-    if span != 1 {
-        return None;
+) -> (Vec<table_grid::Rule>, Vec<table_grid::Rule>) {
+    let mut horizontal = Vec::new();
+    let mut vertical = Vec::new();
+    for graphic in graphics {
+        let bounds = normalized_bounds(graphic.bounds);
+        if is_horizontal_line(&bounds) {
+            horizontal.push(table_grid::Rule {
+                at: bounds.y0,
+                start: bounds.x0,
+                end: bounds.x1,
+            });
+        } else if is_vertical_line(&bounds) {
+            vertical.push(table_grid::Rule {
+                at: bounds.x0,
+                start: bounds.y0,
+                end: bounds.y1,
+            });
+        }
     }
-    let band_index = ys.len().checked_sub(2 + row_index)?;
-    let has_boundary_above = if row_index == 0 {
-        true
-    } else {
-        has_horizontal_boundary_in_column_band(graphics, ys[band_index + 1], xs[col], xs[col + 1])
-    };
-    let has_boundary_below = if row_index + 1 >= ys.len().saturating_sub(1) {
-        true
-    } else {
-        has_horizontal_boundary_in_column_band(graphics, ys[band_index], xs[col], xs[col + 1])
-    };
-    match (has_boundary_above, has_boundary_below) {
-        (true, false) => Some(DocxVerticalMerge::Restart),
-        (false, _) => Some(DocxVerticalMerge::Continue),
-        _ => None,
-    }
+    (horizontal, vertical)
 }
 
 /// 指定 row band を縦罫線が分割しているか判定する。
