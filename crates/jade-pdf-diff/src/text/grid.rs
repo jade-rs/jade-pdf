@@ -1,5 +1,5 @@
 //! 閉じた罫線のセルを行方向に並べ、外部の見出しや日付を表の中へ取り込まない。
-use super::{order, table, ExtractedRun};
+use super::{inline, table, ExtractedRun};
 use crate::{ruled_grid::Plan, Bounds};
 use std::collections::{BTreeMap, BTreeSet};
 
@@ -103,7 +103,8 @@ fn groups(runs: &[ExtractedRun], grid: &Plan) -> Vec<Vec<usize>> {
                     || (indices.contains(&i)
                         && (r.tagged_cell.is_some()
                             || r.text.chars().any(super::is_rtl)
-                            || (!r.vertical && r.angle.rem_euclid(180.0).abs() > 0.1)))
+                            || r.vertical
+                            || r.angle.rem_euclid(180.0).abs() > 0.1))
             }) {
                 continue;
             }
@@ -155,7 +156,9 @@ pub(super) fn sort(runs: Vec<ExtractedRun>, point: f64, grid: &Plan) -> Vec<Extr
         let mut original = Vec::new();
         for cell in cells {
             let mut content = members.remove(cell).unwrap();
-            order::sort_runs(&mut content, point);
+            // セル内の閉じ括弧・日付の空欄を独立した段組み列とみなさない。
+            // 欄内はbaselineの行順に読み、添字の局所配置は既存の判定を保つ。
+            inline::sort(&mut content, point);
             original.extend(content);
         }
         let bounds = original.iter().map(|r| r.bounds).reduce(union).unwrap();

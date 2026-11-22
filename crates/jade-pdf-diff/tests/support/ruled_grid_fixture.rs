@@ -33,7 +33,9 @@ pub fn fixture(mode: &str, unit: f64, rotation: u16, revised: bool) -> Vec<u8> {
     } else {
         ""
     };
-    let body = if mode == "actual" {
+    let body = if mode == "multiline" {
+        "BT /F1 10 Tf 25 160 Td (L0\\() Tj 0 -30 Td (L1\\() Tj ET BT /F1 10 Tf 90 160 Td (\\)) Tj 0 -30 Td (\\)) Tj ET BT /F1 10 Tf 125 140 Td (B0) Tj ET BT /F1 10 Tf 40 60 Td (A1) Tj ET BT /F1 10 Tf 125 60 Td (B1) Tj ET".into()
+    } else if mode == "actual" {
         // 一つの原文置換領域が左右のセルにまたがる。意味をセルごとに切り分けない。
         "/Span << /ActualText <FEFF0052006500670069006F006E> >> BDC BT /F1 10 Tf 40 140 Td (A0) Tj ET BT /F1 10 Tf 125 140 Td (B0) Tj ET EMC".into()
     } else {
@@ -81,6 +83,7 @@ pub fn check() -> Result<usize, String> {
         "paragraphs",
         "header",
         "actual",
+        "multiline",
     ] {
         for unit in [0.125, 1.0, 8.0] {
             for rotation in [0, 90, 180, 270] {
@@ -94,6 +97,7 @@ pub fn check() -> Result<usize, String> {
                     "paragraphs" => &["A0", "A1", "B0", "B1"],
                     "header" => &["Title", "Date", "A0", "B0", "A1", "B1"],
                     "actual" => &["Region"],
+                    "multiline" => &["L0(", ")", "L1(", ")", "B0", "A1", "B1"],
                     _ => &["A0", "B0", "A1", "B1"],
                 };
                 if ir.pages[0]
