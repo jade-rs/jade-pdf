@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "w3c-pdf7-ocr-tagged-2026-selected-gold",
+  "declared_utc": "2026-11-22T12:05:03.342354+00:00",
+  "source_id": "w3c-pdf7-ocr-tagged-2026",
+  "source_url": "https://www.w3.org/WAI/WCAG22/working-examples/pdf-ocr/ocr-example-tagged.pdf",
+  "source_sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+  "source_review": "w3c-pdf7-ocr-source-review.json",
+  "product_output_inspected_before_initial_declaration": false,
+  "web_source_text_extraction_seen_before_declaration": true,
+  "basis": "Manually inspected complete original Poppler page and288dpi ingredient detail; source OCR text supplied by web is not ground truth and misreads one-eighth as one-quarter.",
+  "registration_status": "Unregistered source candidate; do not register as passing coverage before measuring all declared cases.",
+  "correlated_source_family": "Both originals have exactly the same visible page; two PDF containers are not two independent semantic contents.",
+  "normalization": "Headings: NFC and whitespace removal. Quantities: exact rational value, permitting Unicode vulgar fractions or equivalent ASCII/fraction-slash numeric spelling. No correction of wrong values.",
+  "reading_order": [
+    {
+      "case_id": "w3c-pdf7-ocr-tagged-2026-heading-order",
+      "page": 1,
+      "anchors": [
+        "Schnitzelbank Pot",
+        "Minnesota Blue",
+        "Pineapple"
+      ],
+      "scope": "Only the three visible headings in page order; not the hand silhouette, body prose or complete page reading order."
+    }
+  ],
+  "quantity_contexts": [
+    {
+      "case_id": "w3c-pdf7-ocr-tagged-2026-roquefort",
+      "page": 1,
+      "context": "pound imported Roquefort",
+      "numerator": 1,
+      "denominator": 8,
+      "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity."
+    },
+    {
+      "case_id": "w3c-pdf7-ocr-tagged-2026-butter",
+      "page": 1,
+      "context": "pound butter",
+      "numerator": 1,
+      "denominator": 4,
+      "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity."
+    },
+    {
+      "case_id": "w3c-pdf7-ocr-tagged-2026-olives",
+      "page": 1,
+      "context": "cup finely chopped olives",
+      "numerator": 1,
+      "denominator": 2,
+      "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity."
+    },
+    {
+      "case_id": "w3c-pdf7-ocr-tagged-2026-pimiento",
+      "page": 1,
+      "context": "cup canned pimiento",
+      "numerator": 1,
+      "denominator": 4,
+      "scope": "Only the exact numeric quantity immediately before this ingredient context. Accept mathematically equivalent numeric fraction notation, not other ingredients or whole text fidelity."
+    }
+  ],
+  "notice": "Copyright © 2023 W3C®. This software or document includes material copied from or derived from Technique PDF7: Performing OCR on a scanned PDF document to provide actual text, https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7 . Jade created independent test observations; W3C does not endorse Jade. Original PDFs remain unchanged."
+}

@@ -1,0 +1,80 @@
+{
+  "version": 1,
+  "date": "2026-11-22T12:05:03.342477+00:00",
+  "registered": false,
+  "product_baseline_not_run": true,
+  "source_page": "https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7",
+  "sources": [
+    {
+      "id": "w3c-pdf7-ocr-example-2026",
+      "url": "https://www.w3.org/WAI/WCAG22/working-examples/pdf-ocr/ocr-example.pdf",
+      "sha256": "7a161be656c7e82986a1959890eadbdcd0876e15e01b28fd00900190de15eed5",
+      "bytes": 481118,
+      "pages": 1,
+      "reviewed_pages": [
+        1
+      ],
+      "encrypted": false,
+      "tagged": false,
+      "interactive_fields": 0,
+      "widgets": 0,
+      "active_actions_executed": false
+    },
+    {
+      "id": "w3c-pdf7-ocr-tagged-2026",
+      "url": "https://www.w3.org/WAI/WCAG22/working-examples/pdf-ocr/ocr-example-tagged.pdf",
+      "sha256": "99fc320c2fe78e9aea09dcecdf39aa788697beca2410dd85d82ca5819674df14",
+      "bytes": 480905,
+      "pages": 1,
+      "reviewed_pages": [
+        1
+      ],
+      "encrypted": false,
+      "tagged": true,
+      "interactive_fields": 0,
+      "widgets": 0,
+      "active_actions_executed": false
+    }
+  ],
+  "full_original_pages_reviewed_before_product": true,
+  "source_text_not_ground_truth": true,
+  "privacy_review": "Published generic recipe/history page with a pointing-hand silhouette; no private contacts, applicants, identifiers, signatures or filled form fields. Historical public person/place names occur in the prose.",
+  "rights": {
+    "attribution": "Copyright © 2023 W3C®. This software or document includes material copied from or derived from Technique PDF7: Performing OCR on a scanned PDF document to provide actual text, https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF7 . Jade created independent test observations; W3C does not endorse Jade. Original PDFs remain unchanged.",
+    "source_pages": [
+      "https://www.w3.org/WAI/about/using-wai-material/",
+      "https://www.w3.org/copyright/document-license-2023/",
+      "https://www.w3.org/copyright/software-license-2023/"
+    ],
+    "use": "Unchanged original PDFs in ignored internal cache; independent bounded test excerpts/observations with source URL and changed-derived notice for implementation of PDF OCR text verification. Not a replacement specification. No PDF/font/illustration binaries exported to Git.",
+    "separate_notice_visible_on_original_pages": false,
+    "font_programs_or_outlines_exported": false
+  },
+  "display_review": {
+    "Poppler_original_pages_exactly_identical": true,
+    "Poppler_PNG_sha256": "0e7affe66612413267b3902e5fc0eae8adbc42d7b069c1681b130d2ed881cefa",
+    "independent_native_SDK_versions": [
+      "7961",
+      "8111"
+    ],
+    "same_rendered_pixels_between_originals_and_SDK_versions": true,
+    "reference": "source-render-reference.json",
+    "false_blank_observation": "Initial inline duplicate image appeared blank; contradicted by byte-identical saved original pages and reference renders. Not a source defect."
+  },
+  "independent_cases": {
+    "per_original": 5,
+    "heading_order": 1,
+    "numeric_quantity_contexts": 4,
+    "visible_roquefort_quantity": "1/8",
+    "source_OCR_text_does_not_define_expected_value": true,
+    "not_full_page_semantic_gold": true
+  },
+  "evidence_sha256": {
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/candidate-download.json": "0b777c625c4d3c60907a43fe8bcbd4fb815c413b2efbdf3ba2bb7a87cc11e9d4",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/static-source-inspection.json": "d2a4a583b979754f7c65eace7b3c3d9620b442c45ac06b72959455f86f7a382d",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/source-render-reference.json": "9e4cefd8c9a543f9e1e93b136b4bea416eb16cd582bcf52089108a18400d2093",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/original-ocr.png": "0e7affe66612413267b3902e5fc0eae8adbc42d7b069c1681b130d2ed881cefa",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/original-tagged.png": "0e7affe66612413267b3902e5fc0eae8adbc42d7b069c1681b130d2ed881cefa",
+    "corpus/wasm-runtime/w3c-ocr-source-qualification/ingredients-detail.png": "825d65436979046975dfdb2a90c4559242705af7e6d084ddffcd0a4af951acca"
+  }
+}
