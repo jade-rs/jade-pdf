@@ -1848,6 +1848,16 @@ fn byte_conversion_preserves_pdf_alignment_and_table_width_in_docx_properties() 
     .join(&b' ');
     let pdf_bytes = flate_pdf_with_page_contents(&[&content]);
     let output_docx = temp_file_path("minimum_conversion_pdf_alignment_table_width", "docx");
+    let parsed = jade_pdf2docx_parser::parse_pdf_bytes("alignment-width.pdf", &pdf_bytes).unwrap();
+    let centered = parsed
+        .text_elements
+        .iter()
+        .find(|element| element.text == "Centered")
+        .unwrap();
+    assert!(
+        ((centered.bounds.x0 + centered.bounds.x1) / 2.0 - 148.565).abs() < 0.01,
+        "the authored Helvetica line is slightly left of the 150pt page centre"
+    );
 
     let docx_bytes = convert_minimum_pdf_bytes_to_docx_bytes("alignment-width.pdf", &pdf_bytes)
         .expect("byte conversion must succeed");
@@ -1863,8 +1873,8 @@ fn byte_conversion_preserves_pdf_alignment_and_table_width_in_docx_properties() 
         "right PDF text must become a right-aligned DOCX paragraph: {doc_xml}"
     );
     assert!(
-        doc_xml.contains(r#"<w:ind w:left="0" w:right="400""#),
-        "centered PDF text must compensate the 20pt section left margin with a symmetric 400twip right indent: {doc_xml}"
+        doc_xml.contains(r#"<w:ind w:left="0" w:right="457""#),
+        "the 148.565pt source centre must survive the 20pt section margin, with at most half a twip of centre error: {doc_xml}"
     );
     assert!(
         doc_xml.contains(r#"<w:ind w:left="0" w:right="656""#),

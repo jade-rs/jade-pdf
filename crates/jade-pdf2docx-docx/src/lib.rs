@@ -34,6 +34,7 @@ mod native_spacing;
 mod ocr_reconcile;
 mod output;
 mod package;
+mod paragraph_anchor;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -1876,6 +1877,11 @@ fn paragraph_from_structured_line(
     match line.alignment {
         ParagraphAlignment::Center => {
             let paragraph = paragraph.align(AlignmentType::Center);
+            if let Some((left, right)) = page_width.and_then(|width| {
+                paragraph_anchor::centred_indents(line.left_x, line.right_x, origin_x, width)
+            }) {
+                return paragraph.indent(Some(left), None, Some(right), None);
+            }
             if let Some(indent) = pdf_points_to_indent_twips(origin_x)
                 && indent > 0
             {
