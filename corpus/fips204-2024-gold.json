@@ -1,0 +1,65 @@
+{
+  "id": "nist-fips204-2024",
+  "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+  "declared_before_product_extraction": true,
+  "source_review": "corpus/fips204-2024-review.json",
+  "source_review_sha256": "e1169600c173dccc3078ab6a061bed0af2970b3f3c663378ddb3c8cc180a3050",
+  "gold": {
+    "page": 2,
+    "kind": "full_page_text",
+    "text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning the Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory",
+    "scope": "All visible text on original PDFpage2 Foreword, transcribed from full original image before product extraction. NFC and whitespace collapse only; no other page, glyph-encoding or highlight claim."
+  },
+  "symbol_operator_gold": [
+    {
+      "id": "nist-fips204-2024",
+      "case_id": "nist-fips204-p15-plus",
+      "page": 15,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          43,
+          43
+        ]
+      ],
+      "count_each": 5,
+      "scope": "All five visible plus signs on original PDFpage15/printed5: one in prime q, two in the R row, two in the R_m row. Visually counted before product extraction. Not full prose, formula AST, reading order or geometry."
+    },
+    {
+      "id": "nist-fips204-2024",
+      "case_id": "nist-fips204-p15-minus",
+      "page": 15,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          8722,
+          8722
+        ]
+      ],
+      "count_each": 2,
+      "compact_fragment": "223−213+1=8380417.",
+      "scope": "Both visible math minus signs on original PDFpage15/printed5: prime q expression and m−1 in Z_m set. Also require flattened scalar order of the q formula, with exponents linearized after their bases and whitespace ignored. Not source-glyph identity, AST/exponent semantics, word spacing, whole-page order or highlight geometry."
+    }
+  ],
+  "reading_order": [
+    {
+      "page": 26,
+      "anchors": [
+        "Private Key Public Key Signature Size",
+        "ML-DSA-44",
+        "2560",
+        "1312",
+        "2420",
+        "ML-DSA-65",
+        "4032",
+        "1952",
+        "3309",
+        "ML-DSA-87",
+        "4896",
+        "2592",
+        "4627"
+      ]
+    }
+  ],
+  "reading_order_gold_source": "Original PDFpage26/printed16 Table2, independently read before product extraction. One header and all three row labels and nine values in row-major order. NFC and whitespace removal for anchor order only; not cell/ink geometry, source encoding or other tables."
+}
