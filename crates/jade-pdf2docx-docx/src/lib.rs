@@ -949,8 +949,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
-    let origin_x = page_layout_origin_x(page.page, &page.lines, positioned_tables, parsed);
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
+    let origin_x = if section_origin_x.is_finite() {
+        section_origin_x
+    } else {
+        0.0
+    };
     let page_width = parsed
         .pages
         .iter()
@@ -1530,40 +1534,6 @@ fn pdf_points_to_floor_twips(points: f32) -> Option<i32> {
         return None;
     }
     Some((points * 20.0).floor() as i32)
-}
-
-/// DOCX の余白と二重計上しないためのページ内 layout 原点を推定する。
-fn page_layout_origin_x(
-    page: usize,
-    lines: &[StructuredTextLine],
-    positioned_tables: &[PositionedTable],
-    parsed: &ParsedDocument,
-) -> f32 {
-    let min_line_x = lines
-        .iter()
-        .filter(|line| line.alignment == ParagraphAlignment::Left)
-        .map(|line| line.left_x)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    let min_table_x = positioned_tables
-        .iter()
-        .filter(|table| table.page == page)
-        .map(|table| table.bounds.x0)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    let min_image_x = parsed
-        .image_elements
-        .iter()
-        .filter(|image| image.page == page && !image.floating)
-        .map(|image| image.bounds.x0)
-        .filter(|x| x.is_finite() && *x >= 0.0)
-        .fold(f32::INFINITY, f32::min);
-    min_line_x
-        .min(min_table_x)
-        .min(min_image_x)
-        .is_finite()
-        .then_some(min_line_x.min(min_table_x).min(min_image_x))
-        .unwrap_or(0.0)
 }
 
 /// parser の画像要素から DOCX picture を構築する。

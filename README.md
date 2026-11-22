@@ -48,6 +48,8 @@ Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite or
 
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
+Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
+
 PDF comparison qualification uses 81 collected public PDFs (69 regular documents, 10 robustness inputs, one specification reference, and one unresolved semantic gold case). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 
 ## Development
