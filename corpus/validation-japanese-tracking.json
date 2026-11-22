@@ -1,0 +1,288 @@
+{
+  "version": 45,
+  "date": "2026-11-22",
+  "core_revision": "6a36073babc6c257d72dcb093ee8affe40b2b2cf",
+  "qualification_revision": "9fcf9aa9988d261d26cd1cc3b104dcc61d2f1fa7",
+  "base_revision": "bd55afd3cd657553ec907a942e247c3c323950b8",
+  "production_ready": false,
+  "scope": "Remove only verified SDK-generated U+0020 separators between assigned wide Han/Kana/Common letters with safe upright full-em advance cells and quarter-em tracking, after reading order is fixed. Preserve literal and ActualText blanks, unsupported metrics, larger gaps, Latin/Hangul, scalar cells and existing diagnostics. Canonical voicing decomposition resolves the same base scalar. Not general word-spacing or full-page accuracy.",
+  "collection": {
+    "registered_documents": 87,
+    "regular_documents": 74,
+    "regular_pages": 651,
+    "new_documents": 1,
+    "new_pages": 3,
+    "pending_semantic_documents": 2,
+    "previous_manifest": "manifest-symbol-components.json"
+  },
+  "semantic_gold": {
+    "regular_full_page": {
+      "correct": 9,
+      "cases": 9
+    },
+    "text_context": {
+      "before_correct": 2,
+      "after_correct": 3,
+      "cases": 3
+    },
+    "scalar_inventory": {
+      "correct": 1,
+      "cases": 1
+    },
+    "visible_operators": {
+      "correct": 5,
+      "cases": 5
+    },
+    "reading_order": {
+      "documents": 14,
+      "passed": 14,
+      "pages": 17,
+      "anchors": 193,
+      "new_vertical_sentence_pages": 2
+    },
+    "retained_natural_revision": {
+      "correct": 1,
+      "cases": 1
+    }
+  },
+  "transition": {
+    "documents": 74,
+    "pages": 651,
+    "changed_pages": 6,
+    "changed_ordered_scalar_pages": 0,
+    "changed_block_inventory_pages": 0,
+    "changed_diagnostic_pages": 0,
+    "changed_documents": [
+      {
+        "id": "mhlw-employment",
+        "pages": [
+          1,
+          3,
+          4
+        ]
+      },
+      {
+        "id": "nta-invoice-domestic-case2-2026",
+        "pages": [
+          1,
+          2,
+          3
+        ]
+      }
+    ],
+    "public_cells": {
+      "cases": 6,
+      "matched": 6,
+      "nonwhitespace_scalars": 6761,
+      "source_owned_nonwhitespace_scalars": 0,
+      "scope": "All pages changed by the paired native extraction audit. Literal nonwhitespace scalar sequence, public character spans, run bounds/font sizes, diagnostics and per-character source-region ownership must remain exact. Source-region indices may shift with removed blanks but ownership must not. Not semantic text gold, glyph-ink truth or full diff precision/recall."
+    }
+  },
+  "verification": {
+    "native": {
+      "passed": 323,
+      "ignored": 8,
+      "test_groups": 29,
+      "log_sha256": "060b2810c7f61de617f131ecbbbfc257ab5f1ff36f249a4b48e64b626b5817e3"
+    },
+    "public_corpus": {
+      "passed": 6,
+      "semantic_characters_conserved": 1133294,
+      "log_sha256": "da5f9f93023ceb3e7c9cc8533cc53ecb357202f447d05953443523f3f59f6866"
+    },
+    "owned_api_tests": 6,
+    "owned_geometric_cases": 64,
+    "wasm_owned_geometry_combinations_per_mode": 32,
+    "wasm_owned_modes": 11,
+    "python_harness_passed": 44,
+    "fixture_hygiene_passed": 2,
+    "fmt_root_and_probe": true,
+    "clippy_root_and_probe_warnings_denied": true,
+    "javascript_semantic_gold": true,
+    "javascript_engine_selector": true,
+    "generator_hash_check": true,
+    "native_binary_sha256": "644a8765ba19aaf343fd4dd5746c0bad2fd50fc2e355bc7e97744b1ffcff18ce",
+    "baseline_binary_sha256": "1bcf3028db3188583a5a4c2637238ecf50ae85371c1cbb838bbc65f142b88524",
+    "wasm_sha256": "6913f78fe3e796079750f7394ac2938f403342354917c3db7627989dbefca557",
+    "browsers": [
+      {
+        "browser_engine": "chromium",
+        "browser": "159.0.8154.6",
+        "cases": 316,
+        "passed": 316,
+        "context_gold_checks": 3,
+        "context_gold_passed": 3,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      },
+      {
+        "browser_engine": "webkit",
+        "browser": "27.2",
+        "cases": 316,
+        "passed": 316,
+        "context_gold_checks": 3,
+        "context_gold_passed": 3,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      }
+    ],
+    "workers": {
+      "documents": 86,
+      "passed_documents": 86,
+      "operation_checks": 1123,
+      "matching_operations": 1123,
+      "matching_successful_operations": 1062,
+      "matching_rejections": 61,
+      "cases": 232,
+      "passed": 232,
+      "context_gold_checks": 3,
+      "context_gold_passed": 3,
+      "semantic_gold_by_cohort": {
+        "documents": {
+          "full_page_text": {
+            "cases": 9,
+            "correct": 9,
+            "failed": 0
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 1,
+            "failed": 0
+          }
+        },
+        "pending_semantic": {
+          "full_page_text": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          }
+        }
+      }
+    },
+    "supporting_log_sha256": {
+      "tracking-red": "e89c56d96178889b14b5953073479eca138879ee89a2ae389c30f45dec0685f4",
+      "tracking-nfd-red": "0c2a6f59f4cc6dfa2a3af8113f338024331e326b74098c6032247a64776d26a0",
+      "tracking-nfd-green": "8bd097204e37298d20be515a1d15138dba81771188f0a1aaa623b64736c3d7f0",
+      "tracking-property": "95dbbb63e1fb3233d52067354dab5b92ae735fa6db23ff72b1d9fe392a9047fd",
+      "tracking-clippy-final": "32a8cc51220baa560471b64ac6321a04e5368ac4bdbe07d675b21bc862327cd0",
+      "tracking-probe-clippy": "aa42bdf0193b949ca226734fd89639ebb0b14db923a28cacacd18c817794c769",
+      "tracking-python-final": "4ff72c3f408ddd36efc5147bff84a7ee6b979fafbd4a2aa28ddf79f872a458ea"
+    }
+  },
+  "unresolved": {
+    "arabic_full_page_correct": 0,
+    "arabic_full_page_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "guarded_failures": 2,
+    "general_word_spacing_unproven": true,
+    "full_page_japanese_form_and_table_order_unproven": true,
+    "mathematical_structure_and_general_script_order_unproven": true,
+    "mt_extra_assembly_fragments_unresolved": true,
+    "full_natural_revision_precision_recall_unproven": true
+  },
+  "previous_validation": "validation-symbol-components.json",
+  "qualified_core_tree": "43d7666472606a6460c464d8578cf30692b8c000",
+  "qualified_source_tree": "cc2f27ebf8b49414f8852eff9bfb2f73567ede55",
+  "sha256": {
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "README.md": "3d103fb30c48ce22b175658cfa67e9330ecb03a8fa094fde928871bcf7cd3bba",
+    "corpus/README.md": "e6f5dd3262a78fbd554c6b330a0236dd0453b93a1b83d7a6d7a9556138a90c21",
+    "corpus/japanese-tracking-review.json": "07c74131030aecfa444de709ec8dc7f61209825c8f45292e42c310273debb7e2",
+    "corpus/manifest-symbol-components.json": "50de8a65bcf8a906050f8781d5703eea30eabfe78a7d12de75b7be680982c5ab",
+    "corpus/manifest.json": "150733e8894123f56959d79737f00a0e7d12499bd9b74d752a7928e40d84a8fc",
+    "corpus/results-browser-chromium-japanese.json": "88966fb43a6bc71aebacb99967e7125320d6a0cc00a7ba4447700f83d992fd10",
+    "corpus/results-browser-webkit-japanese.json": "0842c10e0484ffabf4b6f8bf9b19c2c197327e1b14be1183d53149ed0f735289",
+    "corpus/results-cells-japanese.json": "10f6f754dd0f46d08c539b5757b1e01b56d14fa90b2f2b2d8a2ad02f81e068a0",
+    "corpus/results-impact-japanese.json": "0bd7bf513d6e7c4587dfe61dfb3c111b6a1c5e4c7bd092b081d7ba611e1b6bd4",
+    "corpus/results-page-gold-japanese-before.json": "a3b311fbfefbaa291d389b85c4782ff22415f4409b8fad521d29bf600e071323",
+    "corpus/results-page-gold-japanese.json": "db2a44c3e27886b808b666dce056e1b18789d8d8107b5b63137849c18de678a3",
+    "corpus/results-pending-semantic-japanese.json": "2900a6f5fd37f80347eb09c77c244004fcef6707cd5385c5dea8f84d03cada7c",
+    "corpus/results-reading-order-japanese.json": "1cc59ce0790733eaa0ac2d1ac2cf63c58d8c68a3a8d42e748db45fc2632300cf",
+    "corpus/results-scalar-revision-japanese.json": "2d923ca3b02b5103ceba207575cc7ca38669eb504ecbdad546306dde1e466b8a",
+    "corpus/results-symbol-operators-japanese.json": "f6df2e57ec5c61be533e07689d1c61e91f884de8c959914ca57e9a5de4eb5600",
+    "corpus/results-workers-japanese.json": "76f50b4937ed69630e3763e2481dfada0b36fd075f802401ca3830e67ea154d8",
+    "crates/jade-pdf-diff/resources/japanese-tracking.json": "2e6387229ff349d6bfbe0f32403774ed5d6d0c964e916d44a19dc77399ba9b22",
+    "crates/jade-pdf-diff/resources/unicode-license-v3.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+    "crates/jade-pdf-diff/src/lib.rs": "7f6f0d9bd1253722eb4c254c22ff721d38f0f6efacc592dede1d38c18d39b8a5",
+    "crates/jade-pdf-diff/src/main.rs": "1ba4ecb1db22a2f20743fd740267afd6c652f82f3d6d89e4359503c0349fcdce",
+    "crates/jade-pdf-diff/src/text.rs": "bbd661af40a4a4755da4c22e8563cf0bb4cdb90a7ab8e081aa3fae18cc28d52f",
+    "crates/jade-pdf-diff/src/text/japanese_data.rs": "78376f6ac3e39c71c406ab87e90bf4d07048d98dd48344ccef99830abd8a21f2",
+    "crates/jade-pdf-diff/src/text/spacing.rs": "2faff1352afad60b0cde2a50a80e8951534de7416ab592db737188273d400a67",
+    "crates/jade-pdf-diff/tests/cli.rs": "f12cc87ea73b1bc85cc0741824383180eea60d63ecd26a9a05448d4b79dac8c7",
+    "crates/jade-pdf-diff/tests/japanese_tracking.rs": "66f6b35cbd8a865e9f4692ac91f061515466a0f7b86c1efb7268fb8dfe58a597",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "6a55f5724880b57a0170e0eee93a0725157cb926566e1f1f4e733ee4d49a3627",
+    "crates/jade-pdf-diff/tests/support/japanese_tracking_fixture.rs": "dc1eccaacca6482eb1d2e0bbade986c1e514765eccd14171b27ce51edad8bed7",
+    "docs/pdf_diff.md": "842dbc4adea21e0e55674db28c2748348bf46c2e99c52081ecc6a1e0e0af8d46",
+    "tools/audit_page_gold.py": "45dc474c15c875c07d7cbcccb1ba91cd5f7437a91b6d2c880abd2816b74a10a8",
+    "tools/audit_reading_order.py": "6cd554a2ca990c899628b9ff528fa06a12a3102f43cede2b20946227720f3702",
+    "tools/audit_run_grouping.py": "8d84e725fd9be6697257d7a716a49246080ee1fd2ef44a8208e8264143009a02",
+    "tools/audit_spacing_cells.py": "3d42c2c9d10067ea69068de0bb3ca9071772b4aa691e82421f3b12bc8c9ceb3f",
+    "tools/generate_japanese_letters.py": "d8a00ee3bba7de8b4a7c08297c71f847000216db4843debf91325164f3c64e9b",
+    "tools/generate_japanese_tracking_font.py": "6ab331b4778835ada298696c6b6e4a79f8c5ef81b00d5dad083b5e4fc29f615e",
+    "tools/semantic_gold.py": "177f78aaed164ed8bf5e73703450e09ee6ab2d7aa050cab62b1e8dc39906bae9",
+    "tools/test_japanese_letters.py": "c7f699357ce4daedb473c8855714024ac2e580b7fc9d1046ac408e81dc2508da",
+    "tools/test_spacing_cells.py": "4d8279c54ad38eb96def1e6f20dd137a221fc5caf3d1734e562d509180e655c5",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/browser_smoke.mjs": "453af720c9df8fa910a727924e8b6bcf551bcb64cfcdaefa6cae7524fae328ec",
+    "tools/wasm-smoke/semantic_gold.mjs": "877f4ac8696971056e2d6a5ee38f99426f4780101723b87a9a43bfb1074e3260",
+    "tools/wasm-smoke/src/japanese_tracking.rs": "24ef80e450961a3ad1208243f9fc65280b0d10380b5375d8594b9de8d4d99c1a",
+    "tools/wasm-smoke/src/lib.rs": "d6ed522a05264b9f312db32977ef21a09465fa0bdbcd6a6b8bda6220a878e4a4",
+    "tools/wasm-smoke/worker_smoke.mjs": "a20c9751852b18d77aaa54313ae15d900b2db398af648eea6910f8fd28a71b85"
+  },
+  "qualified_result_tree": "39e9a66654bb8a34234dc0b934dd3dbf4f06b49a",
+  "rebase_verification": "All three qualified source/result trees are byte-identical before/after replay onto merged PR9. Only ledger history metadata was subsequently updated; pinned source/checker/manifest/report bytes and frozen native/WASM artifacts are unchanged."
+}

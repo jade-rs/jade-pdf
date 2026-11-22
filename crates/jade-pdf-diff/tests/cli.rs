@@ -45,6 +45,7 @@ fn license_notices_include_the_source_glyph_table_without_loading_pdfium() {
     assert!(text.contains(pdf_diff::ADOBE_GLYPH_LIST_LICENSE));
     assert!(text.contains(pdf_diff::ADOBE_SYMBOL_ENCODING_LICENSE));
     assert!(text.contains(pdf_diff::TTF_PARSER_LICENSE));
+    assert!(text.contains(include_str!("../resources/unicode-license-v3.txt")));
     assert!(text.contains("Copyright 2002-2019 Adobe"));
     assert!(!cache.exists());
 }

@@ -66,6 +66,8 @@ Unicode抽出の正しさを独立に保証するものでもない。SDKの文�
 
 水平LTR文字の送りセルが接すると確認できる場合、別オブジェクトの字面の左右余白だけでは単語間空白を生成しない。たとえば細い「1」と次の「8」が連続する `180-3` に、余分な空白が入ることを防ぐ。原文の空白と実際の単語間隔を保持し、文字自体の回転・せん断・不明な送り幅には従来の判定を使う。生成空白の削除と文字セルの更新は読み順の確定後に行う。ただし、送りセルで偽と確認した空白だけを除くと8桁以内の十進数になる場合は、削除前から数値添字として判定する。これにより字面余白の差で添字の「10」が別行へ送られることを防ぐ。実際の単語間空白、文字や演算子を含む未検証の式はこの追加規則へ含めない。文字の字面座標とSDK・原文の診断を保持し、文字列と文字セル・原文領域の添字を一緒に更新する。
 
+全角Han/Kana等の文字同士では、確認できた送りが1文字幅の1%以内で、送り末尾から次の文字までの字間が四分アキ以内の場合に限り、SDK・行結合が補った空白を抑える。Unicode18の割り当て済み文字クラスと原点・送り幅を照合し、濁点の正準分解でも基底文字を同じように扱う。原文とActualTextに書かれた空白、欧文・ハングル、四分アキを超える間隔、未知の幅・回転・せん断は従来の扱いを保つ。削除は読み順の確定後に行い、セルと原文領域の添字を同時に更新する。文字クラス・固定SHA・組版資料と限定範囲は `resources/japanese-tracking.json` に記録する。任意の日本語の語境界やページ全体の読み順を保証するものではない。
+
 SDKのページと入れ子のFormを辿り、文字レコードが1件もないテキストオブジェクトの数を
 `PageIr.sdk_text_objects_without_characters` に返す。文字レイヤーでは同名のページ単位の数を各runに返す。
 比較診断は `old_pages_with_unobserved_text_objects` / `new_pages_with_unobserved_text_objects` に集計し、
@@ -234,7 +236,7 @@ WASMのPDF処理開始時には、同梱した855バイト・1文字の検査用
 `PDFIUM_NO_AUTO_DOWNLOAD=1` ではキャッシュが未取得・破損ならエラーを返し、埋め込み版は内蔵データから復元する。
 `JADE_PDFIUM_CACHE_DIR` でキャッシュ先を指定できる（旧 `PDFIUM_AUTO_CACHE_DIR` も受け付ける）。
 `PDFIUM_LIB_PATH` は実行時、`PDFIUM_BUNDLE_LIB` はビルド時のカスタムSDK指定で、固定版の検証対象から外れる。
-`pdfium_library_path()` で実際に利用するパス、`pdf-diff --licenses` で既定SDK、Adobe Glyph List、Adobe Symbol表、ttf-parserのライセンス表示を取得できる。ライブラリ配布では `ADOBE_GLYPH_LIST_LICENSE`、`ADOBE_SYMBOL_ENCODING_LICENSE`、`TTF_PARSER_LICENSE` も添付する。
+`pdfium_library_path()` で実際に利用するパス、`pdf-diff --licenses` で既定SDK、Adobe Glyph List、Adobe Symbol表、ttf-parser、Unicode資料のライセンス表示を取得できる。ライブラリ配布では `ADOBE_GLYPH_LIST_LICENSE`、`ADOBE_SYMBOL_ENCODING_LICENSE`、`TTF_PARSER_LICENSE`、`UNICODE_DATA_LICENSE` も添付する。
 対応する配布物は macOS arm64/x64、Linux glibc arm64/x64、Windows arm64/x64/x86。
 WASM 8111用の初期化アダプターと検証付き取得例は `tools/wasm-smoke/prepare_runtime.py` にある。
 

@@ -1,0 +1,30 @@
+{
+  "unicode_version": "18.0.0",
+  "sources": {
+    "Scripts.txt": {
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/Scripts.txt",
+      "sha256": "0071fd81b6aeae25f6e8bce8efec3066a6476a91b49bdb2f52dc76e817862a6a"
+    },
+    "EastAsianWidth.txt": {
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/EastAsianWidth.txt",
+      "sha256": "a0cf29eacd00cfcaec4381c6b7c281685f18dbb4e7ff82b4076ccb342ca839aa"
+    },
+    "DerivedGeneralCategory.txt": {
+      "url": "https://www.unicode.org/Public/18.0.0/ucd/extracted/DerivedGeneralCategory.txt",
+      "sha256": "d6b151d2d40ee9b1876d26f417980f45ffae47b6055ccf7203cb31f07a030f94"
+    }
+  },
+  "generator": "tools/generate_japanese_letters.py",
+  "generated": "src/text/japanese_data.rs",
+  "generated_sha256": "78376f6ac3e39c71c406ab87e90bf4d07048d98dd48344ccef99830abd8a21f2",
+  "ranges": 31,
+  "scalars": 103534,
+  "license": "Unicode License V3",
+  "license_file": "unicode-license-v3.txt",
+  "license_sha256": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+  "tracking_limit_em": 0.25,
+  "full_em_width_tolerance": 0.01,
+  "typography_source": "https://www.w3.org/TR/jlreq/#procedures_for_inter_character_space_expansion",
+  "class_source": "https://github.com/w3c/jlreq/blob/gh-pages/docs/spacing_property/spacing_property.md",
+  "scope": "Assigned EAW=W and General_Category=L* and Script=Han/Hiragana/Katakana/Common, plus U+3007,U+309B,U+309C,U+3013. Used only to distinguish bounded Japanese character tracking from inferred word spaces. JLReq documents up-to-quarter-em inter-character expansion; it does not prescribe PDF text extraction. Literal source blanks, Latin, Hangul and unsupported metrics retain their existing treatment."
+}
