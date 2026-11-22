@@ -1,0 +1,543 @@
+{
+  "before_binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "after_binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "manifest_sha256": "f9c594141975a35ac0ebca6dd5c94566ca2434d26943f81b14a9546fc0b1d3ed",
+  "documents": 76,
+  "pages": 717,
+  "changed_pages": 0,
+  "all_nonwhite_scalar_inventories_equal": true,
+  "results": [
+    {
+      "id": "hello",
+      "pages": 1,
+      "baseline_IR_sha256": "00b396d1ed1c9b48b23ab517584c4685cbf2aac275bde48b5cd78bb4f1e24bc1",
+      "after_IR_sha256": "00b396d1ed1c9b48b23ab517584c4685cbf2aac275bde48b5cd78bb4f1e24bc1",
+      "changed": []
+    },
+    {
+      "id": "rotated",
+      "pages": 5,
+      "baseline_IR_sha256": "e08b18536c9409037cd6189d1e15839a82484915e6fb3748f5de74e6e4495b9c",
+      "after_IR_sha256": "e08b18536c9409037cd6189d1e15839a82484915e6fb3748f5de74e6e4495b9c",
+      "changed": []
+    },
+    {
+      "id": "arabic",
+      "pages": 1,
+      "baseline_IR_sha256": "173bcb6cba523c2fc0537d03f3b74047d2e8db1b3e099c94f5e78b4dfa421a49",
+      "after_IR_sha256": "173bcb6cba523c2fc0537d03f3b74047d2e8db1b3e099c94f5e78b4dfa421a49",
+      "changed": []
+    },
+    {
+      "id": "ligatures",
+      "pages": 1,
+      "baseline_IR_sha256": "7a22611839163bd6647ed877658329ac845d7b5f2b40a8597864715e25c659af",
+      "after_IR_sha256": "7a22611839163bd6647ed877658329ac845d7b5f2b40a8597864715e25c659af",
+      "changed": []
+    },
+    {
+      "id": "vertical",
+      "pages": 3,
+      "baseline_IR_sha256": "e55a8675890325ee2460d665079501841866ec09e7f9b2fc62e83d07c492ec7c",
+      "after_IR_sha256": "e55a8675890325ee2460d665079501841866ec09e7f9b2fc62e83d07c492ec7c",
+      "changed": []
+    },
+    {
+      "id": "empty",
+      "pages": 1,
+      "baseline_IR_sha256": "295e1ff22e62f64188de0e5f05572e8fe9c00d3f12348ff4d13e28c8729eef9e",
+      "after_IR_sha256": "295e1ff22e62f64188de0e5f05572e8fe9c00d3f12348ff4d13e28c8729eef9e",
+      "changed": []
+    },
+    {
+      "id": "scanned",
+      "pages": 1,
+      "baseline_IR_sha256": "db7107dc8bc8133feb0513c1d189661e279ecd68e2bac9f3ec5eaa39ad9858bf",
+      "after_IR_sha256": "db7107dc8bc8133feb0513c1d189661e279ecd68e2bac9f3ec5eaa39ad9858bf",
+      "changed": []
+    },
+    {
+      "id": "form",
+      "pages": 1,
+      "baseline_IR_sha256": "9522fc5872ea01a24f8c69e3d984d40c7bbd1c11a370eff57db6f49a068b60f2",
+      "after_IR_sha256": "9522fc5872ea01a24f8c69e3d984d40c7bbd1c11a370eff57db6f49a068b60f2",
+      "changed": []
+    },
+    {
+      "id": "type3",
+      "pages": 1,
+      "baseline_IR_sha256": "bcace679fb4eedc07cfb85ee284c5172588d7cd0aae1bbc3d222003915831991",
+      "after_IR_sha256": "bcace679fb4eedc07cfb85ee284c5172588d7cd0aae1bbc3d222003915831991",
+      "changed": []
+    },
+    {
+      "id": "cjk",
+      "pages": 1,
+      "baseline_IR_sha256": "2d0964823ebcf5142a982b44188a9a8fd77431431374a6e7d2930c486acfa31f",
+      "after_IR_sha256": "2d0964823ebcf5142a982b44188a9a8fd77431431374a6e7d2930c486acfa31f",
+      "changed": []
+    },
+    {
+      "id": "tracemonkey",
+      "pages": 14,
+      "baseline_IR_sha256": "aff588bb7457c08cbaac776e83910b5d9cf5f5e5651d2335856c29425c165438",
+      "after_IR_sha256": "aff588bb7457c08cbaac776e83910b5d9cf5f5e5651d2335856c29425c165438",
+      "changed": []
+    },
+    {
+      "id": "freeculture",
+      "pages": 352,
+      "baseline_IR_sha256": "07b3b186b483606af3ec333e4adae6e07912208f6ef3f8d0c2ccf9607633d347",
+      "after_IR_sha256": "07b3b186b483606af3ec333e4adae6e07912208f6ef3f8d0c2ccf9607633d347",
+      "changed": []
+    },
+    {
+      "id": "w3c-word",
+      "pages": 1,
+      "baseline_IR_sha256": "30747e4bf556fbdd9f668157d0a6c77ec9015136f536a83fde7630c69a8bd8a6",
+      "after_IR_sha256": "30747e4bf556fbdd9f668157d0a6c77ec9015136f536a83fde7630c69a8bd8a6",
+      "changed": []
+    },
+    {
+      "id": "w3c-openoffice",
+      "pages": 1,
+      "baseline_IR_sha256": "b795bd2d549652bb69400da6d597e4c54bc7a816c85beebbb13cb5adb06648d3",
+      "after_IR_sha256": "b795bd2d549652bb69400da6d597e4c54bc7a816c85beebbb13cb5adb06648d3",
+      "changed": []
+    },
+    {
+      "id": "mhlw-employment",
+      "pages": 4,
+      "baseline_IR_sha256": "5079fa16d6f61ee350920f4cc01567dd863b3cbcd272e1dd1fe8a7d1d5fcd701",
+      "after_IR_sha256": "5079fa16d6f61ee350920f4cc01567dd863b3cbcd272e1dd1fe8a7d1d5fcd701",
+      "changed": []
+    },
+    {
+      "id": "irs-w4",
+      "pages": 4,
+      "baseline_IR_sha256": "9088d2497e6fc19701db01b174b74f67085a2fa02e01c27bd029331829cf65bf",
+      "after_IR_sha256": "9088d2497e6fc19701db01b174b74f67085a2fa02e01c27bd029331829cf65bf",
+      "changed": []
+    },
+    {
+      "id": "irs-w4-2024",
+      "pages": 4,
+      "baseline_IR_sha256": "0bee58d71528d39131e66132b49b83000dfe04bcaeb23796112cb097e8531350",
+      "after_IR_sha256": "0bee58d71528d39131e66132b49b83000dfe04bcaeb23796112cb097e8531350",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-truetype-without-cmap",
+      "pages": 1,
+      "baseline_IR_sha256": "a4bc7ce98dfa84cfa1f874db2caa924676be142ca85a75e8685b5b2477cdc14b",
+      "after_IR_sha256": "a4bc7ce98dfa84cfa1f874db2caa924676be142ca85a75e8685b5b2477cdc14b",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-type3wordspacing",
+      "pages": 1,
+      "baseline_IR_sha256": "02ee32141463b602f29ef1c120a06d68d9d46d404021025ffffc5544e5707f3e",
+      "after_IR_sha256": "02ee32141463b602f29ef1c120a06d68d9d46d404021025ffffc5544e5707f3e",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-identitytounicodemap-charcodeof",
+      "pages": 1,
+      "baseline_IR_sha256": "2808dffafb6cf61255b00b6425761024791e11d0eadb4b6d0da9697c4fb356da",
+      "after_IR_sha256": "2808dffafb6cf61255b00b6425761024791e11d0eadb4b6d0da9697c4fb356da",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-arial-unicode-en-cidfont",
+      "pages": 1,
+      "baseline_IR_sha256": "85770a67c7293ab5883ed92e613e279282bafc11141b1aa5e1f5fad9f765ad43",
+      "after_IR_sha256": "85770a67c7293ab5883ed92e613e279282bafc11141b1aa5e1f5fad9f765ad43",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-french-diacritics",
+      "pages": 1,
+      "baseline_IR_sha256": "d6e8979b1a55dfaa9a585e23f6555538f39604915f4d468d7c82a3678bbfd713",
+      "after_IR_sha256": "d6e8979b1a55dfaa9a585e23f6555538f39604915f4d468d7c82a3678bbfd713",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-glyph-accent",
+      "pages": 1,
+      "baseline_IR_sha256": "a634ef2dfc0b7f26388563539fa634ad36231fcb728ff8b152b8b33d74b3561e",
+      "after_IR_sha256": "a634ef2dfc0b7f26388563539fa634ad36231fcb728ff8b152b8b33d74b3561e",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "pages": 1,
+      "baseline_IR_sha256": "76a6680409228f3e7701538b8ad71b19fe3d0512364dc523df397bbdcef4146c",
+      "after_IR_sha256": "76a6680409228f3e7701538b8ad71b19fe3d0512364dc523df397bbdcef4146c",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-rotation",
+      "pages": 2,
+      "baseline_IR_sha256": "77cb2711c3f8315cb48c6165ed0d4acab082ed501ab6765d043024d3ca512e34",
+      "after_IR_sha256": "77cb2711c3f8315cb48c6165ed0d4acab082ed501ab6765d043024d3ca512e34",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-text-rise-eol-bug",
+      "pages": 1,
+      "baseline_IR_sha256": "a7a00425810afb020e18386bf9dcec1519046c9a865d2a1e6d703f47a607d69c",
+      "after_IR_sha256": "a7a00425810afb020e18386bf9dcec1519046c9a865d2a1e6d703f47a607d69c",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-multiline",
+      "pages": 1,
+      "baseline_IR_sha256": "cbf5515382d3440fdd48ba85256b9e9e948c95bae6902198c5c92b5958b8d410",
+      "after_IR_sha256": "cbf5515382d3440fdd48ba85256b9e9e948c95bae6902198c5c92b5958b8d410",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-basicapi",
+      "pages": 3,
+      "baseline_IR_sha256": "5b523592ae5b3984270ace9ec84a77cd77a0511020fadd58b9ab403d4a6fa193",
+      "after_IR_sha256": "5b523592ae5b3984270ace9ec84a77cd77a0511020fadd58b9ab403d4a6fa193",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-cid-cff",
+      "pages": 1,
+      "baseline_IR_sha256": "343880151144f9c92d51ecbe3be9ea9383bc3df5b97218251b804ede1e355350",
+      "after_IR_sha256": "343880151144f9c92d51ecbe3be9ea9383bc3df5b97218251b804ede1e355350",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-text-clip-cff-cid",
+      "pages": 1,
+      "baseline_IR_sha256": "46b6276e26d02b3dcd7f0c145fc8a9418c1da075f8c7dc93779ac04fc1be3b1c",
+      "after_IR_sha256": "46b6276e26d02b3dcd7f0c145fc8a9418c1da075f8c7dc93779ac04fc1be3b1c",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-bug1947248-text",
+      "pages": 1,
+      "baseline_IR_sha256": "49bbacc08a34b5908de8173a20fca8f938877b9f7afceeb00d36b07731554521",
+      "after_IR_sha256": "49bbacc08a34b5908de8173a20fca8f938877b9f7afceeb00d36b07731554521",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-pattern-text-embedded-font",
+      "pages": 1,
+      "baseline_IR_sha256": "7f589cfbb5100e1b226e646473e234cf6374136262f1034468a001cb0d3a8609",
+      "after_IR_sha256": "7f589cfbb5100e1b226e646473e234cf6374136262f1034468a001cb0d3a8609",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-showtext-shadingpattern",
+      "pages": 1,
+      "baseline_IR_sha256": "49671a2a05cce97e0b6630895137a6f9b7afec9490ed5e07eb42234ebbe7da9f",
+      "after_IR_sha256": "49671a2a05cce97e0b6630895137a6f9b7afec9490ed5e07eb42234ebbe7da9f",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-image-rotated-black-white-ratio",
+      "pages": 1,
+      "baseline_IR_sha256": "295e1ff22e62f64188de0e5f05572e8fe9c00d3f12348ff4d13e28c8729eef9e",
+      "after_IR_sha256": "295e1ff22e62f64188de0e5f05572e8fe9c00d3f12348ff4d13e28c8729eef9e",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-form-two-pages",
+      "pages": 2,
+      "baseline_IR_sha256": "d5a7c76c9dcfe94c17fbc85c885d6d6bb085eb22d249853b6e6ea6cbc44e8278",
+      "after_IR_sha256": "d5a7c76c9dcfe94c17fbc85c885d6d6bb085eb22d249853b6e6ea6cbc44e8278",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-annotation-text-widget",
+      "pages": 1,
+      "baseline_IR_sha256": "56a7b2c020afb5551ef84743b10df3fdc2612c52c1a30056755c691b554eca12",
+      "after_IR_sha256": "56a7b2c020afb5551ef84743b10df3fdc2612c52c1a30056755c691b554eca12",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue-cmap12",
+      "pages": 1,
+      "baseline_IR_sha256": "1340ef41b97cc568357840e5041e22575c4f7d61bdcf761cae7de5dd9a604a3f",
+      "after_IR_sha256": "1340ef41b97cc568357840e5041e22575c4f7d61bdcf761cae7de5dd9a604a3f",
+      "changed": []
+    },
+    {
+      "id": "irs-w4-2022",
+      "pages": 4,
+      "baseline_IR_sha256": "2923268edfc8d2b49ab8906e93ae273bb0a83d4ad4b8aeedc082a62d995bb305",
+      "after_IR_sha256": "2923268edfc8d2b49ab8906e93ae273bb0a83d4ad4b8aeedc082a62d995bb305",
+      "changed": []
+    },
+    {
+      "id": "irs-w4-2023",
+      "pages": 4,
+      "baseline_IR_sha256": "c935c97fff0688771025b12c1f40a3502a0ee695712b1141aaec290cae9e70f4",
+      "after_IR_sha256": "c935c97fff0688771025b12c1f40a3502a0ee695712b1141aaec290cae9e70f4",
+      "changed": []
+    },
+    {
+      "id": "irs-w4-2026",
+      "pages": 5,
+      "baseline_IR_sha256": "f5bbeb252546a4093ca333f9dca212fbb42631d7369bf98b739c2a41b6b21f4f",
+      "after_IR_sha256": "f5bbeb252546a4093ca333f9dca212fbb42631d7369bf98b739c2a41b6b21f4f",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-bigboundingbox",
+      "pages": 1,
+      "baseline_IR_sha256": "f0b8426a7bb939a6c45eeee7c7808782ea65afcc3525007192944f21a1332cf8",
+      "after_IR_sha256": "f0b8426a7bb939a6c45eeee7c7808782ea65afcc3525007192944f21a1332cf8",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue-cff-unsigned-bbox",
+      "pages": 1,
+      "baseline_IR_sha256": "e94e72854c51a3da5d1ac4262aa52eb7cad7fb72016340ea18f4196f50db40b6",
+      "after_IR_sha256": "e94e72854c51a3da5d1ac4262aa52eb7cad7fb72016340ea18f4196f50db40b6",
+      "changed": []
+    },
+    {
+      "id": "pdfium-cropped-text",
+      "pages": 4,
+      "baseline_IR_sha256": "c3cba4e9ac86ea6ccb180bf5022cc3b6d2f26d926e986e5b1facfdc0f4ba12cb",
+      "after_IR_sha256": "c3cba4e9ac86ea6ccb180bf5022cc3b6d2f26d926e986e5b1facfdc0f4ba12cb",
+      "changed": []
+    },
+    {
+      "id": "pdfium-combobox-form",
+      "pages": 1,
+      "baseline_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "after_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "changed": []
+    },
+    {
+      "id": "pdfium-listbox-form",
+      "pages": 1,
+      "baseline_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "after_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "changed": []
+    },
+    {
+      "id": "pdfium-text-form-multiline",
+      "pages": 1,
+      "baseline_IR_sha256": "2c6c98e8207a346fe847019f60ae84fd6632f407a2f99ed4572763bc38ab31e1",
+      "after_IR_sha256": "2c6c98e8207a346fe847019f60ae84fd6632f407a2f99ed4572763bc38ab31e1",
+      "changed": []
+    },
+    {
+      "id": "irs-w9-2018",
+      "pages": 6,
+      "baseline_IR_sha256": "7e27c928fa83016cf0b6f94d3c9ad0ab955bc370d4a09f55667e4d62d4d01a4e",
+      "after_IR_sha256": "7e27c928fa83016cf0b6f94d3c9ad0ab955bc370d4a09f55667e4d62d4d01a4e",
+      "changed": []
+    },
+    {
+      "id": "irs-w9-2024",
+      "pages": 6,
+      "baseline_IR_sha256": "3542e2d67eaf720624ee83c8a3d857713095ef84e9687651ddb0cfe792dd2f49",
+      "after_IR_sha256": "3542e2d67eaf720624ee83c8a3d857713095ef84e9687651ddb0cfe792dd2f49",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-user-unit",
+      "pages": 1,
+      "baseline_IR_sha256": "74038388c39053f798e8609e71b1357d89ecb238be67cb69e0ce7124d4ceeb0d",
+      "after_IR_sha256": "74038388c39053f798e8609e71b1357d89ecb238be67cb69e0ce7124d4ceeb0d",
+      "changed": []
+    },
+    {
+      "id": "acl-bleu-2002",
+      "pages": 8,
+      "baseline_IR_sha256": "b2f02de2d7bf1c279987ae4ee3869d52144b97f670600d83dfd0ba698be02ddf",
+      "after_IR_sha256": "b2f02de2d7bf1c279987ae4ee3869d52144b97f670600d83dfd0ba698be02ddf",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "pages": 1,
+      "baseline_IR_sha256": "0252cf8b7f36321814b0a90bc6a6964fe1cb8487e0a0671be2871f4604a45b0c",
+      "after_IR_sha256": "0252cf8b7f36321814b0a90bc6a6964fe1cb8487e0a0671be2871f4604a45b0c",
+      "changed": []
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "pages": 1,
+      "baseline_IR_sha256": "5a48f610953b9ec8ae6350ade6e5a0cf7ec9602b541600b04c4161bdc8ae5be1",
+      "after_IR_sha256": "5a48f610953b9ec8ae6350ade6e5a0cf7ec9602b541600b04c4161bdc8ae5be1",
+      "changed": []
+    },
+    {
+      "id": "neurips-attention-2017",
+      "pages": 11,
+      "baseline_IR_sha256": "519e63841cdf5620b158feeb194c9aa916ce00d46c12855af98dddc9af4fe10c",
+      "after_IR_sha256": "519e63841cdf5620b158feeb194c9aa916ce00d46c12855af98dddc9af4fe10c",
+      "changed": []
+    },
+    {
+      "id": "bipm-si-concise",
+      "pages": 5,
+      "baseline_IR_sha256": "e45290aa27a82b136af7334d468ba532c2317b310a2938885d21da953ba42c95",
+      "after_IR_sha256": "e45290aa27a82b136af7334d468ba532c2317b310a2938885d21da953ba42c95",
+      "changed": []
+    },
+    {
+      "id": "w3c-tagged-table",
+      "pages": 1,
+      "baseline_IR_sha256": "cf90b6349f32fcb308ce7d3c8b05e9a1604f2a6188253aa17f5c36b4fb2c0aeb",
+      "after_IR_sha256": "cf90b6349f32fcb308ce7d3c8b05e9a1604f2a6188253aa17f5c36b4fb2c0aeb",
+      "changed": []
+    },
+    {
+      "id": "w3c-complex-table",
+      "pages": 1,
+      "baseline_IR_sha256": "629700fff168ef1199fb7a774911e78be6b2dffd930ad085f68f0c38fe6f1f7d",
+      "after_IR_sha256": "629700fff168ef1199fb7a774911e78be6b2dffd930ad085f68f0c38fe6f1f7d",
+      "changed": []
+    },
+    {
+      "id": "w3c-rowspan-table",
+      "pages": 1,
+      "baseline_IR_sha256": "5117c730703a65defb01c916c1a38aae796f74c8051f18f4e8d26a8457c27b3d",
+      "after_IR_sha256": "5117c730703a65defb01c916c1a38aae796f74c8051f18f4e8d26a8457c27b3d",
+      "changed": []
+    },
+    {
+      "id": "pdfium-multiple-form-types",
+      "pages": 1,
+      "baseline_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "after_IR_sha256": "f6e110e7f6ad60822cdf401b4d808d4406fa9209f26dffd8c46f93c6d0aec785",
+      "changed": []
+    },
+    {
+      "id": "pdfbox-orphan-widgets",
+      "pages": 4,
+      "baseline_IR_sha256": "3c47ccc3250766067f963de452faaea0268b63ec1269922b505953bbce11a600",
+      "after_IR_sha256": "3c47ccc3250766067f963de452faaea0268b63ec1269922b505953bbce11a600",
+      "changed": []
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "pages": 5,
+      "baseline_IR_sha256": "d9a88f930133dbba69858eebb292be743ccfc84028e833b34cbc572975a7b99b",
+      "after_IR_sha256": "d9a88f930133dbba69858eebb292be743ccfc84028e833b34cbc572975a7b99b",
+      "changed": []
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "pages": 5,
+      "baseline_IR_sha256": "370647c8ffd3aeb15b047717ed5ae1bd7359934f146512a4721ee84ffd1013ac",
+      "after_IR_sha256": "370647c8ffd3aeb15b047717ed5ae1bd7359934f146512a4721ee84ffd1013ac",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue6612",
+      "pages": 1,
+      "baseline_IR_sha256": "6e56318b0a6fc01f93818ec3a05eb93f5adc76b0969d7c0bb8e54ecc31c59b97",
+      "after_IR_sha256": "6e56318b0a6fc01f93818ec3a05eb93f5adc76b0969d7c0bb8e54ecc31c59b97",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue14497",
+      "pages": 1,
+      "baseline_IR_sha256": "6f3bb75da784875f047ced5cdaf1f901faffc6719fc07187671e2dd95172d005",
+      "after_IR_sha256": "6f3bb75da784875f047ced5cdaf1f901faffc6719fc07187671e2dd95172d005",
+      "changed": []
+    },
+    {
+      "id": "pdfium-rotated-text",
+      "pages": 1,
+      "baseline_IR_sha256": "af422f0f06fc251a9a856e70359cefdf51d310ce8cb220918631e8dba6700658",
+      "after_IR_sha256": "af422f0f06fc251a9a856e70359cefdf51d310ce8cb220918631e8dba6700658",
+      "changed": []
+    },
+    {
+      "id": "pdfium-rotated-text-90",
+      "pages": 1,
+      "baseline_IR_sha256": "f24fb4c137fee4729779edf8fc9803f6cb9a6b05d1b3aec03e123b869cc56501",
+      "after_IR_sha256": "f24fb4c137fee4729779edf8fc9803f6cb9a6b05d1b3aec03e123b869cc56501",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue14497-original",
+      "pages": 3,
+      "baseline_IR_sha256": "460e5d93d75dea4a4ea48bb87e9c0478d69d2fad6f63a32e1f456229d6d650fb",
+      "after_IR_sha256": "460e5d93d75dea4a4ea48bb87e9c0478d69d2fad6f63a32e1f456229d6d650fb",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-actualtext-eset",
+      "pages": 26,
+      "baseline_IR_sha256": "9206d958d823f5a4807853e2841f6f972b4345890b1833e45dfa8a6eb1483bfa",
+      "after_IR_sha256": "9206d958d823f5a4807853e2841f6f972b4345890b1833e45dfa8a6eb1483bfa",
+      "changed": []
+    },
+    {
+      "id": "pdfa-actualtext-graphics",
+      "pages": 1,
+      "baseline_IR_sha256": "9b81c577be2663731d9629981a5de877ed073b529348fdd9318227dc72d4bcc3",
+      "after_IR_sha256": "9b81c577be2663731d9629981a5de877ed073b529348fdd9318227dc72d4bcc3",
+      "changed": []
+    },
+    {
+      "id": "pdfa-actualtext-ocr",
+      "pages": 1,
+      "baseline_IR_sha256": "cf6e062fe15847fa8930672bd43f1a656b3b726dba95a8c4a9c8c3e9961c6347",
+      "after_IR_sha256": "cf6e062fe15847fa8930672bd43f1a656b3b726dba95a8c4a9c8c3e9961c6347",
+      "changed": []
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "pages": 36,
+      "baseline_IR_sha256": "eb1cb8b58cd470e8ba821a878f75548d799b58756ca694759dca8647a28e610c",
+      "after_IR_sha256": "eb1cb8b58cd470e8ba821a878f75548d799b58756ca694759dca8647a28e610c",
+      "changed": []
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "pages": 36,
+      "baseline_IR_sha256": "b2a84d822a4f58db1597005b64ab491c58a6b013fbd05177e985435b9d0af31e",
+      "after_IR_sha256": "b2a84d822a4f58db1597005b64ab491c58a6b013fbd05177e985435b9d0af31e",
+      "changed": []
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "pages": 5,
+      "baseline_IR_sha256": "e90c9414f531a3d5f6f66fb42067649b38d83bc5ffd8fe255e62579d9613136e",
+      "after_IR_sha256": "e90c9414f531a3d5f6f66fb42067649b38d83bc5ffd8fe255e62579d9613136e",
+      "changed": []
+    },
+    {
+      "id": "nist-fips202-2015",
+      "pages": 37,
+      "baseline_IR_sha256": "24118a732e30e4ffc8991c42029969ef78ec2457111626a27f057a8771d3e05f",
+      "after_IR_sha256": "24118a732e30e4ffc8991c42029969ef78ec2457111626a27f057a8771d3e05f",
+      "changed": []
+    },
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "pages": 3,
+      "baseline_IR_sha256": "e5b78ee4bba26811604dfbeeca161cc600f10f70f228c820598e61995c0b2b1b",
+      "after_IR_sha256": "e5b78ee4bba26811604dfbeeca161cc600f10f70f228c820598e61995c0b2b1b",
+      "changed": []
+    },
+    {
+      "id": "pdfjs-issue16880-rtl",
+      "pages": 1,
+      "baseline_IR_sha256": "09d8c3917795dd6ce7da087ac2c2a3aa33c027d2e6c89e6341772a8c3099b319",
+      "after_IR_sha256": "09d8c3917795dd6ce7da087ac2c2a3aa33c027d2e6c89e6341772a8c3099b319",
+      "changed": []
+    },
+    {
+      "id": "nist-fips204-2024",
+      "pages": 65,
+      "baseline_IR_sha256": "401f08c75475eee3634cff003fa3e245142343009456a9e9bb6754abc22b83df",
+      "after_IR_sha256": "401f08c75475eee3634cff003fa3e245142343009456a9e9bb6754abc22b83df",
+      "changed": []
+    }
+  ]
+}

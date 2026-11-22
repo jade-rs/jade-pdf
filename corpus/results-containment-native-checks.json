@@ -1,0 +1,41 @@
+{
+  "original_runtime_source_revision": "a785251875acb0e42b4cecbe060072cb68028390",
+  "replayed_source_revision": "ebf4bb1910b8281b8def6de3147fbe856786cf3d",
+  "entire_replayed_tree_identical": true,
+  "native_tests": {
+    "passed": 354,
+    "failed": 0,
+    "ignored": 8,
+    "groups": 31
+  },
+  "public_corpus_tests": {
+    "passed": 6,
+    "failed": 0,
+    "regular_pages": 717
+  },
+  "Python_tests": {
+    "passed": 67,
+    "failed": 0
+  },
+  "fixture_hygiene": {
+    "passed": 2,
+    "failed": 0
+  },
+  "targeted_grid_tests": 14,
+  "shared_native_WASM_scenarios": 121,
+  "clippy": "all-targets -D warnings passed",
+  "formatting": "root and WASM probe checked",
+  "native_binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "wasm_sha256": "382062b1fc3752fbd32b881de80296fc33b032ac17c8c3046f8a50266082597f",
+  "log_sha256": {
+    "native-full.log": "d0ac50c25b53f628e9dab7fa0d8001d25137d6a1ec8dfda70a27814f058b44c3",
+    "public.log": "f3e4d9820f04bca0ce6f0e380d3df91702268cb6193fb87fba57b611155157f3",
+    "python.log": "b9a5e34944fb479332a5c289884b67ff9329dc347174c346724ecd1cddc8ec14",
+    "hygiene.log": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4",
+    "clippy-all-targets.log": "00db153f4a3805eedcbb144d34bd1fd689023583355c8dd3ac921984a2dcb714",
+    "red.log": "6ef8ebdd10d94ec6df693e3dfee5eece829ff443e26e5b51331002555a2fd73b",
+    "green.log": "9736f18a24bcc726fb7f528165c7626ae35de3784114dd43b727704bba0605f2",
+    "shared-controls.log": "6fafd86525cc17e179b2fd44133bee8bdd9c225b555e6a79787b2c256486b52e"
+  },
+  "scope": "Fresh local qualification of the original source tree; the replay onto the observed14 merge preserves the entire tree. No tests or artifacts from v50 are claimed as fresh v51 execution."
+}

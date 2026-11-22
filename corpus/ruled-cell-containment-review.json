@@ -1,0 +1,82 @@
+{
+  "id": "ruled-cell-off-center-notch",
+  "date_utc": "2026-11-22T09:15:41.016711+00:00",
+  "original_source_revision": "a785251875acb0e42b4cecbe060072cb68028390",
+  "replayed_source_revision": "ebf4bb1910b8281b8def6de3147fbe856786cf3d",
+  "base_pr": 14,
+  "base_revision": "d9ef673461c27e3dfa1dbde405e9c88c6c034212",
+  "scope": "Owned geometric containment counterexample, not new public-document accuracy gold or logical cell semantics.",
+  "counterexample": {
+    "polygon": [
+      [
+        0,
+        0
+      ],
+      [
+        10,
+        0
+      ],
+      [
+        10,
+        10
+      ],
+      [
+        8,
+        10
+      ],
+      [
+        8,
+        2
+      ],
+      [
+        7,
+        2
+      ],
+      [
+        7,
+        10
+      ],
+      [
+        0,
+        10
+      ]
+    ],
+    "rectangle": [
+      1,
+      4,
+      9,
+      5
+    ],
+    "all_four_corners_and_center_inside": true,
+    "no_polygon_vertex_inside_rectangle": true,
+    "prior_result": "Some(cell0), although the vertical notch walls cross the rectangle",
+    "current_result": "None, preserve existing unassigned/reviewable flow",
+    "scale_factors": [
+      0.5,
+      1,
+      8
+    ],
+    "translations": [
+      -1000,
+      0,
+      1000
+    ],
+    "covariance_combinations": 9,
+    "positive_left_and_right_arm_controls_preserved": true
+  },
+  "implementation": "Require no closed polygon boundary segment to intersect the closed text rectangle, in addition to the existing point-inside checks. Unsupported non-axis boundary is rejected. Replace the previous vertex-only test without new dependencies or input binaries.",
+  "work_budget": "Boundary scan replaces the former vertex scan; constant scans per vertex remain inside the existing reservation. Not a wall-clock or aggregate host memory ceiling.",
+  "inferred_membership_remains_reviewable": true,
+  "red_log_sha256": "6ef8ebdd10d94ec6df693e3dfee5eece829ff443e26e5b51331002555a2fd73b",
+  "green_log_sha256": "9736f18a24bcc726fb7f528165c7626ae35de3784114dd43b727704bba0605f2",
+  "replay": {
+    "old_source_revision": "a785251875acb0e42b4cecbe060072cb68028390",
+    "new_source_revision": "ebf4bb1910b8281b8def6de3147fbe856786cf3d",
+    "old_base": "9cb7036ebb8eec461cadbf29426542588f96f42a",
+    "new_base": "d9ef673461c27e3dfa1dbde405e9c88c6c034212",
+    "all_source_test_lock_manifest_bytes_identical": true,
+    "entire_replayed_tree_identical": true,
+    "qualified_tree": "c6b7f235356abe59b39481430e4151e0d2dff9e3"
+  },
+  "production_ready": false
+}
