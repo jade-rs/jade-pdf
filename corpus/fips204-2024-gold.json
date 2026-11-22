@@ -3,12 +3,12 @@
   "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
   "declared_before_product_extraction": true,
   "source_review": "corpus/fips204-2024-review.json",
-  "source_review_sha256": "e1169600c173dccc3078ab6a061bed0af2970b3f3c663378ddb3c8cc180a3050",
+  "source_review_sha256": "1359aca21772a102f4d9d85644659fc03ad9b0be2b1959ab6dbbaba3e509e277",
   "gold": {
     "page": 2,
     "kind": "full_page_text",
-    "text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning the Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory",
-    "scope": "All visible text on original PDFpage2 Foreword, transcribed from full original image before product extraction. NFC and whitespace collapse only; no other page, glyph-encoding or highlight claim."
+    "text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning this Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory",
+    "scope": "All visible text on original PDFpage2 Foreword, transcribed from full original image before product extraction; initial the/this transcription corrected from an independent original288dpi zoom with history retained. NFC and whitespace collapse only; no other page, glyph-encoding or highlight claim."
   },
   "symbol_operator_gold": [
     {

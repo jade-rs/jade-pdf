@@ -194,5 +194,13 @@
   "annotation_caution": "Root Fields count0 does not make this a verified empty form: page1 contains one parentless /Btn Widget, flag65536, name tooltip zref@0, covering the Department of Commerce seal. It has no /V or /A in the inspected dictionary. Other link annotations include URI and GoTo actions. Do not execute actions or suppress unsupported-interaction review based only on Fields count.",
   "font_programs_read": false,
   "product_extraction_at_declaration": false,
-  "scope": "Full-page/privacy review for collection; selected independent semantic gold only. Not a claim of correct extraction of all65 pages or arbitrary mathematics."
+  "scope": "Full-page/privacy review for collection; selected independent semantic gold only. Not a claim of correct extraction of all65 pages or arbitrary mathematics.",
+  "gold_transcription_correction": {
+    "original_declaration_revision": "9a1ece976c2455452787b8c82c9ed577380b64b6",
+    "original_gold_sha256": "e29f1bd32d1e5162fbdf3975d77bdbcbe00e2acf1d37b7969a7b82bef84582e4",
+    "old": "Comments concerning the Federal",
+    "correct": "Comments concerning this Federal",
+    "basis": "Independent288dpi crop of the unchanged original PDFpage2, directly inspected. This is a manual gold transcription error, not a product extraction error or an accuracy improvement.",
+    "original_detail_sha256": "d3271973db6e780444b990ac92c41c86f2bb8c6369c155535109f0f261e9f069"
+  }
 }

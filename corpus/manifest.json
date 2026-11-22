@@ -1956,6 +1956,124 @@
         1
       ],
       "retrieved": "2026-11-22"
+    },
+    {
+      "id": "nist-fips204-2024",
+      "url": "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.204.pdf",
+      "source": "https://csrc.nist.gov/pubs/fips/204/final",
+      "sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+      "bytes": 3291746,
+      "pages": 65,
+      "reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37,
+        38,
+        39,
+        40,
+        41,
+        42,
+        43,
+        44,
+        45,
+        46,
+        47,
+        48,
+        49,
+        50,
+        51,
+        52,
+        53,
+        54,
+        55,
+        56,
+        57,
+        58,
+        59,
+        60,
+        61,
+        62,
+        63,
+        64,
+        65
+      ],
+      "retrieved": "2026-11-22",
+      "citation": "National Institute of Standards and Technology (2024), Module-Lattice-Based Digital Signature Standard, FIPS204, https://doi.org/10.6028/NIST.FIPS.204. Republished courtesy of the National Institute of Standards and Technology.",
+      "rights_source": "https://www.nist.gov/open/copyright-fair-use-and-licensing-statements-srd-data-software-and-technical-series-publications",
+      "rights": "NIST-authored non-SRD technical publication. NIST Technical Series terms grant worldwide reprint/derivative rights with recommended citation and courtesy acknowledgement. Retain original PDF and notices only in ignored cache; do not export third-party font programs or outlines. Seal appears only in the unmodified original; no endorsement claim.",
+      "confidentiality": "All65 original full pages individually inspected at1200px. Public institutional author/official details, scientific citations, mathematical parameters and pseudocode only. No private user files, filled personal records or actual secret-key material.",
+      "review_method": "All65 original pages individually viewed at scale-to1200 before any product extraction. Foreword all text, mathematical operator counts/flattened q formula and Table2 row-major anchors declared independently. No PDF/font binaries or outlines added to Git.",
+      "category": "NIST mathematical standard / mixed-script formulas and numeric tables",
+      "text_fragments": [
+        "Foreword",
+        "8380417",
+        "ML-DSA-44"
+      ],
+      "gold": {
+        "page": 2,
+        "kind": "full_page_text",
+        "text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning this Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory",
+        "scope": "All visible text on original PDFpage2 Foreword, transcribed from full original image before product extraction; initial the/this transcription corrected from an independent original288dpi zoom with history retained. NFC and whitespace collapse only; no other page, glyph-encoding or highlight claim."
+      },
+      "reading_order": [
+        {
+          "page": 26,
+          "anchors": [
+            "Private Key Public Key Signature Size",
+            "ML-DSA-44",
+            "2560",
+            "1312",
+            "2420",
+            "ML-DSA-65",
+            "4032",
+            "1952",
+            "3309",
+            "ML-DSA-87",
+            "4896",
+            "2592",
+            "4627"
+          ]
+        }
+      ],
+      "reading_order_gold_source": "Original PDFpage26/printed16 Table2, independently read before product extraction. One header and all three row labels and nine values in row-major order. NFC and whitespace removal for anchor order only; not cell/ink geometry, source encoding or other tables.",
+      "source_review": "corpus/fips204-2024-review.json",
+      "source_review_sha256": "1359aca21772a102f4d9d85644659fc03ad9b0be2b1959ab6dbbaba3e509e277",
+      "independent_gold": "fips204-2024-gold.json",
+      "independent_gold_sha256": "72762f23e0712f7709b04b36a4ea6859bbe60ef21e121b55410aca41c2c668a0"
     }
   ],
   "revision_pairs": [
@@ -2508,6 +2626,35 @@
         61485
       ],
       "scope": "Only four printed minus signs on original PDFpage14/printedpage6: m−r,−11,−3.2,and−3. Independently counted from original high-resolution image and corroborated by Adobe Symbol code0x2D, original Identity CID16, ToUnicodeF02D and matching embedded Microsoft Symbol cmap. Other hyphens, opaque ceiling/bracket pieces, page prose/order/geometry are outside this gold."
+    },
+    {
+      "id": "nist-fips204-2024",
+      "case_id": "nist-fips204-p15-plus",
+      "page": 15,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          43,
+          43
+        ]
+      ],
+      "count_each": 5,
+      "scope": "All five visible plus signs on original PDFpage15/printed5: one in prime q, two in the R row, two in the R_m row. Visually counted before product extraction. Not full prose, formula AST, reading order or geometry."
+    },
+    {
+      "id": "nist-fips204-2024",
+      "case_id": "nist-fips204-p15-minus",
+      "page": 15,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          8722,
+          8722
+        ]
+      ],
+      "count_each": 2,
+      "compact_fragment": "223−213+1=8380417.",
+      "scope": "Both visible math minus signs on original PDFpage15/printed5: prime q expression and m−1 in Z_m set. Also require flattened scalar order of the q formula, with exponents linearized after their bases and whitespace ignored. Not source-glyph identity, AST/exponent semantics, word spacing, whole-page order or highlight geometry."
     }
   ],
   "scalar_revision_gold": [
