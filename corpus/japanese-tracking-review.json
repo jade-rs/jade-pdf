@@ -57,5 +57,20 @@
   "sdk": "Pinned PDFium8111 direct Unicode/generated/origin/loose-cell/matrix metadata only, independently of product output. Object pointers are process-local observation identifiers, never stable gold. No original font payload or outline inspected/exported.",
   "typography_source": "https://www.w3.org/TR/jlreq/#procedures_for_inter_character_space_expansion",
   "decision": "Only generated U+0020 separators between assigned, wide Han/Kana/Common letters with verified full-em upright horizontal advance cells and at most quarter-em tracking are removed after order is fixed. Source/ActualText blanks, larger gaps, Latin/Hangul and unsupported metrics retain their treatment. Canonical voicing decomposition resolves the same base scalar; scalar spans remain distinct.",
-  "scope": "Two bounded contexts plus the within-sentence order of two vertical notes; not full-page text, table reading order, hidden/outlined-image text or highlight geometry. Existing source/reading review remains."
+  "scope": "Two bounded contexts plus the within-sentence order of two vertical notes; not full-page text, table reading order, hidden/outlined-image text or highlight geometry. Existing source/reading review remains.",
+  "affected_prior_document_visual_review": {
+    "id": "mhlw-employment",
+    "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+    "pages": [
+      1,
+      3,
+      4
+    ],
+    "render_sha256": {
+      "mhlw-page-1.png": "6bd8102bf34cc6d42963b1b8455b29fc493309227c297461d076c2944ec911ea",
+      "mhlw-page-3.png": "bb8165c06e29df0790a9688c6cf910a2f70915f45ce46d8735cd687b5654374f",
+      "mhlw-page-4.png": "8441160366988735784a99b97c6b192d57f02ce2f43fdd36d7cea5779ff5da48"
+    },
+    "scope": "All three affected original pages visually rechecked after paired extraction. Page1 form title and adjacent labels, pages3/4 Japanese explanatory prose have typographic inter-character tracking; removing verified generated letter-internal separators is consistent with the original. This is adjudication of the bounded change, not full-page semantic/geometry gold or current legal advice. Original literal blanks and unsupported punctuation spacing remain."
+  }
 }
