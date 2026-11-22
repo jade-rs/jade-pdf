@@ -25,6 +25,8 @@ cargo run -p jade-pdf2docx -- input.pdf output.docx --strict --timeout-ms 60000
 cargo run -p jade-pdf2docx -- --help
 ```
 
+Native file conversion also accepts standard encrypted PDFs that open without a password and permit text copying. It keeps the original input unchanged and bounds the internal decrypted representation with the input/allocation limits. Password-protected or copy-restricted inputs remain errors; the pure Rust bytes/WASM parser still rejects encryption.
+
 Strict mode rejects detected quality loss instead of publishing the output. OCR is opt-in and requires the `ocr-onnx` feature, external model files, and `pdftoppm`; see the [OCR setup guide](docs/ocr_runtime.md).
 
 ### Compare PDFs

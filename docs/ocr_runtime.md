@@ -1,6 +1,6 @@
 # OCR runtime と外部モデル
 
-通常CLIは `--ocr` の明示指定で画像だけのページを認識する。
+通常CLIは `--ocr` の明示指定で、画像本文の確認が必要なページ・領域を認識する。
 `minimum_pdf_to_docx_with_ocr` example と `jade-pdf2docx-ocr::run_ocr` も利用できる。
 root の `ocr-onnx`（crate 単体では `onnx`）を明示して利用する。
 `default` / `render` / `ocr` の依存には ONNX Runtime を追加しない。

@@ -3,6 +3,9 @@ use std::path::Path;
 #[path = "pdfium_library.rs"]
 mod library;
 
+#[path = "pdfium_encryption.rs"]
+mod encryption;
+
 #[path = "pdfium_preview.rs"]
 mod preview;
 use preview::{append as append_text_preview, normalize as normalize_pdfium_text_preview};
@@ -44,8 +47,21 @@ pub(crate) fn parse_pdf(
     limits: &ParseLimits,
     decode_budget: &DecodeBudget,
 ) -> Result<ParsedDocument, ParseError> {
-    let mut parsed =
-        parse_pdf_bytes_pure_with_budget(path.to_path_buf(), bytes, limits, decode_budget)?;
+    let original_length = bytes.len();
+    let initial =
+        parse_pdf_bytes_pure_with_budget(path.to_path_buf(), bytes, limits, decode_budget);
+    let normalized = if matches!(&initial, Err(ParseError::UnsupportedEncryption { .. })) {
+        Some(encryption::normalize(path, bytes, limits, decode_budget)?)
+    } else {
+        None
+    };
+    let bytes = normalized.as_deref().unwrap_or(bytes);
+    let mut parsed = if normalized.is_some() {
+        parse_pdf_bytes_pure_with_budget(path.to_path_buf(), bytes, limits, decode_budget)?
+    } else {
+        initial?
+    };
+    parsed.byte_len = original_length;
     let needs_text = needs_pdfium_text_extraction(decode_budget, bytes, &parsed);
     decode_budget.check()?;
     if !needs_text {

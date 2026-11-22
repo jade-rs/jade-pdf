@@ -423,7 +423,7 @@ fn validate_image_pixel_limits(
 }
 
 /// PDF header marker の開始位置を先頭付近から探す。
-fn pdf_header_offset(bytes: &[u8]) -> Option<usize> {
+pub(crate) fn pdf_header_offset(bytes: &[u8]) -> Option<usize> {
     const MAX_HEADER_OFFSET: usize = 1024;
     bytes
         .windows(b"%PDF-".len())
