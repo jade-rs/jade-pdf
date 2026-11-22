@@ -33,6 +33,12 @@ non-UTF-8 PDF names. Their DOCX font family must come from the matching program'
 PostScript name. These four default/strict checks cover display-name recovery;
 the structures do not establish drawing-font validity or rendered font fidelity.
 
+An owned two-pixel image with a singleton DeviceRGB color-space array checks the
+actual decoded RGB samples in the default DOCX. Its PNG is independently checked
+with Python's standard library, including chunk CRCs and bounded decompression.
+Strict conversion still rejects the unverified image diagnostic. Pixel recovery
+does not establish full image placement or table-layout fidelity.
+
 This suite verifies byte-PDF conversion and inspection. It does not establish
 rendered-PNG API behavior, font or artwork fidelity, Microsoft Word rendering,
 or browser host memory and cancellation limits. The strict checks enforce
