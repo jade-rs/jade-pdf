@@ -1,6 +1,6 @@
 //! 中央寄せの段落領域をPDFの実中心へ合わせる。
 
-/// ページ中央への吸着を避け、実中心を保つ非負の左右indentを返す。
+/// 従来の書き込み幅を保ったまま実中心へ移動する符号つき左右indentを返す。
 /// 本文の右ページ余白が0の配置専用。寸法不明・範囲外なら従来処理へ戻す。
 pub(super) fn centred_indents(
     left: f32,
@@ -19,18 +19,13 @@ pub(super) fn centred_indents(
     // セクション寸法と同じtwip丸めを先に行い、原点の丸め誤差を重ねない。
     let origin = (f64::from(origin) * 20.0).round();
     let width = (f64::from(width) * 20.0).round();
-    if width > f64::from(i32::MAX) {
+    if width > f64::from(i32::MAX) || width - 2.0 * origin < 1.0 {
         return None;
     }
-    let correction = (origin + width - (f64::from(left) + f64::from(right)) * 20.0).round();
-    if width - origin - correction.abs() < 1.0 {
-        return None;
-    }
-    if correction >= 0.0 {
-        Some((0, correction as i32))
-    } else {
-        Some((-correction as i32, 0))
-    }
+    // 中央寄せの従来領域[origin, width-origin]を左右同じ量だけ平行移動する。
+    // 片側だけの縮小は、代替フォントによる新たな折り返しを起こす。
+    let shift = (((f64::from(left) + f64::from(right)) * 20.0 - width) / 2.0).round();
+    Some((shift as i32, (origin - shift) as i32))
 }
 
 #[cfg(test)]
@@ -51,6 +46,7 @@ mod tests {
             [100.0, 100.0, 20.0, 612.0],
             [200.0, 100.0, 20.0, 612.0],
             [100.0, 700.0, 20.0, 612.0],
+            [450.0, 550.0, 400.0, 612.0],
             [0.0, 0.01, 0.0, 0.01],
             [100.0, 200.0, 20.0, f32::MAX],
         ] {
@@ -76,10 +72,11 @@ mod tests {
             let word_right = (f64::from(width) * 20.0).round() - f64::from(indent_right);
             let word_centre = (word_left + word_right) / 40.0;
             let source_centre = (f64::from(left) + f64::from(right)) / 2.0;
-            prop_assert!((word_centre - source_centre).abs() <= 0.012501);
+            prop_assert!((word_centre - source_centre).abs() <= 0.025001);
             prop_assert!(word_right > word_left);
-            prop_assert!(indent_left >= 0 && indent_right >= 0);
-            prop_assert!(indent_left == 0 || indent_right == 0);
+            let legacy_width = (f64::from(width) * 20.0).round()
+                - 2.0 * (f64::from(origin) * 20.0).round();
+            prop_assert_eq!(word_right - word_left, legacy_width);
         }
     }
 }

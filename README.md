@@ -46,7 +46,7 @@ PDF comparison uses the pinned Pdfium runtime described in the [comparison guide
 
 Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite origin reported by the SDK for the first horizontal glyph. DOCX row grouping uses this separately from `bounds`, which remains unchanged. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping; pure bytes/WASM parsing leaves it unset.
 
-Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents. This preserves horizontal position; substituted font metrics can still change the visible text width.
+Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 PDF comparison qualification uses 81 collected public PDFs (69 regular documents, 10 robustness inputs, one specification reference, and one unresolved semantic gold case). See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 

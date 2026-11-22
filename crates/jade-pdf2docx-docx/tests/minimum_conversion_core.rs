@@ -1873,8 +1873,8 @@ fn byte_conversion_preserves_pdf_alignment_and_table_width_in_docx_properties() 
         "right PDF text must become a right-aligned DOCX paragraph: {doc_xml}"
     );
     assert!(
-        doc_xml.contains(r#"<w:ind w:left="0" w:right="457""#),
-        "the 148.565pt source centre must survive the 20pt section margin, with at most half a twip of centre error: {doc_xml}"
+        doc_xml.contains(r#"<w:ind w:left="-29" w:right="429""#),
+        "the 148.565pt source centre must survive the 20pt section margin without narrowing the 260pt writable region, with at most half a twip of centre error: {doc_xml}"
     );
     assert!(
         doc_xml.contains(r#"<w:ind w:left="0" w:right="656""#),
