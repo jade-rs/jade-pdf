@@ -1,0 +1,72 @@
+{
+  "id": "nta-applicant-field-order-page1",
+  "date_utc": "2026-11-22T06:18:35.386887+00:00",
+  "declaration_revision": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+  "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+  "gold_sha256": "8c8adb6ea737f2246f6a5cef1b55ce198610bd0b5e5a78041725ee084d7801ca",
+  "baseline_binary_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+  "baseline": {
+    "cases": 1,
+    "passed": 0,
+    "all14_ids_present_once": true,
+    "both_IR_and_character_layer_misordered": true,
+    "selected_page_reading_order_requires_review": true,
+    "actual_order": [
+      "F01",
+      "F08",
+      "E01",
+      "F09",
+      "F10",
+      "F05",
+      "E02",
+      "F06",
+      "F07",
+      "E03",
+      "E04",
+      "H06",
+      "H07",
+      "F02"
+    ],
+    "report": "results-nta-field-order-before.json"
+  },
+  "scope": "Fourteen selected printed field identifiers in row-major panel order only; not full table text, cell semantics, whitespace, filled values, global page order or document accuracy. Existing vertical-note reading rules must remain enforced.",
+  "geometry_research": {
+    "lines": 67,
+    "vertices": 261,
+    "directed_edges": 646,
+    "bounded_faces": 69,
+    "all14_have_unique_faces": true,
+    "face_top_left_order_matches_gold": true,
+    "not_runtime_proof": true,
+    "public_SDK_page_graphics_only": true,
+    "font_programs_or_glyph_outlines_read": false,
+    "evidence_sha256": {
+      "probe-rulings.py": "d37d2e4131969c8f43e557ca886b16931a2509a7ee56fb387e1d239dd05e6799",
+      "rulings.json": "04c29c48ba1121d59da9d2ba23ad4290d824d8c6fec74149f41e2a07c86c0613",
+      "prototype-faces.py": "db9c41908413b7823be2836f53e583682e547fa42e9768e022e0724719134e57",
+      "prototype-faces.json": "088f66b180e081189dd51084b2666fcf92e3633a612c6f2045592f362a3a574d"
+    }
+  },
+  "rust_geometry_foundation": {
+    "production_integrated": false,
+    "compiled_only_under_cfg_test": true,
+    "initial_unit_red_failed": 3,
+    "unit_and_property_green_passed": 7,
+    "clippy_lib_and_tests_warnings_denied": true,
+    "scope": "Closed faces, concave spanning face and boundary exclusion, material contact vs real gap, invalid input, open columns, no partial result on budget exhaustion, generated grid position/order/duplicate-rule invariants.",
+    "logs": {
+      "jade-nta-grid-geometry-red.log": "81fed0bda3f19d025d3dd536ae3e7562a813f020057d8e4d5e4d0d877e06e679",
+      "jade-nta-grid-geometry-controls.log": "c49a7ee9f6d46aab3c06eff7b913f2c3ef25c6b0f72dbd0dfae90c7502c8b83c",
+      "jade-nta-grid-clippy.log": "d43d9042b3c2019919b70ba8eb589a2cb087e3b87a4f0e744c4f1b4393d4e48f"
+    }
+  },
+  "production_ready": false,
+  "natural_case_fixed": false,
+  "not_new_precision_improvement_yet": true,
+  "required_before_runtime": [
+    "Validate dark/opaque page rulings, clipping, transforms, nested/unsupported paths and source budgets with native/WASM parity.",
+    "Associate every moved run uniquely with closed cells; retain concave/spanning cells and source regions without splitting or losing scalars/positions.",
+    "Keep outside header/date text in flow and preserve scientific paragraph columns; retain reading-order review for inferred cells.",
+    "Preserve authoritative complete tagged tables and all prior gold, raw evidence and diagnostics; qualify every affected natural page before claiming improvement."
+  ]
+}
