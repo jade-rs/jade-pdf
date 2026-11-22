@@ -322,7 +322,6 @@ fn marked_actual_text_overrides_glyph_mapping_and_empty_replacement_is_recovered
         if matches!(mode, "actual_empty" | "actual_blank") {
             assert_eq!(ir.pages[0].text(), "");
             assert_eq!(ir.pages[0].source_unicode_scalars_unmatched, 0);
-            assert!(result.is_comparison_complete());
             assert!(result
                 .pages
                 .iter()
@@ -339,9 +338,37 @@ fn marked_actual_text_overrides_glyph_mapping_and_empty_replacement_is_recovered
                 }
             );
             assert_eq!(ir.pages[0].source_unicode_scalars_unmatched, 0);
-            assert!(result.is_comparison_complete());
-            assert!(result.is_text_comparison_complete());
         }
+        // Tr3の原文置換は復元するが、その成功を可視本文の確認済みへ昇格させない。
+        assert!(ir.pages[0].nonpainting_text_characters > 0, "{mode}");
+        assert!(
+            !ir.pages[0].text_visibility_accounting_unavailable,
+            "{mode}"
+        );
+        assert_eq!(
+            result.diagnostics.old_pages_with_nonpainting_text, 1,
+            "{mode}"
+        );
+        assert_eq!(
+            result.diagnostics.new_pages_with_nonpainting_text, 1,
+            "{mode}"
+        );
+        assert_eq!(
+            result
+                .diagnostics
+                .old_pages_with_unavailable_text_visibility,
+            0,
+            "{mode}"
+        );
+        assert_eq!(
+            result
+                .diagnostics
+                .new_pages_with_unavailable_text_visibility,
+            0,
+            "{mode}"
+        );
+        assert!(!result.is_comparison_complete(), "{mode}");
+        assert!(!result.is_text_comparison_complete(), "{mode}");
         assert_eq!(result.summary.pages_visual_changed, 0);
         assert!(result.has_changes());
     }
