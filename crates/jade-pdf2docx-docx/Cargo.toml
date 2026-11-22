@@ -9,6 +9,7 @@ docx-rs = "0.4.19"
 jade-pdf2docx-ocr = { version = "0.1.0", path = "../jade-pdf2docx-ocr" }
 jade-pdf2docx-parser = { version = "0.1.0", path = "../jade-pdf2docx-parser" }
 scraper = "0.22"
+quick-xml = { version = "=0.41.0", default-features = false }
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]

@@ -41,6 +41,7 @@ mod page_ocr_budget;
 mod positioned_ocr;
 mod region_ocr;
 mod whole_page_ocr;
+mod word_page_fit;
 pub use page_ocr::{
     convert_minimum_pdf_to_docx_with_bounded_page_ocr,
     convert_minimum_pdf_to_docx_with_bounded_page_ocr_content,
@@ -48,6 +49,7 @@ pub use page_ocr::{
     convert_minimum_pdf_to_docx_with_page_ocr,
 };
 pub use page_ocr_budget::{PageOcrLimits, PageOcrRaster};
+pub use word_page_fit::docx_quality_report;
 #[cfg(not(target_arch = "wasm32"))]
 mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
@@ -319,6 +321,7 @@ fn convert_pdf_file_with_check(
     check(Stage::Start)?;
     output::validate_distinct_paths(&request.input_pdf_path, &request.output_docx_path)?;
     let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
+    word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
@@ -429,7 +432,8 @@ fn convert_pdf_bytes_with_check(
 ) -> Result<Vec<u8>, ConvertError> {
     use conversion_control::Stage;
     check(Stage::Start)?;
-    let parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());

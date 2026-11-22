@@ -1564,6 +1564,7 @@ dependencies = [
  "jade-pdf2docx-ocr",
  "jade-pdf2docx-parser",
  "proptest",
+ "quick-xml",
  "same-file",
  "scraper",
  "tempfile",

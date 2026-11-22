@@ -9,7 +9,8 @@ pub(super) fn pack_docx_to_bytes(
     docx: Docx,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
-    let package = docx.build();
+    let mut package = docx.build();
+    crate::word_page_fit::fit(&mut package)?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
     let capacity = package
@@ -277,7 +278,9 @@ pub(super) fn pack_docx_to_file(
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
-    docx.build()
+    let mut package = docx.build();
+    crate::word_page_fit::fit(&mut package)?;
+    package
         .pack(&mut output)
         .map_err(|err| ConvertError::Pack(err.to_string()))?;
     let file = output

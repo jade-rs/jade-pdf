@@ -100,7 +100,7 @@ pub fn inspect_pdf_json(pdf_bytes: &[u8]) -> Result<String, JsValue> {
         inferred_cols,
         inferred_non_empty_cells,
         json_string(&parsed.text_preview),
-        quality_json(&parsed.quality),
+        quality_json(&jade_pdf2docx_docx::docx_quality_report(&parsed)),
     ))
 }
 
@@ -110,6 +110,7 @@ fn quality_json(report: &jade_pdf2docx_parser::QualityReport) -> String {
         .issues
         .iter()
         .map(|issue| match issue {
+            jade_pdf2docx_parser::QualityIssue::PageResizedForWord { page } => format!("{{\"kind\":\"page_resized_for_word\",\"page\":{page}}}"),
             jade_pdf2docx_parser::QualityIssue::MissingPageGeometry { page } => format!(
                 "{{\"kind\":\"missing_page_geometry\",\"page\":{page}}}"
             ),
