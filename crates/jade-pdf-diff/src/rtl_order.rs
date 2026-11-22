@@ -1,7 +1,7 @@
-//! 原文の一文字コードに対応する RTL 展開の、SDK による逆順を補正する。
+//! 原文の一文字コードに対応するRTL展開の、SDKによる文字順の変化を補正する。
 //! 同一オブジェクト・同一文字セルの厳密な一致と原文の出現数を必要とする。
 use pdfium_render::prelude::Pdfium;
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, VecDeque};
 use std::ffi::c_void;
 use unicode_normalization::UnicodeNormalization;
 
@@ -15,6 +15,8 @@ pub(crate) struct Corrections {
     starts: Vec<u64>,
     /// 逆順に読む範囲の最後の文字。
     ends: Vec<u64>,
+    /// 全体の逆順では表せない、確認済み一セル内の文字位置の置換。
+    permutations: Vec<Permutation>,
     /// 二度目の SDK 読み取り時にも同じ文字セルであることを確認する値。
     pub fingerprint: u64,
     /// 原文・セル・回数が一意に対応しなかったことを示す。
@@ -26,14 +28,26 @@ impl Default for Corrections {
         Self {
             starts: Vec::new(),
             ends: Vec::new(),
+            permutations: Vec::new(),
             fingerprint: unicode_facts::FINGERPRINT_START,
             requires_review: false,
         }
     }
 }
 impl Corrections {
+    /// 一意な原文に属する同一セル内だけで、出力位置に対応するSDK文字位置を返す。
+    pub fn source_index(&self, index: usize) -> Option<usize> {
+        let at = self.permutations.partition_point(|p| p.start <= index);
+        if let Some(p) = at.checked_sub(1).and_then(|at| self.permutations.get(at)) {
+            if let Some(&offset) = p.order.get(index - p.start) {
+                return Some(p.start + usize::from(offset));
+            }
+        }
+        self.reverse_index(index)
+    }
+
     /// 最大256文字の同一セル内だけで、対応する元の文字位置を求める。
-    pub fn reverse_index(&self, index: usize) -> Option<usize> {
+    fn reverse_index(&self, index: usize) -> Option<usize> {
         if self.starts.is_empty() {
             return None;
         }
@@ -78,6 +92,34 @@ impl Corrections {
     }
 }
 
+/// 同じ字形セルを共有する文字だけの、最大256個の全単射。
+struct Permutation {
+    /// 対象となる連続SDK文字位置の先頭。
+    start: usize,
+    /// 原文の各文字に対応する、セル内の元の位置。重複文字は出現順を保持する。
+    order: Vec<u8>,
+}
+
+/// 正規化で文字を増減せず、一文字ずつ完全に対応する場合だけ置換を組み立てる。
+fn permutation(start: usize, actual: &str, expected: &str) -> Option<Permutation> {
+    let count = actual.chars().count();
+    if !(2..=256).contains(&count) || expected.chars().count() != count {
+        return None;
+    }
+    let mut positions: BTreeMap<char, VecDeque<u8>> = BTreeMap::new();
+    for (index, c) in actual.chars().enumerate() {
+        positions.entry(c).or_default().push_back(index as u8);
+    }
+    let order: Option<Vec<_>> = expected
+        .chars()
+        .map(|c| positions.get_mut(&c)?.pop_front())
+        .collect();
+    Some(Permutation {
+        start,
+        order: order?,
+    })
+}
+
 /// 連続する同一セルの文字。256文字を超えた内容は候補として保存しない。
 struct Group {
     /// オブジェクト・矩形・原点の厳密な一致。
@@ -98,6 +140,8 @@ struct Matches {
     count: usize,
     /// 元の文字列を逆順にした場合だけ正解する範囲。
     reversals: Vec<(usize, usize)>,
+    /// 原文と文字が一対一に一致する、全体逆順以外の並べ替え。
+    permutations: Vec<Permutation>,
     /// 正順・逆順のどちらでも原文と一致しない場合。
     ambiguous: bool,
 }
@@ -127,7 +171,14 @@ fn finish(group: Group, source: &Facts, matches: &mut BTreeMap<String, Matches>)
         {
             found.reversals.push((group.start, group.end))
         }
-        _ => found.ambiguous = true,
+        Some(expected) => {
+            if let Some(order) = permutation(group.start, &group.text, expected) {
+                found.permutations.push(order);
+            } else {
+                found.ambiguous = true;
+            }
+        }
+        None => found.ambiguous = true,
     }
 }
 
@@ -229,20 +280,25 @@ pub(crate) fn read(
         return output;
     }
     let mut ranges = Vec::new();
+    let mut permutations = Vec::new();
     for (key, expected) in &source.rtl_sequences {
         let found = matches.get(key);
         if expected.text.is_none() || found.is_none_or(|m| m.ambiguous || m.count != expected.count)
         {
             return output;
         }
-        ranges.extend_from_slice(&found.unwrap().reversals);
+        let found = matches.remove(key).unwrap();
+        ranges.extend(found.reversals);
+        permutations.extend(found.permutations);
     }
     output.requires_review = false;
+    permutations.sort_unstable_by_key(|p| p.start);
+    output.permutations = permutations;
     for (start, end) in ranges {
         output.insert(start, end, facts.characters);
     }
     for index in 0..facts.characters {
-        if output.reverse_index(index).is_some() {
+        if output.source_index(index).is_some() {
             output.fingerprint =
                 unicode_facts::raw_geometry(pdfium, text, index as i32, output.fingerprint);
         }
@@ -256,6 +312,28 @@ mod tests {
     use proptest::prelude::*;
 
     proptest! {
+        /// 重複を含む文字の並べ替えも、各SDK位置を一度だけ使い原文を過不足なく再現する。
+        #[test]
+        fn source_permutation_is_a_bijection(actual in prop::collection::vec(any::<char>(), 2..257), shift in 0usize..256) {
+            let count = actual.len();
+            let mut expected = actual.clone();
+            expected.rotate_left(shift % count);
+            let raw: String = actual.iter().collect();
+            let target: String = expected.iter().collect();
+            let order = permutation(17, &raw, &target).unwrap();
+            let restored: Vec<_> = order.order.iter().map(|&at| actual[usize::from(at)]).collect();
+            prop_assert_eq!(restored, expected);
+            let mut used = order.order.clone();
+            used.sort_unstable();
+            prop_assert_eq!(used.iter().map(|&at| usize::from(at)).collect::<Vec<_>>(), (0..count).collect::<Vec<_>>());
+            let corrections = Corrections { permutations: vec![order], ..Corrections::default() };
+            prop_assert_eq!(corrections.source_index(16), None);
+            prop_assert_eq!(corrections.source_index(17 + count), None);
+            for index in 0..count {
+                prop_assert_eq!(actual[corrections.source_index(17 + index).unwrap() - 17], target.chars().nth(index).unwrap());
+            }
+        }
+
         /// ビット境界を跨いでも、同じセルの範囲外へ文字を移動しない。
         #[test]
         fn reversal_is_an_involution_with_exact_boundaries(start in 0usize..4096, length in 2usize..257) {
@@ -270,6 +348,23 @@ mod tests {
             if start > 0 { prop_assert_eq!(corrections.reverse_index(start - 1), None); }
             prop_assert_eq!(corrections.reverse_index(end + 1), None);
         }
+    }
+
+    /// 文字の欠落・追加・置換や正規化による個数差を、並べ替えだけで修復したと扱わない。
+    #[test]
+    fn permutation_requires_exact_literal_scalars_and_a_bounded_cell() {
+        for (actual, expected) in [
+            ("بABت", "بACت"),
+            ("بABت", "بAت"),
+            ("بABت", "بABBت"),
+            ("بéت", "بe\u{301}ت"),
+            ("ب", "ب"),
+        ] {
+            assert!(permutation(0, actual, expected).is_none());
+        }
+        assert!(permutation(0, &"ب".repeat(257), &"ب".repeat(257)).is_none());
+        let order = permutation(0, "ت12ب12", "ب12ت12").unwrap();
+        assert_eq!(order.order, [3, 1, 2, 0, 4, 5]);
     }
 
     /// 隣接する複数のセルを、それぞれ独立した範囲として扱う。

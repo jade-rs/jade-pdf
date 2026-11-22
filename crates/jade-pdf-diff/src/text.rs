@@ -259,7 +259,7 @@ fn extract_unrotated_runs(
         if unicode_facts.is_paired_low(ch.index()) {
             continue; // Its raw scalar/error still contributed to the checks above.
         }
-        let corrected_index = unicode_facts.rtl_order.reverse_index(ch.index());
+        let corrected_index = unicode_facts.rtl_order.source_index(ch.index());
         let supplementary_scalar = unicode_facts.supplementary.get(ch.index());
         let symbol_scalar = unicode_facts.symbol.get(ch.index());
         ensure!(

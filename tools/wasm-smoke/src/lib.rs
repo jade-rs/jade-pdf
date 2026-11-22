@@ -269,6 +269,12 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
             "edit" => Some("لح"),
             "hebrew" => Some("שם"),
             "mixed_edit" => Some("بB"),
+            "partial_latin" => Some("بABت"),
+            "partial_decimal" => Some("ب12ت"),
+            "partial_hebrew" => Some("אב12גד"),
+            "partial_punctuation" => Some("ب(12)ت"),
+            "partial_edit" => Some("ب13ت"),
+            "partial_order_edit" => Some("ت12ب"),
             _ => None,
         };
         let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())

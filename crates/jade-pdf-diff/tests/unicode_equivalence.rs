@@ -3,6 +3,7 @@
 mod fixture;
 
 use pdf_diff::{diff_bytes, load_document_from_bytes, text_layer_from_bytes, DiffOptions, Limits};
+use unicode_normalization::UnicodeNormalization;
 
 /// 接続形と基底文字の表記差は原文欠落にせず、実際の文字変更は差分として残す。
 #[test]
@@ -176,4 +177,72 @@ fn source_owned_mixed_words_and_marks_keep_their_logical_order() {
         );
         assert!(!diff.has_changes(), "{target:?}");
     }
+}
+
+/// 数字や欧文だけ正順で残る場合も、一意な原文と同一セルから論理順序を復元する。
+#[test]
+fn partially_reordered_mixed_glyphs_follow_the_unique_source_sequence() {
+    for target in ["بABت", "ب12ت", "אב12גד", "ب123.45ت", "ب(12)ت", "ب/AB/ت"] {
+        for unit in [1.0, 3.0, 64.0] {
+            for rotation in [0, 90, 180, 270] {
+                for shear in [false, true] {
+                    let source = fixture::unicode_spelling_geometry(target, unit, rotation, shear);
+                    let ir = load_document_from_bytes(&source, &Limits::default()).unwrap();
+                    assert_eq!(
+                        ir.pages[0].text(),
+                        target,
+                        "{target:?} {unit} {rotation} {shear}"
+                    );
+                    assert!(!ir.pages[0].reading_order_requires_review);
+                    assert_eq!(ir.pages[0].source_unicode_scalars_unmatched, 0);
+                    let layer = text_layer_from_bytes(&source, 1).unwrap();
+                    assert_eq!(layer.len(), 1);
+                    assert_eq!(layer[0].text, target);
+                    assert_eq!(layer[0].chars.len(), target.chars().count());
+                    assert!(layer[0]
+                        .chars
+                        .iter()
+                        .all(|cell| cell.x0 == layer[0].chars[0].x0
+                            && cell.x1 == layer[0].chars[0].x1));
+                }
+            }
+        }
+    }
+}
+
+/// 同じ字形の字面でも実際の数字・文字・論理順序の編集を消さず、正準結合順だけを揃える。
+#[test]
+fn verified_permutations_keep_real_edits_and_canonical_marks() {
+    for (before, after) in [("ب12ت", "ب13ت"), ("بABت", "بACت"), ("ب12ت", "ت12ب")] {
+        let old = fixture::unicode_spelling(before);
+        let new = fixture::unicode_spelling(after);
+        let diff = diff_bytes(
+            "before",
+            "after",
+            &old,
+            &new,
+            &Limits::default(),
+            &DiffOptions::default(),
+        )
+        .unwrap();
+        assert!(
+            diff.is_comparison_complete(),
+            "{before:?} {after:?}: {:?}",
+            diff.diagnostics
+        );
+        assert_eq!(diff.summary.blocks_changed, 1);
+        assert_eq!(diff.summary.pages_visual_changed, 0);
+        assert!(diff.has_changes());
+    }
+    let target = "ب\u{651}\u{64e}ت";
+    let source = fixture::unicode_spelling(target);
+    let ir = load_document_from_bytes(&source, &Limits::default()).unwrap();
+    assert_eq!(ir.pages[0].text(), target.nfc().collect::<String>());
+    assert!(!ir.pages[0].reading_order_requires_review);
+    let layer = text_layer_from_bytes(&source, 1).unwrap();
+    assert_eq!(
+        layer[0].text.nfd().collect::<String>(),
+        target.nfd().collect::<String>()
+    );
+    assert_eq!(layer[0].chars.len(), 4);
 }
