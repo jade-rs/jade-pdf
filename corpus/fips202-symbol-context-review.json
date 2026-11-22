@@ -55,5 +55,28 @@
   "to_unicode_sha256": "9997264a24d1e9ee52c87ba2114364bfae702cf1dd3fea640de5780f7c3810ce",
   "original_page14_render_sha256": "e968ac7d51b745ff8003851b76caff757fb7df2a683f6b3bea96a1906655431e",
   "gold_scope": "Four minus signs only; bracket/ceiling components remain raw and reviewable.",
-  "component_decision": "Original uses upper square-bracket pieces as ceiling operators; translating them straight to Unicode bracket-piece or whole ceiling characters would guess logical intent. Retain them and source review, using verified glyph ownership only as non-RTL context for independently known aliases."
+  "component_decision": "Original uses upper square-bracket pieces as ceiling operators; translating them straight to Unicode bracket-piece or whole ceiling characters would guess logical intent. Retain them and source review, using verified glyph ownership only as non-RTL context for independently known aliases.",
+  "conservation_reference_glyph_ids": [
+    {
+      "raw": "U+F02D",
+      "gid": 16
+    },
+    {
+      "raw": "U+F0B7",
+      "gid": 120
+    },
+    {
+      "raw": "U+F0C5",
+      "gid": 134
+    },
+    {
+      "raw": "U+F0E9",
+      "gid": 170
+    },
+    {
+      "raw": "U+F0F9",
+      "gid": 186
+    }
+  ],
+  "conservation_reference_note": "F02D minus, F0B7 bullet and F0C5 circled plus are singleton NFC official Adobe-table aliases declared for conservation, not full Unicode gold. Program and cmap metadata read only in memory; outline tables not parsed."
 }
