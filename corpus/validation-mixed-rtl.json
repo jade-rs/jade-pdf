@@ -1,9 +1,9 @@
 {
   "version": 46,
   "date": "2026-11-22",
-  "core_revision": "ac128861dfc69498e6df36b1d3775cdcb494d95b",
-  "qualification_revision": "777fa0dc09eda72d2e25df31e66fbd71786c882b",
-  "base_revision": "bb2c4c8edc2d350beb69a527644c3171d579f9ce",
+  "core_revision": "0f4b1d66638c55792d002328f3f934278f7977a1",
+  "qualification_revision": "bba8bd6746587d728064dd4cce5af562d1a3baef",
+  "base_revision": "9996f1854938f514a650c0a54dfb73bf13a20e44",
   "base_pr": 10,
   "production_ready": false,
   "scope": "Restore partially reordered RTL/Latin/numeric expansions only within a proven original one-glyph cell. Require a unique original sequence, exact scalar bijection, source occurrence counts, all-page Unicode/glyph ownership and the same finite SDK object/box/origin. Duplicated scalars map stably in occurrence order. New permutations require literal scalar equality without normalization expansion; existing exact/reversal checks retain their canonical equivalence behavior. Controls, ambiguous source sequences, supplementary SDK pairs and unavailable ownership retain review. Not an arbitrary paragraph bidi algorithm.",
@@ -371,5 +371,14 @@
     "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
     "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
     "tools/wasm-smoke/worker_smoke.mjs": "a20c9751852b18d77aaa54313ae15d900b2db398af648eea6910f8fd28a71b85"
+  },
+  "history_replay": {
+    "previous_base_revision": "bb2c4c8edc2d350beb69a527644c3171d579f9ce",
+    "previous_core_revision": "ac128861dfc69498e6df36b1d3775cdcb494d95b",
+    "previous_qualification_revision": "777fa0dc09eda72d2e25df31e66fbd71786c882b",
+    "previous_result_revision": "653ef49ab32b10ccf356e0b5aa9590410c495559",
+    "qualified_result_revision": "072a4b357df36a5a1df5d97509c8535f2f740733",
+    "qualified_result_tree": "af8f2cdd2e0ca838137cb75fb423d1646ab8f8e2",
+    "all_three_qualified_trees_identical": true
   }
 }
