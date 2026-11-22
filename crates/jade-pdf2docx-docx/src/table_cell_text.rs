@@ -57,16 +57,53 @@ const TAB_GAP_EM: f32 = 1.5;
 /// 折り返し判定で、次行の先頭語が収まったはずかを比べる際の許容幅（em）。
 const WRAP_TOLERANCE_EM: f32 = 0.3;
 
+/// セル内のタブ位置（PDF の x 座標、pt）。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub(crate) struct CellTabStop {
+    /// タブで揃える位置（右揃えなら語の右端、左揃えなら語の左端）。
+    pub(crate) x: f32,
+    /// 次の語を右揃え（数値）にするか。
+    pub(crate) right: bool,
+}
+
+/// 組み立てたセル本文と、`\n` で区切った各段落のタブ位置。
+#[derive(Debug, Clone, PartialEq, Default)]
+pub(crate) struct ComposedCell {
+    /// セル本文（`\n` は段落区切り、`\t` はタブ）。
+    pub(crate) text: String,
+    /// 段落ごとのタブ位置。
+    pub(crate) tab_stops: Vec<Vec<CellTabStop>>,
+}
+
 /// セル断片を読み順の本文へ組み立てる。
-///
-/// `cell_left`・`cell_right` はセルの左右端（pt）。左余白と同じ右余白を仮定し、
-/// 次行の先頭語が前行の残り幅に収まらない場合だけ折り返しとして連結する。
+#[cfg(test)]
 pub(crate) fn compose_cell_text(
     fragments: &[CellFragment],
     cell_left: f32,
     cell_right: f32,
 ) -> String {
-    let lines = group_lines(fragments);
+    compose_cell(fragments, cell_left, cell_right).text
+}
+
+/// セル断片を読み順の本文とタブ位置へ組み立てる。
+///
+/// `cell_left`・`cell_right` はセルの左右端（pt）。左余白と同じ右余白を仮定し、
+/// 次行の先頭語が前行の残り幅に収まらない場合だけ折り返しとして連結する。
+pub(crate) fn compose_cell(
+    fragments: &[CellFragment],
+    cell_left: f32,
+    cell_right: f32,
+) -> ComposedCell {
+    // 字間調整で語の間を大きく空けた文字片は、語ごとの位置を推定して分ける。
+    let words = fragments
+        .iter()
+        .flat_map(split_at_wide_spaces)
+        .collect::<Vec<_>>();
+    let mut sorted = words
+        .iter()
+        .filter(|fragment| !fragment.text.trim().is_empty())
+        .collect::<Vec<_>>();
+    let lines = group_sorted_lines(&mut sorted);
     let padding = lines
         .iter()
         .map(|line| line.left - cell_left)
@@ -74,10 +111,11 @@ pub(crate) fn compose_cell_text(
         .clamp(0.0, (cell_right - cell_left).max(0.0) / 4.0);
     let content_right = cell_right - padding;
     let mut output = String::new();
+    let mut tab_stops: Vec<Vec<CellTabStop>> = Vec::new();
     let mut previous: Option<&CellLine<'_>> = None;
     let mut previous_text = String::new();
     for line in &lines {
-        let text = line_text(line);
+        let (text, stops) = line_text(line);
         if text.is_empty() {
             continue;
         }
@@ -99,21 +137,37 @@ pub(crate) fn compose_cell_text(
                 }
             } else {
                 output.push('\n');
+                tab_stops.push(Vec::new());
             }
+        } else {
+            tab_stops.push(Vec::new());
+        }
+        if let Some(paragraph) = tab_stops.last_mut() {
+            paragraph.extend(stops);
         }
         output.push_str(&text);
         previous = Some(line);
         previous_text = text;
     }
-    output
+    ComposedCell {
+        text: output,
+        tab_stops,
+    }
 }
 
 /// 数字・桁区切り・小数点だけで書かれた行か判定する。
+///
+/// 数字を含み、数字以外は桁区切り・小数点・符号か、ToUnicode のない字形の私用領域の記号
+/// （小数点などが私用領域で抽出される）だけの場合に数値とみなす。
 fn is_mostly_numeric(text: &str) -> bool {
     let body = text.trim();
     !body.is_empty()
+        && body
+            .chars()
+            .any(|ch| ch.is_ascii_digit() || ('０'..='９').contains(&ch))
         && body.chars().all(|ch| {
-            ch.is_ascii_digit()
+            ('\u{E000}'..='\u{F8FF}').contains(&ch)
+                || ch.is_ascii_digit()
                 || ('０'..='９').contains(&ch)
                 || matches!(
                     ch,
@@ -171,9 +225,14 @@ fn group_lines(fragments: &[CellFragment]) -> Vec<CellLine<'_>> {
         .iter()
         .filter(|fragment| !fragment.text.trim().is_empty())
         .collect::<Vec<_>>();
+    group_sorted_lines(&mut sorted)
+}
+
+/// 文字片を上から下の行へまとめる（呼び出し側が所有する文字片の参照列）。
+fn group_sorted_lines<'a>(sorted: &mut Vec<&'a CellFragment>) -> Vec<CellLine<'a>> {
     sorted.sort_by(|a, b| b.center_y().total_cmp(&a.center_y()));
     let mut lines: Vec<CellLine<'_>> = Vec::new();
-    for fragment in sorted {
+    for fragment in sorted.drain(..) {
         let (bottom, top) = (
             fragment.bounds.y0.min(fragment.bounds.y1),
             fragment.bounds.y0.max(fragment.bounds.y1),
@@ -217,10 +276,12 @@ fn line_size(line: &CellLine<'_>) -> f32 {
 }
 
 /// 1 行の断片を間隔に応じて連結する。
-fn line_text(line: &CellLine<'_>) -> String {
+fn line_text(line: &CellLine<'_>) -> (String, Vec<CellTabStop>) {
     let mut text = String::new();
     let mut previous: Option<&CellFragment> = None;
     let mut pending_space = false;
+    // タブの後の語の（左端, 右端, 本文）。
+    let mut segments: Vec<(f32, f32, String)> = Vec::new();
     for fragment in &line.fragments {
         let body = fragment.text.trim();
         if let Some(previous) = previous {
@@ -230,17 +291,41 @@ fn line_text(line: &CellLine<'_>) -> String {
             let explicit = pending_space || fragment.text.starts_with(char::is_whitespace);
             if gap > TAB_GAP_EM * size {
                 text.push('\t');
+                segments.push((fragment.bounds.x0, fragment.bounds.x1, String::new()));
             } else if (wide_gap || explicit)
                 && needs_word_space(text.chars().last(), body.chars().next())
             {
                 text.push(' ');
+                if let Some(segment) = segments.last_mut() {
+                    segment.2.push(' ');
+                }
             }
         }
         text.push_str(body);
+        if let Some(segment) = segments.last_mut() {
+            segment.1 = segment.1.max(fragment.bounds.x1);
+            segment.2.push_str(body);
+        }
         pending_space = fragment.text.ends_with(char::is_whitespace);
         previous = Some(fragment);
     }
-    text
+    let stops = segments
+        .into_iter()
+        .map(|(left, right, body)| {
+            if is_mostly_numeric(&body) {
+                CellTabStop {
+                    x: right,
+                    right: true,
+                }
+            } else {
+                CellTabStop {
+                    x: left,
+                    right: false,
+                }
+            }
+        })
+        .collect();
+    (text, stops)
 }
 
 /// 2 文字の間に語間の空白が必要か判定する（和文同士・和文と記号の間は不要）。
@@ -255,6 +340,67 @@ fn needs_word_space(left: Option<char>, right: Option<char>) -> bool {
 fn is_cjk(ch: char) -> bool {
     matches!(ch as u32,
         0x3000..=0x30FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF | 0xFF00..=0xFFEF)
+}
+
+/// 空白を含む文字片の幅が字の公称幅の合計より大きく、空白 1 つあたりの空きが
+/// 語間を超える場合、空白の位置で語ごとの文字片へ分ける。
+///
+/// 位置は字の公称幅（全角 1 em、半角 0.55 em）で推定し、余りの幅を空白へ配分する。
+fn split_at_wide_spaces(fragment: &CellFragment) -> Vec<CellFragment> {
+    let body = fragment.text.trim();
+    let chars = body.chars().collect::<Vec<_>>();
+    let spaces = chars.iter().filter(|ch| ch.is_whitespace()).count();
+    if spaces == 0 {
+        return vec![fragment.clone()];
+    }
+    let em = fragment.size();
+    let width = |ch: &char| if is_cjk(*ch) { em } else { 0.55 * em };
+    let glyphs = chars
+        .iter()
+        .filter(|ch| !ch.is_whitespace())
+        .map(width)
+        .sum::<f32>();
+    let span = fragment.bounds.x1 - fragment.bounds.x0;
+    let gap = (span - glyphs) / spaces as f32;
+    if gap <= TAB_GAP_EM * em {
+        return vec![fragment.clone()];
+    }
+    let mut pieces = Vec::new();
+    let mut x = fragment.bounds.x0;
+    let mut word = String::new();
+    let mut word_x0 = x;
+    for ch in chars {
+        if ch.is_whitespace() {
+            if !word.is_empty() {
+                pieces.push(CellFragment {
+                    bounds: ParsedBounds {
+                        x0: word_x0,
+                        x1: x,
+                        ..fragment.bounds
+                    },
+                    text: std::mem::take(&mut word),
+                    font_size: fragment.font_size,
+                });
+            }
+            x += gap;
+            word_x0 = x;
+        } else {
+            word.push(ch);
+            x += width(&ch);
+        }
+    }
+    if !word.is_empty() {
+        pieces.push(CellFragment {
+            bounds: ParsedBounds {
+                x0: word_x0,
+                x1: x.min(fragment.bounds.x1).max(word_x0),
+                ..fragment.bounds
+            },
+            text: word,
+            font_size: fragment.font_size,
+        });
+    }
+    pieces
 }
 
 /// 列境界をまたぐ 1 つのテキスト要素を、境界ごとの断片へ分ける。
@@ -275,29 +421,50 @@ pub(crate) fn split_across_boundaries(
     if inside.is_empty() || chars.len() < 2 {
         return vec![fragment.clone()];
     }
-    let weights = chars
+    // 字は公称幅（全角 1 em、半角 0.55 em）とし、矩形の残りの幅を空白へ配分する。
+    // 空白がない、または字の公称幅の合計が矩形より広い場合は比例配分にする。
+    let em = fragment.size();
+    let nominal = chars
         .iter()
         .map(|ch| {
-            if is_cjk(*ch) {
-                1.0
-            } else if ch.is_whitespace() {
-                0.4
+            if ch.is_whitespace() {
+                0.0
+            } else if is_cjk(*ch) {
+                em
             } else {
-                0.55
+                0.55 * em
             }
         })
         .collect::<Vec<f32>>();
-    let total = weights.iter().sum::<f32>().max(f32::EPSILON);
-    let scale = (bounds.x1 - bounds.x0) / total;
+    let span = bounds.x1 - bounds.x0;
+    let glyphs = nominal.iter().sum::<f32>();
+    let spaces = chars.iter().filter(|ch| ch.is_whitespace()).count();
+    let widths = if spaces > 0 && glyphs < span {
+        let extra = (span - glyphs) / spaces as f32;
+        chars
+            .iter()
+            .zip(&nominal)
+            .map(|(ch, width)| if ch.is_whitespace() { extra } else { *width })
+            .collect::<Vec<_>>()
+    } else {
+        let total = nominal.iter().sum::<f32>().max(f32::EPSILON);
+        nominal
+            .iter()
+            .zip(&chars)
+            .map(|(width, ch)| {
+                let width = if ch.is_whitespace() { 0.4 * em } else { *width };
+                width * span / total
+            })
+            .collect::<Vec<_>>()
+    };
     // edges[i] は i 文字目の左端の推定 x。
     let mut edges = Vec::with_capacity(chars.len() + 1);
     let mut x = bounds.x0;
-    for weight in &weights {
+    for width in &widths {
         edges.push(x);
-        x += weight * scale;
+        x += width;
     }
     edges.push(bounds.x1);
-    let em = fragment.size();
     let mut cuts = Vec::new();
     for boundary in inside {
         let space = (0..chars.len())
@@ -526,9 +693,9 @@ mod tests {
     fn splits_text_crossing_column_rules_at_spaces() {
         let fragment = CellFragment {
             bounds: ParsedBounds {
-                x0: 90.0,
+                x0: 91.0,
                 y0: 0.0,
-                x1: 290.0,
+                x1: 251.0,
                 y1: 8.0,
             },
             text: "１ 小学校費 教職員数 普通態容補正".into(),
@@ -601,6 +768,45 @@ mod tests {
                 ParagraphAlignment::Right,
                 Some(CellVerticalAlignment::Bottom)
             )
+        );
+    }
+
+    /// 字間調整で大きく空けた語の間は、1 つの文字片でもタブにする。
+    #[test]
+    fn wide_spaces_inside_one_fragment_become_tabs() {
+        let fragment = CellFragment {
+            bounds: ParsedBounds {
+                x0: 211.0,
+                y0: 456.0,
+                x1: 371.0,
+                y1: 464.0,
+            },
+            text: "４級地 0".into(),
+            font_size: 8.0,
+        };
+        assert_eq!(compose_cell_text(&[fragment], 199.0, 419.0), "４級地\t0");
+    }
+
+    /// タブ位置は、数値なら右端に右揃え、それ以外は左端に左揃えで返す。
+    #[test]
+    fn tab_stops_follow_pdf_positions() {
+        let mut fragments = chars("label", 0.0, 100.0, 4.0, 8.0);
+        fragments.extend(chars("1.061", 60.0, 100.0, 4.0, 8.0));
+        fragments.extend(chars("note", 100.0, 100.0, 4.0, 8.0));
+        let composed = compose_cell(&fragments, 0.0, 130.0);
+        assert_eq!(composed.text, "label\t1.061\tnote");
+        assert_eq!(
+            composed.tab_stops,
+            vec![vec![
+                CellTabStop {
+                    x: 80.0,
+                    right: true
+                },
+                CellTabStop {
+                    x: 100.0,
+                    right: false
+                }
+            ]]
         );
     }
 }

@@ -329,6 +329,8 @@ fn convert_pdf_file_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    drop_rule_glyphs(&mut parsed);
+    split_text_at_vertical_rules(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
     let normalized_text_preview =
@@ -442,6 +444,8 @@ fn convert_pdf_bytes_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    drop_rule_glyphs(&mut parsed);
+    split_text_at_vertical_rules(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
     let mut request = MinimumPdfToDocxBytesRequest {
@@ -709,6 +713,83 @@ fn build_structured_docx_from_owned_images(
         &BTreeMap::new(),
         &mut images,
     )
+}
+
+/// 罫線用フォントで描いた細長い私用領域の字（傍線・罫）を本文から除く。
+///
+/// 官報などは傍線を罫線用フォントの字で組み、私用領域の文字として抽出される。
+/// 文字のまま残すと代替フォントで豆腐になり、セル内の行の判定も乱す。線として
+/// graphics へ移すと表の行境界と取り違えるため、細長い字だけを取り除く。
+/// 点のような小さい字（小数点など）は文字のまま残す。
+fn drop_rule_glyphs(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    parsed.text_elements.retain(|text| {
+        let body = text.text.trim();
+        if body.is_empty() || !body.chars().all(is_private_use) {
+            return true;
+        }
+        let bounds = normalized_bounds(text.bounds);
+        let (width, height) = (bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
+        let line_like = (height <= 1.5 && width >= 3.0) || (width <= 1.5 && height >= 3.0);
+        !line_like
+    });
+}
+
+/// 縦罫線をまたいで 1 つにまとめられた文字片を、罫線の位置で分ける。
+///
+/// Pdfium は同じ高さに並ぶ文字を、間に罫線があっても 1 つの文字片にまとめることがある
+/// （横に並んだ 2 つの表の行など）。表ごとの割り当てより前にページ全体で分けておく。
+fn split_text_at_vertical_rules(parsed: &mut ParsedDocument) {
+    let mut rules_by_page = BTreeMap::<usize, Vec<table_grid::Rule>>::new();
+    for graphic in &parsed.graphics {
+        let bounds = normalized_bounds(graphic.bounds);
+        if is_vertical_line(&bounds) {
+            rules_by_page
+                .entry(graphic.page)
+                .or_default()
+                .push(table_grid::Rule {
+                    at: bounds.x0,
+                    start: bounds.y0,
+                    end: bounds.y1,
+                });
+        }
+    }
+    if rules_by_page.is_empty() {
+        return;
+    }
+    let mut output = Vec::with_capacity(parsed.text_elements.len());
+    for text in parsed.text_elements.drain(..) {
+        let Some(rules) = rules_by_page.get(&text.page) else {
+            output.push(text);
+            continue;
+        };
+        let bounds = normalized_bounds(text.bounds);
+        let mut crossing = rules
+            .iter()
+            .map(|rule| rule.at)
+            .filter(|x| *x > bounds.x0 + 1.0 && *x < bounds.x1 - 1.0)
+            .filter(|x| table_grid::is_ruled(rules, *x, bounds.y0, bounds.y1))
+            .collect::<Vec<_>>();
+        if crossing.is_empty() {
+            output.push(text);
+            continue;
+        }
+        crossing.sort_by(f32::total_cmp);
+        crossing.dedup_by(|a, b| (*a - *b).abs() < 0.5);
+        let fragment = table_cell_text::CellFragment {
+            bounds,
+            text: text.text.clone(),
+            font_size: text.font_size,
+        };
+        for piece in table_cell_text::split_across_boundaries(&fragment, &crossing) {
+            output.push(ParsedTextElement {
+                bounds: piece.bounds,
+                text: piece.text,
+                ..text.clone()
+            });
+        }
+    }
+    parsed.text_elements = output;
 }
 
 /// 本文のあるページで、ページの半分以上を覆う白一色の背景画像を取り除く。
@@ -2822,6 +2903,10 @@ struct PositionedTable {
     row_line_counts: Vec<usize>,
     /// 左寄せセルで観測した、セル左端から文字までの最小距離（pt）。
     cell_padding_pt: Option<f32>,
+    /// 上から順の各マスの文字サイズ（pt、マス内の中央値）。
+    cell_font_sizes: Vec<Vec<Option<f32>>>,
+    /// 上から順の各マスの段落ごとのタブ位置（セル左端からの距離 pt と右揃えか）。
+    cell_tab_stops: Vec<Vec<Vec<Vec<(f32, bool)>>>>,
 }
 
 /// DOCX 出力用の表モデル。
@@ -3375,20 +3460,7 @@ fn apply_positioned_table_layout(
 ) -> Table {
     let width = (table.bounds.x1 - table.bounds.x0).abs();
     let top_cell_margin = positioned_table_top_cell_margin_twips(table);
-    let horizontal_cell_margin = table
-        .font_name
-        .as_deref()
-        .filter(|font_name| !table.font_embedded && pdf_font_name_is_ms_pgothic(font_name))
-        .map(|_| MS_PGOTHIC_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS)
-        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
-    // PDF のセル内余白が既定より狭い表は、同じ左余白にし、右余白は半分にして
-    // 代替フォントの字幅の差で列の中の文字が折り返さないよう余裕を残す。
-    let (horizontal_cell_margin, right_cell_margin) = table
-        .cell_padding_pt
-        .and_then(pdf_points_to_twips)
-        .filter(|padding| *padding < horizontal_cell_margin)
-        .map(|padding| (padding, padding / 2))
-        .unwrap_or((horizontal_cell_margin, horizontal_cell_margin));
+    let (horizontal_cell_margin, right_cell_margin) = table_cell_horizontal_margins(table);
     let mut docx_table = docx_table
         .align(TableAlignmentType::Left)
         .layout(TableLayoutType::Fixed)
@@ -3412,6 +3484,25 @@ fn apply_positioned_table_layout(
         docx_table = docx_table.indent(indent);
     }
     docx_table
+}
+
+/// 表セルの左右の余白（twips）を返す。
+///
+/// PDF のセル内余白が既定より狭い表は同じ左余白にし、右余白は半分にして
+/// 代替フォントの字幅の差で列の中の文字が折り返さないよう余裕を残す。
+fn table_cell_horizontal_margins(table: &PositionedTable) -> (usize, usize) {
+    let horizontal_cell_margin = table
+        .font_name
+        .as_deref()
+        .filter(|font_name| !table.font_embedded && pdf_font_name_is_ms_pgothic(font_name))
+        .map(|_| MS_PGOTHIC_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    table
+        .cell_padding_pt
+        .and_then(pdf_points_to_twips)
+        .filter(|padding| *padding < horizontal_cell_margin)
+        .map(|padding| (padding, padding / 2))
+        .unwrap_or((horizontal_cell_margin, horizontal_cell_margin))
 }
 
 /// 表形状・font・セル配置から上セル余白のbaseline補正値を返す。
@@ -3479,9 +3570,26 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let has_nested_tables = !nested_tables.is_empty();
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
                     let mut table_cell = TableCell::new();
-                    for line in text.split('\n') {
-                        table_cell =
-                            table_cell.add_paragraph(table_cell_paragraph(line, cell, parent));
+                    let cell_font_size = parent
+                        .and_then(|table| table.cell_font_sizes.get(row_index))
+                        .and_then(|row| row.get(grid_col))
+                        .copied()
+                        .flatten();
+                    let cell_tabs = parent
+                        .and_then(|table| table.cell_tab_stops.get(row_index))
+                        .and_then(|row| row.get(grid_col));
+                    for (line_index, line) in text.split('\n').enumerate() {
+                        let stops = cell_tabs
+                            .and_then(|tabs| tabs.get(line_index))
+                            .map(Vec::as_slice)
+                            .unwrap_or(&[]);
+                        table_cell = table_cell.add_paragraph(table_cell_paragraph(
+                            line,
+                            cell,
+                            parent,
+                            cell_font_size,
+                            stops,
+                        ));
                     }
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(match cell.vertical_alignment {
@@ -3546,6 +3654,8 @@ fn table_cell_paragraph(
     text: &str,
     cell: &DocxTableCellModel,
     parent: Option<&PositionedTable>,
+    cell_font_size: Option<f32>,
+    tab_stops: &[(f32, bool)],
 ) -> Paragraph {
     let mut run = Run::new();
     for (index, segment) in text.split('\t').enumerate() {
@@ -3561,8 +3671,9 @@ fn table_cell_paragraph(
             run = run.stretch(stretch);
         }
     }
-    if let Some(size) = parent
-        .and_then(|table| table.font_size)
+    // マスの文字サイズ、なければ表で共通の文字サイズを使う。
+    if let Some(size) = cell_font_size
+        .or_else(|| parent.and_then(|table| table.font_size))
         .and_then(pdf_font_size_to_half_points)
         .filter(|size| *size != DEFAULT_DOCX_FONT_SIZE_HALF_POINTS)
     {
@@ -3572,15 +3683,38 @@ fn table_cell_paragraph(
         run = run.underline("single");
     }
     let mut paragraph = Paragraph::new().add_run(run);
-    // PDF で右端へ寄せた値は、セルの内側右端の右揃えタブで同じ位置に置く。
-    if text.contains('\t')
+    // タブの後の語は PDF と同じ位置へ置く（数値は右端に右揃え、それ以外は左端に左揃え）。
+    let left_margin = parent
+        .map(|table| table_cell_horizontal_margins(table).0)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    let tab_count = text.matches('\t').count();
+    if tab_count > 0 && tab_stops.len() == tab_count {
+        for (offset, right) in tab_stops {
+            let Some(position) = pdf_points_to_twips(*offset)
+                .and_then(|twips| twips.checked_sub(left_margin))
+                .filter(|position| *position > 0)
+            else {
+                continue;
+            };
+            paragraph = paragraph.add_tab(
+                Tab::new()
+                    .val(if *right {
+                        TabValueType::Right
+                    } else {
+                        TabValueType::Left
+                    })
+                    .pos(position),
+            );
+        }
+    } else if tab_count > 0
         && let Some(width) = cell.width_twips
-        && width > 2 * POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS
+        && width > 2 * left_margin
     {
+        // 位置が分からないタブは、セルの内側右端の右揃えタブにする。
         paragraph = paragraph.add_tab(
             Tab::new()
                 .val(TabValueType::Right)
-                .pos(width - 2 * POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS),
+                .pos(width - 2 * left_margin),
         );
     }
     paragraph = match cell.alignment {
@@ -3855,6 +3989,8 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
         cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
     }
 }
 
@@ -4259,6 +4395,8 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
         cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
     }
 }
 
@@ -4641,6 +4779,8 @@ fn infer_positioned_table_from_graphics(
     let mut assigned_rows = Vec::new();
     let mut assigned_text_ys = Vec::new();
     let mut cell_fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
+    // マスごとの（下線のある文字片の数, 文字片の数）。
+    let mut underline_counts = vec![vec![(0usize, 0usize); cols]; rows];
     let interior_xs = xs[1..xs.len() - 1]
         .iter()
         .map(|x| *x as f32)
@@ -4683,7 +4823,10 @@ fn infer_positioned_table_from_graphics(
             };
             let bounds = piece.bounds;
             cell_fragments[row][col].push(piece);
-            cell_underlines[row][col] |= parsed_text_has_underline(text, &underline_graphics);
+            underline_counts[row][col].1 += 1;
+            if parsed_text_has_underline(text, &underline_graphics) {
+                underline_counts[row][col].0 += 1;
+            }
             cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
                 Some(existing) => ParsedBounds {
                     x0: existing.x0.min(bounds.x0),
@@ -4705,11 +4848,46 @@ fn infer_positioned_table_from_graphics(
         assigned_rows.push(row);
         assigned_text_ys.push(grid_center_y);
     }
+    // 一部の値だけに引かれた傍線でセル全体を下線にしないよう、ほぼ全ての文字片に
+    // 下線がある場合だけセルの下線とする。
+    for (row, counts) in underline_counts.iter().enumerate() {
+        for (col, (underlined, total)) in counts.iter().enumerate() {
+            cell_underlines[row][col] = *total > 0 && underlined * 5 >= total * 4;
+        }
+    }
+    let mut cell_font_sizes = cell_fragments
+        .iter()
+        .map(|row| {
+            row.iter()
+                .map(|fragments| {
+                    let mut sizes = fragments
+                        .iter()
+                        .map(|fragment| fragment.font_size)
+                        .filter(|size| size.is_finite() && (4.0..=96.0).contains(size))
+                        .collect::<Vec<_>>();
+                    sizes.sort_by(f32::total_cmp);
+                    sizes.get(sizes.len() / 2).copied()
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
     let mut row_line_counts = vec![0usize; rows];
+    let mut cell_tab_stops = vec![vec![Vec::new(); cols]; rows];
     for (row_index, row) in cell_fragments.iter().enumerate() {
         for (col, fragments) in row.iter().enumerate() {
-            cells[row_index][col] =
-                table_cell_text::compose_cell_text(fragments, xs[col] as f32, xs[col + 1] as f32);
+            let composed =
+                table_cell_text::compose_cell(fragments, xs[col] as f32, xs[col + 1] as f32);
+            cell_tab_stops[row_index][col] = composed
+                .tab_stops
+                .iter()
+                .map(|stops| {
+                    stops
+                        .iter()
+                        .map(|stop| (stop.x - xs[col] as f32, stop.right))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            cells[row_index][col] = composed.text;
             row_line_counts[row_index] =
                 row_line_counts[row_index].max(table_cell_text::cell_line_count(fragments));
         }
@@ -4761,6 +4939,8 @@ fn infer_positioned_table_from_graphics(
         row_heights_pt.reverse();
         cell_alignments.reverse();
         cell_vertical_alignments.reverse();
+        cell_font_sizes.reverse();
+        cell_tab_stops.reverse();
     }
     let docx_table = if text_augmented_columns || flipped_rows {
         None
@@ -4809,6 +4989,8 @@ fn infer_positioned_table_from_graphics(
         row_heights_pt,
         row_line_counts,
         cell_padding_pt,
+        cell_font_sizes,
+        cell_tab_stops,
     })
 }
 
@@ -5690,6 +5872,8 @@ fn infer_positioned_table_from_text_grid_page(
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
         cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
     })
 }
 
@@ -6214,6 +6398,48 @@ fn is_vertical_line(bounds: &ParsedBounds) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 罫線用フォントの細長い私用領域の字は除き、点のような字は文字のまま残す。
+    #[test]
+    fn rule_glyphs_are_dropped() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "rule-glyphs.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            text_elements: vec![
+                text(10.0, 99.5, 40.0, 100.0, "\u{E005}\u{E005}"),
+                text(20.0, 100.0, 21.0, 101.0, "\u{EA74}"),
+                text(10.0, 102.0, 40.0, 110.0, "1.061"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        drop_rule_glyphs(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["\u{EA74}", "1.061"]);
+        assert!(
+            parsed.graphics.is_empty(),
+            "rule glyphs must not become table rules"
+        );
+    }
 
     #[test]
     fn ocr_spans_from_docx_model_drops_span_that_crosses_existing_vertical_merge() {

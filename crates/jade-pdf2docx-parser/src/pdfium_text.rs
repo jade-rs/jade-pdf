@@ -42,6 +42,30 @@ pub(crate) fn extract(
         if content.is_empty() {
             continue;
         }
+        // 表の列のように大きく離れた文字は、同じ行の segment でも別の要素へ分ける。
+        if let Some(pieces) = split_at_wide_gaps(&segment) {
+            for piece in pieces {
+                let text = copy(budget, Some(piece.text.trim()))?.unwrap_or_default();
+                if text.is_empty() {
+                    continue;
+                }
+                let font_name = copy(budget, piece.font_name.as_deref())?;
+                let fill_color = copy(budget, piece.fill_color.as_deref())?;
+                crate::metadata_workspace::push(
+                    budget,
+                    &mut elements,
+                    ParsedTextElement {
+                        page: page_number,
+                        bounds: piece.bounds,
+                        font_size: piece.font_size,
+                        font_name,
+                        fill_color,
+                        text,
+                    },
+                )?;
+            }
+            continue;
+        }
         let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
         let mut font_size = bounds.y1 - bounds.y0;
         let mut font_name = None;
@@ -71,6 +95,148 @@ pub(crate) fn extract(
         )?;
     }
     Ok(elements)
+}
+
+/// segment を分ける判定に使う 1 文字分の情報。
+#[derive(Debug, Clone, PartialEq)]
+struct CharInfo {
+    /// 文字列（空白を含む）。
+    text: String,
+    /// 文字の外接矩形。
+    bounds: ParsedBounds,
+    /// 実効 font size。
+    font_size: f32,
+    /// font 名。
+    font_name: Option<String>,
+    /// 塗り色。
+    fill_color: Option<String>,
+}
+
+/// 大きな字間で分けた segment の一部。
+#[derive(Debug, Clone, PartialEq)]
+struct SegmentPiece {
+    /// 空白以外の文字矩形の和。
+    bounds: ParsedBounds,
+    /// 文字列。
+    text: String,
+    /// 先頭文字の実効 font size。
+    font_size: f32,
+    /// 先頭文字の font 名。
+    font_name: Option<String>,
+    /// 先頭文字の塗り色。
+    fill_color: Option<String>,
+}
+
+/// 字送り方向の隙間がこの em 数を超えたら別の要素に分ける。
+const SEGMENT_SPLIT_GAP_EM: f32 = 1.0;
+
+/// segment の文字を取り出し、1 em を超えて離れた位置で分ける。
+///
+/// 分ける必要がない場合や文字を取得できない場合は `None` を返し、segment 全体を 1 要素にする。
+fn split_at_wide_gaps(segment: &PdfPageTextSegment<'_>) -> Option<Vec<SegmentPiece>> {
+    let rect = segment.bounds();
+    let horizontal = rect.width().value >= rect.height().value;
+    let characters = segment.chars().ok()?;
+    let mut infos = Vec::new();
+    for character in characters.iter() {
+        let bounds = character.loose_bounds().ok()?;
+        let name = character.font_name();
+        infos.push(CharInfo {
+            text: character.unicode_string().unwrap_or_default(),
+            bounds: parsed_bounds_from_pdf_rect(bounds),
+            font_size: effective_font_size(&character),
+            font_name: (!name.is_empty()).then_some(name),
+            fill_color: character.fill_color().ok().map(|color| color.to_hex()),
+        });
+    }
+    let pieces = group_chars_at_wide_gaps(&infos, horizontal);
+    (pieces.len() > 1).then_some(pieces)
+}
+
+/// 字送り方向に 1 em を超えて離れた文字の間で、文字列を複数の要素へ分ける。
+///
+/// 空白文字は直前の要素へ含め、要素の矩形には加えない。
+fn group_chars_at_wide_gaps(chars: &[CharInfo], horizontal: bool) -> Vec<SegmentPiece> {
+    let mut pieces: Vec<SegmentPiece> = Vec::new();
+    let mut previous: Option<ParsedBounds> = None;
+    for info in chars {
+        let blank = info.text.trim().is_empty();
+        let gap = previous.map(|previous| {
+            if horizontal {
+                (info.bounds.x0 - previous.x1).max(previous.x0 - info.bounds.x1)
+            } else {
+                (info.bounds.y0 - previous.y1).max(previous.y0 - info.bounds.y1)
+            }
+        });
+        let wide = gap
+            .is_some_and(|gap| info.font_size > 0.0 && gap > SEGMENT_SPLIT_GAP_EM * info.font_size);
+        if !blank && (pieces.is_empty() || wide) {
+            pieces.push(SegmentPiece {
+                bounds: info.bounds,
+                text: info.text.clone(),
+                font_size: info.font_size,
+                font_name: info.font_name.clone(),
+                fill_color: info.fill_color.clone(),
+            });
+        } else if let Some(piece) = pieces.last_mut() {
+            piece.text.push_str(&info.text);
+            if !blank {
+                piece.bounds = ParsedBounds {
+                    x0: piece.bounds.x0.min(info.bounds.x0),
+                    y0: piece.bounds.y0.min(info.bounds.y0),
+                    x1: piece.bounds.x1.max(info.bounds.x1),
+                    y1: piece.bounds.y1.max(info.bounds.y1),
+                };
+            }
+        }
+        if !blank {
+            previous = Some(info.bounds);
+        }
+    }
+    pieces
+}
+
+#[cfg(test)]
+mod split_tests {
+    use super::*;
+
+    /// 1 文字分の情報を作る。
+    fn info(text: &str, x0: f32, x1: f32) -> CharInfo {
+        CharInfo {
+            text: text.to_string(),
+            bounds: ParsedBounds {
+                x0,
+                y0: 0.0,
+                x1,
+                y1: 8.0,
+            },
+            font_size: 8.0,
+            font_name: Some("F".into()),
+            fill_color: None,
+        }
+    }
+
+    /// 隣の表の列ほど離れた文字は別の要素に分け、語間の空白では分けない。
+    #[test]
+    fn splits_only_at_gaps_wider_than_one_em() {
+        let chars = [
+            info("2", 405.0, 409.0),
+            info("4", 409.0, 413.0),
+            info("0", 413.0, 417.0),
+            info(" ", 417.0, 417.0),
+            info("４", 567.0, 575.0),
+            info(" ", 575.0, 575.0),
+            info("級", 578.0, 586.0),
+        ];
+        let pieces = group_chars_at_wide_gaps(&chars, true);
+        let texts = pieces
+            .iter()
+            .map(|piece| piece.text.trim())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["240", "４ 級"]);
+        assert_eq!(pieces[0].bounds.x1, 417.0);
+        assert_eq!(pieces[1].bounds.x0, 567.0);
+    }
 }
 
 /// segment.charsと同じ端点・許容幅で検索し、範囲の先頭だけを無確保で取得する。
