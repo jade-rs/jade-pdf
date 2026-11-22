@@ -1,0 +1,191 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T19:00:10.336452+00:00",
+  "production_ready": false,
+  "runtime_revision": "cc0379d1245fdaa8bca4c9ce82fd5c5fe74058b2",
+  "base_revision": "844877c1869339c3e59bea6f4a09e548e7dec44e",
+  "implementation": "Use the actual all-content section left origin for body, column, table and image offsets. Remove the separate left-text-only origin; finite fallback remains0. Source alignment thresholds, glyph text, baseline/ink rectangles, source gold and font data unchanged.",
+  "validation": {
+    "default_converter_workspace": {
+      "groups": 112,
+      "passed": 1929,
+      "failed": 0,
+      "ignored": 4
+    },
+    "scoped_DOCX_tests": {
+      "groups": 3,
+      "passed": 153,
+      "failed": 0,
+      "ignored": 0
+    },
+    "owned_PBT_cases": 16,
+    "standard_Clippy": "exit0; warnings retained, no -Dwarnings claim; new anchor test files had no warning blocks",
+    "WASM_production_API": {
+      "before": {
+        "passed": 10,
+        "total": 16,
+        "coordinate_failures": 6
+      },
+      "after_engines": {
+        "chromium": {
+          "passed": 16,
+          "total": 16,
+          "WASM_sha256": "28d7112de53ff5a7b4d0a13816044bd0cba30dac16d456d9f6cfd9519a08abd0",
+          "browser": "159.0.8154.6"
+        },
+        "webkit": {
+          "passed": 16,
+          "total": 16,
+          "WASM_sha256": "28d7112de53ff5a7b4d0a13816044bd0cba30dac16d456d9f6cfd9519a08abd0",
+          "browser": "27.2"
+        }
+      },
+      "integrated_source_revision": "bbeec479c5d8c054a0e119bd48a91f50eee031f0",
+      "DOCX_component_source_identical": true,
+      "inputs_checker_and_geometry_thresholds_unchanged": true,
+      "scope": "Actual public byte-PDF conversion default/strict and inspection. No rendered-PNG API or browser host memory/cancellation claim.",
+      "oracle_history": "Initial8/16 included two wrong empty-input error-label expectations; corrected to actual invalid-header before product WASM changed. Also isolated table x100->88 from duplicate body assertion. Original run retained."
+    }
+  },
+  "owned_source": {
+    "temporary_five_object_PDF": true,
+    "Base14_Courier_only": true,
+    "original_sha256": "cd30668e36579dbc55908541abc03a37dd8c80c539434be6097cb5a112b34c70",
+    "original_unchanged": true,
+    "before": [
+      {
+        "text": "Anchor",
+        "source_authored_x_pt": 72,
+        "Word_left_pt": 60.0,
+        "error_pt": -12.0
+      },
+      {
+        "text": "Offset body",
+        "source_authored_x_pt": 84,
+        "Word_left_pt": 72.0,
+        "error_pt": -12.0
+      }
+    ],
+    "after": [
+      {
+        "text": "Anchor",
+        "source_authored_x_pt": 72,
+        "Word_left_pt": 72.0,
+        "error_pt": 0.0
+      },
+      {
+        "text": "Offset body",
+        "source_authored_x_pt": 84,
+        "Word_left_pt": 84.0,
+        "error_pt": 0.0
+      }
+    ],
+    "table_before_pt": 88,
+    "table_after_expected_and_tested_pt": 100,
+    "graphic_body_before_pt": 30,
+    "graphic_body_after_expected_and_tested_pt": 72,
+    "new_public_accuracy_success_claim": false
+  },
+  "actual_public_source": {
+    "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+    "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "CLI_sha256": "12709a969dd29d0efaa5d2e46cdc8a6bdca69cbe807402424d84d035f76ea461",
+    "same_original_SDK_flags_gold": true,
+    "word_boundaries": "6/6",
+    "reading_order": "3/3",
+    "default_strict_exit": 0,
+    "default_strict_identical_bytes": true,
+    "previous_anchor_version_default_and_strict_bytes_identical": true,
+    "source_gold_unchanged": true
+  },
+  "visual_QA": {
+    "original_owned_page_rendered_and_viewed": true,
+    "unique_output_pages_rendered_and_individually_viewed": 2,
+    "source_types": [
+      "owned body/overhang",
+      "previously reviewed W3C PDF3 original"
+    ],
+    "renderer": "Bundled LibreOffice renderer; Microsoft Word absent at /Applications/Microsoft Word.app",
+    "full_fidelity": false,
+    "remaining": [
+      "Font substitution, vertical spacing, list and interactive form behavior remain incomplete. Source Courier appearance and output typography differ.",
+      "Owned and WASM checks prove physical paragraph/table coordinates, not recovery of all graphic artwork.",
+      "Actual Microsoft Word and rendered-PNG WASM exports remain unverified."
+    ]
+  },
+  "TDD_history": {
+    "CLI_red": "Two body origins shifted-12pt with unchanged original/frozen37d5f30CLI.",
+    "Rust_red": "First6pass2fail (heading+graphic); added table control6pass3fail, existing six centre controls retained. Minimized heading50/body72 seed committed.",
+    "before_product_commits": [
+      "f8e62a7",
+      "3882fca"
+    ],
+    "product_commit": "cc0379d",
+    "after_scoped": "50lib+94core+9anchor=153passed"
+  },
+  "no_new_dependencies": true,
+  "PDF_font_model_binaries_added_to_Git": false,
+  "sha256": {
+    "Cargo.lock": "4b8fcc9aad503d65c37d8b3253e13666b05362f87f6d46175cbd710eb47811a2",
+    "README.md": "c49a323ee81783b8882443422ad8a3e1c3c337204bafc6887876388903dcd3b8",
+    "corpus/native-body-anchor-investigation.json": "7077ee4bbff9cf0345cb2fe1a784d3830ed1a2ff062dca1cfa01ae72ee212d10",
+    "corpus/w3c-pdf3-tab-order-2026-gold.json": "138518693822df1ade68bfa9bdbad00d2f4fd20c28053ee4e1de97a16502a042",
+    "corpus/w3c-pdf3-tab-order-source-review.json": "7314f76a3c8a7cb852ed75fc787b7a743c64998d1c058130613a36fbceed7075",
+    "corpus/w3c-pdf3-word-boundary-gold.json": "e3014c433f6c6aa0d8124356abc5e3ac28c0084d687cc48f66ef1ec038d756a3",
+    "corpus/wasm-runtime/body-anchor-qualification/CLI-7961-default.log": "99cd13361cd8db904bcada087007bc45d95160d8711ecd70b49fd179c93c06e4",
+    "corpus/wasm-runtime/body-anchor-qualification/CLI-7961-strict.log": "7457c463b61b35778895e41d6054b92e400f0293ccbafbc1d270fc185cd05db4",
+    "corpus/wasm-runtime/body-anchor-qualification/CLI-build-and-freeze.log": "e42736b60a24c65ee9e0369f60c5c497475d21a58a91844ade56a11038cfa152",
+    "corpus/wasm-runtime/body-anchor-qualification/CLI-frozen.json": "9189c48632d8a4d8b033f497003ba139c73631d22342d0853aa7aa9d3a3007cf",
+    "corpus/wasm-runtime/body-anchor-qualification/actual-source-7961-results.json": "8e8cf03cb07430711bc5e9fcef1755281a4e749c869a1146c39d8d17f2dcd5ee",
+    "corpus/wasm-runtime/body-anchor-qualification/actual-source-7961.log": "c8fb06701309c9f13b20ce74f67a4b65ae647ada9afade79aa9a4dd370d7f573",
+    "corpus/wasm-runtime/body-anchor-qualification/build-frozen-cli.py": "6b5a5003a25b664d52d9e21594fae947851f96ebc50980e14c87495852e91a0a",
+    "corpus/wasm-runtime/body-anchor-qualification/check-source-7961.py": "7a1c2055487e704d253b29e7abdb2951978f3f32a3ccda74632dcce5715955ec",
+    "corpus/wasm-runtime/body-anchor-qualification/clippy.log": "657d94dff92c22c6e480267f62d44aa4722dc0c72ac39a7200459a824ac29517",
+    "corpus/wasm-runtime/body-anchor-qualification/converter-default-workspace.log": "8e393a2b31df32c28009cfd60abb06c64248739b5633fb3fd12727ded8039007",
+    "corpus/wasm-runtime/body-anchor-qualification/first-green.log": "bf66bda26bbbe3b1461f3fab65c40d14c4f3a54290e352c8e0edc0bdcc763b90",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-CLI-green.log": "363afab7827aea0b1a2d1c756aa2e9a6b5b91e9ffcc2b471e6ae791e565e5a3c",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-CLI-red.log": "3cac866edc881861523e67bc36fd81b7bc226777c70bfb54b8815e1137712aea",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-Rust-red.log": "c41738e9dc44086c06fbc572f4d51eaf03e3e3381f03466f67888043304f46b0",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-after-CLI.log": "548fbd1cc7c8098d7e3e9bd326fdb4a3559c7ac6a115666a8a66a1447277e549",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-after.docx": "025c04584eb915b9c68542de4cf0c960d7f77ee9d8fb3cdb6203c454b3d82dce",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-after.json": "0a59b61360567abfc9fbd2dcc809325bd0c6cf9a9ccc82955c2d2d5d05a6c481",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-anchor-green.py": "0ff91dc0f09de98b5f7c65d99532b0b6839ad5e3b44756ca73dd98bc931fa77a",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-anchor-red.py": "8431d32ddf35612c46a00040171c50d6c08da4f868f586b34f7220ab39d4ad79",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-before-CLI.log": "64fc479b91b42651e09190e8497d070db813ac39334fca8872b142f959721ed2",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-before.docx": "0136d77eade878b33ac9dfbf84b13b80cfde356c1e61a2bc06f652f5e8d55c75",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-body-before.json": "86a16a8bad1a3d60e086c6f9ee025fc1b625a2d8df277c2b25a8a2bc164c54ac",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-original.png": "a0825ecab23be2c27208bc5d327e70254149ddaeb9de4707c982c618b46fc832",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-table-Rust-red.log": "6fd49399f7cda88aaaaa426dd1e8ae5de0c4808a7eee0f8b560d02c38da9176f",
+    "corpus/wasm-runtime/body-anchor-qualification/public-source-transition.json": "d2945d895a6b3f1d9b9e45b39967dd0b2006f8ea23a04fc09e8b2c4224445a4e",
+    "corpus/wasm-runtime/body-anchor-qualification/qualified-body-anchor-cli": "12709a969dd29d0efaa5d2e46cdc8a6bdca69cbe807402424d84d035f76ea461",
+    "corpus/wasm-runtime/body-anchor-qualification/render-owned-after/owned-body-after.pdf": "b8cb24741070a700bde268efb8c5102939340e359516f6e3656066c3ca2854a2",
+    "corpus/wasm-runtime/body-anchor-qualification/render-owned-after/page-1.png": "af4d53f442deebd46bb9cc0db9e4fbba9c4587612d09fc25d419ccaeb293c11c",
+    "corpus/wasm-runtime/body-anchor-qualification/render-owned-after.log": "967b969db1a823a1cfaede0ee8d60cb93bd004d0a4cec3828b986df318ca3bea",
+    "corpus/wasm-runtime/body-anchor-qualification/render-owned-original.log": "48d1742e4eb8d891c783fb9298eeb3b7b38196001af8c8f9457e38ebf0e40b99",
+    "corpus/wasm-runtime/body-anchor-qualification/render-public-default/page-1.png": "3edeee29b4cbc8b6c2c4c88cfbea2cc9140094cb3a4e300bc91b922cf909b603",
+    "corpus/wasm-runtime/body-anchor-qualification/render-public-default/w3c-pdf3-body-anchor-7961-default.pdf": "8dd33fce582f6fe7add3f00e29f04972bfa3a8249ece261c060dd55252a2a8a5",
+    "corpus/wasm-runtime/body-anchor-qualification/render-public-default.log": "29d1acc98311fbd3ef3cf309e36e8c616fa7c31e613dd33fdb2737cc6750587a",
+    "corpus/wasm-runtime/body-anchor-qualification/w3c-pdf3-body-anchor-7961-default.docx": "966a1fd51153b3591a26c09798f819ed7d441cf3d32b1cdcd516b2eebc8ce8f3",
+    "corpus/wasm-runtime/body-anchor-qualification/w3c-pdf3-body-anchor-7961-strict.docx": "966a1fd51153b3591a26c09798f819ed7d441cf3d32b1cdcd516b2eebc8ce8f3",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/check-docx-browser.py": "bb8311d8e322c37b1d8a22edf1a53ae7c1d8592b064a66bba6f043939ee88564",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-after-build.json": "ca6fcaa22183dc068a8a2cbcef8f70731cf06a44a37d36035cf75f5cb19357c2",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-before-build.json": "44e28f2e6ca54fcb3fe30134f4a46507a7a9267bb5f7d9456ca5cdb575835beb",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-after-chromium/geometry-report.json": "3896d8a3a2a5f9fd547752015ed8116904a356583d6af082ef240520e904b071",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-after-webkit/geometry-report.json": "59043db84208ee54364013c137a9b4339ccc208a2f5eb16cff5b3ad23d039447",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-before/geometry-report.json": "6646fe55edae0367b4a8836b40be7cecddaeffd70c87a63972a5657b1c2207c9",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-before-qualified/geometry-report.json": "521ece1901c9b2cf2ccb5e8d4664e69cde52fb22aa619d10e3e8c3a1acb75ef9",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-before-qualified.log": "69b83c708ddaacf2a43b301e5b14e4eee33cabca02c1cd3a38bb1f8f69516388",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-browser-before.log": "ca88fd29e19832d14ad0738420a6467d32c50089d6342a8ac1d08999072a1f01",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/docx-harness-oracle-history.json": "3659d5781fecb70d43fcddc90066a140163a3d2d72308161aedcf11c51d0e4aa",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/qualified-docx-after.wasm": "95a36f6041187f40be03ecac2673bed2e34f89c195765d2a5572f5da5cc2ce1a",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/qualified-docx-before.wasm": "f56f76490223ee8decd713ecdc60f25b12da20941937e7ec40f50ff6b5276bf6",
+    "corpus/wasm-runtime/body-anchor-qualification/wasm-api/run-docx-browser.mjs": "126defd1e096db0965a51a15c6234e5a6732da10c40f8bff085bfbeae22faa1a",
+    "corpus/wasm-runtime/body-anchor-qualification/word-boundaries-7961-default.json": "53610e2250f25adb48e0daaf274130a75664ad1170c2c0441651166b0f4ed057",
+    "corpus/wasm-runtime/body-anchor-qualification/word-boundaries-7961-default.log": "bf165b5ba653dbe85792d4eebcbb0fb61c3d7b9e18a5897c5eb8c49c8f309acd",
+    "corpus/wasm-runtime/body-anchor-qualification/word-boundaries-7961-strict.json": "53610e2250f25adb48e0daaf274130a75664ad1170c2c0441651166b0f4ed057",
+    "corpus/wasm-runtime/body-anchor-qualification/word-boundaries-7961-strict.log": "bf165b5ba653dbe85792d4eebcbb0fb61c3d7b9e18a5897c5eb8c49c8f309acd",
+    "crates/jade-pdf2docx-docx/src/lib.rs": "de03a8a47fbfb6dd867d20aa764b63b8a30e8a8b4bfdbc0ec52daab31d9f9a54",
+    "crates/jade-pdf2docx-docx/tests/paragraph_anchor.proptest-regressions": "f1c24334a56dc9ff0cc4df5a2cb5fe4339b952e818e75fe101f8f98f514a88a1",
+    "crates/jade-pdf2docx-docx/tests/paragraph_anchor.rs": "f0008468807d4fefceeed548c4beda174f72e710c1d867aea5311211160a6036"
+  }
+}
