@@ -329,5 +329,15 @@
     "tools/wasm-docx-smoke/README.md": "5a553b71f724e3bc8b72d6b95d543c5ffe8908988387a5b2d6948e6f3fb50a75",
     "tools/wasm-docx-smoke/check_browser.py": "593ca6933e26ba7690bd1b82fd5ba5be4670faf617daadfaefa87c945dd71f9c",
     "tools/wasm-docx-smoke/owned_image_colors.py": "db3d040a697717a72ab87002d78c07d9ec1053fa78cd0ca8fed2760531912520"
+  },
+  "publication_base": {
+    "main": "bbadcd5157cf92cc53cd3d2935acfd7786409007",
+    "parent_PR": 19,
+    "parent_qualified_head": "61c7cc6cf6021a95347ef916f0d36b39078f7d3d",
+    "entire_parent_tree_identical": true,
+    "qualified_crates_tree_unchanged_after_rebase": true,
+    "historical_execution_revisions_retained": true,
+    "current_evidence_files_verified": 127,
+    "note": "Execution revisions record the original qualified commits before rebasing this branch onto the merged parent. Source tree and every existing evidence hash are unchanged; no test rerun or result relabeling."
   }
 }
