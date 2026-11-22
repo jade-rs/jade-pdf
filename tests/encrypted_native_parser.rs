@@ -73,6 +73,32 @@ fn public_copy_permitted_encrypted_source_opens_natively() {
         bytes,
         "original encrypted PDF changed"
     );
+
+    // 同じ申請書の日本語3ページ版でも、原本と画像本文の未検証診断を維持する。
+    let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("corpus/cache/nta-invoice-domestic-case2-2026.pdf");
+    let bytes = verified(
+        &path,
+        "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+    );
+    assert!(matches!(
+        parse_pdf_bytes("encrypted-japanese-bytes.pdf", &bytes),
+        Err(ParseError::UnsupportedEncryption { .. })
+    ));
+    let parsed = parse_pdf(&path).expect("copy-permitted Japanese source must open natively");
+    assert_eq!(parsed.page_count, 3);
+    assert_eq!(parsed.pages.len(), 3);
+    assert_eq!(parsed.byte_len, bytes.len());
+    for page in 0..3 {
+        assert!(
+            parsed
+                .quality
+                .issues
+                .contains(&jade_pdf2docx_parser::QualityIssue::OcrRequired { page }),
+            "opening encryption must not hide unverified image text on page {page}"
+        );
+    }
+    assert_eq!(fs::read(&path).unwrap(), bytes);
 }
 
 /// 独立generatorの暗号方式・認証・コピー許可を検証し、bytes APIの境界も維持する。

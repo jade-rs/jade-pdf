@@ -248,35 +248,44 @@ unsafe extern "C" fn write_block(
 mod tests {
     use super::*;
 
-    /// 製品と同じ内部復号で、公開原本の全5ページの表示画素を変更しない。
+    /// 製品と同じ内部復号で、日英2原本の全8ページの表示画素を変更しない。
     #[test]
     #[ignore = "requires hash-pinned external NTA corpus and native Pdfium"]
     fn native_encryption_normalization_retains_rendering() {
         use pdfium_render::prelude::PdfRenderConfig;
-        let path = Path::new(env!("CARGO_MANIFEST_DIR"))
-            .join("../../corpus/cache/nta-invoice-domestic-english-2026.pdf");
-        let input = std::fs::read(&path).unwrap();
-        let limits = ParseLimits::default();
-        let budget = DecodeBudget::new(&limits);
-        let bytes = normalize(&path, &input, &limits, &budget).unwrap();
-        let pdfium = super::super::library::bind(&path).unwrap();
-        let original = pdfium.load_pdf_from_byte_slice(&input, None).unwrap();
-        let normalized = pdfium.load_pdf_from_byte_slice(&bytes, None).unwrap();
-        assert_eq!(original.pages().len(), 5);
-        assert_eq!(normalized.pages().len(), 5);
-        for page in 0..5 {
-            let before = original.pages().get(page).unwrap();
-            let after = normalized.pages().get(page).unwrap();
-            assert_eq!(before.width(), after.width());
-            assert_eq!(before.height(), after.height());
-            let config = PdfRenderConfig::new().set_target_width(400);
-            let before = before.render_with_config(&config).unwrap();
-            let after = after.render_with_config(&config).unwrap();
-            assert_eq!(before.width(), after.width());
-            assert_eq!(before.height(), after.height());
-            assert_eq!(before.as_raw_bytes(), after.as_raw_bytes(), "page {page}");
+        for (name, page_count) in [
+            ("nta-invoice-domestic-english-2026", 5),
+            ("nta-invoice-domestic-case2-2026", 3),
+        ] {
+            let path = Path::new(env!("CARGO_MANIFEST_DIR"))
+                .join(format!("../../corpus/cache/{name}.pdf"));
+            let input = std::fs::read(&path).unwrap();
+            let limits = ParseLimits::default();
+            let budget = DecodeBudget::new(&limits);
+            let bytes = normalize(&path, &input, &limits, &budget).unwrap();
+            let pdfium = super::super::library::bind(&path).unwrap();
+            let original = pdfium.load_pdf_from_byte_slice(&input, None).unwrap();
+            let normalized = pdfium.load_pdf_from_byte_slice(&bytes, None).unwrap();
+            assert_eq!(original.pages().len(), page_count);
+            assert_eq!(normalized.pages().len(), page_count);
+            for page in 0..page_count {
+                let before = original.pages().get(page).unwrap();
+                let after = normalized.pages().get(page).unwrap();
+                assert_eq!(before.width(), after.width());
+                assert_eq!(before.height(), after.height());
+                let config = PdfRenderConfig::new().set_target_width(400);
+                let before = before.render_with_config(&config).unwrap();
+                let after = after.render_with_config(&config).unwrap();
+                assert_eq!(before.width(), after.width());
+                assert_eq!(before.height(), after.height());
+                assert_eq!(
+                    before.as_raw_bytes(),
+                    after.as_raw_bytes(),
+                    "{name} page {page}"
+                );
+            }
+            assert_eq!(std::fs::read(&path).unwrap(), input);
         }
-        assert_eq!(std::fs::read(&path).unwrap(), input);
     }
 
     /// CatalogのVersionと先頭余白を、原本header版の値へ混同しない。
