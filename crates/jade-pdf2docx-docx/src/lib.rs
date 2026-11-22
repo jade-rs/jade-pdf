@@ -4921,6 +4921,19 @@ fn infer_positioned_table_from_graphics(
         })
         .collect::<Vec<_>>();
     let mut row_line_counts = vec![0usize; rows];
+    // 文字がセル幅の 85% を超える行は、代替フォントの字幅で折り返すと固定の行高では
+    // 2 行目が隠れるため、行数を 2 として扱い内容に合わせて伸ばせるようにする。
+    for (row_index, row) in cell_text_bounds.iter().enumerate() {
+        for (col, bounds) in row.iter().enumerate() {
+            let Some(bounds) = bounds else {
+                continue;
+            };
+            let width = (xs[col + 1] - xs[col]) as f32;
+            if width > 0.0 && bounds.x1 - bounds.x0 > 0.85 * width {
+                row_line_counts[row_index] = row_line_counts[row_index].max(2);
+            }
+        }
+    }
     let mut cell_tab_stops = vec![vec![Vec::new(); cols]; rows];
     for (row_index, row) in cell_fragments.iter().enumerate() {
         for (col, fragments) in row.iter().enumerate() {

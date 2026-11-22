@@ -246,3 +246,24 @@ fn table_with_only_horizontal_rules_is_split_into_columns() {
     );
     assert!(xml.contains(">Sales<") && xml.contains(">Profit<"), "{xml}");
 }
+
+/// セル幅いっぱいの文字がある行は、代替フォントで折り返しても隠れないよう atLeast にする。
+#[test]
+fn nearly_full_cell_row_is_not_clipped() {
+    let content = "0.5 w 20 160 m 120 160 l S 20 140 m 120 140 l S 20 120 m 120 120 l S \
+        20 120 m 20 160 l S 70 120 m 70 160 l S 120 120 m 120 160 l S \
+        BT /F1 10 Tf 1 0 0 1 21 146 Tm (ABCDEFGH) Tj ET BT /F1 10 Tf 1 0 0 1 75 146 Tm (x) Tj ET \
+        BT /F1 10 Tf 1 0 0 1 25 126 Tm (ab) Tj ET BT /F1 10 Tf 1 0 0 1 75 126 Tm (y) Tj ET";
+    let xml = convert("table_fidelity_full_cell", content);
+    let first_row = &xml[xml.find("<w:tr>").expect("row")..];
+    let first_row = &first_row[..first_row.find("</w:tr>").expect("row end")];
+    assert!(
+        first_row.contains(r#"w:hRule="atLeast""#),
+        "full-width cell text row must be able to grow: {first_row}"
+    );
+    let second_row = &xml[xml.rfind("<w:tr>").expect("row")..];
+    assert!(
+        second_row.contains(r#"w:hRule="exact""#),
+        "short single-line row stays exact: {second_row}"
+    );
+}
