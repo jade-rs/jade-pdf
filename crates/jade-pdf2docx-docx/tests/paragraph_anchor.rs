@@ -50,10 +50,31 @@ fn centre_shift_keeps_legacy_writable_width() {
     );
 }
 
+/// 中央見出しが本文より左へ張り出しても、実際のセクション余白を使う。
+#[test]
+fn centred_heading_outside_body_anchor_keeps_its_centre() {
+    let text = "x".repeat(75);
+    check_geometry(owned_pdf(60.0, &text), &text);
+}
+
+/// OOXML余白と同じf32丸めを使い、境界で中心誤差を重ねない。
+#[test]
+fn fractional_section_margin_uses_serialized_rounding() {
+    let text = format!("Shifted{}", "x".repeat(53));
+    for anchor in [72.025, 72.075] {
+        check_geometry(owned_pdf_with_anchor(90.0255, &text, anchor), &text);
+    }
+}
+
 /// PDF由来の実中心と、出力Word段落領域の中心を独立に比較する。
 fn check_centre(left: f32) {
     let text = format!("Shifted{}", "x".repeat(53));
     let bytes = owned_pdf(left, &text);
+    check_geometry(bytes, &text);
+}
+
+/// 生成原本の行中心と、実際に保存されたOOXMLの段落中心を比較する。
+fn check_geometry(bytes: Vec<u8>, text: &str) {
     let parsed = parse_pdf_bytes("owned-centre.pdf", &bytes).unwrap();
     let source = parsed
         .text_elements
@@ -70,7 +91,7 @@ fn check_centre(left: f32) {
     );
     let actual = (margin_left + paragraph.left + width - margin_right - paragraph.right) / 40.0;
     assert!(
-        (actual - expected).abs() <= 0.05,
+        (actual - expected).abs() <= 0.0251,
         "source centre {expected}pt moved to {actual}pt; {paragraph:?}"
     );
 }
@@ -151,8 +172,14 @@ fn geometry(bytes: Vec<u8>) -> (f64, f64, f64, Vec<ParagraphGeometry>) {
 
 /// Courierの既知600/1000幅を持つ所有PDFをメモリ内で作る。入力をGitへ保存しない。
 fn owned_pdf(left: f32, text: &str) -> Vec<u8> {
-    let content =
-        format!("BT /F1 10 Tf 72 740 Td (Anchor) Tj ET BT /F1 10 Tf {left} 650 Td ({text}) Tj ET");
+    owned_pdf_with_anchor(left, text, 72.0)
+}
+
+/// 本文の開始位置も独立に指定した所有PDFを作る。
+fn owned_pdf_with_anchor(left: f32, text: &str, anchor: f32) -> Vec<u8> {
+    let content = format!(
+        "BT /F1 10 Tf {anchor} 740 Td (Anchor) Tj ET BT /F1 10 Tf {left} 650 Td ({text}) Tj ET"
+    );
     let objects=["<< /Type /Catalog /Pages 2 0 R >>".into(),"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".into(),format!("<< /Length {} >>\nstream\n{content}\nendstream",content.len()),"<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>".into()];
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
