@@ -1,5 +1,6 @@
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
 use jade_pdf2docx_parser::parse_pdf_bytes;
+use proptest::prelude::*;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
@@ -64,6 +65,60 @@ fn fractional_section_margin_uses_serialized_rounding() {
     for anchor in [72.025, 72.075] {
         check_geometry(owned_pdf_with_anchor(90.0255, &text, anchor), &text);
     }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(16))]
+
+    /// 見出しが本文より左へ出ても、本文の物理座標と通常配置の対照を保つ。
+    #[test]
+    fn body_start_survives_a_heading_overhang(
+        heading_left in 50.0_f32..70.0,
+        body_left in 72.0_f32..108.0,
+    ) {
+        let heading = "x".repeat(75);
+        check_body_start(owned_pdf_with_anchor(126.0, &heading, body_left));
+        check_body_start(owned_pdf_with_anchor(heading_left, &heading, body_left));
+    }
+}
+
+/// 左側の装飾線による余白が、本文を同じ位置へ吸着させない。
+#[test]
+fn body_start_survives_a_graphic_to_its_left() {
+    let bytes = owned_pdf_content("BT /F1 10 Tf 72 740 Td (Anchor) Tj ET 30 700 m 40 700 l S");
+    let parsed = parse_pdf_bytes("owned-graphic.pdf", &bytes).unwrap();
+    assert!(
+        !parsed.graphics.is_empty(),
+        "fixture must contain a real graphic"
+    );
+    check_body_start(bytes);
+}
+
+/// 実際のOOXML余白と段落indentから本文のページ内座標を独立に読む。
+fn check_body_start(bytes: Vec<u8>) {
+    let parsed = parse_pdf_bytes("owned-body.pdf", &bytes).unwrap();
+    let source = parsed
+        .text_elements
+        .iter()
+        .find(|e| e.text == "Anchor")
+        .unwrap();
+    let expected = f64::from(source.bounds.x0);
+    let docx = convert_minimum_pdf_bytes_to_docx_bytes("owned-body.pdf", &bytes).unwrap();
+    let (_, margin_left, _, paragraphs) = geometry(docx);
+    let body = paragraphs.iter().find(|p| p.text == "Anchor").unwrap();
+    assert_ne!(
+        body.alignment, "center",
+        "body control must remain left aligned"
+    );
+    assert_ne!(
+        body.alignment, "right",
+        "body control must remain left aligned"
+    );
+    let actual = (margin_left + body.left) / 20.0;
+    assert!(
+        (actual - expected).abs() <= 0.05001,
+        "source body left {expected}pt moved to {actual}pt; margin {margin_left}twips; {body:?}"
+    );
 }
 
 /// PDF由来の実中心と、出力Word段落領域の中心を独立に比較する。
@@ -180,6 +235,11 @@ fn owned_pdf_with_anchor(left: f32, text: &str, anchor: f32) -> Vec<u8> {
     let content = format!(
         "BT /F1 10 Tf {anchor} 740 Td (Anchor) Tj ET BT /F1 10 Tf {left} 650 Td ({text}) Tj ET"
     );
+    owned_pdf_content(&content)
+}
+
+/// 単純な自作描画命令を持つ正式なxref付きPDFをメモリ内で作る。
+fn owned_pdf_content(content: &str) -> Vec<u8> {
     let objects=["<< /Type /Catalog /Pages 2 0 R >>".into(),"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".into(),format!("<< /Length {} >>\nstream\n{content}\nendstream",content.len()),"<< /Type /Font /Subtype /Type1 /BaseFont /Courier /Encoding /WinAnsiEncoding >>".into()];
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
