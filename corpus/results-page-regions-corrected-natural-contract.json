@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "cases": 5,
+  "passed": 5,
+  "pages": 23,
+  "results": [
+    {
+      "id": "irs-w4-2024-to-2025",
+      "passed": true,
+      "pages": 4,
+      "text_groups": 30,
+      "alignment_limited_pages": 0,
+      "comparison_exit": 3,
+      "raw_diff_exactly_preserved": true,
+      "ordered_source_coverage_and_segment_reconstruction": true,
+      "old_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "new_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a"
+    },
+    {
+      "id": "irs-w4-2022-to-2023",
+      "passed": true,
+      "pages": 4,
+      "text_groups": 49,
+      "alignment_limited_pages": 0,
+      "comparison_exit": 3,
+      "raw_diff_exactly_preserved": true,
+      "ordered_source_coverage_and_segment_reconstruction": true,
+      "old_sha256": "8b4c3d8fe967fb1ed3c5fca54b34a44c72efea239cd395bd6bfeac84937c7a15",
+      "new_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4"
+    },
+    {
+      "id": "irs-w4-2023-to-2024",
+      "passed": true,
+      "pages": 4,
+      "text_groups": 32,
+      "alignment_limited_pages": 0,
+      "comparison_exit": 3,
+      "raw_diff_exactly_preserved": true,
+      "ordered_source_coverage_and_segment_reconstruction": true,
+      "old_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "new_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed"
+    },
+    {
+      "id": "irs-w4-2025-to-2026",
+      "passed": true,
+      "pages": 5,
+      "text_groups": 39,
+      "alignment_limited_pages": 0,
+      "comparison_exit": 3,
+      "raw_diff_exactly_preserved": true,
+      "ordered_source_coverage_and_segment_reconstruction": true,
+      "old_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+      "new_sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2"
+    },
+    {
+      "id": "irs-w9-2018-to-2024",
+      "passed": true,
+      "pages": 6,
+      "text_groups": 90,
+      "alignment_limited_pages": 0,
+      "comparison_exit": 3,
+      "raw_diff_exactly_preserved": true,
+      "ordered_source_coverage_and_segment_reconstruction": true,
+      "old_sha256": "78366390cd4e3db89e06009fce54df272bee0d3b34003f3a786c4835239bfdff",
+      "new_sha256": "2d420cbb4123dcf1fb82595b2359cfbb5d81f00b9df9d359fcc7af361d093f53"
+    }
+  ],
+  "execution_errors": [],
+  "binary_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+  "baseline_binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+  "manifest_sha256": "57c2217b0f2373d9b033ce9ec0ec42aa41c34d053db5435465e0dce4b4cc1d7a",
+  "checker_sha256": "4270b980a714d2518ad666af4c418461ab77b4fce480ec0ae258b2c5b92f1c96",
+  "audit_sha256": "fd5223004730017282cb758631e8a4a6e0b8822b78596c9aec7820542648208a",
+  "scope": "All registered natural revision pairs: ordered source coverage and segment reconstruction contracts only, not independent semantic precision/recall. Optional baseline also requires exact preservation of raw diff evidence. Exhaustive edit gold remains limited to W-4 2024/2025 page 1."
+}
