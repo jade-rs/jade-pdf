@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "time_utc": "2026-11-22T22:28:59.984670+00:00",
+  "time_utc": "2026-11-22T22:35:20.691243+00:00",
   "production_ready": false,
   "runtime_revision": "a95fbf6d838998ce004ea4b54f441e99d3ca4bce",
   "qualified_crates_tree": "9d7bfcaa06e23a7d432dca493a54124885b77aa0",
@@ -50,6 +50,17 @@
       "ignored": 4,
       "Clippy_exit": 0,
       "source_revision": "a95fbf6d838998ce004ea4b54f441e99d3ca4bce"
+    },
+    "OCR": {
+      "groups": 115,
+      "passed": 2004,
+      "failed": 0,
+      "ignored": 4,
+      "Clippy_exit": 0,
+      "features": "ocr-onnx",
+      "execution_revision": "012e1ca",
+      "qualified_crates_tree": "9d7bfcaa06e23a7d432dca493a54124885b77aa0",
+      "scope": "Workspace excludingjade-pdf-diff; no newrecognitiongoldclaim."
     },
     "python_passed": 144,
     "fmt_exit": 0,
@@ -269,6 +280,8 @@
     "corpus/wasm-runtime/singleton-colorspace-qualification/build-frozen-cli.py": "6600b2fb81acb6279d1fa43f966cf377fde5f8ada67506f6dc751acccb63f507",
     "corpus/wasm-runtime/singleton-colorspace-qualification/check-public-initial.py": "1cf83c0690045ad1157e1771bf0180c37e39bd2d3a2284c8b41a84774434c144",
     "corpus/wasm-runtime/singleton-colorspace-qualification/check-public.py": "1cf83c0690045ad1157e1771bf0180c37e39bd2d3a2284c8b41a84774434c144",
+    "corpus/wasm-runtime/singleton-colorspace-qualification/converter-OCR-summary.json": "b2fb3e33182c437ad154532745aee5d145491b7d443f97c53887f8706a26e90e",
+    "corpus/wasm-runtime/singleton-colorspace-qualification/converter-OCR-workspace.log": "826f6075ca44ce528b9a7b84e14e74e85a41e239807e4a1ea2a9860469f3c48b",
     "corpus/wasm-runtime/singleton-colorspace-qualification/converter-default-summary.json": "4589333a08f8f8fa9c675f7702fa9ec85c35850b8e651c05fa5bee6b4365f7f1",
     "corpus/wasm-runtime/singleton-colorspace-qualification/converter-default-workspace.log": "08605d0b6a53214c94563ecbe73b92cc32ffc5b9255e594e5b81a8a63c1c6bd8",
     "corpus/wasm-runtime/singleton-colorspace-qualification/converter-singleton-colorspace-CLI-frozen.json": "7b3f9e47af40a772efaa442dd3657f77193665c9fc93e585e949d40e03db20a3",
@@ -307,7 +320,7 @@
     "corpus/wasm-runtime/singleton-colorspace-qualification/render-after/page-9.png": "864c67dffd504ab29f9de3d7f6bdcec4baa710b461f6a2f9aaf301fd381f9a33",
     "corpus/wasm-runtime/singleton-colorspace-qualification/source-pixel-gold-before-conversion.json": "507360bb895284e30d02f2cf8ae137635ac76b4e03264c6c1d11974e21f90ec0",
     "corpus/wasm-runtime/singleton-colorspace-qualification/verify-completed-pixels.py": "c8be9840dd75515d094d6476482f45b5d93c9f8f63556819310a924c05815afe",
-    "corpus/wasm-runtime/singleton-colorspace-qualification/write-component-report.py": "36c557df351daf7ae43677f8082e54960d26433e1a6ab985ff2d5abd9e360702",
+    "corpus/wasm-runtime/singleton-colorspace-qualification/write-component-report.py": "30b5d5b5f79595f6fe441b578cb0950e584247013b94cf96d804a2603fa57cc0",
     "crates/jade-pdf2docx-parser/src/image_color_space.rs": "996240e8c2b7c5dc9636dc1ec889d1ea0e157b84607ee676be1bbe95bd172428",
     "crates/jade-pdf2docx-parser/src/lib.rs": "0530ef1c466c84cd8bb882694b5744d16a35aeb3cb950df1c4b60b20dd5e7a04",
     "crates/jade-pdf2docx-parser/src/parser.rs": "cb5d92b8bde12fdb41e0065fcacc5f5b344b863ab4ad52b4853944aa45b1cb25",
