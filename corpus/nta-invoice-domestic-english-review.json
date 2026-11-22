@@ -31,14 +31,20 @@
     "form": "none",
     "JavaScript": false,
     "encrypted": "AES; print/copy allowed, changes/notes denied",
-    "page_size_points": [
+    "rotation": 0,
+    "first_page_size_points": [
       540,
       780
     ],
-    "rotation": 0
+    "page_size_note": "pdfinfo initial size describes page1 only; original instruction pages have a different aspect ratio."
   },
   "scope": "Software extraction evaluation only; not advice on tax procedures, source validation, form submission, whole-page reading order or full document accuracy. Encoded text vs image/graphics representation has not been inspected for this declaration.",
   "product_output_inspected_before_declaration": false,
   "registered": false,
-  "source_size_note": "The HTML advertises699KB; the actual downloaded1879905-byte original and its SHA256 above are authoritative for this candidate."
+  "source_size_note": "The HTML advertises699KB; the actual downloaded1879905-byte original and its SHA256 above are authoritative for this candidate.",
+  "post_baseline_original_detail_review": {
+    "page": 5,
+    "detail_sha256": "33d694b70abc0d7ec6a71b4f499ea4350a1ee4e600b56143bf677d8fc5b0d900",
+    "finding": "Initial full-page transcription Sole was wrong; original reads Solo. Initial failed expectation remains archived; correcting the reference is not extraction improvement."
+  }
 }

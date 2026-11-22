@@ -51,7 +51,7 @@
       "anchors": [
         "Business enterprise type",
         "Items you wish to publish",
-        "Sole proprietors",
+        "Solo proprietors",
         "Main business name",
         "Location of the principal office, etc.",
         "Common name",
@@ -62,6 +62,21 @@
       "scope": "Selected table headers, both left row labels and ordered right-column items. Not footnote markers, full prose, exact cell geometry or legal guidance."
     }
   ],
-  "product_output_inspected_before_declaration": false,
-  "registration_status": "Unregistered candidate. Cohort and supported failure reporting must be decided only after this declaration is committed and measured; do not weaken or drop failed rules to register as regular coverage."
+  "registration_status": "Unregistered candidate. Cohort and supported failure reporting must be decided only after this declaration is committed and measured; do not weaken or drop failed rules to register as regular coverage.",
+  "initial_declaration_revision": "a7245b7",
+  "product_output_inspected_before_initial_declaration": false,
+  "source_transcription_corrections": [
+    {
+      "page": 5,
+      "original": "Sole proprietors",
+      "corrected": "Solo proprietors",
+      "basis": "Actual original page5 table at288dpi: closed round final o is unambiguous; source text has Solo, not the grammatical correction Sole.",
+      "original_detail_sha256": "33d694b70abc0d7ec6a71b4f499ea4350a1ee4e600b56143bf677d8fc5b0d900",
+      "initial_gold_sha256": "2bf83884169b06e3de3e786428cc5f524285b48344ec39b0e1e1e5c46391cc8b",
+      "corrected_utc": "2026-11-22T08:28:42.535263+00:00",
+      "product_baseline_already_inspected": true,
+      "not_a_product_improvement": true,
+      "initial_failure_preserved": "results-nta-english-initial.json"
+    }
+  ]
 }
