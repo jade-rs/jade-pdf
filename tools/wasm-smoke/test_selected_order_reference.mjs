@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
 import {createHash} from 'node:crypto';
+import {fileURLToPath} from 'node:url';
 import {validateSelectedOrderReference} from './selected_order_reference.mjs';
 
 const root=await fs.mkdtemp(path.join(os.tmpdir(),'jade-selected-order-ref-'));
@@ -40,3 +41,17 @@ try {
  await assert.rejects(()=>validateSelectedOrderReference(entry,root));
  console.log('Selected-order source references: omitted failures, changed anchors, source/hash and incomplete reviews rejected');
 } finally {await fs.rm(root,{recursive:true,force:true});}
+
+const corpus=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../corpus');
+const manifest=JSON.parse(await fs.readFile(path.join(corpus,'manifest.json')));
+const identifier='nta-invoice-domestic-english-2026';
+assert.equal(manifest.documents.some(entry=>entry.id===identifier),false);
+const entries=manifest.pending_semantic.filter(entry=>entry.id===identifier);
+assert.equal(entries.length,1);
+const entry=entries[0];
+assert.equal(Object.hasOwn(entry,'selected_order_reference'),true);
+await validateSelectedOrderReference(entry,corpus);
+assert.equal(entry.gold.page,1);
+assert.equal(entry.gold.anchors.length,14);
+assert.deepEqual(entry.reading_order.map(rule=>rule.page),[4,5]);
+assert.equal([entry.gold,...entry.reading_order].reduce((sum,rule)=>sum+rule.anchors.length,0),32);

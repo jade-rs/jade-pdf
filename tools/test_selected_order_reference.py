@@ -77,6 +77,7 @@ class RegisteredSourceReferences(unittest.TestCase):
         entries = [entry for entry in manifest['pending_semantic'] if entry['id'] == identifier]
         self.assertEqual(len(entries), 1)
         entry = entries[0]
+        self.assertIn('selected_order_reference', entry)
         validate_selected_order_reference(entry, corpus)
         self.assertEqual(entry['gold']['page'], 1)
         self.assertEqual(len(entry['gold']['anchors']), 14)
