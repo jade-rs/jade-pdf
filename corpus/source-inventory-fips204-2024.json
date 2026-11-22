@@ -1,0 +1,95 @@
+{
+  "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+  "actual_text": [
+    {
+      "page": 6,
+      "object": [
+        8342,
+        0
+      ],
+      "mcid": 14,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 6,
+      "object": [
+        8343,
+        0
+      ],
+      "mcid": 16,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 6,
+      "object": [
+        8338,
+        0
+      ],
+      "mcid": 22,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 11,
+      "object": [
+        8595,
+        0
+      ],
+      "mcid": 29,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 21,
+      "object": [
+        4060,
+        0
+      ],
+      "mcid": 36,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 23,
+      "object": [
+        3984,
+        0
+      ],
+      "mcid": 21,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 57,
+      "object": [
+        7274,
+        0
+      ],
+      "mcid": 4,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    },
+    {
+      "page": 57,
+      "object": [
+        7251,
+        0
+      ],
+      "mcid": 37,
+      "source_hex": "feff00ad",
+      "text": "­",
+      "raw_sdk_text": "-"
+    }
+  ],
+  "fonts": [],
+  "method": "Independent pypdf6.10 StructTree K traversal, inherited Pg, exact object/MCID and UTF-16 source bytes. Public SDK character-to-object MCID ownership independently witnesses each raw single hyphen. Only these8 exact original declarations on5pages replace raw SDK hyphens with source U+00AD for existing normalization. No font program or glyph data read, no runtime correction, no global hyphen exclusion, no prose/order accuracy claim."
+}

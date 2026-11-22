@@ -1,0 +1,32 @@
+{
+  "id": "nist-fips204-2024",
+  "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+  "date": "2026-11-22T05:02:56.894876+00:00",
+  "pages": [
+    6,
+    11,
+    21,
+    23,
+    57
+  ],
+  "declarations": 8,
+  "inventory": "source-inventory-fips204-2024.json",
+  "inventory_sha256": "a2e4d9757758cef8b2440cb4f53795c4548a86978e091c539b181ae278f47ebc",
+  "method": "Original structure ActualText has8 exact UTF-16 feff00ad declarations on5pages. Each indirect object, inherited page, unique content MCID and raw SDK single hyphen are verified by the existing independent source-inventory test. No product extractor or font program used to declare replacements.",
+  "initial_failure": "Unadjusted raw SDK inventory includes8 visible hyphens that the original explicitly replaces with U+00AD. The existing product preserves raw source text in the public layer and removes optional soft hyphens in normalized IR. Initial full-corpus test stopped at page6 with3 differences; a second parallel test then panicked on poisoned SDK lock. Not a runtime extraction improvement.",
+  "unchanged_policy": "No global hyphen omission, no relaxation of source verification or diagnostic guards, no runtime code change.",
+  "evidence": {
+    "page6-actualtext-source.json": "9c1929d86f44af631f1c261fa949d4ddd27ac15ac6f12904278fafcf605632c1",
+    "hyphen-sdk-probe.json": "ae197cee9069658c570eafd9a8ec1b94dfd8d2b38c8495c00a4ce82e0b507dee",
+    "declare-actualtext-inventory.py": "83c0c6a7a02f278c6c1b9d0d5bdbf8c894aacdbfca7fe849552766f4f9f32b18"
+  },
+  "reference_decoder_extension": {
+    "reason": "The preexisting inventory helper rejects UTF-16 surrogate records, including valid supplementary mathematical letters on the FIPS204 pages. Extend only this test reference using the public SDK same-object, same finite box/origin, nongenerated and error-free witness and strict Rust UTF-16 decoding.",
+    "owned_control": "A valid owned emoji and two repeated mathematical letters pass; split, coincident different objects, lone-high, lone-low and reversed records remain errors.",
+    "runtime_code_changed": false
+  },
+  "initial_test_log_sha256": "60657ce3017ec689a62d2394251c05891157e51ab3f2fef1d95303ec048972d6",
+  "initial_unsupported_surrogate_log_sha256": "9a14e3f36bc07a604c47fe2fa0d0f7846196ad6ab3a784f9ae2aff00336c69f7",
+  "owned_red_log_sha256": "f9bfa3a6ef5ea0a030963947fc820c5f2609a0d5ae23250875597befde2bab81",
+  "owned_green_log_sha256": "521006906075a94149716f94ee65852665f50892d9e54ea59b7a552974c905a9"
+}

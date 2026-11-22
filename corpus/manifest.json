@@ -2073,7 +2073,8 @@
       "source_review": "corpus/fips204-2024-review.json",
       "source_review_sha256": "1359aca21772a102f4d9d85644659fc03ad9b0be2b1959ab6dbbaba3e509e277",
       "independent_gold": "fips204-2024-gold.json",
-      "independent_gold_sha256": "72762f23e0712f7709b04b36a4ea6859bbe60ef21e121b55410aca41c2c668a0"
+      "independent_gold_sha256": "72762f23e0712f7709b04b36a4ea6859bbe60ef21e121b55410aca41c2c668a0",
+      "source_inventory_gold": "source-inventory-fips204-2024.json"
     }
   ],
   "revision_pairs": [
