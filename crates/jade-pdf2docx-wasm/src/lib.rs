@@ -185,4 +185,17 @@ mod tests {
         .unwrap();
         assert!(json.contains("\"quality_issues\":[]"), "{json}");
     }
+    /// browserにもWord固有の縮小診断を出し、元PDF解析器の幾何は変えない。
+    #[test]
+    fn inspection_reports_oversized_word_page() {
+        let pdf = b"%PDF-1.7\n1 0 obj << /Type /Page /MediaBox [0 0 2000 1000] >> endobj\n";
+        let json = inspect_pdf_json(pdf).unwrap();
+        assert!(
+            json.contains("\"quality_issues\":[{\"kind\":\"page_resized_for_word\",\"page\":0}]"),
+            "{json}"
+        );
+        let parsed = jade_pdf2docx_parser::parse_pdf_bytes("source.pdf", pdf).unwrap();
+        assert!(parsed.quality.issues.is_empty());
+        assert_eq!(parsed.pages[0].width, 2000.0);
+    }
 }
