@@ -1,0 +1,44 @@
+{
+  "id": "nta-invoice-domestic-english-2026",
+  "date_utc": "2026-11-22T08:22:45.786183+00:00",
+  "source_url": "https://www.nta.go.jp/english/taxes/consumption_tax/201606-9en.pdf",
+  "source_page": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/hojin/annai/invoice_01.htm",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "bytes": 1879905,
+  "pages": 5,
+  "original_pages_reviewed": [
+    1,
+    2,
+    3,
+    4,
+    5
+  ],
+  "original_page_render_sha256": {
+    "original-1.png": "91e95e0c37bde14ea827d46d3c800dfdc65fbda1004928d8a784d1ce513f252d",
+    "original-2.png": "0f40069df3cec32e5a50fc3aa826990e529c236e3439db844e9f74dc03781cd5",
+    "original-3.png": "ea59f79244cb095fe332c3b0365cc595402edbe6ba731f461c016fd210a32edf",
+    "original-4.png": "de67563a2d1b4e3ea1b443bcf1b835f371018a8449775ebae5505444412f7eb6",
+    "original-5.png": "f471bd7623910c85ff6da3055aa8d617bab0b248e3276048bcf74265508f462e"
+  },
+  "method": "All5 actual downloaded original pages rendered with Poppler at1600px and individually inspected before any Jade product extraction of this PDF. Selected table/field sequences read directly from original page images.",
+  "rights_source": "https://www.nta.go.jp/chuijiko/copy.htm",
+  "rights": "NTA page currently specifies PDL1.0 with attribution and notice of derived material; no observed separate rights notice on the selected ordinary form/instruction text. Original PDF retained unchanged in ignored cache; no fonts or glyph outlines exported/reused.",
+  "citation": "出典：国税庁ホームページ「Application for Registration as a Qualified Invoice Issuer (For domestic business enterprises) (Instructions)」 https://www.nta.go.jp/english/taxes/consumption_tax/201606-9en.pdf 、PDL1.0（2026年11月22日利用）。原本をもとにJadeが抽出精度検証用データを作成。国税庁が検証データを作成したものではない。",
+  "privacy": "Official blank Japanese forms with English explanatory callouts on pages1/2 and generic instructions on pages3/4/5. No observed real applicant personal names, addresses or identifiers; no third-party photo/map/logo observed. QR codes and document links were not followed.",
+  "metadata": {
+    "author": "国税庁",
+    "tagged": true,
+    "form": "none",
+    "JavaScript": false,
+    "encrypted": "AES; print/copy allowed, changes/notes denied",
+    "page_size_points": [
+      540,
+      780
+    ],
+    "rotation": 0
+  },
+  "scope": "Software extraction evaluation only; not advice on tax procedures, source validation, form submission, whole-page reading order or full document accuracy. Encoded text vs image/graphics representation has not been inspected for this declaration.",
+  "product_output_inspected_before_declaration": false,
+  "registered": false,
+  "source_size_note": "The HTML advertises699KB; the actual downloaded1879905-byte original and its SHA256 above are authoritative for this candidate."
+}
