@@ -1,8 +1,8 @@
 {
   "version": 45,
   "date": "2026-11-22",
-  "core_revision": "9e6d1d1fdea7b84fab877612dcd30741330231f8",
-  "qualification_revision": "23d875e6627ae0a3944d5d6c62b405f8cc2bf100",
+  "core_revision": "6a36073babc6c257d72dcb093ee8affe40b2b2cf",
+  "qualification_revision": "9fcf9aa9988d261d26cd1cc3b104dcc61d2f1fa7",
   "base_revision": "bd55afd3cd657553ec907a942e247c3c323950b8",
   "production_ready": false,
   "scope": "Remove only verified SDK-generated U+0020 separators between assigned wide Han/Kana/Common letters with safe upright full-em advance cells and quarter-em tracking, after reading order is fixed. Preserve literal and ActualText blanks, unsupported metrics, larger gaps, Latin/Hangul, scalar cells and existing diagnostics. Canonical voicing decomposition resolves the same base scalar. Not general word-spacing or full-page accuracy.",
@@ -282,5 +282,7 @@
     "tools/wasm-smoke/src/japanese_tracking.rs": "24ef80e450961a3ad1208243f9fc65280b0d10380b5375d8594b9de8d4d99c1a",
     "tools/wasm-smoke/src/lib.rs": "d6ed522a05264b9f312db32977ef21a09465fa0bdbcd6a6b8bda6220a878e4a4",
     "tools/wasm-smoke/worker_smoke.mjs": "a20c9751852b18d77aaa54313ae15d900b2db398af648eea6910f8fd28a71b85"
-  }
+  },
+  "qualified_result_tree": "39e9a66654bb8a34234dc0b934dd3dbf4f06b49a",
+  "rebase_verification": "All three qualified source/result trees are byte-identical before/after replay onto merged PR9. Only ledger history metadata was subsequently updated; pinned source/checker/manifest/report bytes and frozen native/WASM artifacts are unchanged."
 }
