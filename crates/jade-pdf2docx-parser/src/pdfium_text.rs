@@ -37,8 +37,9 @@ pub(crate) fn extract(
         crate::metadata_workspace::ensure_active(budget)?;
         // API内部の一時Stringは現APIで確保前の正確な容量取得ができない。
         let raw = segment.text();
-        let trimmed = raw.trim();
-        if trimmed.is_empty() {
+        // 描画された空白を単語境界として保持し、SDKの端の改行だけを除く。
+        let content = raw.trim_matches(|ch| matches!(ch, '\r' | '\n'));
+        if content.is_empty() {
             continue;
         }
         let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
@@ -52,7 +53,7 @@ pub(crate) fn extract(
             let color = first.fill_color().ok().map(|color| color.to_hex());
             fill_color = copy(budget, color.as_deref())?;
         }
-        let text = copy(budget, Some(trimmed))?.unwrap_or_default();
+        let text = copy(budget, Some(content))?.unwrap_or_default();
         crate::metadata_workspace::push(
             budget,
             &mut elements,

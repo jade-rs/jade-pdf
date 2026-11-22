@@ -20,13 +20,7 @@ fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
 
 /// ページobjectと文字indexを同じnative読み込みから検査する。
 fn with_native_page(content: &str, check: impl FnOnce(&PdfPage<'_>)) {
-    let bytes = pdf(&[
-        "<< /Type /Catalog /Pages 2 0 R >>".into(),
-        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
-        stream(content),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
-    ]);
+    let bytes = owned_text_pdf(content);
     // assertionのunwind中にnativeをdropすると、依存先の共有Mutexをpoisonする。
     let outcome = {
         let native = pdfium_auto::bind_pdfium_silent().unwrap();
@@ -37,6 +31,17 @@ fn with_native_page(content: &str, check: impl FnOnce(&PdfPage<'_>)) {
     if let Err(error) = outcome {
         std::panic::resume_unwind(error);
     }
+}
+
+/// sourceの空白とSDKの報告を区別するため、同じowned入力を両経路へ渡す。
+fn owned_text_pdf(content: &str) -> Vec<u8> {
+    pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
+        stream(content),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+    ])
 }
 
 /// 部分clipのindex取得も予算不足・消費済み停止から再開しない。
@@ -167,13 +172,13 @@ fn page_characters_preserve_consumed_stop() {
     });
 }
 
-/// 旧segment APIで得られる本文・先頭文字属性を比較の基準にする。
-fn legacy(text: &PdfPageText<'_>) -> Vec<ParsedTextElement> {
+/// SDK直接取得の本文・先頭文字属性を基準にし、端の改行だけを除く。
+fn native_segment_reference(text: &PdfPageText<'_>) -> Vec<ParsedTextElement> {
     text.segments()
         .iter()
         .filter_map(|segment| {
             let raw = segment.text();
-            let trimmed = raw.trim();
+            let trimmed = raw.trim_matches(|ch| matches!(ch, '\r' | '\n'));
             if trimmed.is_empty() {
                 return None;
             }
@@ -235,7 +240,7 @@ fn ordinary_segments_reserve_storage_and_discard_partial_output() {
     with_page(
         "BT /F 12 Tf 10 80 Td ( alpha ) Tj /F 18 Tf 0 -40 Td ( beta ) Tj ET",
         |text| {
-            let expected = legacy(text);
+            let expected = native_segment_reference(text);
             assert!(expected.len() >= 2);
             assert!(matches!(
                 run(&budget(0), 7, text),
@@ -266,10 +271,10 @@ fn ordinary_segments_reserve_storage_and_discard_partial_output() {
     );
 }
 
-/// 空白しかないsegmentは保存せず、停止済み予算では空結果も返さない。
+/// 本当に空のページを空結果とし、停止済み予算では空結果も返さない。
 #[test]
 fn ordinary_segments_preserve_empty_and_stopped_behavior() {
-    with_page("BT /F 12 Tf 10 80 Td (   ) Tj ET", |text| {
+    with_page("", |text| {
         assert!(run(&budget(65536), 7, text).unwrap().is_empty());
         let stopped = budget(0);
         stopped.charge_metadata_workspace_bytes(1);
@@ -308,7 +313,66 @@ proptest::proptest! {
         let next_y = if overlap { y } else { y - 15 };
         let content = format!("BT /F {size} Tf 1 0 0 1 {x} {y} Tm (alpha) Tj 1 0 0 rg /F 18 Tf 1 0 0 1 {x} {next_y} Tm (beta) Tj ET");
         with_page(&content, |text| {
-            assert_eq!(run(&budget(65536), 7, text).unwrap(), legacy(text));
+            assert_eq!(run(&budget(65536), 7, text).unwrap(), native_segment_reference(text));
         });
     }
+}
+
+/// native fallbackでも単語を繋げず、SDKが報告した端・単語間の別objectの空白を保持する。
+#[test]
+fn ordinary_segments_preserve_declared_word_spaces() {
+    with_page("BT /F 12 Tf 10 80 Td ( alpha ) Tj ET", |text| {
+        let output = run(&budget(65536), 7, text).unwrap();
+        assert_eq!(
+            output.iter().map(|e| e.text.as_str()).collect::<String>(),
+            " alpha "
+        );
+    });
+    with_page(
+        "BT /F 12 Tf 10 80 Td (a) Tj /F 13 Tf ( ) Tj /F 12 Tf (b) Tj ET",
+        |text| {
+            assert_eq!(text.all(), "a b");
+            let output = run(&budget(65536), 7, text).unwrap();
+            assert_eq!(
+                output.iter().map(|e| e.text.as_str()).collect::<String>(),
+                "a b"
+            );
+        },
+    );
+    // SDKは空白だけの3文字を1文字へ畳む。raw抽出では観測された1文字を保持する。
+    with_page("BT /F 12 Tf 10 80 Td (   ) Tj ET", |text| {
+        assert_eq!(text.all(), " ");
+        let output = run(&budget(65536), 7, text).unwrap();
+        assert_eq!(
+            output.iter().map(|e| e.text.as_str()).collect::<String>(),
+            " "
+        );
+        assert!(output.iter().any(|e| e.text == " "));
+    });
+}
+
+/// SDKが単独の3空白を1文字へ畳んでも、source側の同数の空白をnative合成で維持する。
+#[test]
+fn native_reconciliation_keeps_source_spaces_when_sdk_coalesces_them() {
+    let bytes = owned_text_pdf("BT /F 12 Tf 10 80 Td (   ) Tj ET");
+    with_page("BT /F 12 Tf 10 80 Td (   ) Tj ET", |text| {
+        assert_eq!(text.all(), " ");
+        assert_eq!(text.len(), 1);
+    });
+    let limits = ParseLimits::default();
+    let parsed = crate::pdfium_backend::parse_pdf(
+        std::path::Path::new("owned-spaces.pdf"),
+        &bytes,
+        &limits,
+        &DecodeBudget::new(&limits),
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|e| e.text.as_str())
+            .collect::<String>(),
+        "   "
+    );
 }
