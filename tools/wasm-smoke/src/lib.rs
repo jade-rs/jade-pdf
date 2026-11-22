@@ -4,9 +4,23 @@ use wasm_bindgen::prelude::*;
 #[path = "../../../crates/jade-pdf-diff/tests/support/appearance_fixture.rs"]
 mod appearance_fixture;
 mod japanese_tracking;
+#[path = "../../../crates/jade-pdf-diff/tests/support/nonpainting_fixture.rs"]
+mod nonpainting_fixture;
 mod page_text;
 #[path = "../../../crates/jade-pdf-diff/tests/support/ruled_grid_fixture.rs"]
 mod ruled_grid_fixture;
+
+/// nativeと同じowned入力を生成し、mode0/3/7の公開WASM・Worker経路を検証する。
+#[wasm_bindgen]
+pub fn nonpainting_pdf(mode: u8, edited: bool) -> Result<Vec<u8>, JsValue> {
+    if ![0, 3, 7].contains(&mode) {
+        return Err(JsValue::from_str("Unsupported owned rendering mode"));
+    }
+    Ok(nonpainting_fixture::source(
+        mode,
+        if edited { "Update" } else { "Hidden" },
+    ))
+}
 
 /// 自作の閉じた罫線、棄却条件、原文置換と幾何変換を実WASMで検証する。
 #[wasm_bindgen]

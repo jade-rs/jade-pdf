@@ -368,7 +368,10 @@ fn text_layer_loaded(
         "Source text accounting is incomplete; an empty text layer cannot represent this uncertainty"
     );
     anyhow::ensure!(
+        // 原文で全ての本文を空に置き換えた場合、非表示のSDKアンカーを再び本文へ戻さない。
+        // 空出力は文字比較の完了を主張せず、PageIrには生SDK recordの診断を保持する。
         !runs.runs.is_empty()
+            || unicode.projected_empty
             || (unicode.nonpainting_text_characters == 0
                 && !unicode.text_visibility_accounting_unavailable),
         "Text visibility is unverified; an empty text layer cannot represent this uncertainty"

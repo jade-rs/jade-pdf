@@ -1,3 +1,4 @@
+import {checkNonpaintingControls} from './nonpainting_controls.mjs';
 // Run against a compiled probe and a hash-pinned Emscripten Pdfium under corpus/wasm-runtime.
 import fs from 'node:fs/promises';
 import http from 'node:http';
@@ -135,6 +136,9 @@ try {
   if (!initialization.ok) throw new Error('Pdfium WASM initialization failed: '+JSON.stringify(initialization));
   results.push(...initialization.checks);
   for (const result of initialization.checks) console.log((result.passed?'PASS ':'FAIL ')+JSON.stringify(result));
+  const visibility=await checkNonpaintingControls(page);
+  results.push(...visibility);
+  for(const check of visibility) console.log((check.passed?'PASS ':'FAIL ')+JSON.stringify(check));
   const ruledGrid=await page.evaluate(()=>window.jadeProbe.ruled_grid_controls());
   results.push({id:'ruled-grid-controls',passed:ruledGrid===121,scenarios:ruledGrid});
   const glyphBoxGold = await page.evaluate(() => {
@@ -549,15 +553,19 @@ try {
           }
         } else if(name.startsWith('rtl_unicode_')) {
           const mode=name.slice('rtl_unicode_'.length);
-          const complete=!['ambiguous','mixed'].includes(mode);
-          passed&&=result.complete===complete&&result.text_complete===complete&&summary.pages_visual_changed===0;
+          // These fixtures deliberately use Tr3; recovered Unicode is retained but needs visible review.
+          const hidden=[false,true].every(revised=>new TextDecoder().decode(window.jadeProbe.worker_fixture(name,revised)).includes('3 Tr'));
+          const visibility=(diff.diagnostics.old_pages_with_nonpainting_text??0)+(diff.diagnostics.new_pages_with_nonpainting_text??0)>0;
+          passed&&=hidden&&visibility&&result.complete===diff.comparison.identical_source&&!result.text_complete&&summary.pages_visual_changed===0;
           if(['edit','hebrew','mixed_edit','partial_edit','partial_order_edit'].includes(mode)) passed&&=summary.blocks_changed===1;
           else passed&&=Object.values(summary).every(value=>value===0);
         } else if(name.startsWith('agl_')) {
           const mode=name.slice(4);
           const supported=['uacute','ugrave'].includes(mode);
           const known=['union','universal','uacute','ugrave','nonbmp','multicomponent'].includes(mode);
-          passed&&=result.complete===supported&&result.text_complete===supported&&summary.pages_visual_changed===0
+          const visibility=(diff.diagnostics.old_pages_with_nonpainting_text??0)+(diff.diagnostics.new_pages_with_nonpainting_text??0)>0;
+          const hidden=[false,true].every(revised=>new TextDecoder().decode(window.jadeProbe.worker_fixture(name,revised)).includes('3 Tr'));
+          passed&&=hidden&&(!supported||visibility)&&!result.complete&&!result.text_complete&&summary.pages_visual_changed===0
             &&(supported?summary.blocks_changed===1&&summary.pages_added===0&&summary.pages_removed===0:
               summary.pages_added===1&&summary.pages_removed===1&&Object.entries(summary).filter(([k])=>!['pages_added','pages_removed'].includes(k)).every(([,v])=>v===0))
             &&(diff.diagnostics.new_pages_with_unavailable_source_unicode??0)===Number(!known)
@@ -576,14 +584,20 @@ try {
           const mode=name.slice('actual_structure_'.length);
           const ambiguous=['collision','reused_form','bad_parent','bad_backpointer','crosspage','nested_actual'].includes(mode);
           const empty=mode==='empty';
-          passed&&=result.complete===!ambiguous&&result.text_complete===(!ambiguous&&!empty)
-            &&summary.pages_visual_changed===0
+          const hidden=mode!=='vector';
+          const encodedHidden=[false,true].every(revised=>new TextDecoder().decode(window.jadeProbe.worker_fixture(name,revised)).includes('3 Tr'));
+          const visibility=(diff.diagnostics.old_pages_with_nonpainting_text??0)+(diff.diagnostics.new_pages_with_nonpainting_text??0)>0;
+          passed&&=(!hidden||encodedHidden)&&(!hidden? !visibility : ambiguous||visibility)
+            &&result.complete===(diff.comparison.identical_source||(!ambiguous&&!hidden))
+            &&result.text_complete===(!ambiguous&&!empty&&!hidden)&&summary.pages_visual_changed===0
             &&(ambiguous?Object.values(summary).every(v=>v===0):empty?diff.pages.some(p=>p.blocks.some(b=>b.old_text==='A'&&b.new_text===null)):summary.blocks_changed===1);
         } else if(name.startsWith('source_unicode_')) {
           const actual=['source_unicode_actual','source_unicode_actual_named','source_unicode_actual_large'].includes(name);
           const invalid=name==='source_unicode_actual_invalid';
           const empty=['source_unicode_actual_empty','source_unicode_actual_blank'].includes(name);
-          passed&&=result.complete===(actual||empty)&&result.text_complete===actual
+          const visibility=(diff.diagnostics.old_pages_with_nonpainting_text??0)+(diff.diagnostics.new_pages_with_nonpainting_text??0)>0;
+          const hidden=[false,true].every(revised=>new TextDecoder().decode(window.jadeProbe.worker_fixture(name,revised)).includes('3 Tr'));
+          passed&&=hidden&&(!(actual||empty)||visibility)&&!result.complete&&!result.text_complete
             &&summary.pages_visual_changed===0
             &&(diff.diagnostics.new_pages_with_source_unicode_mismatch??0)===Number(!actual&&!empty&&!invalid)
             &&(diff.diagnostics.old_pages_with_source_unicode_mismatch??0)===0
@@ -754,6 +768,7 @@ try {
         if(name==='choice_export_label'){const f=diff.pages[0].form_changes[0];
           passed&&=f.old.value==='foo'&&f.new.value==='bar'&&f.old.display_value==='Foo'&&f.new.display_value==='Bar';}
         return {id:'appearance-'+name,passed,summary,complete:result.complete,
+          text_complete:result.text_complete,visibility:{old_nonpainting_pages:diff.diagnostics.old_pages_with_nonpainting_text??0,new_nonpainting_pages:diff.diagnostics.new_pages_with_nonpainting_text??0,old_unavailable_pages:diff.diagnostics.old_pages_with_unavailable_text_visibility??0,new_unavailable_pages:diff.diagnostics.new_pages_with_unavailable_text_visibility??0},
           coverage:diff.comparison,changed_pixels:diff.pages.map(p=>p.visual?.changed_pixels)};
       }catch(error){if(error instanceof WebAssembly.RuntimeError)throw error;
         return {id:'appearance-'+name,passed:false,error:String(error)};}
@@ -856,6 +871,7 @@ try {
     unprepared_loader_sha256:unpreparedLoaderHash,contract_probe_sha256:createHash('sha256').update(contractProbe).digest('hex'),
     manifest_sha256:createHash('sha256').update(manifestBytes).digest('hex'),native_binary_sha256:binaryHash,
     selected_documents:documents.map(e=>e.id),
+    nonpainting_controls_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/nonpainting_controls.mjs'))).digest('hex'),
     semantic_gold_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/semantic_gold.mjs'))).digest('hex'),
     scalar_revision_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/scalar_revision_gold.py'))).digest('hex'),
     scalar_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_scalar_revision.py'))).digest('hex'),

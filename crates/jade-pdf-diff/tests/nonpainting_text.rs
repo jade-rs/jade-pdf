@@ -1,25 +1,8 @@
 use pdf_diff::{diff_bytes, load_document_from_bytes, render_page_from_bytes, DiffOptions, Limits};
 
-/// 保存fixtureを使わず、独立した可視本文と非描画文字を持つ正式xref付きPDFを生成する。
-fn source(mode: u8, recorded: &str) -> Vec<u8> {
-    let content = format!("BT /F1 18 Tf 20 130 Td (Visible 1/8) Tj ET\nq BT /F1 18 Tf {mode} Tr 20 70 Td ({recorded}) Tj ET Q");
-    let objects=["<< /Type /Catalog /Pages 2 0 R >>".into(),"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".into(),format!("<< /Length {} >>\nstream\n{content}\nendstream",content.len()),"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into()];
-    let mut bytes = b"%PDF-1.7\n".to_vec();
-    let mut offsets = Vec::new();
-    for (index, object) in objects.iter().enumerate() {
-        offsets.push(bytes.len());
-        bytes.extend_from_slice(format!("{} 0 obj\n{object}\nendobj\n", index + 1).as_bytes());
-    }
-    let xref = bytes.len();
-    bytes.extend_from_slice(b"xref\n0 6\n0000000000 65535 f \n");
-    for offset in offsets {
-        bytes.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
-    }
-    bytes.extend_from_slice(
-        format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
-    );
-    bytes
-}
+#[path = "support/nonpainting_fixture.rs"]
+mod fixture;
+use fixture::source;
 
 /// 描画されない文字の内容だけを変えても、可視本文の描画は全pixel同じである。
 #[test]
@@ -102,4 +85,109 @@ fn nonpainting_text_requires_visible_review_without_discarding_source_proof() {
         );
         assert!(!result.has_changes());
     }
+}
+
+/// file・bytes・文字レイヤー・JSONで同じページ診断を返し、原本も保持する。
+#[test]
+fn file_and_text_layer_routes_preserve_visibility_facts() {
+    let bytes = source(3, "Hidden");
+    let directory = tempfile::tempdir().unwrap();
+    let path = directory.path().join("source.pdf");
+    std::fs::write(&path, &bytes).unwrap();
+    let limits = Limits::default();
+    let a = load_document_from_bytes(&bytes, &limits).unwrap();
+    let b = pdf_diff::load_document(&path, &limits).unwrap();
+    assert_eq!(
+        serde_json::to_value(&a).unwrap(),
+        serde_json::to_value(&b).unwrap()
+    );
+    let layer = pdf_diff::text_layer_from_bytes(&bytes, 1).unwrap();
+    let file_layer = pdf_diff::text_layer(&path, 1).unwrap();
+    assert_eq!(
+        serde_json::to_value(&layer).unwrap(),
+        serde_json::to_value(&file_layer).unwrap()
+    );
+    assert!(!layer.is_empty());
+    assert!(layer.iter().all(|run| run.nonpainting_text_characters == 6
+        && !run.text_visibility_accounting_unavailable
+        && !run.source_unicode_accounting_unavailable));
+    let result = pdf_diff::diff_files(&path, &path, &limits, &DiffOptions::default()).unwrap();
+    let restored: pdf_diff::DocumentDiff =
+        serde_json::from_value(serde_json::to_value(&result).unwrap()).unwrap();
+    assert!(restored.diagnostics.has_unverified_text_visibility());
+    assert!(!restored.is_text_comparison_complete());
+    assert!(restored.is_comparison_complete());
+    assert_eq!(std::fs::read(path).unwrap(), bytes);
+}
+
+/// 非表示の原文変更は消さずに検出し、同じ描画でも可視本文の確認済みとはしない。
+#[test]
+fn hidden_edits_keep_raw_source_changes_and_review() {
+    let old = source(3, "Recorded 1/4");
+    let new = source(3, "Recorded 1/8");
+    let result = diff_bytes(
+        "old",
+        "new",
+        &old,
+        &new,
+        &Limits::default(),
+        &DiffOptions::default(),
+    )
+    .unwrap();
+    assert!(result.has_changes());
+    assert_eq!(result.summary.pages_visual_changed, 0);
+    assert!(!result.is_text_comparison_complete());
+    assert!(!result.is_comparison_complete());
+    assert!(result.diagnostics.has_unverified_text_visibility());
+}
+
+/// 取得不能と旧JSONの省略を区別し、未知の診断が往復後にも要確認を保つ。
+#[test]
+fn unavailable_visibility_survives_external_ir_and_legacy_defaults() {
+    let ir = load_document_from_bytes(&source(0, "Painted"), &Limits::default()).unwrap();
+    let mut legacy = serde_json::to_value(&ir).unwrap();
+    let page = legacy["pages"][0].as_object_mut().unwrap();
+    page.remove("nonpainting_text_characters");
+    page.remove("text_visibility_accounting_unavailable");
+    let restored: pdf_diff::DocumentIr = serde_json::from_value(legacy.clone()).unwrap();
+    assert_eq!(restored.pages[0].nonpainting_text_characters, 0);
+    assert!(!restored.pages[0].text_visibility_accounting_unavailable);
+    legacy["pages"][0]["text_visibility_accounting_unavailable"] = serde_json::Value::Bool(true);
+    let uncertain: pdf_diff::DocumentIr = serde_json::from_value(legacy).unwrap();
+    let result = pdf_diff::try_diff_documents(
+        "old",
+        "new",
+        &uncertain,
+        &restored,
+        &Limits::default(),
+        &DiffOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        result
+            .diagnostics
+            .old_pages_with_unavailable_text_visibility,
+        1
+    );
+    assert_eq!(
+        result
+            .diagnostics
+            .new_pages_with_unavailable_text_visibility,
+        0
+    );
+    assert!(result.diagnostics.has_unverified_text_visibility());
+    assert!(!result.is_text_comparison_complete());
+}
+
+/// 全文を空にする確認済みActualTextは、非表示のSDKアンカーを出力本文へ戻さない。
+#[test]
+fn verified_empty_source_replacement_keeps_an_empty_text_layer() {
+    let bytes = fixture::empty_actualtext_source();
+    let ir = load_document_from_bytes(&bytes, &Limits::default()).unwrap();
+    assert!(ir.pages[0].text().is_empty());
+    assert!(ir.pages[0].nonpainting_text_characters > 0);
+    assert!(!ir.pages[0].source_unicode_accounting_unavailable);
+    assert!(pdf_diff::text_layer_from_bytes(&bytes, 1)
+        .unwrap()
+        .is_empty());
 }

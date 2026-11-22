@@ -58,12 +58,29 @@ fn structure_actual_text_recovers_logical_edits_for_text_forms_and_vectors() {
         let result = diff_bytes("a", "b", &old, &new, &limits, &options).unwrap();
         assert_eq!(result.summary.blocks_changed, 1, "{mode}");
         assert_eq!(result.summary.pages_visual_changed, 0, "{mode}");
+        // Tr3の所有範囲は論理本文を保持するが、vectorだけは非描画文字を実行しない。
+        let painted = mode == "vector";
+        assert_eq!(
+            ir.pages[0].nonpainting_text_characters > 0,
+            !painted,
+            "{mode}"
+        );
         assert!(
+            !ir.pages[0].text_visibility_accounting_unavailable,
+            "{mode}"
+        );
+        assert_eq!(
+            result.diagnostics.has_unverified_text_visibility(),
+            !painted,
+            "{mode}"
+        );
+        assert_eq!(
             result.is_comparison_complete(),
+            painted,
             "{mode}: {:?}",
             result.diagnostics
         );
-        assert!(result.is_text_comparison_complete(), "{mode}");
+        assert_eq!(result.is_text_comparison_complete(), painted, "{mode}");
         let files = diff_files(&old_path, &path, &limits, &options).unwrap();
         assert_eq!(
             serde_json::to_value(files.summary).unwrap(),
@@ -75,7 +92,7 @@ fn structure_actual_text_recovers_logical_edits_for_text_forms_and_vectors() {
         );
         let decoded = serde_json::from_value(serde_json::to_value(&ir).unwrap()).unwrap();
         let pure = pdf_diff::diff_documents("a", "b", &ir, &decoded, &options);
-        assert!(pure.is_text_comparison_complete());
+        assert_eq!(pure.is_text_comparison_complete(), painted, "{mode}");
         assert!(!pure.has_changes());
         assert_eq!(new, std::fs::read(&path).unwrap());
     }
@@ -152,7 +169,13 @@ fn empty_and_whitespace_replacements_suppress_underlying_characters() {
             "{mode}"
         );
         assert_eq!(result.summary.pages_visual_changed, 0);
-        assert!(result.is_comparison_complete());
+        assert!(ir.pages[0].nonpainting_text_characters > 0, "{mode}");
+        assert!(
+            result.diagnostics.has_unverified_text_visibility(),
+            "{mode}"
+        );
+        assert!(!result.is_comparison_complete(), "{mode}");
+        assert!(!result.is_text_comparison_complete(), "{mode}");
     }
 }
 
