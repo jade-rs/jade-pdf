@@ -102,6 +102,8 @@ pub const ADOBE_GLYPH_LIST_LICENSE: &str = include_str!("../licenses/adobe-glyph
 pub const ADOBE_SYMBOL_ENCODING_LICENSE: &str = include_str!("../licenses/adobe-symbol.txt");
 /// 固定版のpure Rustフォント資料パーサーに付属するMIT利用通知。
 pub const TTF_PARSER_LICENSE: &str = include_str!("../licenses/ttf-parser-0.25.1.txt");
+/// 方向属性・日本語字間の判定に使うUnicode資料の著作権と利用通知。
+pub const UNICODE_DATA_LICENSE: &str = include_str!("../resources/unicode-license-v3.txt");
 #[cfg(not(target_arch = "wasm32"))]
 pub use parse::{load_document, load_document_blocking};
 pub use scan::{load_document_from_bytes, Limits};

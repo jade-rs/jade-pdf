@@ -460,7 +460,15 @@ try {
           rejected:result.rejected,error:result.error};
         const diff=result.diff, summary=diff.summary;
         let passed=result.same_complete&&result.same_source;
-        if(name.startsWith('symbol_component_')) {
+        if(name.startsWith('japanese_tracking_')) {
+          passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
+          if(name==='japanese_tracking_edit') {
+            const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');
+            passed&&=summary.blocks_changed===1&&summary.blocks_added===0&&summary.blocks_removed===0
+              &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')==='書'
+              &&blocks[0].segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')==='類';
+          } else passed&&=Object.values(summary).every(n=>n===0);
+        } else if(name.startsWith('symbol_component_')) {
           passed&&=!result.complete&&!result.text_complete&&summary.pages_visual_changed===0;
           if(name==='symbol_component_edit') {
             const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');

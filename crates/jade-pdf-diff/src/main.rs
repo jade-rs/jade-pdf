@@ -78,11 +78,12 @@ fn run(arguments: &[std::ffi::OsString]) -> anyhow::Result<i32> {
 
     if args.as_slice() == ["--licenses"] {
         print!(
-            "{}\n{}\n{}\n{}",
+            "{}\n{}\n{}\n{}\n{}",
             pdf_diff::PDFIUM_LICENSE_NOTICES,
             pdf_diff::ADOBE_GLYPH_LIST_LICENSE,
             pdf_diff::ADOBE_SYMBOL_ENCODING_LICENSE,
-            pdf_diff::TTF_PARSER_LICENSE
+            pdf_diff::TTF_PARSER_LICENSE,
+            pdf_diff::UNICODE_DATA_LICENSE
         );
         return Ok(0);
     }

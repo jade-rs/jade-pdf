@@ -18,7 +18,7 @@ mod table;
 pub(crate) struct ExtractedRun {
     /// 書字方向と送り幅を確認できた水平文字のセル。字面の座標とは分けて保持する。
     advance: spacing::Edges,
-    /// 読み順を決めた後に除く、行結合時だけに生成した空白のスカラー位置。
+    /// 読み順を決めた後に除く、SDK・行結合が生成したと確認済みの空白のスカラー位置。
     pending_spaces: Vec<usize>,
     pub text: String,
     pub source_text_region: bool,
@@ -46,6 +46,10 @@ pub(crate) struct ExtractedPage {
 struct RunBuilder {
     /// 現在の文字列の先頭と末尾について確認できた、水平送りセル。
     advance: spacing::Edges,
+    /// 次の字形との送り幅を照合するまで保持する、末尾のSDK生成空白のスカラー位置。
+    generated_separators: Vec<usize>,
+    /// 確認済み生成空白の削除を、行の判定・読み順の確定後まで遅延する。
+    pending_spaces: Vec<usize>,
     text: String,
     sdk_unicode_mapping_errors: usize,
     spans: Vec<(f64, f64)>,
@@ -67,6 +71,8 @@ impl RunBuilder {
     fn new() -> Self {
         Self {
             advance: spacing::Edges::default(),
+            generated_separators: Vec::new(),
+            pending_spaces: Vec::new(),
             text: String::new(),
             sdk_unicode_mapping_errors: 0,
             spans: Vec::new(),
@@ -85,7 +91,11 @@ impl RunBuilder {
         }
     }
 
+    /// 行の境界で文字セルを確定し、水平LTRと確認できた生成空白だけを後段へ渡す。
     fn finish(&mut self, output: &mut Vec<ExtractedRun>, max_blocks: usize) -> Result<()> {
+        if self.rtl || self.vertical == Some(true) {
+            self.pending_spaces.clear();
+        }
         while self.text.ends_with(char::is_whitespace) {
             self.text.pop();
             self.spans.pop();
@@ -93,7 +103,7 @@ impl RunBuilder {
         if !self.text.trim().is_empty() {
             ensure!(output.len() < max_blocks, "PDF exceeds max_blocks_per_page {max_blocks}. No partial comparison was performed.");
             output.push(ExtractedRun {
-                pending_spaces: Vec::new(),
+                pending_spaces: std::mem::take(&mut self.pending_spaces),
                 advance: if self.rtl || self.vertical == Some(true) {
                     spacing::Edges::default()
                 } else {
@@ -391,6 +401,11 @@ fn extract_unrotated_runs(
                         (edge, edge)
                     }
                 };
+                if generated && c == ' ' {
+                    run.generated_separators.push(run.spans.len());
+                } else {
+                    run.generated_separators.clear();
+                }
                 run.text.push(c);
                 run.spans.push(span);
                 generated_space |= generated;
@@ -468,8 +483,7 @@ fn extract_unrotated_runs(
                 )
             })
             .flatten();
-        let combining = unicode_normalization::char::canonical_combining_class(c) != 0
-            || matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe0e}' | '\u{fe0f}');
+        let combining = is_combining(c);
         if let Some((x, y)) = run.last_origin {
             let dx = (origin.0 - x).abs();
             let dy = (origin.1 - y).abs();
@@ -551,6 +565,21 @@ fn extract_unrotated_runs(
                 } else {
                     dy > dx
                 });
+            }
+        }
+        if !run.generated_separators.is_empty() {
+            if !run.rtl
+                && spacing::japanese_tracking(
+                    spacing::last_base(&run.text),
+                    Some(c),
+                    run.advance.last,
+                    advance,
+                    em,
+                )
+            {
+                run.pending_spaces.append(&mut run.generated_separators);
+            } else {
+                run.generated_separators.clear();
             }
         }
         let object_boundary = unicode_facts.starts_text_object(ch.index());
@@ -826,6 +855,12 @@ pub(crate) fn is_rtl(c: char) -> bool {
     matches!(c, '\u{590}'..='\u{8ff}' | '\u{fb1d}'..='\u{fdff}' | '\u{fe70}'..='\u{feff}')
 }
 
+/// 基底文字の送り・原点を更新しない既存の結合要素。字間の末尾判定でも同じ条件を使う。
+fn is_combining(c: char) -> bool {
+    unicode_normalization::char::canonical_combining_class(c) != 0
+        || matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe0e}' | '\u{fe0f}')
+}
+
 fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
     // A rotated page may return all italic text before the regular text, even
     // when they share a line. Collect by baseline before joining adjacent runs.
@@ -945,6 +980,12 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
                     if rtl { None } else { current.advance.last },
                     next.advance.first,
                     ink_gap,
+                    em,
+                ) || spacing::japanese_tracking(
+                    spacing::last_base(&current.text),
+                    next.text.chars().find(|c| !c.is_whitespace()),
+                    current.advance.last,
+                    next.advance.first,
                     em,
                 ) {
                     // 読み順の添字判定は、空白を補正する前の独立した入力で行う。

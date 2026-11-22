@@ -3,6 +3,7 @@ use wasm_bindgen::prelude::*;
 
 #[path = "../../../crates/jade-pdf-diff/tests/support/appearance_fixture.rs"]
 mod appearance_fixture;
+mod japanese_tracking;
 
 #[wasm_bindgen]
 pub fn appearance_cases() -> String {
@@ -16,6 +17,9 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("japanese_tracking_") {
+        japanese_tracking::check(mode)?;
+    }
     if let Some(mode) = name.strip_prefix("symbol_component_") {
         let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
             .map_err(|e| JsValue::from_str(&e.to_string()))?;

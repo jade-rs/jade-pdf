@@ -7,6 +7,17 @@ pub const CASES: &[&str] = &[
     "symbol_component_unowned",
     "symbol_component_actual_collision",
     "symbol_component_same_cell",
+    "japanese_tracking_split",
+    "japanese_tracking_single",
+    "japanese_tracking_coded",
+    "japanese_tracking_gap",
+    "japanese_tracking_latin",
+    "japanese_tracking_hangul",
+    "japanese_tracking_edit",
+    "japanese_tracking_actual",
+    "japanese_tracking_supplementary",
+    "japanese_tracking_nfd",
+    "japanese_tracking_nfc",
     "script_touching",
     "script_gap",
     "script_edit",
@@ -1183,6 +1194,21 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("japanese_tracking_") {
+        let fixture_mode = if mode == "edit" || mode == "gap" {
+            "split"
+        } else {
+            mode
+        };
+        return japanese_tracking(
+            fixture_mode,
+            1.,
+            0,
+            revised,
+            if mode == "gap" { 0.35 } else { 0.17 },
+            mode == "edit" && revised,
+        );
+    }
     if let Some(mode) = case.strip_prefix("symbol_component_") {
         let mode = if mode == "edit" && !revised {
             "valid"
@@ -2258,4 +2284,20 @@ pub fn advance_script_layout(
     revised: bool,
 ) -> Vec<u8> {
     advance_script_fixture::advance_script_layout(unit, rotation, reverse, gap, revised)
+}
+
+#[path = "japanese_tracking_fixture.rs"]
+mod japanese_tracking_fixture;
+
+/// 外部字体を使わず、和字の字間と実空白を再現する。
+#[allow(dead_code)]
+pub fn japanese_tracking(
+    mode: &str,
+    unit: f64,
+    rotation: u16,
+    reverse: bool,
+    gap: f64,
+    revised: bool,
+) -> Vec<u8> {
+    japanese_tracking_fixture::japanese_tracking(mode, unit, rotation, reverse, gap, revised)
 }
