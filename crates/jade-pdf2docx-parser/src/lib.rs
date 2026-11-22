@@ -27,6 +27,7 @@ mod image_metadata;
 mod indexed_predictor;
 mod indexed_stream;
 mod input;
+mod legacy_font_names;
 mod legacy_page_geometry_validation;
 mod legacy_page_resources;
 mod legacy_stream;

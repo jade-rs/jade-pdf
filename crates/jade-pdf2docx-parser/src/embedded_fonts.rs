@@ -6,13 +6,25 @@ use super::{
 };
 
 /// 候補は入力順の初出を選び、完成出力は旧mapと同じ名前順にする。
+#[cfg(test)]
 pub(super) fn build(
     budget: &DecodeBudget,
     source: &[u8],
     mut payload: impl FnMut(u32) -> Option<Vec<u8>>,
     mut mapping: impl FnMut(u32) -> ToUnicodeCMap,
 ) -> Vec<ParsedEmbeddedFont> {
-    collect(budget, source, &mut payload, &mut mapping).unwrap_or_default()
+    build_with_fallback(budget, source, &mut payload, &mut mapping, |_, _| None)
+}
+
+/// 検証済みの原本streamを持つ呼出し元だけに、名前欠落時の復元を任せる。
+pub(super) fn build_with_fallback(
+    budget: &DecodeBudget,
+    source: &[u8],
+    mut payload: impl FnMut(u32) -> Option<Vec<u8>>,
+    mut mapping: impl FnMut(u32) -> ToUnicodeCMap,
+    mut fallback: impl FnMut(&[u8], &mut dyn FnMut(u32) -> Option<Vec<u8>>) -> Option<(String, Vec<u8>)>,
+) -> Vec<ParsedEmbeddedFont> {
+    collect(budget, source, &mut payload, &mut mapping, &mut fallback).unwrap_or_default()
 }
 
 /// どの保存・取得・修復段階で停止しても部分候補/出力を公開しない。
@@ -21,6 +33,10 @@ fn collect(
     source: &[u8],
     payload: &mut impl FnMut(u32) -> Option<Vec<u8>>,
     mapping: &mut impl FnMut(u32) -> ToUnicodeCMap,
+    fallback: &mut impl FnMut(
+        &[u8],
+        &mut dyn FnMut(u32) -> Option<Vec<u8>>,
+    ) -> Option<(String, Vec<u8>)>,
 ) -> Option<Vec<ParsedEmbeddedFont>> {
     if budget.is_stopped() {
         return None;
@@ -35,18 +51,40 @@ fn collect(
         }
         let file = crate::metadata::value(descriptor.body, b"FontFile2")
             .and_then(crate::metadata::reference);
-        let (Some(name), Some(file)) = (name, file) else {
+        let Some(file) = file else {
             continue;
         };
-        if candidates.iter().any(|entry| entry.0 == name) {
-            continue;
-        }
-        let bytes = payload(file);
-        if budget.is_stopped() {
-            return None;
-        }
-        let Some(bytes) = bytes else {
-            continue;
+        let (name, bytes) = if let Some(name) = name {
+            if candidates.iter().any(|entry| entry.0 == name) {
+                continue;
+            }
+            let bytes = payload(file);
+            if budget.is_stopped() {
+                return None;
+            }
+            let Some(bytes) = bytes else {
+                continue;
+            };
+            (name, bytes)
+        } else {
+            // 字句を検査してから、原本streamを持つ呼出し元へ復元を依頼する。
+            let Some(raw) = crate::metadata::value(descriptor.body, b"FontName") else {
+                continue;
+            };
+            if crate::legacy_font_names::raw_name(raw).is_none() {
+                continue;
+            }
+            let recovered = fallback(descriptor.body, payload);
+            if budget.is_stopped() {
+                return None;
+            }
+            let Some((name, bytes)) = recovered else {
+                continue;
+            };
+            if candidates.iter().any(|entry| entry.0 == name) {
+                continue;
+            }
+            (name, bytes)
         };
         if bytes.is_empty()
             || bytes.len() > MAX_EMBEDDED_FONT_BYTES
