@@ -3528,8 +3528,20 @@ fn nested_tables_for_cell(
     }
     let width = (parent.bounds.x1 - parent.bounds.x0) / col_count as f32;
     let height = (parent.bounds.y1 - parent.bounds.y0) / row_count as f32;
-    let x0 = parent.bounds.x0 + width * col_index as f32;
-    let x1 = parent.bounds.x0 + width * (col_index + col_span.max(1)).min(col_count) as f32;
+    // 列幅が分かる場合は実際の列境界、分からない場合は等分の境界を使う。
+    let column_x = |col: usize| {
+        if parent.column_widths_twips.len() == col_count {
+            parent.bounds.x0
+                + parent.column_widths_twips[..col.min(col_count)]
+                    .iter()
+                    .map(|twips| *twips as f32 / 20.0)
+                    .sum::<f32>()
+        } else {
+            parent.bounds.x0 + width * col.min(col_count) as f32
+        }
+    };
+    let x0 = column_x(col_index);
+    let x1 = column_x(col_index + col_span.max(1));
     let y1 = parent.bounds.y1 - height * row_index as f32;
     let y0 = parent.bounds.y1 - height * (row_index + 1).min(row_count) as f32;
     parent
@@ -3658,9 +3670,102 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 .cmp(&b.page)
                 .then(b.bounds.y1.total_cmp(&a.bounds.y1))
         });
-        return attach_nested_positioned_tables(graphic_tables);
+        return group_side_by_side_tables(attach_nested_positioned_tables(graphic_tables));
     }
     infer_positioned_tables_from_text_grid(parsed)
+}
+
+/// 同じ高さに横へ並ぶ表を、枠なし 1 行の外側表の各セルへ入れ子にしてまとめる。
+///
+/// DOCX の本文は上から下へ流れるため、横に並んだ表を別々に出すと縦に積まれてしまう。
+/// 縦方向の範囲が互いに半分以上重なり、横方向には重ならない表どうしを 1 つにまとめる。
+fn group_side_by_side_tables(tables: Vec<PositionedTable>) -> Vec<PositionedTable> {
+    let overlaps = |a: &PositionedTable, b: &PositionedTable| {
+        let (a_bounds, b_bounds) = (normalized_bounds(a.bounds), normalized_bounds(b.bounds));
+        let vertical = a_bounds.y1.min(b_bounds.y1) - a_bounds.y0.max(b_bounds.y0);
+        let smaller = (a_bounds.y1 - a_bounds.y0).min(b_bounds.y1 - b_bounds.y0);
+        let horizontal = a_bounds.x1.min(b_bounds.x1) - a_bounds.x0.max(b_bounds.x0);
+        a.page == b.page && smaller > 0.0 && vertical >= smaller * 0.5 && horizontal < 0.0
+    };
+    let mut groups: Vec<Vec<PositionedTable>> = Vec::new();
+    for table in tables {
+        match groups
+            .iter_mut()
+            .find(|group| group.iter().any(|member| overlaps(member, &table)))
+        {
+            Some(group) => group.push(table),
+            None => groups.push(vec![table]),
+        }
+    }
+    groups
+        .into_iter()
+        .map(|mut group| {
+            if group.len() < 2 {
+                return group.pop().expect("group is not empty");
+            }
+            group.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+            side_by_side_container(group)
+        })
+        .collect()
+}
+
+/// 横並びの表を子表として持つ、枠なし 1 行の外側表を作る。
+fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
+    let bounds = members
+        .iter()
+        .map(|table| normalized_bounds(table.bounds))
+        .reduce(|a, b| ParsedBounds {
+            x0: a.x0.min(b.x0),
+            y0: a.y0.min(b.y0),
+            x1: a.x1.max(b.x1),
+            y1: a.y1.max(b.y1),
+        })
+        .expect("members are not empty");
+    let mut column_widths_twips = Vec::new();
+    let mut right = bounds.x0;
+    for table in &members {
+        let table_bounds = normalized_bounds(table.bounds);
+        if table_bounds.x0 > right + 0.5 {
+            column_widths_twips.extend(pdf_points_to_twips(table_bounds.x0 - right));
+        }
+        column_widths_twips.extend(pdf_points_to_twips(table_bounds.x1 - table_bounds.x0));
+        right = table_bounds.x1;
+    }
+    let cols = column_widths_twips.len();
+    let no_borders = DocxCellBorders {
+        top: false,
+        left: false,
+        bottom: false,
+        right: false,
+        size_eighths_pt: 0,
+    };
+    let row = (0..cols)
+        .map(|_| DocxTableCellModel {
+            text: String::new(),
+            underlined: false,
+            alignment: ParagraphAlignment::Left,
+            grid_span: 1,
+            vertical_merge: None,
+            width_twips: None,
+            borders: Some(no_borders),
+        })
+        .collect::<Vec<_>>();
+    PositionedTable {
+        page: members[0].page,
+        bounds,
+        stroke_width: 0.0,
+        font_name: None,
+        font_embedded: false,
+        font_size: None,
+        column_widths_twips,
+        table: OcrTable::new(vec![vec![String::new(); cols]]),
+        cell_underlines: vec![vec![false; cols]],
+        cell_alignments: vec![vec![ParagraphAlignment::Left; cols]],
+        docx_table: Some(DocxTableModel { rows: vec![row] }),
+        nested_tables: members,
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+    }
 }
 
 /// 包含された表を親表の子表として組み直す。
@@ -4341,6 +4446,12 @@ fn infer_positioned_table_from_graphics(
     xs.dedup();
     ys.sort();
     ys.dedup();
+    // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
+    let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
+    let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
+    let has_open_edges = open_ys.len() > ys.len() || open_xs.len() > xs.len();
+    ys = open_ys;
+    xs = open_xs;
     if xs.len() < 2
         && let Some(augmented_xs) =
             synthesize_xs_from_text_columns_and_graphics(parsed, page, &page_graphics)
@@ -4373,6 +4484,7 @@ fn infer_positioned_table_from_graphics(
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
+            && !(has_open_edges && has_open_grid_lines(&page_graphics, &xs, &ys))
     {
         return None;
     }
@@ -4959,9 +5071,9 @@ fn augment_xs_from_partial_verticals(
     augmented
 }
 
-/// 罫線の欠損から縦横の結合を反映した DOCX 表モデルを作る。
+/// 罫線の欠損から縦横の結合とセルごとの罫線を反映した DOCX 表モデルを作る。
 ///
-/// 結合がない場合は `None` を返し、呼び出し側の単純な表モデルに任せる。
+/// 結合も欠けた罫線もない場合は `None` を返し、呼び出し側の全罫線の表モデルに任せる。
 fn docx_table_model_from_grid(
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
@@ -4980,12 +5092,9 @@ fn docx_table_model_from_grid(
         .map(|row| row.iter().map(|cell| !cell.trim().is_empty()).collect())
         .collect::<Vec<Vec<bool>>>();
     let rects = table_grid::merged_cells(&horizontal, &vertical, &xs, &ys, &has_text);
-    if rects
+    let has_span = rects
         .iter()
-        .all(|rect| rect.row0 == rect.row1 && rect.col0 == rect.col1)
-    {
-        return None;
-    }
+        .any(|rect| rect.row0 != rect.row1 || rect.col0 != rect.col1);
     let row_count = cells.len();
     let col_count = xs.len() - 1;
     let mut owner = vec![vec![None::<usize>; col_count]; row_count];
@@ -5052,7 +5161,11 @@ fn docx_table_model_from_grid(
         }
         rows.push(modeled_row);
     }
-    Some(DocxTableModel { rows })
+    let has_missing_rule = rows.iter().flatten().any(|cell| {
+        cell.borders
+            .is_some_and(|borders| !(borders.top && borders.left && borders.bottom && borders.right))
+    });
+    (has_span || has_missing_rule).then_some(DocxTableModel { rows })
 }
 
 /// ページ graphics を水平・垂直の罫線区間へ分ける。
@@ -5480,6 +5593,95 @@ fn row_index_for_y(y: f32, ys: &[i32]) -> Option<usize> {
     ys.windows(2)
         .position(|pair| y >= pair[0] as f32 - 1.0 && y <= pair[1] as f32 + 1.0)
         .map(|bottom_interval| ys.len().saturating_sub(2).saturating_sub(bottom_interval))
+}
+
+/// 外枠を欠く表の辺を、揃った罫線の端から補った座標列を返す。
+///
+/// `lines` は辺に直交する罫線（上下辺なら縦罫線）。2 本以上の罫線の端が同じ位置で揃い、
+/// その間を `cross` の罫線が実際に結んでいる場合（罫線が 1 本だけなら `cross` と交わる場合）だけ、
+/// 既存の座標列より外側の端を追加する。
+fn open_table_edges(
+    lines: &[&ParsedBounds],
+    cross: &[&ParsedBounds],
+    existing: &[i32],
+    vertical: bool,
+) -> Vec<i32> {
+    let mut edges = existing.to_vec();
+    if lines.is_empty() || cross.is_empty() {
+        return edges;
+    }
+    let (starts, ends): (Vec<f32>, Vec<f32>) = lines
+        .iter()
+        .map(|bounds| {
+            if vertical {
+                (bounds.y0, bounds.y1)
+            } else {
+                (bounds.x0, bounds.x1)
+            }
+        })
+        .unzip();
+    let positions = lines
+        .iter()
+        .map(|bounds| if vertical { bounds.x0 } else { bounds.y0 })
+        .collect::<Vec<_>>();
+    // 交差する罫線が、端の揃った罫線どうしを少なくとも 1 か所で結んでいること。
+    // 罫線が 1 本だけの場合は、交差する罫線と少なくとも 1 か所で交わっていること。
+    let required = lines.len().min(2);
+    let joined = cross.iter().any(|bounds| {
+        let (from, to, at) = if vertical {
+            (bounds.x0, bounds.x1, bounds.y0)
+        } else {
+            (bounds.y0, bounds.y1, bounds.x0)
+        };
+        positions
+            .iter()
+            .zip(starts.iter().zip(ends.iter()))
+            .filter(|(position, (start, end))| {
+                **position >= from - 2.0
+                    && **position <= to + 2.0
+                    && at >= **start - 2.0
+                    && at <= **end + 2.0
+            })
+            .count()
+            >= required
+    });
+    if !joined {
+        return edges;
+    }
+    for candidates in [starts, ends] {
+        let mut sorted = candidates.clone();
+        sorted.sort_by(f32::total_cmp);
+        let median = sorted[sorted.len() / 2];
+        let aligned = candidates
+            .iter()
+            .filter(|value| (**value - median).abs() <= 2.0)
+            .count();
+        let edge = median.round() as i32;
+        if aligned >= required && !edges.iter().any(|existing| (existing - edge).abs() <= 2) {
+            edges.push(edge);
+        }
+    }
+    edges.sort();
+    edges.dedup();
+    edges
+}
+
+/// 外枠を補った表で、全ての列境界が縦罫線で区切られているか判定する。
+fn has_open_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (Some(&min_y), Some(&max_y)) = (ys.first(), ys.last()) else {
+        return false;
+    };
+    let (Some(&min_x), Some(&max_x)) = (xs.first(), xs.last()) else {
+        return false;
+    };
+    let columns_ruled = xs
+        .iter()
+        .all(|x| table_grid::coverage(&vertical, *x as f32, min_y as f32, max_y as f32) >= 0.9);
+    let rows_ruled = ys
+        .iter()
+        .all(|y| table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9);
+    xs.len() >= 3 && (columns_ruled || rows_ruled)
 }
 
 /// 抽出座標が表格子として使えるだけの水平/垂直線を持つか判定する。

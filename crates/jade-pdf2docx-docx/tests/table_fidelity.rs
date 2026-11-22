@@ -162,3 +162,53 @@ fn inked_page_image_is_kept() {
     );
     assert!(xml.contains("<w:drawing>"), "inked image must stay: {xml}");
 }
+
+/// 上下の外枠を描かない表も、揃った縦罫線の端を外枠として表にする。
+#[test]
+fn table_without_top_and_bottom_rules_is_detected() {
+    let content = "0.5 w 20 60 m 20 160 l S 120 60 m 120 160 l S 220 60 m 220 160 l S 20 110 m 220 110 l S \
+        BT /F1 10 Tf 1 0 0 1 25 140 Tm (A1) Tj ET BT /F1 10 Tf 1 0 0 1 125 140 Tm (B1) Tj ET \
+        BT /F1 10 Tf 1 0 0 1 25 80 Tm (A2) Tj ET BT /F1 10 Tf 1 0 0 1 125 80 Tm (B2) Tj ET";
+    let xml = convert("table_fidelity_open_edges", content);
+    assert_eq!(
+        xml.matches("<w:tbl>").count(),
+        1,
+        "open table must be one table: {xml}"
+    );
+    assert_eq!(
+        xml.matches("<w:tr>").count(),
+        2,
+        "rows split by the inner rule: {xml}"
+    );
+    let first_cell = &xml[xml.find("<w:tc>").expect("cell")..];
+    let borders = &first_cell[..first_cell.find("</w:tcBorders>").expect("borders")];
+    assert!(
+        !borders.contains("<w:top w:val=\"single\""),
+        "missing top rule must not be drawn: {borders}"
+    );
+}
+
+/// 横に並んだ 2 つの表は、縦に積まず枠なしの外側表の中へ並べる。
+#[test]
+fn side_by_side_tables_stay_side_by_side() {
+    let grid = |x0: i32| {
+        let (x1, x2) = (x0 + 50, x0 + 100);
+        format!(
+            "{x0} 100 m {x2} 100 l S {x0} 130 m {x2} 130 l S {x0} 160 m {x2} 160 l S \
+             {x0} 100 m {x0} 160 l S {x1} 100 m {x1} 160 l S {x2} 100 m {x2} 160 l S \
+             BT /F1 10 Tf 1 0 0 1 {} 140 Tm (L{x0}) Tj ET BT /F1 10 Tf 1 0 0 1 {} 110 Tm (R{x0}) Tj ET",
+            x0 + 5,
+            x1 + 5
+        )
+    };
+    let content = format!("0.5 w {} {}", grid(20), grid(170));
+    let xml = convert("table_fidelity_side_by_side", &content);
+    assert_eq!(
+        xml.matches("<w:tbl>").count(),
+        3,
+        "two tables nested in one layout table: {xml}"
+    );
+    let left = xml.find(">L20<").expect("left table text");
+    let right = xml.find(">L170<").expect("right table text");
+    assert!(left < right, "left table must come first: {xml}");
+}
