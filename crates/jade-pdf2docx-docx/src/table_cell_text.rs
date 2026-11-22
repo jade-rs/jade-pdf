@@ -52,6 +52,8 @@ struct CellLine<'a> {
 const SAME_LINE_OVERLAP: f32 = 0.5;
 /// 語間の空白とみなす水平間隔（em）。
 const WORD_GAP_EM: f32 = 0.2;
+/// 行内でこの em 数を超えて離れた断片の間はタブ（`\t`）で区切る。
+const TAB_GAP_EM: f32 = 1.5;
 /// 折り返し判定で、次行の先頭語が収まったはずかを比べる際の許容幅（em）。
 const WRAP_TOLERANCE_EM: f32 = 0.3;
 
@@ -73,6 +75,7 @@ pub(crate) fn compose_cell_text(
     let content_right = cell_right - padding;
     let mut output = String::new();
     let mut previous: Option<&CellLine<'_>> = None;
+    let mut previous_text = String::new();
     for line in &lines {
         let text = line_text(line);
         if text.is_empty() {
@@ -86,7 +89,10 @@ pub(crate) fn compose_cell_text(
             } else {
                 0.0
             };
-            let wrapped = previous.right + space + first > content_right + WRAP_TOLERANCE_EM * size;
+            // 項目と数値を離して並べた行や数値だけの行は、右端に届いていても折り返しではない。
+            let tabular = previous_text.contains('\t') || is_mostly_numeric(&previous_text);
+            let wrapped = !tabular
+                && previous.right + space + first > content_right + WRAP_TOLERANCE_EM * size;
             if wrapped {
                 if space > 0.0 {
                     output.push(' ');
@@ -97,8 +103,23 @@ pub(crate) fn compose_cell_text(
         }
         output.push_str(&text);
         previous = Some(line);
+        previous_text = text;
     }
     output
+}
+
+/// 数字・桁区切り・小数点だけで書かれた行か判定する。
+fn is_mostly_numeric(text: &str) -> bool {
+    let body = text.trim();
+    !body.is_empty()
+        && body.chars().all(|ch| {
+            ch.is_ascii_digit()
+                || ('０'..='９').contains(&ch)
+                || matches!(
+                    ch,
+                    ',' | '.' | '，' | '．' | '%' | '△' | '▲' | '-' | '－' | ' '
+                )
+        })
 }
 
 /// セル断片が並ぶ行数を返す。
@@ -207,7 +228,10 @@ fn line_text(line: &CellLine<'_>) -> String {
             let size = previous.size().min(fragment.size());
             let wide_gap = gap > WORD_GAP_EM * size;
             let explicit = pending_space || fragment.text.starts_with(char::is_whitespace);
-            if (wide_gap || explicit) && needs_word_space(text.chars().last(), body.chars().next())
+            if gap > TAB_GAP_EM * size {
+                text.push('\t');
+            } else if (wide_gap || explicit)
+                && needs_word_space(text.chars().last(), body.chars().next())
             {
                 text.push(' ');
             }
@@ -231,6 +255,121 @@ fn needs_word_space(left: Option<char>, right: Option<char>) -> bool {
 fn is_cjk(ch: char) -> bool {
     matches!(ch as u32,
         0x3000..=0x30FF | 0x3400..=0x4DBF | 0x4E00..=0x9FFF | 0xF900..=0xFAFF | 0xFF00..=0xFFEF)
+}
+
+/// 列境界をまたぐ 1 つのテキスト要素を、境界ごとの断片へ分ける。
+///
+/// 文字ごとの位置は分からないため、全角を 1、半角を 0.55 とした字幅の比で推定する。
+/// 境界の近く（3 em 以内）に空白があればそこで分け、なければ推定位置で分ける。
+pub(crate) fn split_across_boundaries(
+    fragment: &CellFragment,
+    boundaries: &[f32],
+) -> Vec<CellFragment> {
+    let bounds = fragment.bounds;
+    let inside = boundaries
+        .iter()
+        .copied()
+        .filter(|boundary| *boundary > bounds.x0 + 1.0 && *boundary < bounds.x1 - 1.0)
+        .collect::<Vec<_>>();
+    let chars = fragment.text.chars().collect::<Vec<_>>();
+    if inside.is_empty() || chars.len() < 2 {
+        return vec![fragment.clone()];
+    }
+    let weights = chars
+        .iter()
+        .map(|ch| {
+            if is_cjk(*ch) {
+                1.0
+            } else if ch.is_whitespace() {
+                0.4
+            } else {
+                0.55
+            }
+        })
+        .collect::<Vec<f32>>();
+    let total = weights.iter().sum::<f32>().max(f32::EPSILON);
+    let scale = (bounds.x1 - bounds.x0) / total;
+    // edges[i] は i 文字目の左端の推定 x。
+    let mut edges = Vec::with_capacity(chars.len() + 1);
+    let mut x = bounds.x0;
+    for weight in &weights {
+        edges.push(x);
+        x += weight * scale;
+    }
+    edges.push(bounds.x1);
+    let em = fragment.size();
+    let mut cuts = Vec::new();
+    for boundary in inside {
+        let space = (0..chars.len())
+            .filter(|index| chars[*index].is_whitespace())
+            .map(|index| {
+                (
+                    index,
+                    ((edges[index] + edges[index + 1]) / 2.0 - boundary).abs(),
+                )
+            })
+            .filter(|(_, distance)| *distance <= 3.0 * em)
+            .min_by(|a, b| a.1.total_cmp(&b.1))
+            .map(|(index, _)| index);
+        let cut = space.unwrap_or_else(|| {
+            (1..chars.len())
+                .min_by(|a, b| {
+                    (edges[*a] - boundary)
+                        .abs()
+                        .total_cmp(&(edges[*b] - boundary).abs())
+                })
+                .unwrap_or(1)
+        });
+        if !cuts.iter().any(|(existing, _)| *existing == cut) {
+            cuts.push((cut, boundary));
+        }
+    }
+    cuts.sort_by_key(|(cut, _)| *cut);
+    let mut pieces = Vec::new();
+    let mut start = 0usize;
+    let mut left_limit = f32::NEG_INFINITY;
+    for (cut, right_limit) in cuts
+        .into_iter()
+        .chain(std::iter::once((chars.len(), f32::INFINITY)))
+    {
+        let text = chars[start..cut].iter().collect::<String>();
+        if !text.trim().is_empty() {
+            let first = start
+                + chars[start..cut]
+                    .iter()
+                    .take_while(|ch| ch.is_whitespace())
+                    .count();
+            let last = cut
+                - chars[start..cut]
+                    .iter()
+                    .rev()
+                    .take_while(|ch| ch.is_whitespace())
+                    .count();
+            // 推定位置がずれても、分けた境界の間（同じ列）に収める。
+            let x0 = edges[first].clamp(left_limit, right_limit);
+            let x1 = edges[last].clamp(left_limit, right_limit);
+            let (x0, x1) = if x1 - x0 < 0.5 {
+                let left = left_limit.max(bounds.x0);
+                let right = right_limit.min(bounds.x1);
+                (left, right)
+            } else {
+                (x0, x1)
+            };
+            pieces.push(CellFragment {
+                bounds: ParsedBounds {
+                    x0,
+                    y0: bounds.y0,
+                    x1,
+                    y1: bounds.y1,
+                },
+                text: text.trim().to_string(),
+                font_size: fragment.font_size,
+            });
+        }
+        start = cut;
+        left_limit = right_limit;
+    }
+    pieces
 }
 
 #[cfg(test)]
@@ -339,5 +478,57 @@ mod tests {
         fragments.extend(chars("first", 0.0, 100.0, 6.0, 10.0));
         fragments.reverse();
         assert_eq!(compose_cell_text(&fragments, 0.0, 200.0), "first\nsecond");
+    }
+
+    /// 空白で区切られた複数列の文字列を、各列境界の近くの空白で分ける。
+    #[test]
+    fn splits_text_crossing_column_rules_at_spaces() {
+        let fragment = CellFragment {
+            bounds: ParsedBounds {
+                x0: 90.0,
+                y0: 0.0,
+                x1: 290.0,
+                y1: 8.0,
+            },
+            text: "１ 小学校費 教職員数 普通態容補正".into(),
+            font_size: 8.0,
+        };
+        let pieces = split_across_boundaries(&fragment, &[87.0, 155.0, 199.0, 419.0]);
+        let texts = pieces
+            .iter()
+            .map(|piece| piece.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["１ 小学校費", "教職員数", "普通態容補正"]);
+        let center = (pieces[1].bounds.x0 + pieces[1].bounds.x1) / 2.0;
+        assert!(center > 155.0 && center < 199.0, "{:?}", pieces[1].bounds);
+    }
+
+    /// 境界をまたがない要素はそのまま返す。
+    #[test]
+    fn keeps_fragment_inside_one_column() {
+        let fragment = CellFragment {
+            bounds: ParsedBounds {
+                x0: 10.0,
+                y0: 0.0,
+                x1: 50.0,
+                y1: 8.0,
+            },
+            text: "inside".into(),
+            font_size: 8.0,
+        };
+        assert_eq!(split_across_boundaries(&fragment, &[0.0, 60.0]).len(), 1);
+    }
+
+    /// 項目と右端の数値を離して並べた行は、タブで区切って行ごとに残す。
+    #[test]
+    fn separates_far_apart_label_and_number_with_tab() {
+        let mut fragments = chars("１級地", 0.0, 100.0, 8.0, 8.0);
+        fragments.extend(chars("1.061", 80.0, 100.0, 4.0, 8.0));
+        fragments.extend(chars("２級地", 0.0, 88.0, 8.0, 8.0));
+        fragments.extend(chars("1.049", 80.0, 88.0, 4.0, 8.0));
+        assert_eq!(
+            compose_cell_text(&fragments, 0.0, 101.0),
+            "１級地\t1.061\n２級地\t1.049"
+        );
     }
 }

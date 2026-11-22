@@ -9,9 +9,9 @@ use std::{
 use docx_rs::{
     AlignmentType, BorderType, BreakType, Docx, Footer, Header, HeightRule, LineSpacing,
     PageMargin, PageOrientationType, PageSize, Paragraph, ParagraphChild, Pic, Run, RunFonts,
-    Section, SectionProperty, SectionType, Table, TableAlignmentType, TableCell, TableCellBorder,
-    TableCellBorderPosition, TableCellBorders, TableCellMargins, TableLayoutType, TableRow,
-    VAlignType, VMergeType, WidthType,
+    Section, SectionProperty, SectionType, Tab, TabValueType, Table, TableAlignmentType, TableCell,
+    TableCellBorder, TableCellBorderPosition, TableCellBorders, TableCellMargins, TableLayoutType,
+    TableRow, VAlignType, VMergeType, WidthType,
 };
 use jade_pdf2docx_parser::{
     ParseLimits, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
@@ -3482,7 +3482,13 @@ fn table_cell_paragraph(
     cell: &DocxTableCellModel,
     parent: Option<&PositionedTable>,
 ) -> Paragraph {
-    let mut run = text_run(text);
+    let mut run = Run::new();
+    for (index, segment) in text.split('\t').enumerate() {
+        if index > 0 {
+            run = run.add_tab();
+        }
+        run = run.add_text(sanitize_docx_text(segment));
+    }
     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
         let embedded = parent.is_some_and(|table| table.font_embedded);
         run = apply_pdf_font_name_to_run(run, font_name, embedded);
@@ -3501,6 +3507,17 @@ fn table_cell_paragraph(
         run = run.underline("single");
     }
     let mut paragraph = Paragraph::new().add_run(run);
+    // PDF で右端へ寄せた値は、セルの内側右端の右揃えタブで同じ位置に置く。
+    if text.contains('\t')
+        && let Some(width) = cell.width_twips
+        && width > 2 * POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS
+    {
+        paragraph = paragraph.add_tab(
+            Tab::new()
+                .val(TabValueType::Right)
+                .pos(width - 2 * POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS),
+        );
+    }
     paragraph = match cell.alignment {
         ParagraphAlignment::Left => paragraph,
         ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
@@ -3570,7 +3587,12 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
         }
     }
     out.split('\n')
-        .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+        .map(|line| {
+            line.split('\t')
+                .map(|segment| segment.split_whitespace().collect::<Vec<_>>().join(" "))
+                .collect::<Vec<_>>()
+                .join("\t")
+        })
         .filter(|line| !line.is_empty())
         .collect::<Vec<_>>()
         .join("\n")
@@ -4499,37 +4521,59 @@ fn infer_positioned_table_from_graphics(
     let mut assigned_rows = Vec::new();
     let mut assigned_text_ys = Vec::new();
     let mut cell_fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
+    let interior_xs = xs[1..xs.len() - 1]
+        .iter()
+        .map(|x| *x as f32)
+        .collect::<Vec<_>>();
+    let (_, vertical_rules) = grid_rules_from_graphics(&page_graphics);
     for text in parsed
         .text_elements
         .iter()
         .filter(|text| text.page == page && !text.text.trim().is_empty())
     {
-        let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
         let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
-        let Some(col) = column_index_for_x(center_x, &xs) else {
-            continue;
-        };
         let Some((row, grid_center_y)) =
             row_index_for_text_y(parsed, page, center_y, &ys, allow_top_origin_text_y)
         else {
             continue;
         };
-        cell_fragments[row][col].push(table_cell_text::CellFragment {
+        let fragment = table_cell_text::CellFragment {
             bounds: normalized_bounds(text.bounds),
             text: text.text.clone(),
             font_size: text.font_size,
-        });
-        cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
-        let bounds = normalized_bounds(text.bounds);
-        cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
-            Some(existing) => ParsedBounds {
-                x0: existing.x0.min(bounds.x0),
-                y0: existing.y0.min(bounds.y0),
-                x1: existing.x1.max(bounds.x1),
-                y1: existing.y1.max(bounds.y1),
-            },
-            None => bounds,
-        });
+        };
+        // 列の罫線をまたいで 1 要素にまとまった文字列は、その高さで実際に縦罫線が引かれた
+        // 境界ごとに分けてから割り当てる（罫線のない境界は結合セルの本文として残す）。
+        let ruled_xs = interior_xs
+            .iter()
+            .copied()
+            .filter(|x| {
+                table_grid::is_ruled(&vertical_rules, *x, fragment.bounds.y0, fragment.bounds.y1)
+            })
+            .collect::<Vec<_>>();
+        let mut assigned = false;
+        for piece in table_cell_text::split_across_boundaries(&fragment, &ruled_xs) {
+            let center_x = (piece.bounds.x0 + piece.bounds.x1) / 2.0;
+            let Some(col) = column_index_for_x(center_x, &xs) else {
+                continue;
+            };
+            let bounds = piece.bounds;
+            cell_fragments[row][col].push(piece);
+            cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
+            cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
+                Some(existing) => ParsedBounds {
+                    x0: existing.x0.min(bounds.x0),
+                    y0: existing.y0.min(bounds.y0),
+                    x1: existing.x1.max(bounds.x1),
+                    y1: existing.y1.max(bounds.y1),
+                },
+                None => bounds,
+            });
+            assigned = true;
+        }
+        if !assigned {
+            continue;
+        }
         if let Some(font_name) = text.font_name.as_deref() {
             assigned_font_names.push(font_name.to_string());
         }
@@ -5162,8 +5206,9 @@ fn docx_table_model_from_grid(
         rows.push(modeled_row);
     }
     let has_missing_rule = rows.iter().flatten().any(|cell| {
-        cell.borders
-            .is_some_and(|borders| !(borders.top && borders.left && borders.bottom && borders.right))
+        cell.borders.is_some_and(|borders| {
+            !(borders.top && borders.left && borders.bottom && borders.right)
+        })
     });
     (has_span || has_missing_rule).then_some(DocxTableModel { rows })
 }
