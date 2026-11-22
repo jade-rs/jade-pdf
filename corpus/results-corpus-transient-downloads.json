@@ -1,0 +1,62 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T17:53:24.495979+00:00",
+  "production_ready": false,
+  "base_revision": "89c781efb2565150718be0d56e8dd731089df93c",
+  "runtime_revision": "841c9e27d4860f794bb145f5f42fcd617ed0ce81",
+  "scope": "Only public-corpus network fetching; no Rust parser/converter/SDK/OCR/model/gold changes.",
+  "trigger": "PR17 Firefox CI job137271076148 failed at corpus download with TLS handshake timeout, before installing/running Firefox. This new change was not used by the already-requested PR17 retry.",
+  "implementation": {
+    "network_attempts_maximum": 2,
+    "timeout_seconds_per_attempt": 45,
+    "maximum_response_bytes": "32MiB+1, unchanged",
+    "retry_only": "Direct TimeoutError or URLError whose reason is a TimeoutError. Close each failed response and restart the whole GET.",
+    "unchanged_failures": "All HTTP errors including503, certificate verification errors, byte-size/signature/hash mismatches and corrupt existing caches. No accepted-source or semantic-gold change.",
+    "atomicity": "Validate complete final response before creating the part file; atomic replace/cleanup retained.",
+    "offline": "No network requests; same90 pinned source entries verified."
+  },
+  "validation": {
+    "TDD_red": {
+      "tests": 11,
+      "failures": 1,
+      "errors": 3,
+      "commit": "c2a83de"
+    },
+    "TDD_green": {
+      "tests": 11,
+      "failed": 0
+    },
+    "full_Python_harness": {
+      "tests": 86,
+      "failed": 0
+    },
+    "fixture_hygiene": {
+      "tests": 2,
+      "failed": 0
+    },
+    "offline_verified_sources": 90,
+    "owned_in_memory_test_PDFs": true,
+    "no_live_network_fault_injection": true,
+    "mocks_cover": [
+      "TLS connect timeout then valid response with unchanged URL/User-Agent/45s",
+      "Read timeout closes response and bounded read restarts",
+      "Permanent timeout ends after second attempt and preserves original exception",
+      "404/503/certificate errors never retry",
+      "Same-size altered PDF following a timeout fails SHA and is never installed"
+    ]
+  },
+  "code_and_test_dependencies_unchanged": true,
+  "PDF_font_model_binaries_added_to_Git": false,
+  "sha256": {
+    "corpus/wasm-runtime/corpus-transient-download-qualification/initial-red.log": "d9834f3af50a9b2f680fdd20f6f365ceca1c948555fe6344fda92059444f817b",
+    "corpus/wasm-runtime/corpus-transient-download-qualification/first-green.log": "a403b031ca53505b1068c5c1262f30475f8ef294ae83636c47835f0a12e632af",
+    "corpus/wasm-runtime/corpus-transient-download-qualification/python-full.log": "6f7ebcaadb46d179900c0416ede421b8b79f8bfe01322a5a2932d8142e0a9294",
+    "corpus/wasm-runtime/corpus-transient-download-qualification/hygiene.log": "0d5f19ead2bf9676d74342ac6c647b4bf2294bed713605930a76f4b7d5b1c878",
+    "corpus/wasm-runtime/corpus-transient-download-qualification/offline-90.log": "7a54069314dd81e3d1d2e36b74b8ca2340dd043ffd99cae0639a9496c883a39a",
+    "tools/pdf_corpus.py": "b9feb44582e6cedf37b026447f19dc1275ce988e87e8cd72dd671c354e98ae10",
+    "tools/test_pdf_corpus.py": "a3103d942c72cf4f4b6285332dcc3afe20f087d4c3ec9c0ff03a2f2d682f1dfb",
+    "corpus/README.md": "c847d2c7d4c323b967d0dcbf3bc69dbe0a2c1f5de9ae3a0616b15dfb206bc73d",
+    "corpus/manifest.json": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
+    "Cargo.lock": "4b8fcc9aad503d65c37d8b3253e13666b05362f87f6d46175cbd710eb47811a2"
+  }
+}
