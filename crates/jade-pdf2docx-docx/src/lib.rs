@@ -2960,6 +2960,8 @@ struct PositionedTable {
     cell_font_sizes: Vec<Vec<Option<f32>>>,
     /// 上から順の各マスの段落ごとのタブ位置。
     cell_tab_stops: Vec<Vec<CellParagraphTabs>>,
+    /// 上から順の各マスへ割り当てた文字片（子表を除いて組み直すために保持する）。
+    cell_fragments: Vec<Vec<Vec<table_cell_text::CellFragment>>>,
 }
 
 /// 1 マスの段落ごとのタブ位置（セル左端からの距離 pt と、右揃えか）。
@@ -3624,17 +3626,39 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
-                    let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
+                    // 子表を含むセルは、子表の範囲にある文字片を除いて本文を組み直す。
+                    let recomposed = parent.filter(|_| has_nested_tables).and_then(|parent| {
+                        cell_text_outside_nested_tables(
+                            parent,
+                            row_index,
+                            grid_col,
+                            cell.grid_span,
+                            &nested_tables,
+                        )
+                    });
+                    let text = recomposed
+                        .as_ref()
+                        .map(|parts| parts.above.0.clone())
+                        .unwrap_or_else(|| {
+                            cell_text_without_nested_tables(cell.text.as_str(), &nested_tables)
+                        });
                     let mut table_cell = TableCell::new();
                     let cell_font_size = parent
                         .and_then(|table| table.cell_font_sizes.get(row_index))
                         .and_then(|row| row.get(grid_col))
                         .copied()
                         .flatten();
-                    let cell_tabs = parent
-                        .and_then(|table| table.cell_tab_stops.get(row_index))
-                        .and_then(|row| row.get(grid_col));
-                    for (line_index, line) in text.split('\n').enumerate() {
+                    let cell_tabs = match recomposed.as_ref() {
+                        Some(parts) => Some(&parts.above.1),
+                        None => parent
+                            .and_then(|table| table.cell_tab_stops.get(row_index))
+                            .and_then(|row| row.get(grid_col)),
+                    };
+                    // 子表の上に本文がないセルは、空の段落を置かずに子表から始める。
+                    let skip_empty_lead = recomposed.is_some() && text.trim().is_empty();
+                    for (line_index, line) in
+                        text.split('\n').enumerate().filter(|_| !skip_empty_lead)
+                    {
                         let stops = cell_tabs
                             .and_then(|tabs| tabs.get(line_index))
                             .map(Vec::as_slice)
@@ -3660,7 +3684,23 @@ fn docx_table_from_model_with_row_height_and_nested(
                             nested_table.bounds.x0,
                         ));
                     }
-                    if has_nested_tables {
+                    // 子表より下の本文は子表の後に置く（セルは段落で終わる必要もある）。
+                    let below = recomposed
+                        .as_ref()
+                        .map(|parts| &parts.below)
+                        .filter(|(text, _)| !text.trim().is_empty());
+                    if let Some((text, tabs)) = below {
+                        for (line_index, line) in text.split('\n').enumerate() {
+                            let stops = tabs.get(line_index).map(Vec::as_slice).unwrap_or(&[]);
+                            table_cell = table_cell.add_paragraph(table_cell_paragraph(
+                                line,
+                                cell,
+                                parent,
+                                cell_font_size,
+                                stops,
+                            ));
+                        }
+                    } else if has_nested_tables {
                         table_cell = table_cell.add_paragraph(Paragraph::new());
                     }
                     if cell.grid_span > 1 {
@@ -3828,6 +3868,84 @@ fn nested_tables_for_cell(
                 && center_y <= y1 + 1.0
         })
         .collect()
+}
+
+/// 親表のマスの文字片から、子表の範囲にある文字片を除いて本文を組み直す。
+///
+/// 文字片を保持していない表は `None` を返し、文字列の除去に任せる。
+fn cell_text_outside_nested_tables(
+    parent: &PositionedTable,
+    row_index: usize,
+    grid_col: usize,
+    grid_span: usize,
+    nested_tables: &[&PositionedTable],
+) -> Option<NestedCellText> {
+    let row = parent.cell_fragments.get(row_index)?;
+    let cols = parent.column_widths_twips.len();
+    if cols == 0 || row.len() != cols {
+        return None;
+    }
+    let column_x = |col: usize| {
+        parent.bounds.x0
+            + parent.column_widths_twips[..col.min(cols)]
+                .iter()
+                .map(|twips| *twips as f32 / 20.0)
+                .sum::<f32>()
+    };
+    let inside_child = |fragment: &table_cell_text::CellFragment| {
+        let x = (fragment.bounds.x0 + fragment.bounds.x1) / 2.0;
+        let y = (fragment.bounds.y0 + fragment.bounds.y1) / 2.0;
+        nested_tables.iter().any(|child| {
+            let bounds = normalized_bounds(child.bounds);
+            x >= bounds.x0 - 1.0
+                && x <= bounds.x1 + 1.0
+                && y >= bounds.y0 - 1.0
+                && y <= bounds.y1 + 1.0
+        })
+    };
+    let fragments = row
+        .get(grid_col..(grid_col + grid_span.max(1)).min(cols))?
+        .iter()
+        .flatten()
+        .filter(|fragment| !inside_child(fragment))
+        .cloned()
+        .collect::<Vec<_>>();
+    // 最初の子表の上端より上の文字片は子表の前、それ以外は子表の後に置く。
+    let child_top = nested_tables
+        .iter()
+        .map(|child| normalized_bounds(child.bounds).y1)
+        .fold(f32::NEG_INFINITY, f32::max);
+    let (above, below): (Vec<_>, Vec<_>) = fragments
+        .into_iter()
+        .partition(|fragment| (fragment.bounds.y0 + fragment.bounds.y1) / 2.0 > child_top);
+    let left = column_x(grid_col);
+    let right = column_x(grid_col + grid_span.max(1));
+    let compose = |fragments: &[table_cell_text::CellFragment]| {
+        let composed = table_cell_text::compose_cell(fragments, left, right);
+        let tabs = composed
+            .tab_stops
+            .iter()
+            .map(|stops| {
+                stops
+                    .iter()
+                    .map(|stop| (stop.x - left, stop.right))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        (composed.text, tabs)
+    };
+    Some(NestedCellText {
+        above: compose(&above),
+        below: compose(&below),
+    })
+}
+
+/// 子表を含むセルの、子表より上と下の本文（段落ごとのタブ位置つき）。
+struct NestedCellText {
+    /// 子表より上の本文。
+    above: (String, CellParagraphTabs),
+    /// 子表より下の本文。
+    below: (String, CellParagraphTabs),
 }
 
 /// 親セル文字列から子表に割り当て済みの文字を除く。
@@ -4047,6 +4165,7 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         cell_padding_pt: None,
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
     }
 }
 
@@ -4453,6 +4572,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         cell_padding_pt: None,
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
     }
 }
 
@@ -5010,6 +5130,7 @@ fn infer_positioned_table_from_graphics(
         cell_vertical_alignments.reverse();
         cell_font_sizes.reverse();
         cell_tab_stops.reverse();
+        cell_fragments.reverse();
     }
     let docx_table = if text_augmented_columns || flipped_rows {
         None
@@ -5060,6 +5181,7 @@ fn infer_positioned_table_from_graphics(
         cell_padding_pt,
         cell_font_sizes,
         cell_tab_stops,
+        cell_fragments,
     })
 }
 
@@ -5943,6 +6065,7 @@ fn infer_positioned_table_from_text_grid_page(
         cell_padding_pt: None,
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
     })
 }
 

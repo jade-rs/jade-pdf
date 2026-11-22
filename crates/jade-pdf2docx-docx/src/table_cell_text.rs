@@ -7,7 +7,7 @@
 use jade_pdf2docx_parser::ParsedBounds;
 
 /// セルへ割り当てた 1 つの文字断片。
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 pub(crate) struct CellFragment {
     /// 断片の外接矩形（PDF 座標、y 上向き）。
     pub(crate) bounds: ParsedBounds,

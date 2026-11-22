@@ -267,3 +267,31 @@ fn nearly_full_cell_row_is_not_clipped() {
         "short single-line row stays exact: {second_row}"
     );
 }
+
+/// 子表を含むセルでは、子表の文字を親セルに重ねて出さず、子表の上下の本文を位置どおりに並べる。
+#[test]
+fn nested_table_text_is_not_duplicated_and_keeps_order() {
+    let content = "0 180 m 280 180 l S 0 100 m 280 100 l S 0 0 m 280 0 l S \
+        0 0 m 0 180 l S 140 0 m 140 180 l S 280 0 m 280 180 l S \
+        BT /F1 10 Tf 1 0 0 1 52 150 Tm (Before) Tj ET BT /F1 10 Tf 1 0 0 1 192 150 Tm (After) Tj ET \
+        BT /F1 10 Tf 1 0 0 1 12 84 Tm (Left note) Tj ET BT /F1 10 Tf 1 0 0 1 152 84 Tm (Right note) Tj ET \
+        10 74 m 130 74 l S 10 52 m 130 52 l S 10 30 m 130 30 l S 10 30 m 10 74 l S 70 30 m 70 74 l S 130 30 m 130 74 l S \
+        BT /F1 10 Tf 1 0 0 1 22 60 Tm (L1) Tj ET BT /F1 10 Tf 1 0 0 1 82 60 Tm (L2) Tj ET \
+        BT /F1 10 Tf 1 0 0 1 12 12 Tm (Below) Tj ET \
+        150 74 m 270 74 l S 150 52 m 270 52 l S 150 30 m 270 30 l S 150 30 m 150 74 l S 210 30 m 210 74 l S 270 30 m 270 74 l S \
+        BT /F1 10 Tf 1 0 0 1 162 60 Tm (R1) Tj ET BT /F1 10 Tf 1 0 0 1 222 60 Tm (R2) Tj ET";
+    let xml = convert("table_fidelity_nested_order", content);
+    assert_eq!(xml.matches("<w:tbl>").count(), 3, "{xml}");
+    assert_eq!(
+        xml.matches(">L1<").count(),
+        1,
+        "nested text must appear once: {xml}"
+    );
+    let note = xml.find(">Left note<").expect("note");
+    let inner = xml.find(">L1<").expect("inner");
+    let below = xml.find(">Below<").expect("below");
+    assert!(
+        note < inner && inner < below,
+        "text above, nested table, text below: {xml}"
+    );
+}
