@@ -1,7 +1,7 @@
 //! 元の行データを保持した、ページの抽出順に沿う本文差分。
 use crate::{diff::segment_text, ir::normalize, BlockIr, Segment, SegmentKind};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use unicode_segmentation::UnicodeSegmentation;
 
 /// ページの抽出済み本文を、共通のブロックで区切って比較した結果。
@@ -43,6 +43,26 @@ fn text(blocks: &[BlockIr]) -> String {
             .collect::<Vec<_>>()
             .join("\n"),
     )
+}
+
+/// 確認済みの軽微なブロックだけを除き、残る本文の順序を同じ正規化で比較する。
+pub(crate) fn equal_without_blocks(
+    old: &[BlockIr],
+    new: &[BlockIr],
+    ignored_old: &HashSet<usize>,
+    ignored_new: &HashSet<usize>,
+) -> bool {
+    let filtered = |blocks: &[BlockIr], ignored: &HashSet<usize>| {
+        normalize(
+            &blocks
+                .iter()
+                .filter(|b| !ignored.contains(&b.index))
+                .map(|b| b.text.as_str())
+                .collect::<Vec<_>>()
+                .join("\n"),
+        )
+    };
+    filtered(old, ignored_old) == filtered(new, ignored_new)
 }
 
 /// 参照元の寿命を保持し、同じブロック本文の重複回数を数える。

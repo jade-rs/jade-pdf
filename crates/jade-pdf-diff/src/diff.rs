@@ -1035,16 +1035,14 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         .filter(|block| block.minor)
         .filter_map(|block| block.new_index)
         .collect();
-    let text_changed = text_diff.groups.iter().any(|group| {
-        !group
-            .old_blocks
-            .iter()
-            .all(|index| minor_old.contains(index))
-            || !group
-                .new_blocks
-                .iter()
-                .all(|index| minor_new.contains(index))
-    });
+    let text_changed = !text_diff.groups.is_empty()
+        && (minor_old.is_empty() && minor_new.is_empty()
+            || !crate::page_text::equal_without_blocks(
+                &raw_old.blocks,
+                &raw_new.blocks,
+                &minor_old,
+                &minor_new,
+            ));
     let changed = geometry_changed
         || text_changed
         || blocks
@@ -2031,6 +2029,49 @@ mod tests {
         assert_eq!(diff.status, Status::Unchanged);
     }
 
+    /// 一意な本文アンカーがなくても、ページ番号だけの繰り上がりを本文編集にしない。
+    #[test]
+    fn repeated_body_does_not_promote_minor_pagination_to_text_edits() {
+        let mut old = page(vec![
+            block(1, 40.0, 300.0, "same"),
+            block(2, 40.0, 350.0, "same"),
+            block(3, 40.0, 55.0, "- 9 -"),
+        ]);
+        let mut new = old.clone();
+        old.index = 9;
+        new.index = 10;
+        new.blocks[2].text = "- 10 -".to_string();
+        let diff = diff_page(&old, &new, false, &DiffOptions::default());
+        assert!(diff.blocks.iter().any(|b| b.minor));
+        assert!(!diff.text_diff.as_ref().unwrap().groups.is_empty());
+        assert_eq!(diff.status, Status::Unchanged);
+    }
+
+    /// ページ番号の除外があっても、許容誤差内の位置にある本文の語順変更は残す。
+    #[test]
+    fn substantive_text_order_remains_visible_with_minor_pagination() {
+        let mut old = page(vec![
+            block(1, 40.0, 300.0, "alpha"),
+            block(2, 40.0, 320.0, "beta"),
+            block(3, 40.0, 340.0, "alpha"),
+            block(4, 40.0, 360.0, "beta"),
+            block(5, 40.0, 55.0, "- 9 -"),
+        ]);
+        let mut new = old.clone();
+        old.index = 9;
+        new.index = 10;
+        new.blocks[0].text = "beta".to_string();
+        new.blocks[1].text = "alpha".to_string();
+        new.blocks[4].text = "- 10 -".to_string();
+        let options = DiffOptions {
+            position_tolerance: 100.0,
+            ..DiffOptions::default()
+        };
+        let diff = diff_page(&old, &new, false, &options);
+        assert!(diff.blocks.iter().any(|b| b.minor));
+        assert_eq!(diff.status, Status::Modified);
+    }
+
     #[test]
     fn footer_amounts_dates_and_identifiers_are_substantive_changes() {
         for (before, after) in [
@@ -2338,6 +2379,27 @@ mod tests {
     }
 
     proptest! {
+        /// 本文の繰り返しの数とページ番号が変わっても、軽微な番号変更を昇格させない。
+        #[test]
+        fn repeated_body_preserves_minor_pagination_policy(
+            count in 2usize..25,
+            word in "[a-z]{1,8}",
+            index in 1usize..1000,
+        ) {
+            let mut blocks: Vec<_> = (0..count)
+                .map(|i| block(i+1,40.0,300.0+i as f64*14.0,&word))
+                .collect();
+            blocks.push(block(count+1,40.0,55.0,&format!("- {index} -")));
+            let mut old=page(blocks);
+            let mut new=old.clone();
+            old.index=index;
+            new.index=index+1;
+            new.blocks[count].text=format!("- {} -",index+1);
+            let diff=diff_page(&old,&new,false,&DiffOptions::default());
+            prop_assert!(diff.blocks.iter().any(|b|b.minor));
+            prop_assert_eq!(diff.status,Status::Unchanged);
+        }
+
         #[test]
         fn pdf文字サイズの変更は本文と領域が同じでも必ず報告される(
             base_hundredths in 2_001u16..10_000,
