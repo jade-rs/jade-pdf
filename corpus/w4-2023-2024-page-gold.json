@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "kind": "source_regions",
+  "id": "irs-w4-2023-2024-page1-text-edits",
+  "old_id": "irs-w4-2023",
+  "new_id": "irs-w4-2024",
+  "old_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+  "new_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+  "old_page": 1,
+  "new_page": 1,
+  "scope": "All five visible logical text-edit regions on the original 2023/2024 first-page pair. Includes the complete replaced reference clause and Step2(a) paragraph and removed TIP. Reflow, geometry, styling, form widgets and pages2–4 are separate. The18 Step2(c) leader dots are present in both originals, not an omitted change. Region precision allows common internal letters within each declared full text span; every nonwhitespace inserted/deleted scalar outside those spans must still be rejected.",
+  "source_review": "corpus/w4-2023-2024-page-review.json",
+  "source_review_sha256": "2ce63ad6caeae4ed9ba506ce2308eea49749e4aa529b323023776fe3bd9ed188",
+  "declared_before_product_edit_span_inspection": true,
+  "edits": [
+    {
+      "id": "header-year",
+      "old": "2023",
+      "new": "2024",
+      "zone": "upper_quarter"
+    },
+    {
+      "id": "page2-reference-clause",
+      "old": "other details, and privacy.",
+      "new": "and when to use the estimator at www.irs.gov/W4App."
+    },
+    {
+      "id": "step2a",
+      "old": "Reserved for future use.",
+      "new": "Use the estimator at www.irs.gov/W4App for most accurate withholding for this step (and Steps 3–4). If you or your spouse have self-employment income, use this option; or"
+    },
+    {
+      "id": "removed-tip",
+      "old": "TIP: If you have self-employment income, see page 2.",
+      "new": ""
+    },
+    {
+      "id": "footer-year",
+      "old": "2023",
+      "new": "2024",
+      "zone": "lower_quarter"
+    }
+  ]
+}
