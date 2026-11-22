@@ -11,6 +11,7 @@ import { selectBrowser } from './browser_engine.mjs';
 import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort,operatorGoldCaseId} from './semantic_gold.mjs';
 import {checkScalarRevision} from './scalar_revision.mjs';
 import {loadPageRevisionGold,checkPageRevision} from './page_revision.mjs';
+import {validateSelectedOrderReference} from './selected_order_reference.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
@@ -18,6 +19,8 @@ const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
 const {engine,launcher,options}=selectBrowser(playwright);
 const manifestBytes = await fs.readFile(path.join(root,'corpus/manifest.json'));
 const manifest = JSON.parse(manifestBytes);
+for(const entry of [...manifest.documents,...(manifest.pending_semantic??[])])
+  await validateSelectedOrderReference(entry,path.join(root,'corpus'));
 const runtime = JSON.parse(await fs.readFile(path.join(root,'tools/wasm-smoke/runtime.json')));
 const adapterBytes=await fs.readFile(path.join(root,'crates/jade-pdf-diff/wasm/pdfium_adapter.mjs'));
 const adapterHash=createHash('sha256').update(adapterBytes).digest('hex');
@@ -302,6 +305,19 @@ try {
           native_matches:nativeCheck.matches,wasm_matches:wasmCheck.matches,
           selected_page_has_text_review:pageHasTextReview(expected.pages[entry.gold.page-1])
             &&pageHasTextReview(actual.ir.pages[entry.gold.page-1])};
+        if(entry.gold.kind==='reading_order') {
+          const nativeLayer=spawnSync(binary,['--text-layer',file,String(entry.gold.page)],
+            {encoding:'utf8',timeout:60000,maxBuffer:32*1024*1024});
+          if(nativeLayer.status!==0) throw new Error(nativeLayer.stderr||String(nativeLayer.error));
+          const wasmLayer=await page.evaluate(async({id,page})=>{
+            const bytes=new Uint8Array(await(await fetch('/corpus/cache/'+id+'.pdf')).arrayBuffer());
+            return JSON.parse(window.jadeProbe.layer(bytes,page));
+          },{id:entry.id,page:entry.gold.page});
+          semanticGold.native_layer_check=checkGold(JSON.parse(nativeLayer.stdout).map(r=>r.text).join('\n'),entry.gold);
+          semanticGold.wasm_layer_check=checkGold(wasmLayer.map(r=>r.text).join('\n'),entry.gold);
+          semanticGold.native_matches&&=semanticGold.native_layer_check.matches;
+          semanticGold.wasm_matches&&=semanticGold.wasm_layer_check.matches;
+        }
         if(!semanticGold.native_matches || !semanticGold.wasm_matches) {
           if(!goldOutcomeAccepted(entry.semantic_gold_cohort,false,true))
             throw new Error('Regular document semantic gold mismatch: '+entry.id);

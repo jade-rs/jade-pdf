@@ -1,3 +1,5 @@
+英語注釈付き国税庁PDFを `pending_semantic` に追加し、既存の通常76文書717ページとは別に扱います。主ルールは画像内14欄IDの欠落で、IRと文字レイヤーの両方で失敗を維持します。残る2つの表のルールも保持し、元の3ルール32アンカーすべてを出典ゴールド・全ページ原本レビューのハッシュと照合します。通常の成功率には加算せず、OCRによる回復は未実装です。ネイティブ監査では正の読み順21ルール238アンカーが通過し、pendingの主ゴールドは0/3・3件とも既存の診断で要レビューです。ブラウザー全体の検証と後続PRは準備中です。`nta-english-pending-registration-review.json` を参照。
+
 英語注釈付き国税庁PDFは未登録の候補です。全5ページの原本確認後に宣言した3ルール32アンカーを保持し、参照の誤記訂正後も2/3通過、画像内14欄IDの欠落は未達です。`reading_order`型の選択アンカー評価をPython/JavaScriptに追加しましたが、同じ抽出結果の再評価であり、抽出精度の改善や登録済み件数の増加には算入しません。根拠は `results-nta-english-reading-gold-evaluator.json` と `nta-english-reading-gold-evaluator-review.json`。pending cohortと出典参照の統合・実行環境の検証は未完了です。
 
 # 公開 PDF による評価

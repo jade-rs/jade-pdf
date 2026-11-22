@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "recorded_utc": "2026-11-22T09:31:24.255540+00:00",
+  "source_id": "nta-invoice-domestic-english-2026",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "registered_cohort": "pending_semantic",
+  "regular_documents": 76,
+  "regular_pages": 717,
+  "pending_documents": 3,
+  "source_total": 90,
+  "selected_rules": 3,
+  "selected_anchors": 32,
+  "positive_rules": 2,
+  "failed_rules": 1,
+  "field_id_rule_retained_in_primary_gold": true,
+  "primary_IR_and_text_layer_checked": true,
+  "positive_tables_retained_in_reading_order": true,
+  "original_source_gold_and_review_unchanged": true,
+  "original_declaration_revision": "a7245b794435d7002778fe5c7731557ae8c5ee2e",
+  "reference_erratum": "Sole -> Solo after original288dpi inspection; initial failure preserved; not extraction improvement",
+  "runtime_changed": false,
+  "OCR_recovery_implemented": false,
+  "production_ready": false,
+  "runtime_artifacts": {
+    "qualification": "PR15 v51, frozen artifacts reused; candidate branch still based on main14 until replay after15 merge",
+    "native_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+    "wasm_sha256": "382062b1fc3752fbd32b881de80296fc33b032ac17c8c3046f8a50266082597f"
+  },
+  "native_integration": {
+    "positive_order_rules": 21,
+    "regular_positive_rules": 19,
+    "pending_positive_rules": 2,
+    "positive_anchor_checks": 238,
+    "primary_pending_correct": 0,
+    "primary_pending_failed": 3,
+    "primary_pending_guarded": 3
+  },
+  "qualification_complete": false,
+  "pending_work": [
+    "Full browser and Worker run after source commit",
+    "Replay onto main after PR15 merge; prove runtime inputs identical before reusing v51 qualification",
+    "Publish separate current evidence ledger/PR after checks"
+  ],
+  "source_refs": {
+    "gold_file": "nta-invoice-domestic-english-gold.json",
+    "gold_sha256": "a34878cf749043c4e6974e8f3d08513e603c5fd5707a8b7748835a0c86874140",
+    "review_file": "nta-invoice-domestic-english-review.json",
+    "review_sha256": "3df7c8aad5fb901c36e09c88c837bbc4876f83515c14143f9af62ccc9557f750"
+  },
+  "sha256": {
+    "corpus/manifest.json": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
+    "corpus/results-nta-english-pending-integration.json": "91d2d30b24aab27331906e4ae0e39e521d6ebf19d5f083c7be717d0566e6a9f5",
+    "corpus/results-nta-english-reading-integration.json": "1cf205d610f22b8fb1ec80e572b885df1c5cb93c39efadbe04474c2a78675c83"
+  },
+  "scope": "Collection/evaluation coverage only. All3 independently declared rules are enforced; pending primary mismatch remains semantic failure despite guarded runtime outcome. The guard is existing source completeness evidence, not proof of recognized raster field IDs."
+}

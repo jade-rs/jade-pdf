@@ -6,11 +6,14 @@ import {createHash} from 'node:crypto';
 import {checkScalarRevision} from './scalar_revision.mjs';
 import {loadPageRevisionGold,checkPageRevision} from './page_revision.mjs';
 import {semanticEntries,goldByCohort} from './semantic_gold.mjs';
+import {validateSelectedOrderReference} from './selected_order_reference.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(process.env.JADE_PDF_BROWSER_ENGINE && process.env.JADE_PDF_BROWSER_ENGINE!=='chromium')
   throw new Error('Full Worker termination qualification requires Chromium CDP; other engines need separate termination evidence');
 const {chromium}=await import(process.env.JADE_PDF_PLAYWRIGHT_PATH?pathToFileURL(process.env.JADE_PDF_PLAYWRIGHT_PATH).href:'playwright');
 const manifestBytes=await fs.readFile(path.join(root,'corpus/manifest.json')), manifest=JSON.parse(manifestBytes);
+for(const entry of [...manifest.documents,...(manifest.pending_semantic??[])])
+  await validateSelectedOrderReference(entry,path.join(root,'corpus'));
 const selected=process.argv.slice(2), entries=[...semanticEntries(manifest),...manifest.robustness].filter(d=>!selected.length||selected.includes(d.id));
 if(!entries.length || selected.some(id=>!entries.some(d=>d.id===id))) throw new Error('Unknown corpus selection');
 const hash=bytes=>createHash('sha256').update(bytes).digest('hex');
@@ -126,9 +129,14 @@ try {
         checks.push({operation:'textContextGold',passed:goldCheck.matches,worker_idle:window.client.activeWorkers===0});
       }
       if(entry.gold) {
-        const {checkPageGold,pageHasTextReview,goldOutcomeAccepted}=await import('/tools/wasm-smoke/semantic_gold.mjs');
+        const {checkPageGold,checkGold,pageHasTextReview,goldOutcomeAccepted}=await import('/tools/wasm-smoke/semantic_gold.mjs');
         const ir=JSON.parse(probe.worker_json('inspect',bytes,new Uint8Array(),JSON.stringify({})));
         semanticGold={...checkPageGold(ir,entry.gold),cohort:entry.semantic_gold_cohort};
+        if(entry.gold.kind==='reading_order') {
+          const layer=await window.client.run('textLayer',[bytes],{page:entry.gold.page});
+          semanticGold.text_layer_check=checkGold(layer.map(r=>r.text).join('\n'),entry.gold);
+          semanticGold.matches&&=semanticGold.text_layer_check.matches;
+        }
         semanticGold.selected_page_has_text_review=pageHasTextReview(ir.pages[entry.gold.page-1]);
         if(!semanticGold.matches) {
           const guarded=JSON.parse(probe.compare_with_budget(bytes,rewritten,40000));
