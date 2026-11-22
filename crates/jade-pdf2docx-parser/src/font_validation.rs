@@ -116,3 +116,7 @@ fn dword(bytes: &[u8], offset: usize) -> Option<usize> {
     ))
     .ok()
 }
+
+#[cfg(test)]
+#[path = "font_validation_control_tests.rs"]
+mod control_tests;
