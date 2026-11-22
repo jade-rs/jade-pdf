@@ -17,8 +17,8 @@ pub(super) fn centred_indents(
         return None;
     }
     // セクション寸法と同じtwip丸めを先に行い、原点の丸め誤差を重ねない。
-    let origin = (f64::from(origin) * 20.0).round();
-    let width = (f64::from(width) * 20.0).round();
+    let origin = f64::from((origin * 20.0).round());
+    let width = f64::from((width * 20.0).round());
     if width > f64::from(i32::MAX) || width - 2.0 * origin < 1.0 {
         return None;
     }
@@ -68,14 +68,14 @@ mod tests {
             let left = origin + (width - origin) * left_fraction;
             let right = left + (width - left) * span_fraction;
             let (indent_left, indent_right) = centred_indents(left, right, origin, width).unwrap();
-            let word_left = (f64::from(origin) * 20.0).round() + f64::from(indent_left);
-            let word_right = (f64::from(width) * 20.0).round() - f64::from(indent_right);
+            let word_left = f64::from((origin * 20.0).round()) + f64::from(indent_left);
+            let word_right = f64::from((width * 20.0).round()) - f64::from(indent_right);
             let word_centre = (word_left + word_right) / 40.0;
             let source_centre = (f64::from(left) + f64::from(right)) / 2.0;
             prop_assert!((word_centre - source_centre).abs() <= 0.025001);
             prop_assert!(word_right > word_left);
-            let legacy_width = (f64::from(width) * 20.0).round()
-                - 2.0 * (f64::from(origin) * 20.0).round();
+            let legacy_width = f64::from((width * 20.0).round())
+                - 2.0 * f64::from((origin * 20.0).round());
             prop_assert_eq!(word_right - word_left, legacy_width);
         }
     }

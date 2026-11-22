@@ -950,6 +950,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     }
     blocks.sort_by(compare_structured_blocks);
     let origin_x = page_layout_origin_x(page.page, &page.lines, positioned_tables, parsed);
+    let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let page_width = parsed
         .pages
         .iter()
@@ -1008,8 +1009,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
                 }
-                let mut paragraph =
-                    paragraph_from_structured_line(&line, paragraph_origin_x, page_width);
+                let mut paragraph = paragraph_from_structured_line(
+                    &line,
+                    paragraph_origin_x,
+                    page_width,
+                    Some(section_origin_x),
+                );
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {
                         previous_nonparagraph_bottom_y.and_then(|bottom_y| {
@@ -1316,18 +1321,13 @@ fn apply_landscape_orientation_to_section(section: Section, width: u32, height: 
     }
 }
 
-/// 指定 PDF ページの page size と content 原点由来の margin を返す。
-fn structured_page_layout(
+/// 見出し・画像・図形も含め、実際のセクション左余白に使う最小座標を返す。
+fn structured_page_left_x(
     parsed: &ParsedDocument,
     positioned_tables: &[PositionedTable],
     page: &StructuredTextPage,
-    chrome: &RepeatedPageChrome,
-) -> Option<((u32, u32), PageMargin)> {
-    let parsed_page = parsed
-        .pages
-        .iter()
-        .find(|parsed_page| parsed_page.page_number == page.page)?;
-    let min_x = positioned_tables
+) -> f32 {
+    positioned_tables
         .iter()
         .filter(|table| table.page == page.page)
         .map(|table| table.bounds.x0)
@@ -1347,7 +1347,21 @@ fn structured_page_layout(
                 .map(|graphic| graphic.bounds.x0.min(graphic.bounds.x1)),
         )
         .filter(|value| value.is_finite() && *value >= 0.0)
-        .fold(f32::INFINITY, f32::min);
+        .fold(f32::INFINITY, f32::min)
+}
+
+/// 指定 PDF ページの page size と content 原点由来の margin を返す。
+fn structured_page_layout(
+    parsed: &ParsedDocument,
+    positioned_tables: &[PositionedTable],
+    page: &StructuredTextPage,
+    chrome: &RepeatedPageChrome,
+) -> Option<((u32, u32), PageMargin)> {
+    let parsed_page = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)?;
+    let min_x = structured_page_left_x(parsed, positioned_tables, page);
     let max_y = positioned_tables
         .iter()
         .filter(|table| table.page == page.page)
@@ -1865,11 +1879,12 @@ fn infer_paragraph_alignment(left_x: f32, right_x: f32, page_width: f32) -> Para
     ParagraphAlignment::Left
 }
 
-/// structured line から配置情報つき DOCX 段落を作る。
+/// 本文の相対原点と実セクション余白を区別して配置情報つき段落を作る。
 fn paragraph_from_structured_line(
     line: &StructuredTextLine,
     origin_x: f32,
     page_width: Option<f32>,
+    section_origin_x: Option<f32>,
 ) -> Paragraph {
     let paragraph = line.runs.iter().fold(Paragraph::new(), |paragraph, run| {
         paragraph.add_run(docx_run_from_structured_run(run))
@@ -1878,7 +1893,12 @@ fn paragraph_from_structured_line(
         ParagraphAlignment::Center => {
             let paragraph = paragraph.align(AlignmentType::Center);
             if let Some((left, right)) = page_width.and_then(|width| {
-                paragraph_anchor::centred_indents(line.left_x, line.right_x, origin_x, width)
+                paragraph_anchor::centred_indents(
+                    line.left_x,
+                    line.right_x,
+                    section_origin_x.unwrap_or(origin_x),
+                    width,
+                )
             }) {
                 return paragraph.indent(Some(left), None, Some(right), None);
             }
@@ -2535,7 +2555,7 @@ fn structured_line_max_font_size(line: &StructuredTextLine) -> f32 {
 
 /// 反復 page chrome 行を PDF の右端余白も含む DOCX paragraph へ変換する。
 fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine) -> Paragraph {
-    let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None);
+    let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None, None);
     if chrome_line.line.alignment == ParagraphAlignment::Right && chrome_line.right_indent_twips > 0
     {
         paragraph.indent(None, None, Some(chrome_line.right_indent_twips), None)
