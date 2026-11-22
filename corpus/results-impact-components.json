@@ -1,0 +1,50 @@
+{
+  "documents": 73,
+  "pages": 648,
+  "changed_pages": 2,
+  "changed_block_inventory_pages": 1,
+  "changed_ordered_scalar_pages": 2,
+  "changed_diagnostic_pages": 0,
+  "old_blocks_on_changed_pages": 208,
+  "new_blocks_on_changed_pages": 208,
+  "results": [
+    {
+      "id": "nist-fips202-2015",
+      "source_sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+      "pages": 37,
+      "changes": [
+        {
+          "page": 14,
+          "old_blocks": 74,
+          "new_blocks": 74,
+          "text_changed": true,
+          "ordered_scalars_changed": true,
+          "diagnostic_changes": {},
+          "block_inventory_changed": true,
+          "old_text": "m mod n\nFor integers m and n, m mod n is the integer r for which 0 ≤ r < n and mr\nis a multiple of n. For example, 11 mod 5 = 1, and 11 mod 5 =4.\nx\nlog\n2\n(x)\nmin(x, y)\nFor a real number x, x is the least integer that is not strictly less than x.\nFor example, 3.2=4, 3.2=3, and 6= 6.\nFor a positive real number x, log\n2\n(x) is the real number y such that 2\ny\n= x.\nFor real numbers x and y, min(x, y) is the minimum of x and y. For\nexample, min(9, 33) = 9.\n2.4 Specified Functions\nThe following higher-level functions are specified in this Standard:\nθ, ρ, π, χ, ι\nThe five step mappings that comprise a round.\nK\nECCAK\n[c]\nThe K\nECCAK\ninstance with K\nECCAK\n-f[1600] as the underlying permutation\nand capacity c.\nK\nECCAK\n-f [b]\nThe family of seven permutations originally specified in [8] as the\nunderlying function for K\nECCAK\n. The set of values for the width b of the\npermutations is {25, 50, 100, 200, 400, 800, 1600}.\nK\nECCAK\n-p[b, n\nr\n]\npad10*1\nRawSHAKE128\nRawSHAKE256\nrc\nRnd\nThe generalization of the K\nECCAK\n-f[b] permutations that is defined in this\nStandard by converting the number of rounds n\nr\nto an input parameter.\nThe multi-rate padding rule for K\nECCAK\n, originally specified in [8].\nAn intermediate function in the alternate definition of SHAKE128.\nAn intermediate function in the alternate definition of SHAKE256.\nThe function that generates the variable bits of the round constants.\nThe round function of a K\nECCAK\n-p permutation.\nSHA3-224\nSHA3-256\nSHA3-384\nSHA3-512\nSHAKE128\nThe SHA-3 hash function that produces 224-bit digests.\nThe SHA-3 hash function that produces 256-bit digests.\nThe SHA-3 hash function that produces 384-bit digests.\nThe SHA-3 hash function that produces 512-bit digests.\nThe SHA-3 XOF that generally supports 128 bits of security strength, if\n6",
+          "new_text": "m mod n\nFor integers m and n, m mod n is the integer r for which 0 ≤ r < n and m−r\nis a multiple of n. For example, 11 mod 5 = 1, and −11 mod 5 =4.\nx\nlog\n2\n(x)\nmin(x, y)\nFor a real number x, x is the least integer that is not strictly less than x.\nFor example, 3.2=4, −3.2=−3, and 6= 6.\nFor a positive real number x, log\n2\n(x) is the real number y such that 2\ny\n= x.\nFor real numbers x and y, min(x, y) is the minimum of x and y. For\nexample, min(9, 33) = 9.\n2.4 Specified Functions\nThe following higher-level functions are specified in this Standard:\nθ, ρ, π, χ, ι\nThe five step mappings that comprise a round.\nK\nECCAK\n[c]\nThe K\nECCAK\ninstance with K\nECCAK\n-f[1600] as the underlying permutation\nand capacity c.\nK\nECCAK\n-f [b]\nThe family of seven permutations originally specified in [8] as the\nunderlying function for K\nECCAK\n. The set of values for the width b of the\npermutations is {25, 50, 100, 200, 400, 800, 1600}.\nK\nECCAK\n-p[b, n\nr\n]\npad10*1\nRawSHAKE128\nRawSHAKE256\nrc\nRnd\nThe generalization of the K\nECCAK\n-f[b] permutations that is defined in this\nStandard by converting the number of rounds n\nr\nto an input parameter.\nThe multi-rate padding rule for K\nECCAK\n, originally specified in [8].\nAn intermediate function in the alternate definition of SHAKE128.\nAn intermediate function in the alternate definition of SHAKE256.\nThe function that generates the variable bits of the round constants.\nThe round function of a K\nECCAK\n-p permutation.\nSHA3-224\nSHA3-256\nSHA3-384\nSHA3-512\nSHAKE128\nThe SHA-3 hash function that produces 224-bit digests.\nThe SHA-3 hash function that produces 256-bit digests.\nThe SHA-3 hash function that produces 384-bit digests.\nThe SHA-3 hash function that produces 512-bit digests.\nThe SHA-3 XOF that generally supports 128 bits of security strength, if\n6",
+          "old_ordered_sha256": "e787c4d7233cba787479829fd2f3322d011a2a73091a90c81e9ef559c560ddee",
+          "new_ordered_sha256": "6b8848119de49d0c1abe5453c028a19849196b8c45b3f86627c740d11e86761d"
+        },
+        {
+          "page": 35,
+          "old_blocks": 134,
+          "new_blocks": 134,
+          "text_changed": true,
+          "ordered_scalars_changed": true,
+          "diagnostic_changes": {},
+          "block_inventory_changed": false,
+          "old_text": "Table 5: Illustration of h2b\nThus, T = b\n00\nb\n01\nb\n02\nb\n03\nb\n04\nb\n05\nb\n06\nb\n07\nb\nb\nb\nb\nb\nb\nb\nb\n= 1100 0101 0111 0100, and\n10\n11\n12\n13\n14\n15\n16\n17\nS = Trunc\n14\n(T) = 1100 0101 0111 01, as described in Steps 3 and 4.\nIf the length n of the output string S is not specified explicitly as an input, then h2b(H) is defined\nto be h2b(H, 8m), i.e., n is given the maximum possible value.\nThe conversion function from SHA-3 bit strings to the hexadecimal strings that represent them,\ndenoted b2h, is specified in Algorithm 11.\nAlgorithm 11: b2h(S).\nInput:\nbit string S consisting of n bits for a positive integer n.\nOutput:\nhexadecimal string H consisting of 2n /8 digits.\nSteps:\n1.\n2.\n3.\n4.\n5.\nLet n = len(S).\n-n mod 8\nLet T=S || 0\nand m =n/8.\nFor each pair of integers (i, j) such that 0 ≤ i < m and 0 ≤ j < 8, let b\nij\n= T[8i + j].\nFor each integer i such that 0 ≤ i < m:\na. Let h\ni\n= b\ni7\n⋅ 2\n7\n+ b\ni6\n⋅ 2\n6\n+ b\ni5\n⋅ 2\n5\n+ b\ni4\n⋅ 2\n4\n+ b\ni3\n⋅ 2\n3\n+ b\ni2\n⋅ 2\n2\n+ b\ni1\n⋅ 2\n1\n+ b\ni0\n⋅ 2\n0\n.\nb. Let H\n2i\nand H\nbe the hexadecimal digits such that h\n= 16 ⋅ H\n+ H\n.\n2i +1\ni\n2i\n2i+1\nReturn H = H\n0\nH\n1\nH\n2\nH\n3\n… H\n2m-2\nH\n2m-1.\nThe formal bit-reordering function that was specified in [12]—for the K\nECCAK\nsubmission to the\nSHA-3 competition—gives equivalent conversions when the message is byte-aligned, i.e., when\nn is a multiple of 8.\nB.2 Hexadecimal Form of Padding Bits\nFor the SHA-3 functions, either a two- or four-bit suffix is appended to the message M to\nproduce the input string N to K\nECCAK\n[c], and additional bits are appended as part of the multi-\nrate padding rule.\nFor most applications, the message is byte-aligned, i.e., len(M) = 8m for a nonnegative integer m.\nIn this case, the total number of bytes, denoted by q, that are appended to the message is\ndetermined as follows by m and the rate r:\nq = (r/8) – (m mod (r/8)).\n27",
+          "new_text": "Table 5: Illustration of h2b\nThus, T = b\n00\nb\n01\nb\n02\nb\n03\nb\n04\nb\n05\nb\n06\nb\n07\nb\n10\nb\n11\nb\n12\nb\n13\nb\n14\nb\n15\nb\n16\nb\n17\n= 1100 0101 0111 0100, and\nS = Trunc\n14\n(T) = 1100 0101 0111 01, as described in Steps 3 and 4.\nIf the length n of the output string S is not specified explicitly as an input, then h2b(H) is defined\nto be h2b(H, 8m), i.e., n is given the maximum possible value.\nThe conversion function from SHA-3 bit strings to the hexadecimal strings that represent them,\ndenoted b2h, is specified in Algorithm 11.\nAlgorithm 11: b2h(S).\nInput:\nbit string S consisting of n bits for a positive integer n.\nOutput:\nhexadecimal string H consisting of 2n /8 digits.\nSteps:\n1.\n2.\n3.\n4.\n5.\nLet n = len(S).\n-n mod 8\nLet T=S || 0\nand m =n/8.\nFor each pair of integers (i, j) such that 0 ≤ i < m and 0 ≤ j < 8, let b\nij\n= T[8i + j].\nFor each integer i such that 0 ≤ i < m:\na. Let h\ni\n= b\ni7\n⋅ 2\n7\n+ b\ni6\n⋅ 2\n6\n+ b\ni5\n⋅ 2\n5\n+ b\ni4\n⋅ 2\n4\n+ b\ni3\n⋅ 2\n3\n+ b\ni2\n⋅ 2\n2\n+ b\ni1\n⋅ 2\n1\n+ b\ni0\n⋅ 2\n0\n.\nb. Let H\n2i\nand H\nbe the hexadecimal digits such that h\n= 16 ⋅ H\n+ H\n.\n2i +1\ni\n2i\n2i+1\nReturn H = H\n0\nH\n1\nH\n2\nH\n3\n… H\n2m-2\nH\n2m-1.\nThe formal bit-reordering function that was specified in [12]—for the K\nECCAK\nsubmission to the\nSHA-3 competition—gives equivalent conversions when the message is byte-aligned, i.e., when\nn is a multiple of 8.\nB.2 Hexadecimal Form of Padding Bits\nFor the SHA-3 functions, either a two- or four-bit suffix is appended to the message M to\nproduce the input string N to K\nECCAK\n[c], and additional bits are appended as part of the multi-\nrate padding rule.\nFor most applications, the message is byte-aligned, i.e., len(M) = 8m for a nonnegative integer m.\nIn this case, the total number of bytes, denoted by q, that are appended to the message is\ndetermined as follows by m and the rate r:\nq = (r/8) – (m mod (r/8)).\n27",
+          "old_ordered_sha256": "5d50e2c8474a35eb514f573aea9abfa90f7422c0b1d8e60bad5008893b5fa78b",
+          "new_ordered_sha256": "da0a1ea38cc9c8c3f29a8508fa2d3f09eab9c9f8f2a37411ab62818fde176c0c"
+        }
+      ]
+    }
+  ],
+  "binary_sha256": "1bcf3028db3188583a5a4c2637238ecf50ae85371c1cbb838bbc65f142b88524",
+  "baseline_sha256": "bd190b906b6dbd0a32e90a9028c058d777da9657c990ab4680d14fab259022d1",
+  "manifest_sha256": "50de8a65bcf8a906050f8781d5703eea30eabfe78a7d12de75b7be680982c5ab",
+  "source_sha256": "c731f1d37e5227696f875b8c415db1a1fff9abdc9f561abbe70ff1a473fa3621",
+  "scope": "Native before/after ordered scalar sequence after NFC and whitespace removal, plus existing diagnostics. Unchanged output does not establish Unicode accuracy or whole-document diff precision/recall."
+}

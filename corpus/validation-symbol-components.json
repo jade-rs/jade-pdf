@@ -1,0 +1,263 @@
+{
+  "version": 44,
+  "date": "2026-11-22",
+  "core_revision": "cc4496cd0b779eb0b533dc9b21bc560fe9b98c9a",
+  "qualification_revision": "0ec04892daa7731d696f8a7faf2cb33036fc09d2",
+  "base_revision": "ad1f47f83a562b01b1fc7907e2c3455233e67d30",
+  "production_ready": false,
+  "scope": "Recover four source-verified minus signs while retaining opaque Symbol pieces/review, and correct decimal subscript order on one new original page. The twenty opaque components are ownership context, not Unicode semantic substitutions. Decimal candidates are bounded to eight ASCII digits after removing only verified false generated U+0020 spaces.",
+  "collection": {
+    "registered_documents": 86,
+    "regular_documents": 73,
+    "regular_pages": 648,
+    "pending_semantic_documents": 2,
+    "new_documents": 1,
+    "new_pages": 37,
+    "previous_manifest": "manifest-advance-spacing.json"
+  },
+  "semantic_gold": {
+    "regular_full_page": {
+      "correct": 9,
+      "cases": 9
+    },
+    "retained_text_context": {
+      "correct": 1,
+      "cases": 1
+    },
+    "new_less_equal_inventory": {
+      "correct": 1,
+      "cases": 1,
+      "instances": 5,
+      "page": 34
+    },
+    "visible_operators": {
+      "before_correct": 4,
+      "after_correct": 5,
+      "cases": 5,
+      "new_minus_instances": 4,
+      "page": 14
+    },
+    "reading_order": {
+      "before_correct_documents": 12,
+      "after_correct_documents": 13,
+      "documents": 13,
+      "pages": 15,
+      "anchors": 191,
+      "new_page": 35,
+      "new_introductory_lines": 2
+    },
+    "retained_natural_revision": {
+      "correct": 1,
+      "cases": 1
+    }
+  },
+  "transition": {
+    "documents": 73,
+    "pages": 648,
+    "old_cohort_documents": 72,
+    "old_cohort_pages": 611,
+    "changed_old_cohort_pages": 0,
+    "changed_new_cohort_pages": [
+      14,
+      35
+    ],
+    "changed_diagnostic_pages": 0,
+    "recovered_minus_scalars": 4,
+    "retained_opaque_bracket_and_ceiling_components": true,
+    "public_cell_pages": 2,
+    "public_cell_pages_matched": 2,
+    "public_nonwhitespace_scalars": 2883,
+    "explicit_source_region_owned_scalars": 0,
+    "cell_scope": "Page14: normalize only four independently verified minus aliases and compare exact ordered records. Page35: literal scalar/cell/source-region/diagnostic multiset, plus separate original reading-order gold. Zero explicit source-region ownership here is recorded as zero; this is not a claim that all glyphs have tagged source regions."
+  },
+  "verification": {
+    "native": {
+      "passed": 313,
+      "ignored": 8,
+      "test_groups": 28,
+      "log_sha256": "884daf6ce1582a8a990ae57642831faa05eb48da3f6429adf848bf87a7662594"
+    },
+    "public_corpus": {
+      "passed": 6,
+      "semantic_characters_conserved": 1130399,
+      "log_sha256": "05fb9ce5db4b79db00ac6c9bb87e813018f35e6b0fdeeb2acdb63087b6d4d531"
+    },
+    "owned_api_cases": 7,
+    "opaque_context_geometry_combinations": 24,
+    "decimal_geometry_source_order_combinations": 32,
+    "decimal_literal_blank_control": true,
+    "python_harness_passed": 41,
+    "fixture_hygiene_passed": 2,
+    "fmt_root_and_probe": true,
+    "clippy_warnings_denied": true,
+    "javascript_semantic_gold": true,
+    "javascript_engine_selector": true,
+    "browsers": [
+      {
+        "browser_engine": "chromium",
+        "browser": "159.0.8154.6",
+        "cases": 304,
+        "passed": 304,
+        "context_gold_checks": 1,
+        "context_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      },
+      {
+        "browser_engine": "webkit",
+        "browser": "27.2",
+        "cases": 304,
+        "passed": 304,
+        "context_gold_checks": 1,
+        "context_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      }
+    ],
+    "workers": {
+      "documents": 85,
+      "passed_documents": 85,
+      "operation_checks": 1111,
+      "matching_operations": 1111,
+      "matching_successful_operations": 1050,
+      "matching_rejections": 61,
+      "cases": 221,
+      "passed": 221,
+      "context_gold_checks": 1,
+      "context_gold_passed": 1,
+      "semantic_gold_by_cohort": {
+        "documents": {
+          "full_page_text": {
+            "cases": 9,
+            "correct": 9,
+            "failed": 0
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 1,
+            "failed": 0
+          }
+        },
+        "pending_semantic": {
+          "full_page_text": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          }
+        }
+      }
+    },
+    "native_binary_sha256": "1bcf3028db3188583a5a4c2637238ecf50ae85371c1cbb838bbc65f142b88524",
+    "baseline_binary_sha256": "bd190b906b6dbd0a32e90a9028c058d777da9657c990ab4680d14fab259022d1",
+    "wasm_sha256": "0ee5ab5be0bcf0423e7b50a0a758b6fa32248c2fd6de17b175563600c639f7c2"
+  },
+  "unresolved": {
+    "arabic_full_page_correct": 0,
+    "arabic_full_page_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "guarded_failures": 2,
+    "mathematical_structure_and_general_script_order_unproven": true,
+    "mt_extra_assembly_fragments_unresolved": true,
+    "general_word_spacing_unproven": true,
+    "full_natural_revision_precision_recall_unproven": true
+  },
+  "previous_validation": "validation-advance-spacing.json",
+  "qualified_core_tree": "9738cf79174b210d1ca43c22fed22a6030c56218",
+  "qualified_source_tree": "5c9424a7e719d28546c1fbc88c04eb3e260134fb",
+  "sha256": {
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "docs/pdf_diff.md": "98669d0b955f3da3d1c9391143bc12afd70bfef12923f817a5140d0e40202aa7",
+    "corpus/README.md": "27d4cd26c456b470164950d9eb65e02ecd2ec85ec83a6403e2d57928c5837e15",
+    "corpus/manifest.json": "50de8a65bcf8a906050f8781d5703eea30eabfe78a7d12de75b7be680982c5ab",
+    "corpus/manifest-advance-spacing.json": "5c32771f436a6935c98bdf063f58e98e18884293bab4ce40d5393f6190425619",
+    "corpus/fips202-symbol-context-review.json": "3c956f636b3a2e9f9e51de8381dfd21a52d17a6eb5a89cb3bdf865f1a80231b6",
+    "corpus/fips202-decimal-script-review.json": "d5c031d9a01adfb1da175f0b5f3e84d214e188a12ff0e5f3206d1b3571617d73",
+    "corpus/source-inventory-fips202-2015.json": "d8282c6b2d7e7726d25e5891c64c52545c9ce506d0abf756f84baac14e893a92",
+    "tools/audit_fips202_cells.py": "29e43db97e2a249e883d4e7bbb0b6269ff75c1a8ea3f6715c2245c9959ddfdf1",
+    "tools/test_fips202_cells.py": "435de7f9ae2b227d9f99962f5c8e2384d48ebd065f3e728c8da6b0f0f5bb1a36",
+    "tools/generate_symbol_glyph_font.py": "9a334548fed8fb5726ef42bee2bb6bad7e734b694ca97b950a87874e38ef3e20",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/src/lib.rs": "ed216ef9ab5f890539070c02b2c61da2b847410f4c06402d516032a13eb2a0b3",
+    "tools/wasm-smoke/browser_smoke.mjs": "b7b95c29771d6b7132bbbf50619d835b9f52bb9221a27a60c1ffdadfbca10e11",
+    "tools/wasm-smoke/worker_smoke.mjs": "a20c9751852b18d77aaa54313ae15d900b2db398af648eea6910f8fd28a71b85",
+    "crates/jade-pdf-diff/src/legacy_context.rs": "9edbfc195532fab0167e7bfd1ee27ae3b31a9dcb5fdb89323b883b2d0ce9d4ac",
+    "crates/jade-pdf-diff/src/source_text/symbol_font.rs": "1a9d3a1e8ade946be39be3d141aa353cee49bcb5461213074d59e62e9278313c",
+    "crates/jade-pdf-diff/src/source_text/unicode.rs": "67d7d0a9805ce7abb49ec9298b89e4a695ebed2316734a27f9f994dd02053ad0",
+    "crates/jade-pdf-diff/src/symbol_encoding.rs": "678e86d22ad4f8ac4203b88d5bf135f37a20159700cc053c0cebc5aa9c0ee485",
+    "crates/jade-pdf-diff/src/unicode_facts.rs": "a90b270c526ff7cf721633b5c3f031da0373fcf50a6d223de1453a8052362596",
+    "crates/jade-pdf-diff/src/text/inline.rs": "6340974e26edd4ce7cad89ccfb3bd7716e4dc591428c404bc5f393d1f59833e7",
+    "crates/jade-pdf-diff/resources/symbol-component-context.json": "2ef9626216c5facc915943129ff97123a7939250b5c9b691c10efed5718a6983",
+    "crates/jade-pdf-diff/tests/symbol_components.rs": "c7d3e327c46b96633e7c6307aef4b2189e1b6d85ed673c6c453467e8419a6a61",
+    "crates/jade-pdf-diff/tests/advance_scripts.rs": "cd95b0cea2e2b8ea748b4879933851803946f31215ec3213260d2b84c98539e6",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "47c73c09fe38664598f8e514ffa7e66dfafe738bc2d85ed7fe6bcfcb404f5b9e",
+    "crates/jade-pdf-diff/tests/support/symbol_components_fixture.rs": "5d28438e7012c1443b3890f9b8535e55ce91fc307448413b234664030c0dae72",
+    "crates/jade-pdf-diff/tests/support/advance_script_fixture.rs": "70fc207b90aefa34b05c5ca28b04163d601c0d8e685e123c33d29fac2cd26527",
+    "corpus/results-page-gold-components.json": "3a9bd084401956582782ae2c02b9d46f36d3f60916acf7fdb1607d2de3c4a251",
+    "corpus/results-pending-semantic-components.json": "3cf440f895cf93a5b01bfbfba953c568c464336297588f6bcff1842d7edcbb82",
+    "corpus/results-symbol-operators-components.json": "410c0bc287df483e4edd7a73389a564ea4abac82b4a715121596cb0048d34be9",
+    "corpus/results-scalar-revision-components.json": "47357638a8b4468204af0de5090baae69ee1aa6a4f80df4f6e9bb81867508775",
+    "corpus/results-reading-order-components.json": "c139d814906641572f543196f321b4e42f1faed087282adef50d4b420f66fcb5",
+    "corpus/results-impact-components.json": "987f2e739cbaa81a79d016710b565dfcba4d1f7c621feecc1bef5ca460ce9967",
+    "corpus/results-cells-components.json": "59f3d741e89a28cd4be95b9564a92e8c9f9e2187599c103692e190aba32c5eba",
+    "corpus/results-browser-chromium-components.json": "bcd3369347c4ee9544bad6a1f3cd867fc428388ecf0ea5148b5f7a5c59aacc66",
+    "corpus/results-browser-webkit-components.json": "6185964d2edca7c074284891953cb14b0e1fd6ad3cc1d6737307547bab0883ba",
+    "corpus/results-workers-components.json": "505c85d58e32c1800d4c69bc5877a27e42942822a737f3394715c9ee72d77786",
+    "corpus/results-script-impact.json": "150bc1e43a4e47913ef5c41a93f5d461d6b887a2bd06d073799d1d094b621575",
+    "corpus/results-reading-order-components-before.json": "8004b4d46bed6c46be13a7700aab7f4a94a3c20726c5eb519a8dc9b74138e304",
+    "corpus/results-components-operators-before.json": "7e7abcc7a06dfe5b6cc19463a438b605dbb3a7b48fbec93b986c8fef330b9134"
+  }
+}
