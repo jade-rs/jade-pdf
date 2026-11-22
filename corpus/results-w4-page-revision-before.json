@@ -1,0 +1,50 @@
+{
+  "version": 1,
+  "cases": 1,
+  "passed": 0,
+  "results": [
+    {
+      "id": "irs-w4-2024-2025-page1-text-edits",
+      "comparison_exit": 3,
+      "passed": false,
+      "true_positives": 4,
+      "false_positives": 2,
+      "false_negatives": 0,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "raw_observations": 10,
+      "expected_edit_regions": 4,
+      "matched_edits": [
+        "header-year",
+        "estimator-tip",
+        "estimator-definite-article",
+        "footer-year"
+      ],
+      "unexpected_edits": [
+        {
+          "old_index": 39,
+          "new_index": 44,
+          "kind": "hunk",
+          "old": "you",
+          "new": ""
+        },
+        {
+          "old_index": 40,
+          "new_index": 45,
+          "kind": "hunk",
+          "old": "",
+          "new": "you"
+        }
+      ],
+      "unmatched_edits": [],
+      "scope": "Exhaustive logical text-edit regions on the selected page pair only; NFC and whitespace collapse. Positional/line-wrap moves, formatting, forms and other pages are not text edits. Unmatched engine hunks remain false positives; no cancellation by inventory equality."
+    }
+  ],
+  "execution_errors": [],
+  "binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+  "manifest_sha256": "1a4c6f9044d99980d09b271f70d6bb8d8bc74e3c2b20f13f6ca5dd92e0d3887e",
+  "gold_sha256": "985ed52a4f32df76821378229d3afb6372ed1f0f70dac4247306c4bc6c71de40",
+  "checker_sha256": "f2d4dece423e444e8fa97017c87d9ea85f816c0cc4be9739a5fb1525c6e61ab7",
+  "audit_sha256": "9b65b1032a01015d680ce0c4fdce2e4521f8446053ba34b9b30899eb1c0c887a",
+  "scope": "Exhaustive logical text-edit regions on the declared original page pair only. Positional/line-wrap/format/form changes and other pages are separate. Full-page review and typed gold are independent of the engine diff; partial source contexts alone cannot establish precision/recall."
+}
