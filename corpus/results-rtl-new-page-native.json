@@ -1,0 +1,34 @@
+[
+  {
+    "artifact": "baseline",
+    "binary_sha256": "644a8765ba19aaf343fd4dd5746c0bad2fd50fc2e355bc7e97744b1ffcff18ce",
+    "gold": {
+      "kind": "full_page_text",
+      "matches": true,
+      "expected_text": "سلام کلاس لاله",
+      "actual_text": "سلام کلاس لاله"
+    },
+    "diagnostics": {
+      "index": 1,
+      "user_unit": 1.0,
+      "rotation": 0,
+      "sdk_unicode_mapping_errors": 0
+    }
+  },
+  {
+    "artifact": "qualified",
+    "binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+    "gold": {
+      "kind": "full_page_text",
+      "matches": true,
+      "expected_text": "سلام کلاس لاله",
+      "actual_text": "سلام کلاس لاله"
+    },
+    "diagnostics": {
+      "index": 1,
+      "user_unit": 1.0,
+      "rotation": 0,
+      "sdk_unicode_mapping_errors": 0
+    }
+  }
+]
