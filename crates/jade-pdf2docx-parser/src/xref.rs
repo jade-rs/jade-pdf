@@ -151,6 +151,9 @@ impl XrefIndex {
                     }
                 }
                 let trailer = trailer_offsets(path, &mut lexer, limits)?;
+                if trailer.encrypted {
+                    return Err(ParseError::UnsupportedEncryption { path: path.into() });
+                }
                 if let Some(supplement) = trailer.hybrid {
                     let supplement = supplement
                         .checked_add(bias)
@@ -292,22 +295,61 @@ impl XrefIndex {
 
 /// offset が xref table または間接 object の header を指すか字句検査する。
 fn xref_header_at(bytes: &[u8], offset: usize) -> bool {
+    // 曖昧な場合は従来の絶対offsetを優先し、probeだけで本文全体を走査しない。
+    let end = offset.saturating_add(16 * 1024).min(bytes.len());
     let mut lexer = Lexer {
-        bytes,
+        bytes: &bytes[..end],
         cursor: offset,
     };
     match lexer.next() {
         Some(Token::Word(b"xref")) => true,
         Some(Token::Word(word)) if integer(word).is_some() => {
-            number(&mut lexer).is_some() && matches!(lexer.next(), Some(Token::Word(b"obj")))
+            number(&mut lexer).is_some()
+                && matches!(lexer.next(), Some(Token::Word(b"obj")))
+                && xref_dictionary_candidate(&mut lexer)
         }
         _ => false,
     }
 }
 
+/// 小さなdictionaryを確認できたときだけ、通常objectをXRef stream候補から除く。
+/// 上限内で結論が出ない場合は既存の絶対offset優先を維持する。
+fn xref_dictionary_candidate(lexer: &mut Lexer<'_>) -> bool {
+    if !matches!(lexer.next(), Some(Token::Open(true))) {
+        return true;
+    }
+    let mut depth = 1usize;
+    let mut pending = None;
+    let mut xref = false;
+    while let Some(token) = lexer.next() {
+        if depth == 1 && !matches!(token, Token::Close(_)) {
+            if let Some(is_type) = pending.take() {
+                if is_type {
+                    xref = matches!(token, Token::Name(name) if name_is(name, b"XRef"));
+                }
+            } else if let Token::Name(name) = token {
+                pending = Some(name_is(name, b"Type"));
+            }
+        }
+        match token {
+            Token::Open(_) => depth += 1,
+            Token::Close(_) => {
+                depth -= 1;
+                if depth == 0 {
+                    return xref;
+                }
+            }
+            _ => {}
+        }
+    }
+    true
+}
+
 /// 通常 table trailer が指定する参照 section。
 #[derive(Default)]
 struct TrailerOffsets {
+    /// 正式なtrailer最上位にnull以外の暗号化指定があるか。
+    encrypted: bool,
     /// この revision の catalog 参照。
     root: Option<(u32, u16)>,
     /// 前の revision。
@@ -333,10 +375,15 @@ fn trailer_offsets(
     )?;
     let mut offsets = TrailerOffsets::default();
     let mut value_pending = false;
+    let mut encryption_pending = false;
     while let Some(token) = lexer.next() {
         if depth == 1 && !matches!(token, Token::Close(_)) {
             if value_pending {
                 value_pending = false;
+                if encryption_pending {
+                    offsets.encrypted = !matches!(token, Token::Word(b"null"));
+                    encryption_pending = false;
+                }
             } else if let Token::Name(name) = token {
                 if name_is(name, b"Root") {
                     offsets.root = Some(read_root(path, lexer)?);
@@ -356,6 +403,7 @@ fn trailer_offsets(
                     }
                 } else {
                     value_pending = true;
+                    encryption_pending = name_is(name, b"Encrypt");
                 }
             }
         }

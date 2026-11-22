@@ -172,7 +172,16 @@ pub(crate) fn validate_structure<'a>(
                     && frame.dictionary
                 {
                     if frame.encrypted && (frame.trailer || frame.xref) {
-                        return Err(ParseError::UnsupportedEncryption { path: path.into() });
+                        if !xref_loaded {
+                            xref =
+                                crate::xref::XrefIndex::read(path, bytes, limits, decode_budget)?;
+                            xref_loaded = true;
+                        }
+                        // 正式な参照sectionの暗号化はxref readerで拒否済み。
+                        // 未使用の古いXRef辞書を、現行文書の設定には使わない。
+                        if xref.is_none() {
+                            return Err(ParseError::UnsupportedEncryption { path: path.into() });
+                        }
                     }
                     stream_length = frame.length;
                     stream_dictionary = Some(&bytes[frame.start..lexer.cursor]);
