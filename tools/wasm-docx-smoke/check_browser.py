@@ -2,6 +2,7 @@
 from pathlib import Path
 import tempfile,subprocess,hashlib,json,zipfile,xml.etree.ElementTree as E,sys,argparse
 import os
+from owned_font_names import legacy_font_pdf
 ROOT=Path(__file__).resolve().parents[2]
 TOOLS=Path(__file__).resolve().parent
 
@@ -15,16 +16,19 @@ def main():
      data+=f'trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode();return bytes(data)
     anchor='BT /F1 10 Tf 72 740 Td (Anchor) Tj ET';heading='BT /F1 10 Tf 60 650 Td ('+'x'*85+') Tj ET';offset='BT /F1 10 Tf 84 600 Td (Offset body) Tj ET';grid='100 500 m 300 500 l S 100 460 m 300 460 l S 100 460 m 100 500 l S 200 460 m 200 500 l S 300 460 m 300 500 l S BT /F1 10 Tf 110 480 Td (A) Tj ET BT /F1 10 Tf 210 480 Td (B) Tj ET'
     cases=[dict(id='plain',data=pdf(anchor),body={'Anchor':72}),dict(id='body-overhang',data=pdf(anchor+' '+heading+' '+offset),body={'Anchor':72,'Offset body':84}),dict(id='graphic-left',data=pdf(anchor+' 30 700 m 40 700 l S'),body={'Anchor':72}),dict(id='table-overhang',data=pdf(anchor+' '+heading+' '+grid),body={},table=100),dict(id='centre-control',data=pdf(anchor+' BT /F1 10 Tf 93.5 650 Td ('+'x'*85+') Tj ET'),body={'Anchor':72},centre=306),dict(id='word-limit',data=pdf(anchor,2000,1000),body={'Anchor':72*1584/2000},page=(31680,15840),resized=True),dict(id='empty',data=b'',error='header')]
+    pitch=' '.join(f'BT /F1 10 Tf 72 {740-i*20} Td (Line {i+1}) Tj ET' for i in range(4));cases.append(dict(id='line-pitch',data=pdf(pitch),body={},pitch=20))
+    for cid in [False, True]:cases.append(dict(id='legacy-cid' if cid else 'legacy-simple',data=legacy_font_pdf(cid),body={},font='OwnedCJK'))
     manifest=json.loads((ROOT/'corpus/manifest.json').read_text());entry=next(e for e in manifest['pending_semantic'] if e['id']=='nta-invoice-domestic-english-2026');data=((ROOT/'corpus/cache')/(entry['id']+'.pdf')).read_bytes();assert len(data)==entry['bytes'] and hashlib.sha256(data).hexdigest()==entry['sha256'];cases.append(dict(id='encrypted',data=data,error='encrypt'))
     with tempfile.TemporaryDirectory() as temp:
      descriptors=[]
      for case in cases:
       file=Path(temp)/(case['id']+'.pdf');file.write_bytes(case['data']);descriptors.append(dict(id=case['id'],input=str(file),sha256=hashlib.sha256(case['data']).hexdigest()))
      file=Path(temp)/'manifest.json';file.write_text(json.dumps(dict(cases=descriptors)));subprocess.run(['node',str(q/'run_browser.mjs'),str(file),str(args.probe.resolve()),str(out),args.engine],check=True,cwd=ROOT)
-    raw=json.loads((out/'browser-raw.json').read_text());n={'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main'};W='{'+n['w']+'}';results=[]
+    raw=json.loads((out/'browser-raw.json').read_text());assert len(raw['rows'])==len(cases);n={'w':'http://schemas.openxmlformats.org/wordprocessingml/2006/main'};W='{'+n['w']+'}';results=[]
     for case,row in zip(cases,raw['rows']):
      assert case['id']==row['id'];inspection=row['inspection'];issues=inspection.get('value',{}).get('quality_issues',[])
      if case.get('resized'):assert any(i['kind']=='page_resized_for_word' for i in issues)
+     assert [o['mode'] for o in row['outputs']]==['default','strict']
      for output in row['outputs']:
       checks=[];failure=None
       try:
@@ -37,8 +41,17 @@ def main():
         with zipfile.ZipFile(output['file']) as z:doc=E.fromstring(z.read('word/document.xml'))
         margin=doc.find('.//w:pgMar',n).attrib;size=doc.find('.//w:pgSz',n).attrib;left=int(margin[W+'left']);width=int(size[W+'w']);right=int(margin[W+'right']);assert (width,int(size[W+'h']))==case.get('page',(12240,15840))
         paragraphs={''.join(t.text or '' for t in p.findall('.//w:t',n)):p for p in doc.findall('.//w:p',n)}
+        if 'font' in case:
+         fonts=paragraphs['A'].findall('.//w:rFonts',n);assert fonts;assert all(f.attrib.get(W+'ascii')==case['font'] for f in fonts),[f.attrib for f in fonts];checks.append('verified program display name')
         for text,expected in case.get('body',{}).items():
          p=paragraphs[text];ind=p.find('w:pPr/w:ind',n);indent=0 if ind is None else int(ind.attrib.get(W+'left','0'));actual=(left+indent)/20;checks.append(dict(text=text,expected=expected,actual=actual));assert abs(actual-expected)<=.05001,checks[-1]
+        if 'pitch' in case:
+         previous=None
+         for index in range(4):
+          spacing=paragraphs[f'Line {index+1}'].find('w:pPr/w:spacing',n);assert spacing is not None;assert spacing.attrib.get(W+'lineRule')=='exact';height=int(spacing.attrib[W+'line'])/20;assert height>0
+          if previous is not None:
+           actual=previous+int(spacing.attrib.get(W+'before','0'))/20;checks.append(dict(pitch_expected=case['pitch'],actual=actual));assert abs(actual-case['pitch'])<=.05001,checks[-1]
+          previous=height
         if 'table' in case:
          table=doc.find('.//w:tbl',n);assert table is not None;ind=table.find('w:tblPr/w:tblInd',n);indent=0 if ind is None else int(ind.attrib.get(W+'w','0'));actual=(left+indent)/20;checks.append(dict(table_expected=case['table'],actual=actual));assert abs(actual-case['table'])<=.05001,checks[-1]
         if 'centre' in case:

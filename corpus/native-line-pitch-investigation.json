@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "base_revision": "34bae63514722667cba7648f4a192ca0166e6063",
+  "production_ready": false,
+  "owned_input": {
+    "source_sha256": "0508662f744af9537b0aecf89582f6ff1479fac9261ea592192f8ebb2bd66ecc",
+    "origin_x_pt": 72,
+    "baseline_y_pt": [
+      740,
+      720,
+      700,
+      680
+    ],
+    "baseline_pitch_pt": 20,
+    "base_font": "Courier",
+    "font_size_pt": 10,
+    "source_created_in_TemporaryDirectory_only": true,
+    "reference_declared_before_render": true
+  },
+  "observed_before": {
+    "rendered_baseline_y_pt": [
+      741.65,
+      720.3,
+      698.95,
+      677.6
+    ],
+    "rendered_pitch_pt": [
+      21.35,
+      21.35,
+      21.35
+    ],
+    "relative_fourth_line_drift_pt": 4.05,
+    "renderer": "Bundled LibreOffice26.8 alpha, LiberationMono substitute, not Microsoft Word",
+    "all_original_and_output_pages_viewed": true
+  },
+  "suspected_cause": "Blank gap subtracts source font em height but paragraph line box inherits automatic font metrics; the excess recurs for each paragraph. Source text, word spacing and glyph origins are unchanged.",
+  "plan": "Red regression first; explicitly coordinate native paragraph line height with gap model; check clipping and public-page geometry before qualification.",
+  "references": [
+    "https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines?view=openxml-3.0.1",
+    "https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.spacingbetweenlines.line?view=openxml-3.0.1"
+  ],
+  "font_investigation": "Courier/Courier New mapping already exists and was preserved in owned output; no missing mapping fix justified.",
+  "PDF_font_model_binaries_added_to_Git": false
+}

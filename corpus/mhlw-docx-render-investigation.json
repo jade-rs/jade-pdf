@@ -1,0 +1,130 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T20:53:41.373534+00:00",
+  "production_ready": false,
+  "source_id": "mhlw-employment",
+  "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+  "source_pages": 4,
+  "source_previously_registered_and_reviewed": true,
+  "before_runtime": "34bae63514722667cba7648f4a192ca0166e6063",
+  "after_runtime": "c673c9cc6473f6ef802a433de08570eb6ada2f37",
+  "same_source_SDK_flags": true,
+  "rendered_pages_before": 16,
+  "rendered_pages_after": 15,
+  "OOXML_text_characters": 5035,
+  "OOXML_full_text_identical": true,
+  "rendering": "Bundled LibreOffice26.8 alpha; not actual Microsoft Word",
+  "review": "All16 unique pixel images covering31 output pages individually viewed or matched by full image pixel SHA; missing Japanese, large blank areas and page overflow remain failures.",
+  "DOCX_fonts": {
+    "F1_runs": 104,
+    "TimesNewRoman_subset_runs": 34,
+    "embedded_fonts": 1
+  },
+  "original_font_metadata": [
+    {
+      "resource": "/F1",
+      "BaseFont": "/LSDVYL+俵俽柧挬",
+      "fsType": 8,
+      "glyph_count": 19399,
+      "PostScript_names": [
+        "MS-Mincho"
+      ],
+      "cmap_tables": [
+        {
+          "platform": 0,
+          "encoding": 5,
+          "format": 14
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4
+        },
+        {
+          "platform": 3,
+          "encoding": 10,
+          "format": 12
+        }
+      ]
+    },
+    {
+      "resource": "/F2",
+      "BaseFont": "/JHXRXS+TimesNewRoman",
+      "fsType": 8,
+      "glyph_count": 4428,
+      "PostScript_names": [
+        "TimesNewRomanPSMT"
+      ],
+      "cmap_tables": [
+        {
+          "platform": 0,
+          "encoding": 3,
+          "format": 4
+        },
+        {
+          "platform": 1,
+          "encoding": 0,
+          "format": 0
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4
+        }
+      ]
+    },
+    {
+      "resource": "/F3",
+      "BaseFont": "/JDDCOQ+俵俽僑僔僢僋",
+      "fsType": 8,
+      "glyph_count": 22291,
+      "PostScript_names": [
+        "MS-Gothic"
+      ],
+      "cmap_tables": [
+        {
+          "platform": 0,
+          "encoding": 5,
+          "format": 14
+        },
+        {
+          "platform": 3,
+          "encoding": 1,
+          "format": 4
+        },
+        {
+          "platform": 3,
+          "encoding": 10,
+          "format": 12
+        }
+      ]
+    }
+  ],
+  "original_descriptor_raw_names": [
+    {
+      "hex": "4c534456594c2b826c827296be92a9",
+      "Shift_JIS": "LSDVYL+ＭＳ明朝"
+    },
+    {
+      "hex": "4a48585258532b54696d65734e6577526f6d616e",
+      "Shift_JIS": "JHXRXS+TimesNewRoman"
+    },
+    {
+      "hex": "4a4444434f512b826c8272835383568362834e",
+      "Shift_JIS": "JDDCOQ+ＭＳゴシック"
+    },
+    {
+      "hex": "4c4a464950522b43656e74757279",
+      "Shift_JIS": "LJFIPR+Century"
+    }
+  ],
+  "suspected_causes": [
+    "metadata_names::value accepts UTF-8 only; two source font descriptor names are Shift_JIS. Their loss can leave F1 display names and skip embedding candidates. Isolated regression and end-to-end association proof still required.",
+    "Source subset cmap completeness and rendering fallback must be checked independently.",
+    "Table and paragraph pagination must be investigated separately; font-name decoding alone is not proven to explain15pages."
+  ],
+  "font_bytes_saved": false,
+  "PDF_font_model_binaries_added_to_Git": false,
+  "semantic_accuracy_gain_claimed": false,
+  "scope": "Failed rendering investigation, not a passed corpus conversion."
+}

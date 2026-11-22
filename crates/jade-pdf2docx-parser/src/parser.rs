@@ -868,7 +868,7 @@ fn parse_page_font_resources(decode_budget: &DecodeBudget, bytes: &[u8]) -> Vec<
         return Default::default();
     };
     let mut metrics_cache = crate::font_metrics_cache::Cache::new(&objects, decode_budget, bytes);
-    let base_fonts = font_object_names(decode_budget, &objects, b"BaseFont");
+    let base_fonts = font_object_display_names(decode_budget, bytes, &objects, &stream_offsets);
     let encodings = font_object_names(decode_budget, &objects, b"Encoding");
     let cmaps = font_object_tounicode_cmaps_in(decode_budget, bytes, &objects, &stream_offsets);
     for (page, page_bytes) in dictionaries.into_iter().enumerate() {
@@ -929,7 +929,7 @@ fn extract_form_text_elements(
                 crate::resource_resolver::ResourceResolver::new(&objects, budget);
             let (offsets, names, encodings, cmaps) = font_maps.get_or_insert_with(|| {
                 let offsets = stream_object_offsets(budget, bytes);
-                let names = font_object_names(budget, &objects, b"BaseFont");
+                let names = font_object_display_names(budget, bytes, &objects, &offsets);
                 let encodings = font_object_names(budget, &objects, b"Encoding");
                 let cmaps = font_object_tounicode_cmaps_in(budget, bytes, &objects, &offsets);
                 (offsets, names, encodings, cmaps)
@@ -2603,6 +2603,31 @@ fn font_object_base_fonts(decode_budget: &DecodeBudget, source: &str) -> font_na
     font_object_names(decode_budget, &objects, b"BaseFont")
 }
 
+/// 原本UTF-8名を優先し、名前が読めないFontだけを対応するprogramへ結び直す。
+fn font_object_display_names(
+    budget: &DecodeBudget,
+    bytes: &[u8],
+    objects: &crate::page_attributes::Objects<'_>,
+    offsets: &StreamOffsets,
+) -> font_names::Names {
+    font_names::read_with_fallback(budget, objects, b"BaseFont", |dictionary, resolver| {
+        font_display_name(budget, bytes, dictionary, resolver, offsets)
+    })
+}
+
+/// 解決済みのFont/Descriptor/File世代を検査し、既存Font展開予算で名前を復元する。
+fn font_display_name<'bytes>(
+    budget: &DecodeBudget,
+    bytes: &[u8],
+    dictionary: &'bytes [u8],
+    resolver: &mut crate::resource_resolver::ResourceResolver<'_, 'bytes>,
+    offsets: &StreamOffsets,
+) -> Option<String> {
+    crate::legacy_font_names::for_font(budget, dictionary, resolver, |number| {
+        embedded_font_payload(budget, bytes, number, offsets)
+    })
+}
+
 /// Font object numberとexternal CMap encoding名の対応を読む。
 pub(crate) fn font_object_encodings(
     decode_budget: &DecodeBudget,
@@ -2615,7 +2640,7 @@ pub(crate) fn font_object_encodings(
 }
 
 /// parser が保持する埋め込み font 1 件の最大展開サイズ。
-const MAX_EMBEDDED_FONT_BYTES: usize = 8 * 1024 * 1024;
+pub(crate) const MAX_EMBEDDED_FONT_BYTES: usize = 8 * 1024 * 1024;
 
 /// 1 PDF から保持する埋め込み font の最大数。
 const MAX_EMBEDDED_FONT_COUNT: usize = 32;
@@ -2632,7 +2657,8 @@ fn extract_embedded_truetype_fonts(
     let stream_offsets = stream_object_offsets(decode_budget, bytes);
     let descriptor_mappings =
         font_descriptor_tounicode_mappings(decode_budget, bytes, &source, &stream_offsets);
-    embedded_fonts::build(
+    let mut legacy_objects = None;
+    embedded_fonts::build_with_fallback(
         decode_budget,
         source.as_bytes(),
         |number| embedded_font_payload(decode_budget, bytes, number, &stream_offsets),
@@ -2641,6 +2667,28 @@ fn extract_embedded_truetype_fonts(
                 .get(&number)
                 .cloned()
                 .unwrap_or_default()
+        },
+        |descriptor, payload| {
+            let file = crate::metadata::value(descriptor, b"FontFile2")
+                .and_then(crate::metadata::reference)?;
+            // 存在しないstreamを先に除き、不正名の破棄だけで索引を追加確保しない。
+            stream_offsets.get(&file)?;
+            if legacy_objects.is_none() {
+                legacy_objects = Some(crate::object_index::build(
+                    decode_budget,
+                    source.as_bytes(),
+                )?);
+            }
+            let mut resolver = crate::resource_resolver::ResourceResolver::new(
+                legacy_objects.as_ref()?,
+                decode_budget,
+            );
+            crate::legacy_font_names::descriptor_payload(
+                decode_budget,
+                descriptor,
+                &mut resolver,
+                payload,
+            )
         },
     )
 }

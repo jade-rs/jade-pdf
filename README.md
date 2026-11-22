@@ -4,6 +4,8 @@ A Rust workspace for comparing PDFs and converting PDF documents to DOCX.
 
 The project is under active development. Conversion coverage and layout fidelity vary by document; see the guides below for supported features and limitations.
 
+Native conversion now recovers unreadable TrueType display names from verified embedded font metadata and retains subsets with nonprinting control glyphs. The reviewed Japanese form renders its text again, but pagination remains incorrect; see the [font and rendering evidence](corpus/validation-native-fonts.json).
+
 ## Features
 
 - **PDF comparison:** align pages and text blocks, inspect extracted document structure, and render pages with Pdfium.
@@ -49,6 +51,8 @@ Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite or
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
+
+Text paragraphs use an explicit line box based on the source font size, with the PDF's blank space applied separately. This prevents font-dependent automatic leading from accumulating between source lines. Font substitution can still shift the first baseline or change glyph widths.
 
 PDF comparison qualification uses 90 registered public PDFs (76 regular documents with 717 pages, 10 robustness inputs, one specification reference, and three unresolved semantic gold cases). Three additional reviewed W3C files represent two independent visible contents and remain outside the registered corpus. See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 

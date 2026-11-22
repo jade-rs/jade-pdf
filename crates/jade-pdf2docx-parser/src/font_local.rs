@@ -97,7 +97,19 @@ pub(super) fn build(
             continue;
         };
         if let Some(base_font) =
-            crate::metadata_names::name(decode_budget, dictionary.as_bytes(), b"BaseFont")
+            crate::metadata_names::name(decode_budget, dictionary.as_bytes(), b"BaseFont").or_else(
+                || {
+                    let mut resolver =
+                        crate::resource_resolver::ResourceResolver::new(objects, decode_budget);
+                    super::font_display_name(
+                        decode_budget,
+                        bytes,
+                        dictionary.as_bytes(),
+                        &mut resolver,
+                        stream_offsets,
+                    )
+                },
+            )
         {
             crate::metadata_map::save(
                 decode_budget,

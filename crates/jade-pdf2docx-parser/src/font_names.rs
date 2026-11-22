@@ -31,6 +31,16 @@ impl IntoIterator for Names {
 
 /// 既知object件数のslotを予約し、有効Font名の保存失敗時は部分索引を捨てる。
 pub(super) fn read(budget: &DecodeBudget, objects: &Objects<'_>, key: &[u8]) -> Names {
+    read_with_fallback(budget, objects, key, |_, _| None)
+}
+
+/// 通常名を優先し、欠落した表示名だけを同じobject graphの根拠から補う。
+pub(super) fn read_with_fallback<'bytes>(
+    budget: &DecodeBudget,
+    objects: &Objects<'bytes>,
+    key: &[u8],
+    mut fallback: impl FnMut(&'bytes [u8], &mut ResourceResolver<'_, 'bytes>) -> Option<String>,
+) -> Names {
     let Some(mut entries) = budget.metadata_vector(objects.iter().count()) else {
         return Names::default();
     };
@@ -38,6 +48,7 @@ pub(super) fn read(budget: &DecodeBudget, objects: &Objects<'_>, key: &[u8]) -> 
     for (&number, (generation, dictionary)) in objects.iter() {
         if super::is_font_dictionary(&mut resolver, dictionary)
             && let Some(name) = crate::metadata_names::name(budget, dictionary, key)
+                .or_else(|| fallback(dictionary, &mut resolver))
         {
             entries.push((number, *generation, name));
         }
