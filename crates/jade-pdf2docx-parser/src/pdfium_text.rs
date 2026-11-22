@@ -67,7 +67,10 @@ pub(crate) fn extract(
             continue;
         }
         let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
-        let mut font_size = bounds.y1 - bounds.y0;
+        // 文字を引けない場合は行の太さ（回転した行でも短い辺）を文字サイズとみなす。
+        let mut font_size = (bounds.y1 - bounds.y0)
+            .abs()
+            .min((bounds.x1 - bounds.x0).abs());
         let mut font_name = None;
         let mut fill_color = None;
         let mut baseline_y = None;

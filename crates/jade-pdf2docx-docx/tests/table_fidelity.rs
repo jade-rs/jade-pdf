@@ -311,3 +311,72 @@ fn header_row_fill_becomes_cell_shading() {
         "both header cells keep the gray fill: {xml}"
     );
 }
+
+/// 罫線のない表も、全行に共通する列の空きから表にし、数値は右揃えにする。
+#[test]
+fn ruleless_table_is_detected_from_aligned_columns() {
+    let row = |y: i32, label: &str, value: &str| {
+        format!(
+            "BT /F1 10 Tf 1 0 0 1 20 {y} Tm ({label}) Tj ET BT /F1 10 Tf 1 0 0 1 160 {y} Tm ({value}) Tj ET"
+        )
+    };
+    let content = [
+        row(160, "Land", "128,138"),
+        row(146, "Buildings", "165,012"),
+        row(132, "Machinery", "1,706"),
+        row(118, "Books", "21,527"),
+    ]
+    .join(" ");
+    let xml = convert("table_fidelity_ruleless", &content);
+    assert_eq!(xml.matches("<w:tbl>").count(), 1, "{xml}");
+    assert_eq!(xml.matches("<w:tr>").count(), 4, "{xml}");
+    assert!(
+        xml.contains(r#"<w:jc w:val="right""#),
+        "numbers right-aligned: {xml}"
+    );
+}
+
+/// 長い文の段落は、列が揃って見えても表にしない。
+#[test]
+fn prose_lines_are_not_ruleless_tables() {
+    let content = (0..5)
+        .map(|index| {
+            let y = 160 - index * 14;
+            format!(
+                "BT /F1 10 Tf 1 0 0 1 20 {y} Tm (This is a long sentence of prose text) Tj ET \
+                 BT /F1 10 Tf 1 0 0 1 20 {} Tm () Tj ET",
+                y
+            )
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let xml = convert("table_fidelity_prose", &content);
+    assert!(!xml.contains("<w:tbl>"), "{xml}");
+}
+
+/// 横に並んだ表の外接矩形にかかる本文も、表に吸い込まずに本文として残す。
+#[test]
+fn text_beside_side_by_side_tables_is_kept() {
+    let grid = |x0: i32, y0: i32| {
+        let (x1, x2, y1, y2) = (x0 + 50, x0 + 100, y0 + 30, y0 + 60);
+        format!(
+            "{x0} {y0} m {x2} {y0} l S {x0} {y1} m {x2} {y1} l S {x0} {y2} m {x2} {y2} l S \
+             {x0} {y0} m {x0} {y2} l S {x1} {y0} m {x1} {y2} l S {x2} {y0} m {x2} {y2} l S \
+             BT /F1 10 Tf 1 0 0 1 {} {} Tm (A{x0}) Tj ET BT /F1 10 Tf 1 0 0 1 {} {} Tm (B{x0}) Tj ET",
+            x0 + 5,
+            y0 + 40,
+            x1 + 5,
+            y0 + 10
+        )
+    };
+    let content = format!(
+        "0.5 w {} {} BT /F1 10 Tf 1 0 0 1 25 175 Tm (Notice text) Tj ET",
+        grid(20, 60),
+        grid(170, 120)
+    );
+    let xml = convert("table_fidelity_beside_container", &content);
+    assert!(
+        xml.contains(">Notice text<"),
+        "text above the left table must remain: {xml}"
+    );
+}

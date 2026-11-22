@@ -346,7 +346,7 @@ fn is_cjk(ch: char) -> bool {
 /// 語間を超える場合、空白の位置で語ごとの文字片へ分ける。
 ///
 /// 位置は字の公称幅（全角 1 em、半角 0.55 em）で推定し、余りの幅を空白へ配分する。
-fn split_at_wide_spaces(fragment: &CellFragment) -> Vec<CellFragment> {
+pub(crate) fn split_at_wide_spaces(fragment: &CellFragment) -> Vec<CellFragment> {
     let body = fragment.text.trim();
     let chars = body.chars().collect::<Vec<_>>();
     let spaces = chars.iter().filter(|ch| ch.is_whitespace()).count();

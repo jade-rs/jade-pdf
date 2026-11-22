@@ -57,6 +57,8 @@ pub use word_page_fit::docx_quality_report;
 mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output_path::resolve_output_parent;
+mod column_bands;
+mod ruleless_table;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
 mod table_cell_text;
@@ -1307,6 +1309,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
+    let band_edges = column_bands::column_band_edges(parsed, page.page, positioned_tables);
+    let band_page_width = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
+        .unwrap_or(f32::MAX);
     let mut blocks = page
         .lines
         .iter()
@@ -1323,7 +1332,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     {
         let top_y = table.bounds.y1;
         blocks.push(StructuredBlock::Table {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            order_index: column_bands::insertion_index_in_band(
+                &page.lines,
+                top_y,
+                (table.bounds.x0 + table.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             top_y,
             table: table.clone(),
         });
@@ -1336,7 +1351,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     {
         let top_y = image.bounds.y1;
         blocks.push(StructuredBlock::Image {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            order_index: column_bands::insertion_index_in_band(
+                &page.lines,
+                top_y,
+                (image.bounds.x0 + image.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             top_y,
             image: image.clone(),
             image_index,
@@ -2031,11 +2052,17 @@ fn text_lines_by_page_from_pdf_text_elements(
                 .filter(|graphic| graphic.page == page)
                 .cloned()
                 .collect::<Vec<_>>();
+            // 縦罫線で段を区切るページは、段をまたいで行をつながない。
+            let band_edges = column_bands::column_band_edges(parsed, page, positioned_tables);
+            let text_band = |text: &ParsedTextElement| {
+                column_bands::band_of((text.bounds.x0 + text.bounds.x1) / 2.0, &band_edges)
+            };
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
                 if let Some(row) = rows.iter_mut().find(|row| {
                     (native_baseline::line_y(row[0]) - native_baseline::line_y(text)).abs()
                         <= TEXT_ROW_Y_TOLERANCE_PT
+                        && text_band(row[0]) == text_band(text)
                 }) {
                     row.push(text);
                 } else {
@@ -2062,7 +2089,19 @@ fn text_lines_by_page_from_pdf_text_elements(
                 })
                 .filter(|line| !is_pdf_page_number_line(parsed, page, line))
                 .collect::<Vec<_>>();
-            let lines = if positioned_tables.iter().any(|table| table.page == page) {
+            // 縦罫線で段を区切るページは、左の段から順に読む。
+            let lines = if !band_edges.is_empty() {
+                column_bands::merge_margin_band_lines(
+                    column_bands::order_lines_by_band(lines, &band_edges, page_width),
+                    &band_edges,
+                    page_width,
+                    parsed
+                        .pages
+                        .iter()
+                        .find(|parsed_page| parsed_page.page_number == page)
+                        .is_some_and(|parsed_page| parsed_page.rotation.rem_euclid(180) == 90),
+                )
+            } else if positioned_tables.iter().any(|table| table.page == page) {
                 lines
             } else {
                 order_text_lines_for_layout(parsed, page, lines)
@@ -2102,6 +2141,14 @@ fn text_element_is_in_table(
 ) -> bool {
     if text.page != table.page {
         return false;
+    }
+    // 横並びの表をまとめた外側の表は、メンバーの表の範囲だけを表内とする
+    // （外接矩形にかかる表の外の本文を落とさない）。
+    if is_side_by_side_container(table) {
+        return table
+            .nested_tables
+            .iter()
+            .any(|member| text_element_is_in_table(parsed, text, member));
     }
     let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
     let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
@@ -4259,6 +4306,22 @@ fn table_border_size_for_pdf_rule(stroke_width: f32) -> usize {
 
 /// PDF から抽出した要素を位置付き `OcrTable` 群へ変換する。
 fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<PositionedTable> {
+    let mut tables = infer_ruled_positioned_tables(parsed);
+    // 罫線から作った表にかからない範囲で、罫線のない表を文字の並びから補う。
+    let ruleless = ruleless_table::infer_ruleless_tables(parsed, &tables);
+    if !ruleless.is_empty() {
+        tables.extend(ruleless);
+        tables.sort_by(|a, b| {
+            a.page
+                .cmp(&b.page)
+                .then(b.bounds.y1.total_cmp(&a.bounds.y1))
+        });
+    }
+    tables
+}
+
+/// 罫線（と罫線のない頁の文字格子）から表を推定する。
+fn infer_ruled_positioned_tables(parsed: &ParsedDocument) -> Vec<PositionedTable> {
     let mut graphic_tables = parsed
         .graphics
         .iter()
@@ -4302,7 +4365,11 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         });
         return group_side_by_side_tables(attach_nested_positioned_tables(graphic_tables));
     }
+    // 罫線のないページの文字格子の表は、罫線を付けずに出す。
     infer_positioned_tables_from_text_grid(parsed)
+        .into_iter()
+        .map(borderless_text_table)
+        .collect()
 }
 
 /// 同じ高さに横へ並ぶ表を、枠なし 1 行の外側表の各セルへ入れ子にしてまとめる。
@@ -4337,6 +4404,18 @@ fn group_side_by_side_tables(tables: Vec<PositionedTable>) -> Vec<PositionedTabl
             side_by_side_container(group)
         })
         .collect()
+}
+
+/// 横並びの表をまとめた外側の表（本文を持たず子表だけを持つ 1 行の表）か判定する。
+fn is_side_by_side_container(table: &PositionedTable) -> bool {
+    !table.nested_tables.is_empty()
+        && table.table.row_count() == 1
+        && table
+            .table
+            .rows
+            .iter()
+            .flatten()
+            .all(|cell| cell.is_empty())
 }
 
 /// 横並びの表を子表として持つ、枠なし 1 行の外側表を作る。
@@ -6239,6 +6318,30 @@ fn infer_positioned_tables_from_text_grid(parsed: &ParsedDocument) -> Vec<Positi
         .into_iter()
         .filter_map(|page| infer_positioned_table_from_text_grid_page(parsed, page))
         .collect()
+}
+
+/// 文字の並びだけから作った表を、罫線なし・数値は右揃えの表モデルにする。
+fn borderless_text_table(mut table: PositionedTable) -> PositionedTable {
+    if table.docx_table.is_some() {
+        return table;
+    }
+    let mut model = docx_table_model_from_ocr_table(&table.table);
+    for cell in model.rows.iter_mut().flatten() {
+        cell.borders = Some(DocxCellBorders {
+            top: false,
+            left: false,
+            bottom: false,
+            right: false,
+            size_eighths_pt: 0,
+        });
+        let body = cell.text.trim();
+        let digits = body.chars().filter(|ch| ch.is_ascii_digit()).count();
+        if !body.is_empty() && digits * 2 >= body.chars().filter(|ch| !ch.is_whitespace()).count() {
+            cell.alignment = ParagraphAlignment::Right;
+        }
+    }
+    table.docx_table = Some(model);
+    table
 }
 
 /// 指定 page の座標付き text element を反復列の表へ変換する。
