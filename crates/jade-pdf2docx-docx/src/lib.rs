@@ -329,8 +329,10 @@ fn convert_pdf_file_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
+    recover_angle_marks(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
@@ -445,8 +447,10 @@ fn convert_pdf_bytes_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
+    recover_angle_marks(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
@@ -741,6 +745,87 @@ fn drop_rule_glyphs(parsed: &mut ParsedDocument) {
     });
 }
 
+/// 官報で使われる DynaFont（フォント名に `DFHS` を含む）の、ToUnicode のない字形が
+/// Pdfium で割り当てられる私用領域の符号位置と、その字。
+///
+/// 縦書きの見出しの数字・財務表の負の印・座標の度分秒・小数点・項目記号など。
+/// 字形を目視で確認したものだけを載せる。
+const DYNAFONT_PRIVATE_USE_GLYPHS: &[(char, &str)] = &[
+    ('\u{E741}', "（注）"),
+    ('\u{E888}', "△"),
+    ('\u{E88A}', "0"),
+    ('\u{E88B}', "1"),
+    ('\u{E88C}', "2"),
+    ('\u{E88D}', "3"),
+    ('\u{E88E}', "4"),
+    ('\u{E88F}', "5"),
+    ('\u{E890}', "6"),
+    ('\u{E891}', "7"),
+    ('\u{E892}', "8"),
+    ('\u{E893}', "9"),
+    ('\u{EA6D}', "′"),
+    ('\u{EA6E}', "″"),
+    ('\u{EA6F}', "°"),
+    ('\u{EA74}', "."),
+    ('\u{EA75}', ","),
+    ('\u{E9E5}', "（ア）"),
+    ('\u{E9E6}', "（イ）"),
+];
+
+/// 連番で並ぶ DynaFont の項目記号（先頭の私用領域の符号位置, 対応する Unicode の先頭, 個数）。
+///
+/// ⑴⑵⑶⑷ と ①② を目視で確認し、Unicode の連番と同じ順に並ぶことから範囲で対応させる。
+const DYNAFONT_PRIVATE_USE_RUNS: &[(u32, u32, u32)] = &[(0xE7B2, 0x2474, 20), (0xE7D1, 0x2460, 20)];
+
+/// DynaFont の私用領域の字に対応する文字列を返す。
+fn dynafont_private_use_glyph(ch: char) -> Option<String> {
+    if let Some((_, value)) = DYNAFONT_PRIVATE_USE_GLYPHS
+        .iter()
+        .find(|(glyph, _)| *glyph == ch)
+    {
+        return Some((*value).to_string());
+    }
+    let code = ch as u32;
+    DYNAFONT_PRIVATE_USE_RUNS
+        .iter()
+        .find(|(start, _, count)| (*start..*start + *count).contains(&code))
+        .and_then(|(start, unicode, _)| char::from_u32(unicode + code - start))
+        .map(String::from)
+}
+
+/// 既知のフォントの私用領域の字を Unicode の字へ置き換え、罫線用フォントの私用領域の字は除く。
+fn map_known_private_use_glyphs(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    parsed.text_elements.retain_mut(|text| {
+        let Some(font) = text.font_name.as_deref() else {
+            return true;
+        };
+        if !text.text.chars().any(is_private_use) {
+            return true;
+        }
+        // 罫線用フォント（MFHSLine など）の私用領域の字は、線を字で組んだもの。
+        if font.contains("Line") {
+            text.text = text
+                .text
+                .chars()
+                .filter(|ch| !is_private_use(*ch))
+                .collect();
+            return !text.text.trim().is_empty();
+        }
+        if font.contains("DFHS") {
+            let mut mapped = String::with_capacity(text.text.len());
+            for ch in text.text.chars() {
+                match dynafont_private_use_glyph(ch) {
+                    Some(value) => mapped.push_str(&value),
+                    None => mapped.push(ch),
+                }
+            }
+            text.text = mapped;
+        }
+        true
+    });
+}
+
 /// 数字に挟まれた、Unicode の分からない小さな点の字を小数点（`.`）に戻す。
 ///
 /// 官報の数値は小数点だけを ToUnicode のない別フォントで組むことがあり、私用領域の
@@ -784,6 +869,145 @@ fn recover_decimal_points(parsed: &mut ParsedDocument) {
         };
         if neighbour(true).is_some() && neighbour(false).is_some() {
             parsed.text_elements[index].text = ".".to_string();
+        }
+    }
+}
+
+/// 度分秒の記号を Unicode の分からない私用領域の字で組んだ座標から、記号を復元する。
+///
+/// 同じ行で続く文字片をつないだ文字列に「数字 P 数字 Q 数字（小数可）R」（P・Q・R は互いに
+/// 異なる私用領域の字）が現れたら、P を `°`、Q を `′`、R を `″` と学習し、矛盾がなければ
+/// 文書中の同じ字を置き換える。
+fn recover_angle_marks(parsed: &mut ParsedDocument) {
+    let mut votes = BTreeMap::<char, BTreeMap<char, usize>>::new();
+    let pages = parsed
+        .text_elements
+        .iter()
+        .map(|text| text.page)
+        .collect::<BTreeSet<_>>();
+    for page in pages {
+        let mut texts = parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .collect::<Vec<_>>();
+        texts.sort_by(|a, b| {
+            let (a, b) = (normalized_bounds(a.bounds), normalized_bounds(b.bounds));
+            b.y1.total_cmp(&a.y1).then(a.x0.total_cmp(&b.x0))
+        });
+        // 行ごとに x 順へ並べ、1.5 em 以内で続く文字片をつなぐ。
+        let mut lines: Vec<Vec<&ParsedTextElement>> = Vec::new();
+        for text in texts {
+            let bounds = normalized_bounds(text.bounds);
+            // 上付きの小さな記号も同じ行に入るよう、高さ方向に重なれば同じ行とみなす。
+            match lines.iter_mut().find(|line| {
+                let first = normalized_bounds(line[0].bounds);
+                bounds.y0 < first.y1 && bounds.y1 > first.y0
+            }) {
+                Some(line) => line.push(text),
+                None => lines.push(vec![text]),
+            }
+        }
+        for mut line in lines {
+            line.sort_by(|a, b| {
+                a.bounds
+                    .x0
+                    .min(a.bounds.x1)
+                    .total_cmp(&b.bounds.x0.min(b.bounds.x1))
+            });
+            let mut chain = String::new();
+            let mut previous: Option<ParsedBounds> = None;
+            for text in line {
+                let bounds = normalized_bounds(text.bounds);
+                let em = text.font_size.max(bounds.y1 - bounds.y0).max(1.0);
+                if previous.is_some_and(|previous| bounds.x0 - previous.x1 > 1.5 * em) {
+                    collect_angle_mark_votes(&chain, &mut votes);
+                    chain.clear();
+                }
+                chain.extend(text.text.chars().filter(|ch| !ch.is_whitespace()));
+                previous = Some(bounds);
+            }
+            collect_angle_mark_votes(&chain, &mut votes);
+        }
+    }
+    // 1 つの字の 8 割以上が同じ記号に学習され、記号どうしも重ならない場合だけ置き換える。
+    let mut mapping = BTreeMap::new();
+    for (glyph, marks) in &votes {
+        let total = marks.values().sum::<usize>();
+        if let Some((&mark, &count)) = marks.iter().max_by_key(|(_, count)| **count)
+            && count * 5 >= total * 4
+        {
+            mapping.insert(*glyph, mark);
+        }
+    }
+    let marks = mapping.values().collect::<Vec<_>>();
+    if marks.iter().collect::<BTreeSet<_>>().len() != marks.len() {
+        return;
+    }
+    if mapping.is_empty() {
+        return;
+    }
+    for text in &mut parsed.text_elements {
+        if text.text.chars().any(|ch| mapping.contains_key(&ch)) {
+            text.text = text
+                .text
+                .chars()
+                .map(|ch| mapping.get(&ch).copied().unwrap_or(ch))
+                .collect();
+        }
+    }
+}
+
+/// つないだ文字列から「数字 P 数字 Q 数字 R」を探し、P・Q・R の記号を投票する。
+fn collect_angle_mark_votes(chain: &str, votes: &mut BTreeMap<char, BTreeMap<char, usize>>) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    let is_digit = |ch: char| ch.is_ascii_digit() || ('０'..='９').contains(&ch);
+    let chars = chain.chars().collect::<Vec<_>>();
+    let digits_from = |mut index: usize, decimal: bool| {
+        let start = index;
+        while index < chars.len() && is_digit(chars[index]) {
+            index += 1;
+        }
+        if decimal
+            && index > start
+            && index + 1 < chars.len()
+            && chars[index] == '.'
+            && is_digit(chars[index + 1])
+        {
+            index += 1;
+            while index < chars.len() && is_digit(chars[index]) {
+                index += 1;
+            }
+        }
+        (index > start).then_some(index)
+    };
+    for start in 0..chars.len() {
+        if !is_digit(chars[start]) || (start > 0 && is_digit(chars[start - 1])) {
+            continue;
+        }
+        let Some(p) = digits_from(start, false) else {
+            continue;
+        };
+        let Some(&degree) = chars.get(p).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        let Some(q) = digits_from(p + 1, false) else {
+            continue;
+        };
+        let Some(&minute) = chars.get(q).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        let Some(r) = digits_from(q + 1, true) else {
+            continue;
+        };
+        let Some(&second) = chars.get(r).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        if degree == minute || minute == second || degree == second {
+            continue;
+        }
+        for (glyph, mark) in [(degree, '°'), (minute, '′'), (second, '″')] {
+            *votes.entry(glyph).or_default().entry(mark).or_default() += 1;
         }
     }
 }
@@ -6689,6 +6913,149 @@ mod tests {
             .map(|text| text.text.as_str())
             .collect::<Vec<_>>();
         assert_eq!(texts, vec!["1", ".", "061", "\u{EA74}"]);
+    }
+
+    /// 座標の並びから度分秒の記号を学習し、文書中の同じ私用領域の字を置き換える。
+    #[test]
+    fn private_use_angle_marks_become_degree_minute_second() {
+        let text = |x0: f32, x1: f32, y0: f32, body: &str| ParsedTextElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0,
+                y0,
+                x1,
+                y1: y0 + 8.0,
+            },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dms.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(
+                    100.0,
+                    140.0,
+                    300.0,
+                    "36 \u{EA6F} 47\u{EA6D} 11.6908\u{EA6E}",
+                ),
+                text(100.0, 112.0, 200.0, "138"),
+                text(112.0, 120.0, 200.0, "\u{EA6F}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_angle_marks(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["36 ° 47′ 11.6908″", "138", "°"]);
+    }
+
+    /// 上付きの記号を別の文字片で置いた座標（官報の実配置）からも学習する。
+    #[test]
+    fn raised_angle_mark_fragments_are_learned() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dms-real.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(263.6, 87.5, 290.7, 93.5, "１ 31"),
+                text(291.9, 91.8, 293.9, 93.8, "\u{EA6F}"),
+                text(295.8, 87.5, 303.2, 93.5, "53"),
+                text(303.7, 91.8, 305.3, 93.9, "\u{EA6D}"),
+                text(307.8, 87.5, 315.2, 93.5, "30"),
+                text(316.0, 87.2, 317.0, 88.2, "\u{EA74}"),
+                text(317.8, 87.5, 333.2, 93.5, "6145"),
+                text(333.9, 91.8, 337.1, 93.9, "\u{EA6E}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_decimal_points(&mut parsed);
+        recover_angle_marks(&mut parsed);
+        let joined = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>();
+        assert_eq!(joined, "１ 31°53′30.6145″");
+    }
+
+    /// 官報の DynaFont の既知の私用領域の字は置き換え、罫線用フォントの字は除く。
+    #[test]
+    fn known_dynafont_private_use_glyphs_are_mapped() {
+        let text = |font: &str, body: &str| ParsedTextElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 0.0,
+                y0: 0.0,
+                x1: 10.0,
+                y1: 8.0,
+            },
+            font_size: 8.0,
+            font_name: Some(font.to_string()),
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dynafont.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(
+                    "ABCDEF+DFHSMinchoRPro6N-W3",
+                    "号外第\u{E88B}\u{E890}\u{E88F}号",
+                ),
+                text("ABCDEF+DFHSMinchoRPro6N-W3", "\u{E888}12"),
+                text("ABCDEF+DFHSMinchoRPro6N-W3", "\u{E7B4}\u{E7D2}"),
+                text("ABCDEF+MFHSLine-W3", "\u{E007}\u{E007}"),
+                text("Other", "\u{E88B}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        map_known_private_use_glyphs(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["号外第165号", "△12", "⑶②", "\u{E88B}"]);
     }
 
     /// 罫線用フォントの細長い私用領域の字は除き、点のような字は文字のまま残す。
