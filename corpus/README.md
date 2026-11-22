@@ -350,6 +350,8 @@ Chrome170件、Worker68資料・835操作と追加109件、通常／SDK同梱各
 
 ```sh
 # ダウンロードには Python 標準ライブラリだけを使う。
+# 接続・読み取りタイムアウトだけを1回再試行する（各試行45秒）。
+# HTTPエラー・証明書エラー・サイズやSHA-256の不一致は失敗のまま扱う。
 python3 tools/pdf_corpus.py
 # 以降はキャッシュだけを検証することもできる。
 python3 tools/pdf_corpus.py --offline

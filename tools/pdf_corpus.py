@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import urllib.error
 import urllib.request
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -32,8 +33,15 @@ def fetch(entry, destination, offline=False):
     request = urllib.request.Request(
         entry["url"], headers={"User-Agent": "jade-pdf-corpus/1"}
     )
-    with urllib.request.urlopen(request, timeout=45) as response:
-        data = response.read(MAX_BYTES + 1)
+    for attempt in range(2):
+        try:
+            with urllib.request.urlopen(request, timeout=45) as response:
+                data = response.read(MAX_BYTES + 1)
+            break
+        except (TimeoutError, urllib.error.URLError) as error:
+            reason = error.reason if isinstance(error, urllib.error.URLError) else error
+            if attempt == 1 or not isinstance(reason, TimeoutError):
+                raise
     if len(data) > MAX_BYTES or not valid(data):
         raise ValueError(f"{entry['id']}: unexpected PDF size or SHA-256; source may have changed")
     temporary = path.with_suffix(".pdf.part")
