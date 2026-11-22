@@ -74,11 +74,17 @@ jobs:
           JADE_PDF_BROWSER_ENGINE: ${{ matrix.engine }}
           JADE_PDF_BINARY: target/release/pdf-diff
           JADE_PDF_BROWSER_REPORT: corpus/results-browser-${{ matrix.engine }}.json
+      - name: Production DOCX WASM API
+        run: |
+          python3 tools/wasm-docx-smoke/prepare_runtime.py
+          python3 tools/wasm-docx-smoke/check_browser.py --probe corpus/wasm-runtime/docx-probe --output corpus/wasm-runtime/docx-browser-${{ matrix.engine }} --engine ${{ matrix.engine }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: always()
         with:
           name: browser-${{ matrix.engine }}
-          path: corpus/results-browser-${{ matrix.engine }}.json
+          path: |
+            corpus/results-browser-${{ matrix.engine }}.json
+            corpus/wasm-runtime/docx-browser-${{ matrix.engine }}/geometry-report.json
           if-no-files-found: ignore
 
   public-pdf-corpus:
@@ -165,6 +171,10 @@ jobs:
         env:
           JADE_PDF_BINARY: target/release/pdf-diff
       - run: node tools/wasm-smoke/worker_smoke.mjs
+      - name: Production DOCX WASM API
+        run: |
+          python3 tools/wasm-docx-smoke/prepare_runtime.py
+          python3 tools/wasm-docx-smoke/check_browser.py --probe corpus/wasm-runtime/docx-probe --output corpus/wasm-runtime/docx-browser-chromium --engine chromium
       - name: Independent text inventory (review outcomes retained)
         run: |
           audit_exit_code=0
@@ -198,4 +208,5 @@ jobs:
             corpus/results-independent-text.json
             corpus/results-coordinate-units.json
             corpus/results-table-order.json
+            corpus/wasm-runtime/docx-browser-chromium/geometry-report.json
           if-no-files-found: ignore
