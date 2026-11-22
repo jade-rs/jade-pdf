@@ -330,6 +330,7 @@ fn convert_pdf_file_with_check(
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
     drop_rule_glyphs(&mut parsed);
+    recover_decimal_points(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
@@ -445,6 +446,7 @@ fn convert_pdf_bytes_with_check(
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
     drop_rule_glyphs(&mut parsed);
+    recover_decimal_points(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
@@ -733,6 +735,53 @@ fn drop_rule_glyphs(parsed: &mut ParsedDocument) {
         let line_like = (height <= 1.5 && width >= 3.0) || (width <= 1.5 && height >= 3.0);
         !line_like
     });
+}
+
+/// 数字に挟まれた、Unicode の分からない小さな点の字を小数点（`.`）に戻す。
+///
+/// 官報の数値は小数点だけを ToUnicode のない別フォントで組むことがあり、私用領域の
+/// 文字として抽出される。同じ行で左右にすき間なく数字が続き、字の大きさが文字サイズの
+/// 3 割以下でベースライン付近にある 1 文字だけを小数点とみなす。
+fn recover_decimal_points(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    let candidates = parsed
+        .text_elements
+        .iter()
+        .enumerate()
+        .filter(|(_, text)| {
+            let mut chars = text.text.trim().chars();
+            matches!((chars.next(), chars.next()), (Some(ch), None) if is_private_use(ch))
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    for index in candidates {
+        let dot = normalized_bounds(parsed.text_elements[index].bounds);
+        let page = parsed.text_elements[index].page;
+        let size = (dot.x1 - dot.x0).max(dot.y1 - dot.y0);
+        let neighbour = |want_left: bool| {
+            parsed.text_elements.iter().find(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                let em = text.font_size.max(bounds.y1 - bounds.y0).max(1.0);
+                let digit = if want_left {
+                    text.text.trim_end().chars().last()
+                } else {
+                    text.text.trim_start().chars().next()
+                }
+                .is_some_and(|ch| ch.is_ascii_digit() || ('０'..='９').contains(&ch));
+                let touching = if want_left {
+                    (dot.x0 - bounds.x1).abs() <= 0.25 * em
+                } else {
+                    (bounds.x0 - dot.x1).abs() <= 0.25 * em
+                };
+                // 点がその数字の行の下側（ベースライン付近）にあること。
+                let low = dot.y0 >= bounds.y0 - 0.2 * em && dot.y1 <= bounds.y0 + 0.4 * em;
+                text.page == page && digit && touching && low && size <= 0.3 * em
+            })
+        };
+        if neighbour(true).is_some() && neighbour(false).is_some() {
+            parsed.text_elements[index].text = ".".to_string();
+        }
+    }
 }
 
 /// 縦罫線をまたいで 1 つにまとめられた文字片を、罫線の位置で分ける。
@@ -6398,6 +6447,45 @@ fn is_vertical_line(bounds: &ParsedBounds) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// 数字に挟まれた小さな私用領域の点は小数点に戻し、離れた字はそのまま残す。
+    #[test]
+    fn private_use_dot_between_digits_becomes_decimal_point() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "decimal.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            text_elements: vec![
+                text(400.0, 526.9, 402.5, 532.8, "1"),
+                text(403.8, 526.5, 404.8, 527.5, "\u{EA74}"),
+                text(405.6, 526.8, 416.5, 532.8, "061"),
+                text(100.0, 526.5, 101.0, 527.5, "\u{EA74}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_decimal_points(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["1", ".", "061", "\u{EA74}"]);
+    }
 
     /// 罫線用フォントの細長い私用領域の字は除き、点のような字は文字のまま残す。
     #[test]
