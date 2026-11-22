@@ -43,7 +43,15 @@
     "corpus/wasm-runtime/w3c-tab-order-source-qualification/render-docx-initial.log": "afdaaf8d28adab0acdca9abdb78c43740520ca9ac6e2a5cba48bbbc0dcde5f7f",
     "corpus/wasm-runtime/w3c-tab-order-source-qualification/render-docx-initial/page-1.png": "555a71773143a5336f19812fe36aff799945e36e57d41a050d8bda5cebc00e64",
     "corpus/wasm-runtime/w3c-tab-order-source-qualification/probe-glyph-origins.py": "444882c5828a6d4236f534fe87dff9f2eb5f22e904d7c64e5a7b0f3aaa5368d3",
-    "corpus/wasm-runtime/w3c-tab-order-source-qualification/glyph-origin-review.json": "f4bf56fdcc46b322ee53cea538c71bb89814b140cda1b444a9963f974353be15"
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/glyph-origin-review.json": "f4bf56fdcc46b322ee53cea538c71bb89814b140cda1b444a9963f974353be15",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/probe-parser-elements.rs": "ee89bc7d49629033ed3ee4cfa29884ceb3e6c695f5dfa6501b2d4953c1883da7",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/parser-probe-build.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/parsed-elements.tsv": "6307f9cb68364f5e6cc8d597297a14c1bf88606f7afec18b453bf6d106b98f86",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/parsed-elements-summary.log": "d72b3bcc13c13af1de9f8fb2692a5ca649dd1579347a59ede2f5849a78e10434",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/check-word-boundaries.py": "8ccf7329b2fea2c1e4037d0b2873db99ac78ac4f41901e9d8f9cdd8f1eb179e8",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/word-boundaries-initial.json": "4eba97b3af3668fe9e1dc5e810c463412d21d7f8da771e4982d893752935dc20",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/word-boundaries-initial.log": "d03528f4797c080c9b88b545abef3ab676b3585c561dae098a359c189ff36ee2",
+    "corpus/w3c-pdf3-word-boundary-gold.json": "e3014c433f6c6aa0d8124356abc5e3ac28c0084d687cc48f66ef1ec038d756a3"
   },
   "independent_SDK_geometry_review": {
     "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
@@ -59,5 +67,62 @@
     "interpretation": "The em dash and adjacent characters share the same SDK origin y; tight glyph ink rectangles differ. This supports investigating bbox-based line grouping but is not yet proof of the actual parser/DOCX root cause. No runtime/gold/threshold changes.",
     "probe": "corpus/wasm-runtime/w3c-tab-order-source-qualification/probe-glyph-origins.py",
     "records": "corpus/wasm-runtime/w3c-tab-order-source-qualification/glyph-origin-review.json"
+  },
+  "actual_parser_geometry_review": {
+    "source": "frozen Word-fit parser rlib43eecfbb18567b81; private read-only rustc probe, PDFIUM8111 explicitly selected",
+    "parsed_elements": 68,
+    "quality_warnings": 0,
+    "dash_element": {
+      "index": 66,
+      "bounds": [
+        224.97601,
+        228.722,
+        234.09601,
+        229.62201
+      ],
+      "font_size": 12
+    },
+    "adjacent_text_elements": [
+      {
+        "index": 65,
+        "text": "Call the grammar police",
+        "bounds": [
+          108.614006,
+          223.70601,
+          223.38199,
+          233.99
+        ]
+      },
+      {
+        "index": 67,
+        "text": "that last item starts with a conjunction!",
+        "bounds": [
+          235.042,
+          223.70601,
+          429.61002,
+          233.99
+        ]
+      }
+    ],
+    "y0_difference": 5.015990000000016,
+    "DOCX_row_y0_tolerance_pt": 4.0,
+    "finding": "The active parser output places the em dash more than4pt above its neighboring text in y0 although the SDK glyph origins share a baseline. DOCX row grouping uses y0 with4pt tolerance, so the dash splits into its own row. Native parser segment extraction also trims segment text and drops whitespace-only segments. Need owned regression and a general geometry/space representation fix; no runtime or gold correction made.",
+    "linked_rlib_sha256": "9df920399419097f2921780a7e005f35dab74447dcdcb804d9a65b33045fa67e"
+  },
+  "selected_word_boundary_baseline": {
+    "gold": "corpus/w3c-pdf3-word-boundary-gold.json",
+    "scope": "Six selected literal phrases with word boundaries; paragraph-aware DOCX text, never insert spaces between w:t runs. Not full-page fidelity.",
+    "declared_after_initial_product_baseline": true,
+    "declared_before_any_fix": true,
+    "source_visually_rechecked": true,
+    "original_three_gold_cases_unchanged": true,
+    "passed": 3,
+    "total": 6,
+    "owned_checker_controls": 6,
+    "failed_cases": [
+      "holiday-word-boundaries",
+      "email-word-boundaries",
+      "dash-and-word-boundaries"
+    ]
   }
 }

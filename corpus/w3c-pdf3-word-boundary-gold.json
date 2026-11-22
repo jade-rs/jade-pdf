@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "source_id": "w3c-pdf3-tab-order-2026",
+  "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+  "scope": "Six selected literal phrases with word boundaries; paragraph-aware DOCX text, never insert spaces between w:t runs. Not full-page fidelity.",
+  "review": {
+    "original_page_visually_reviewed_again": true,
+    "declared_after_initial_product_baseline": true,
+    "product_baseline_already_seen": true,
+    "declared_before_any_spacing_or_baseline_fix": true,
+    "original_three_reading_order_cases_unchanged": true,
+    "selection": "Manual transcription from the original rendered page. Added to measure the separate spacing failure the compact original gold cannot detect."
+  },
+  "cases": [
+    {"id": "heading-word-boundaries", "text": "A list of things you should know about"},
+    {"id": "holiday-word-boundaries", "text": "You get six weeks’ paid holiday per year."},
+    {"id": "form-heading-word-boundaries", "text": "Please complete the following form"},
+    {"id": "email-word-boundaries", "text": "Email address:"},
+    {"id": "contact-word-boundaries", "text": "You will be contacted within a week."},
+    {"id": "dash-and-word-boundaries", "text": "Call the grammar police—that last item starts with a conjunction!"}
+  ]
+}
