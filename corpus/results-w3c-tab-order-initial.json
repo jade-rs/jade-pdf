@@ -1,0 +1,46 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T14:15:16.588766+00:00",
+  "production_ready": false,
+  "source_id": "w3c-pdf3-tab-order-2026",
+  "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+  "gold_declared_before_product_revision": "4a53de9",
+  "frozen_CLI_revision": "fc9d5c015b5ca24ee5f39d83df061def177075db",
+  "frozen_CLI_sha256": "d6785677dafff3b4858cbb14a111ea977b03d0316e3a4ecf22f50b809238b1b2",
+  "source_unchanged": true,
+  "default": {
+    "exit": 0,
+    "selected_cases_passed": 2,
+    "selected_cases_total": 3,
+    "failed_case": "numbered-list-order",
+    "failure": "Em dash from the fourth list item moved before its sentence.",
+    "quality_warnings": 0
+  },
+  "strict": {
+    "exit": 0,
+    "same_selected_failure": true,
+    "unguarded_failure": true
+  },
+  "actual_visual_QA": {
+    "original_pages": 1,
+    "output_pages": 1,
+    "both_individually_viewed": true,
+    "renderer": "Poppler original1800px; bundled documents/render_docx.py for DOCX",
+    "remaining": [
+      "Em dash appears on a separate line before Call the grammar police; item4 and its text are split.",
+      "Spaces between several PDF fragments are absent in visible Word prose, e.g. ofthingsyou and paidholidayperyear.",
+      "Original three selected gold cases ignore whitespace; their2/3 score does not measure this additional word-boundary failure.",
+      "Static source3empty fields/TabsS and tagOBJR order verified; interactive keyboard navigation and editable DOCX field behavior untested."
+    ]
+  },
+  "baseline_text_extraction_scope": "Initial probe joined w:t runs with newlines. This can hide missing inter-run spaces; visual QA exposed it. Retain original baseline rather than claim whole-text fidelity. Future paragraph-aware extraction and source/owned word-boundary gold must cover the spacing issue.",
+  "registered": false,
+  "pending_manifest_registration": "Source review and preproduct gold committed; baseline failures retained. Do not omit the failed fourth-list rule or treat strict acceptance as correctness.",
+  "notice": "Copyright © 2023 W3C®. This software or document includes material copied from or derived from Reading order example for WCAG's PDF3 Technique, https://www.w3.org/WAI/WCAG22/working-examples/pdf-reading-order/reading-order.pdf.",
+  "sha256": {
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/DOCX-initial-baseline.json": "0339e998cf180403fb7a90d71c3794b0c0a8253a9a88e397ee24ed11fc772208",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/check-docx-baseline.py": "0c677b01de4e5a45ec3985f80b265e595f47bbba8860b759c27ba9e682924b5b",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/render-docx-initial.log": "afdaaf8d28adab0acdca9abdb78c43740520ca9ac6e2a5cba48bbbc0dcde5f7f",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/render-docx-initial/page-1.png": "555a71773143a5336f19812fe36aff799945e36e57d41a050d8bda5cebc00e64"
+  }
+}
