@@ -94,6 +94,50 @@ fn body_start_survives_a_graphic_to_its_left() {
     check_body_start(bytes);
 }
 
+/// 見出しが余白を変えても、表のグリッド開始位置を独立に保持する。
+#[test]
+fn table_start_survives_a_heading_overhang() {
+    for heading in [
+        String::new(),
+        format!("BT /F1 10 Tf 60 650 Td ({}) Tj ET", "x".repeat(75)),
+    ] {
+        let content = format!(
+            "BT /F1 10 Tf 72 740 Td (Anchor) Tj ET {heading} \
+             100 500 m 300 500 l S 100 460 m 300 460 l S \
+             100 460 m 100 500 l S 200 460 m 200 500 l S 300 460 m 300 500 l S \
+             BT /F1 10 Tf 110 480 Td (A) Tj ET BT /F1 10 Tf 210 480 Td (B) Tj ET"
+        );
+        let bytes = owned_pdf_content(&content);
+        let docx = convert_minimum_pdf_bytes_to_docx_bytes("owned-table.pdf", &bytes).unwrap();
+        let xml = document_xml(&docx);
+        let (_, margin_left, _, _) = geometry(docx);
+        let mut reader = Reader::from_str(&xml);
+        let mut table_seen = false;
+        let mut indent = 0.0_f64;
+        loop {
+            match reader.read_event().unwrap() {
+                Event::Start(e) if e.name().as_ref() == b"w:tbl" => table_seen = true,
+                Event::Empty(e) if e.name().as_ref() == b"w:tblInd" => {
+                    let value = e
+                        .attributes()
+                        .map(Result::unwrap)
+                        .find(|a| a.key.as_ref() == b"w:w")
+                        .unwrap();
+                    indent = std::str::from_utf8(&value.value).unwrap().parse().unwrap();
+                }
+                Event::Eof => break,
+                _ => {}
+            }
+        }
+        assert!(table_seen, "owned ruled grid must be an actual DOCX table");
+        let actual = (margin_left + indent) / 20.0;
+        assert!(
+            (actual - 100.0).abs() <= 0.05,
+            "authored table x100 moved to {actual}pt"
+        );
+    }
+}
+
 /// 実際のOOXML余白と段落indentから本文のページ内座標を独立に読む。
 fn check_body_start(bytes: Vec<u8>) {
     let parsed = parse_pdf_bytes("owned-body.pdf", &bytes).unwrap();
@@ -151,8 +195,8 @@ fn check_geometry(bytes: Vec<u8>, text: &str) {
     );
 }
 
-/// ページ寸法・余白と段落indentを同じOOXML座標系で読む。
-fn geometry(bytes: Vec<u8>) -> (f64, f64, f64, Vec<ParagraphGeometry>) {
+/// OOXML本文を借用したZIPバイト列から読む。
+fn document_xml(bytes: &[u8]) -> String {
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
     archive
@@ -160,6 +204,12 @@ fn geometry(bytes: Vec<u8>) -> (f64, f64, f64, Vec<ParagraphGeometry>) {
         .unwrap()
         .read_to_string(&mut xml)
         .unwrap();
+    xml
+}
+
+/// ページ寸法・余白と段落indentを同じOOXML座標系で読む。
+fn geometry(bytes: Vec<u8>) -> (f64, f64, f64, Vec<ParagraphGeometry>) {
+    let xml = document_xml(&bytes);
     let mut reader = Reader::from_str(&xml);
     let mut current: Option<ParagraphGeometry> = None;
     let mut paragraphs = Vec::new();

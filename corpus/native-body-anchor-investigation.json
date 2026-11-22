@@ -3,7 +3,7 @@
   "time_utc": "2026-11-22T18:09:23.395186+00:00",
   "production_ready": false,
   "base_revision": "844877c1869339c3e59bea6f4a09e548e7dec44e",
-  "status": "Owned public-file CLI failure confirmed; new Rust regression tests added but not executed yet. No product implementation change.",
+  "status": "Owned CLI and Rust failures confirmed; product implementation unchanged.",
   "observed_failure": {
     "binary_sha256": "37d5f30a5286e0ea3a82d3a633e2a7c7ffd73bdf39a13b812b36936ae2f86edd",
     "original_sha256": "cd30668e36579dbc55908541abc03a37dd8c80c539434be6097cb5a112b34c70",
@@ -32,12 +32,20 @@
   "source": "Owned formal five-object xref PDF generated in TemporaryDirectory with Base14 Courier; no external PDF/font payload.",
   "proposed_fix": "Use the actual serialized section origin for body/column/table positioning, rather than a second origin ignoring centred headings and graphics. Preserve centre, column, table and image controls.",
   "Rust_tests": {
-    "pending_execution": true,
+    "pending_execution": false,
     "property_cases_declared": 16,
     "negative": "Heading left50..70/body left72..108; compare authored/pure parsed body x with OOXML margin+indent.",
     "positive": "Same body with a heading whose left edge126 does not extend left of it.",
     "graphic": "A separate horizontal graphic at x30..40 must not shift source body x72.",
-    "no_new_Rust_Cargo_build_while_integrated_suite_live": true
+    "initial_tests": 8,
+    "initial_passed": 6,
+    "initial_failed": 2,
+    "with_table_tests": 9,
+    "with_table_passed": 6,
+    "with_table_failed": 3,
+    "table": "Authored table leading grid x100 moved to88 with an overhanging heading; same table without that heading passed.",
+    "test_target": "corpus/wasm-runtime/body-anchor-qualification/test-target",
+    "separate_build_did_not_modify_integrated_source": true
   },
   "scope": "Paragraph-region coordinates only; font ink fidelity, rendering and actual Word not verified. This case does not add an independent public PDF accuracy success.",
   "sha256": {
@@ -46,6 +54,10 @@
     "corpus/wasm-runtime/body-anchor-qualification/owned-body-before.json": "86a16a8bad1a3d60e086c6f9ee025fc1b625a2d8df277c2b25a8a2bc164c54ac",
     "corpus/wasm-runtime/body-anchor-qualification/owned-body-before-CLI.log": "64fc479b91b42651e09190e8497d070db813ac39334fca8872b142f959721ed2",
     "corpus/wasm-runtime/body-anchor-qualification/owned-body-before.docx": "0136d77eade878b33ac9dfbf84b13b80cfde356c1e61a2bc06f652f5e8d55c75",
-    "crates/jade-pdf2docx-docx/tests/paragraph_anchor.rs": "68546ebf828f2b3fda3e5124d4aefe59299bbd3cb0000d7a0207122b22a91713"
-  }
+    "crates/jade-pdf2docx-docx/tests/paragraph_anchor.rs": "f0008468807d4fefceeed548c4beda174f72e710c1d867aea5311211160a6036",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-Rust-red.log": "c41738e9dc44086c06fbc572f4d51eaf03e3e3381f03466f67888043304f46b0",
+    "corpus/wasm-runtime/body-anchor-qualification/owned-table-Rust-red.log": "6fd49399f7cda88aaaaa426dd1e8ae5de0c4808a7eee0f8b560d02c38da9176f",
+    "crates/jade-pdf2docx-docx/tests/paragraph_anchor.proptest-regressions": "f1c24334a56dc9ff0cc4df5a2cb5fe4339b952e818e75fe101f8f98f514a88a1"
+  },
+  "history_original_test_sha256": "68546ebf828f2b3fda3e5124d4aefe59299bbd3cb0000d7a0207122b22a91713"
 }
