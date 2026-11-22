@@ -1,0 +1,33 @@
+{
+  "id": "nist-fips204-2024",
+  "page": 2,
+  "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+  "source_font_key": "/T1_0",
+  "source_base_font": "/Times-Roman",
+  "source_subtype": "/Type1",
+  "source_encoding": "/WinAnsiEncoding",
+  "font_dictionary_keys": [
+    "/BaseFont",
+    "/Encoding",
+    "/Subtype",
+    "/ToUnicode",
+    "/Type"
+  ],
+  "font_descriptor_present": false,
+  "source_text_shows": 78,
+  "source_shows_all_single_literal_0x20": true,
+  "source_to_unicode_space_line": "<20> <0020>",
+  "baseline_native_binary_sha256": "0f977a0cc6f63dcef9d886a1b7ee6f07e1545c19ca23ce90c150a914bc56f803",
+  "baseline_sdk_unobserved_text_objects": 78,
+  "baseline_source_characters_missing": 63,
+  "baseline_source_unicode_scalars_unmatched": 0,
+  "baseline_foreword_matches_corrected_independent_full_page_gold": true,
+  "classification": "Cause candidate, not a sufficient ownership proof and not a diagnostic exemption.",
+  "remaining_proof": [
+    "Query actual unobserved SDK object font/base-name/embed status and geometry through public APIs; do not assume all78 use Times-Roman just from matching counts.",
+    "FPDFTextObj_GetText uses the same SDK character list and cannot prove absence. Existing missing-meaningful-glyph controls must remain reviewed.",
+    "Do not clear warnings just because source nonwhitespace counts match. Preserve source-coded U+0020 word boundaries, including separate-font zero-advance and repeated-space controls; prove or retain review when ambiguous.",
+    "Any bounded exemption must reject embedded/custom/Differences fonts, alias-name collisions, other codes/Unicode mappings, incomplete source evidence and unmatched geometry/boundary ownership. Do not rely on BaseFont name alone."
+  ],
+  "font_programs_read": false
+}
