@@ -34,7 +34,7 @@ pub(super) fn column_band_edges(
         .iter()
         .filter(|graphic| graphic.page == page)
         .map(|graphic| normalized_bounds(graphic.bounds))
-        .filter(|bounds| is_vertical_line(bounds))
+        .filter(is_vertical_line)
         .filter(|bounds| bounds.y1 - bounds.y0 >= MIN_RULE_HEIGHT_RATIO * height)
         .filter(|bounds| {
             bounds.x0 > EDGE_MARGIN_RATIO * width && bounds.x0 < (1.0 - EDGE_MARGIN_RATIO) * width
