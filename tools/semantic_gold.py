@@ -60,6 +60,24 @@ def inventory_spec(gold):
 def check_gold(actual, gold):
     """Return the exact check kind and evidence; an inventory is not full-page gold."""
     kind = gold.get('kind', 'full_page_text')
+    if kind == 'reading_order':
+        anchors, scope = gold.get('anchors'), gold.get('scope')
+        if (not isinstance(anchors, list) or not 1 <= len(anchors) <= 256
+                or any(not isinstance(anchor, str) or not normalize_text(anchor)
+                       or len(anchor) > 2048 for anchor in anchors)
+                or sum(map(len, anchors)) > 32768
+                or not isinstance(scope, str) or not normalize_text(scope) or len(scope) > 2048):
+            raise ValueError('Reading order requires bounded nonempty anchors and scope')
+        text, offset, matched = normalize_text(actual).replace(' ', ''), 0, 0
+        for anchor in anchors:
+            value = normalize_text(anchor).replace(' ', '')
+            at = text.find(value, offset)
+            if at < 0:
+                break
+            matched += 1
+            offset = at + len(value)
+        return dict(kind=kind, scope=scope, matches=matched == len(anchors),
+                    expected_anchors=anchors, matched_prefix=matched)
     if kind == 'text_context':
         values = [gold.get(key) for key in ('text', 'anchor', 'scope')]
         if any(not isinstance(value, str) or not value.strip() or len(value) > 2048 for value in values):

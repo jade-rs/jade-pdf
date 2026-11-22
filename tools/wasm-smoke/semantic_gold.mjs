@@ -72,6 +72,22 @@ export function pageHasTextReview(page) {
 
 export function checkGold(actual,gold) {
   const kind=gold.kind??'full_page_text';
+  if(kind==='reading_order') {
+    const {anchors,scope}=gold;
+    if(!Array.isArray(anchors)||anchors.length<1||anchors.length>256
+      ||anchors.some(anchor=>typeof anchor!=='string'||!normalizeText(anchor)||[...anchor].length>2048)
+      ||anchors.reduce((sum,anchor)=>sum+[...anchor].length,0)>32768
+      ||typeof scope!=='string'||!normalizeText(scope)||[...scope].length>2048)
+      throw new Error('Reading order requires bounded nonempty anchors and scope');
+    const compact=text=>normalizeText(text).replaceAll(' ',''),text=compact(actual);
+    let offset=0,matched=0;
+    for(const anchor of anchors) {
+      const value=compact(anchor),at=text.indexOf(value,offset);
+      if(at<0) break;
+      matched++;offset=at+value.length;
+    }
+    return {kind,scope,matches:matched===anchors.length,expected_anchors:anchors,matched_prefix:matched};
+  }
   if(kind==='text_context') {
     const values=['text','anchor','scope'].map(key=>gold[key]);
     if(values.some(value=>typeof value!=='string'||!normalizeText(value)||[...value].length>2048))

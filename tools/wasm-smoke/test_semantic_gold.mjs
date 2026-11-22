@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import './test_reading_order_gold.mjs';
 import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort,operatorGoldCaseId} from './semantic_gold.mjs';
 
 const declared=semanticEntries({documents:[{id:'regular',pages:1,full_page_text:'text'},
