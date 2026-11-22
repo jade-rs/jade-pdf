@@ -109,16 +109,41 @@ mod tests {
     proptest::proptest! {
         /// SDK状態が不変な任意のrecord列で、生成文字を数えず呼出し数を走査長以内に抑える。
         #[test]
-        fn record_accounting_is_bounded_and_generated_independent(modes in proptest::array::uniform3(proptest::prop_oneof![0i32..8, proptest::strategy::Just(-1), proptest::num::i32::ANY]),records in proptest::collection::vec((0usize..4,proptest::bool::ANY),0..512)) {
-            let mut counter=Counter::default();let calls=Cell::new(0usize);let mut expected_count=0usize;let mut expected_unavailable=false;
-            for &(object,generated) in &records {
-                counter.observe(object,generated,||{calls.set(calls.get()+1);modes[object-1]});
+        fn record_accounting_is_bounded_and_generated_independent(
+            modes in proptest::array::uniform3(proptest::prop_oneof![
+                0i32..8,
+                proptest::strategy::Just(-1),
+                proptest::num::i32::ANY,
+            ]),
+            records in proptest::collection::vec((0usize..4, proptest::bool::ANY), 0..512),
+        ) {
+            let mut counter = Counter::default();
+            let calls = Cell::new(0usize);
+            let mut expected_count = 0usize;
+            let mut expected_unavailable = false;
+            for &(object, generated) in &records {
+                counter.observe(object, generated, || {
+                    calls.set(calls.get() + 1);
+                    modes[object - 1]
+                });
                 if !generated {
-                    if object==0 { expected_unavailable=true; }
-                    else { let value=modes[object-1];if [3,7].contains(&value){expected_count+=1;} if !(0..=7).contains(&value){expected_unavailable=true;} }
+                    if object == 0 {
+                        expected_unavailable = true;
+                    } else {
+                        let value = modes[object - 1];
+                        if [3, 7].contains(&value) {
+                            expected_count += 1;
+                        }
+                        if !(0..=7).contains(&value) {
+                            expected_unavailable = true;
+                        }
+                    }
                 }
             }
-            proptest::prop_assert_eq!(counter.nonpainting,expected_count);proptest::prop_assert_eq!(counter.unavailable,expected_unavailable);proptest::prop_assert!(calls.get()<=records.iter().filter(|(object,generated)|*object!=0&&!*generated).count());
+            proptest::prop_assert_eq!(counter.nonpainting, expected_count);
+            proptest::prop_assert_eq!(counter.unavailable, expected_unavailable);
+            proptest::prop_assert!(calls.get() <= records.iter()
+                .filter(|(object, generated)| *object != 0 && !*generated).count());
         }
     }
 }
