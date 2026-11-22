@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "production_ready": false,
+  "trigger": "Original copy-permitted NTA English PDF fails native converter with UnsupportedEncryption before OCR; normalized SDK copy incorrectly fails on unused old XRef Encrypt key.",
+  "implementation": [
+    "Pure parser checks encryption on authoritative xref/trailer chain; unused historical XRef metadata cannot mark current plaintext encrypted. Missing formal xref stays conservative.",
+    "Bounded lexical xref header probe disambiguates ordinary objects from actual XRef candidates when header-relative offsets are present; saved PBT seed exercises padding61.",
+    "Only exact UnsupportedEncryption invokes existing native SDK. One empty-password load, Standard handler revision>=2, user copy permission bit4 and page cap required. No password retry or decrypted file API.",
+    "Synchronous repr(C) bounded writer reserves new full buffer capacity in shared DecodeBudget before allocation and checks cancellation/length before C slice creation. Sticky first error and catch_unwind prevent continuation and unwind across C. SDK internal RSS/time remain subject to caller worker isolation.",
+    "Preserve literal source header separately from effective Catalog version. Known SDK2.0-to1.0 writer quirk corrected in-place without changing any offsets; other unexpected version changes fail.",
+    "Normalized internal bytes parsed once, without recursive normalization. Report original source byte length; original source bytes remain unchanged. Pure bytes/WASM boundary unchanged."
+  ],
+  "evidence": "corpus/results-native-copy-encryption.json",
+  "TDD": {
+    "inactive_xref_red": "inactive-xref-red.log",
+    "public_native_red": "native-encrypted-public-red.log",
+    "property_seed": "crates/jade-pdf2docx-parser/tests/inactive_xref_security.proptest-regressions",
+    "version_failures_retained": [
+      "native-encrypted-integration-version.log",
+      "native-encrypted-controls-v2.log",
+      "native-encrypted-controls-v2-literal-header.log"
+    ]
+  },
+  "risks_and_limits": [
+    "SDK normalization may expand input or discard unsupported PDF metadata; no claim to preserve signatures, byte identity or editable form semantics. Document version and all tested page renderings retained.",
+    "Native file-only feature; existing bytes/WASM unsupported-encryption contract stays intact.",
+    "13 public inputs still rejected, and parsed sources retain quality diagnostics. Corpus parser admission is not semantic extraction gold.",
+    "OCR confidence thresholds, source reference rules and strict output-preservation policy are unchanged."
+  ],
+  "new_production_dependencies": false,
+  "new_binary_inputs_in_Git": false
+}
