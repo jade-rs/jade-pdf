@@ -212,3 +212,37 @@ fn side_by_side_tables_stay_side_by_side() {
     let right = xml.find(">L170<").expect("right table text");
     assert!(left < right, "left table must come first: {xml}");
 }
+
+/// 縦罫線がなく横罫線だけの表も、文字の並びから列を分けて表にする。
+#[test]
+fn table_with_only_horizontal_rules_is_split_into_columns() {
+    let rules = (0..4)
+        .map(|row| {
+            let y = 160 - row * 20;
+            format!("20 {y} m 220 {y} l S")
+        })
+        .collect::<Vec<_>>()
+        .join(" ");
+    let cell =
+        |x: i32, y: i32, text: &str| format!("BT /F1 10 Tf 1 0 0 1 {x} {y} Tm ({text}) Tj ET");
+    let content = format!(
+        "0.5 w {rules} {} {} {} {} {} {} {} {} {}",
+        cell(25, 146, "Year"),
+        cell(95, 146, "Sales"),
+        cell(165, 146, "Profit"),
+        cell(25, 126, "2021"),
+        cell(95, 126, "100"),
+        cell(165, 126, "7"),
+        cell(25, 106, "2022"),
+        cell(95, 106, "200"),
+        cell(165, 106, "14"),
+    );
+    let xml = convert("table_fidelity_horizontal_only", &content);
+    assert_eq!(xml.matches("<w:tbl>").count(), 1, "{xml}");
+    assert_eq!(
+        xml.matches("<w:gridCol ").count(),
+        3,
+        "three text columns: {xml}"
+    );
+    assert!(xml.contains(">Sales<") && xml.contains(">Profit<"), "{xml}");
+}

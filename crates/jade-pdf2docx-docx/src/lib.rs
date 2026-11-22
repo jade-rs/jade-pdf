@@ -4531,7 +4531,9 @@ fn infer_positioned_table_from_graphics(
         .map(|graphic| normalized_bounds(graphic.bounds))
         .filter(is_vertical_line)
         .collect::<Vec<_>>();
-    if horizontal.is_empty() || vertical.is_empty() {
+    // 縦罫線のない表は、同じ幅で揃った 3 本以上の横罫線がある場合だけ扱う（列は文字から求める）。
+    let horizontal_only = vertical.is_empty() && aligned_full_width_rules(&horizontal) >= 3;
+    if horizontal.is_empty() || (vertical.is_empty() && !horizontal_only) {
         return None;
     }
 
@@ -4556,6 +4558,17 @@ fn infer_positioned_table_from_graphics(
         .iter()
         .map(|bounds| bounds.x0.round() as i32)
         .collect::<Vec<_>>();
+    if horizontal_only {
+        let left = full_horizontal
+            .iter()
+            .map(|bounds| bounds.x0)
+            .fold(f32::INFINITY, f32::min);
+        let right = full_horizontal
+            .iter()
+            .map(|bounds| bounds.x1)
+            .fold(f32::NEG_INFINITY, f32::max);
+        xs = vec![left.round() as i32, right.round() as i32];
+    }
     let mut ys = full_horizontal
         .iter()
         .map(|bounds| bounds.y0.round() as i32)
@@ -4571,7 +4584,7 @@ fn infer_positioned_table_from_graphics(
     // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
     let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
     let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
-    let has_open_edges = open_ys.len() > ys.len() || open_xs.len() > xs.len();
+    let has_open_edges = horizontal_only || open_ys.len() > ys.len() || open_xs.len() > xs.len();
     ys = open_ys;
     xs = open_xs;
     if xs.len() < 2
@@ -4590,7 +4603,13 @@ fn infer_positioned_table_from_graphics(
     ys = merge_close_edges(&augment_ys_from_partial_horizontals(&xs, &ys, &horizontal));
     let mut text_augmented_columns = false;
     // 内側の縦罫線で列が確定している表は、文字の隙間から列を増やさない。
-    if xs.len() == 2
+    if horizontal_only
+        && ys.len() >= 2
+        && let Some(projected_xs) = text_projection_columns(parsed, page, &xs, &ys)
+    {
+        text_augmented_columns = true;
+        xs = projected_xs;
+    } else if xs.len() == 2
         && ys.len() >= 2
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
     {
@@ -5878,6 +5897,68 @@ fn open_table_edges(
     edges.sort();
     edges.dedup();
     edges
+}
+
+/// 表の範囲にある文字の水平方向の占有区間から、全行で空いている隙間を列境界にする。
+///
+/// 文字単位の要素でも語単位の要素でも同じ結果になる。隙間が語間（約 0.25 em）より広い
+/// 文字サイズの 0.5 倍以上あるところだけを列の切れ目とし、2 列以上に分かれる場合に外枠を含む列境界を返す。
+fn text_projection_columns(
+    parsed: &ParsedDocument,
+    page: usize,
+    xs: &[i32],
+    ys: &[i32],
+) -> Option<Vec<i32>> {
+    let (left, right) = (*xs.first()? as f32, *xs.last()? as f32);
+    let (bottom, top) = (*ys.first()? as f32, *ys.last()? as f32);
+    let mut intervals = Vec::new();
+    let mut sizes = Vec::new();
+    for text in parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page && !text.text.trim().is_empty())
+    {
+        let bounds = normalized_bounds(text.bounds);
+        let center_y = (bounds.y0 + bounds.y1) / 2.0;
+        if bounds.x0 < left - 1.0 || bounds.x1 > right + 1.0 || center_y < bottom || center_y > top
+        {
+            continue;
+        }
+        intervals.push((bounds.x0, bounds.x1));
+        sizes.push(text.font_size.max(bounds.y1 - bounds.y0));
+    }
+    if intervals.len() < 2 {
+        return None;
+    }
+    sizes.sort_by(f32::total_cmp);
+    let min_gap = (sizes[sizes.len() / 2] * 0.5).max(3.0);
+    intervals.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let mut boundaries = vec![xs[0]];
+    let mut reach = intervals[0].1;
+    for &(start, end) in &intervals[1..] {
+        if start - reach >= min_gap {
+            boundaries.push(((start + reach) / 2.0).round() as i32);
+        }
+        reach = reach.max(end);
+    }
+    boundaries.push(*xs.last()?);
+    (boundaries.len() >= 3).then_some(boundaries)
+}
+
+/// 左右の端が揃った（2pt 以内）最長の横罫線の本数を返す。
+fn aligned_full_width_rules(horizontal: &[ParsedBounds]) -> usize {
+    let Some(longest) = horizontal
+        .iter()
+        .max_by(|a, b| (a.x1 - a.x0).total_cmp(&(b.x1 - b.x0)))
+    else {
+        return 0;
+    };
+    horizontal
+        .iter()
+        .filter(|bounds| {
+            (bounds.x0 - longest.x0).abs() <= 2.0 && (bounds.x1 - longest.x1).abs() <= 2.0
+        })
+        .count()
 }
 
 /// 間隔が狭い（二重線・セルごとの枠）境界座標を、その平均の 1 本へまとめる。
