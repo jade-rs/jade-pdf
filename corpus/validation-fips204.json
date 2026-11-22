@@ -2,14 +2,14 @@
   "version": 49,
   "date": "2026-11-22",
   "production_ready": false,
-  "base_pr": 13,
-  "base_revision": "ad9f354651f8d88fc96e2b5f2716975dd2268e2a",
+  "base_pr": 12,
+  "base_revision": "32598a3b99ea9a87e45ad68d4d5b908c8b562b3f",
   "runtime_source_revision": "06bed5d5a2aff576bbdd17ba1a6eef6204a0882c",
-  "reference_revision": "59950f4fc265745c542e4db9835db11e3606994d",
-  "qualification_revision": "8be846f5e093e5efe2fa0f6ca0fc2312eb5654ea",
-  "qualified_source_tree": "ec82d41c89e104816fc3d4664f138e2bf26587e2",
+  "reference_revision": "591da02f231beb6e12cec6c73dde7c508fc27b38",
+  "qualification_revision": "e445bf7cc7479023685548a66aa00a00f2f1b573",
+  "qualified_source_tree": "3ca8c59f8f59ae96852759dd04aa3e68a8aec32d",
   "original_gold_declaration_revision": "9a1ece976c2455452787b8c82c9ed577380b64b6",
-  "replayed_gold_declaration_revision": "d74459355dd6e50ff4da48e416be8dabb4560ab6",
+  "replayed_gold_declaration_revision": "eeb0e08049984773f45264d26cc77e4da00ced2a",
   "parent_qualification_replay": {
     "old_head": "5c0f368167704e69421928b24dd58879a1a56fbc",
     "new_head": "a329a6e6e8166b39631a3b2bd9a8a248f1ecb50c",
@@ -483,5 +483,122 @@
     "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
     "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
     "tools/wasm-smoke/worker_smoke.mjs": "16dd4f1a0d879b7d3d43e056e64c424ca9c32c161158904949e81753e809552c"
+  },
+  "evaluation_parent_revision": "51c84e98aa7725db450cfbfef2fffbd3a6b58932",
+  "history_replay": {
+    "time_utc": "2026-11-22T05:44:07.926757+00:00",
+    "original_base": "ad9f354651f8d88fc96e2b5f2716975dd2268e2a",
+    "replayed_base": "51c84e98aa7725db450cfbfef2fffbd3a6b58932",
+    "original_head": "accaa1be7085b38c78054938e9852cce756f6aea",
+    "replayed_head_before_metadata": "6166ef61501ce2dda221d364e0afa631c30d444a",
+    "actual_main_pr12_merge": "32598a3b99ea9a87e45ad68d4d5b908c8b562b3f",
+    "main_tree_equals_qualified_PR12_head": true,
+    "commits": [
+      {
+        "original": "d74459355dd6e50ff4da48e416be8dabb4560ab6",
+        "replayed": "eeb0e08049984773f45264d26cc77e4da00ced2a",
+        "original_tree": "9b5dea9e2f1d0cc08b2d92a8653ef96c3acb24c0",
+        "replayed_tree": "fae423a05c9c404d74de0b236dff8295d4275ccb",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "e7c7f91dcdde70f031ebe3e1d0069cc6576cc7d2",
+        "replayed": "6eace4f1fa798cb3e38b7d19637bca11529e937c",
+        "original_tree": "bd3cf37e6eb51e188c3cfbb4b839077e24168497",
+        "replayed_tree": "1271aa909d4c0d1c8f94ee4d1e4c12ea86bfdafb",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "b72892e03129ca74f7e7b42ba45f9714c3c4788c",
+        "replayed": "825d67d69b876cc33c4a3849e0d7d339ec102464",
+        "original_tree": "93fc127be4b38b1a0b84dcfd8c6a00ef61f231f6",
+        "replayed_tree": "333e951140dec6b79f40bcfd5f928decf24e8189",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "989685156c9ccb28b24be79bc194dd4f8abf6d6c",
+        "replayed": "e8dc45ce6c0c913a79dbe679cfaef0457b5a735e",
+        "original_tree": "42993154580773781d3ccb7c59118924fd98923b",
+        "replayed_tree": "1707f0f4e99aacfd857b75db803a5dab96a162a7",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "f12fc6689755978a3e9dd0d6f70b89f825f96d7f",
+        "replayed": "01b2812615f3eb60cbd468d4a5092c4941c91eec",
+        "original_tree": "27d146fc45b47af34e0ee6fa7abb0b7975326fa2",
+        "replayed_tree": "acb0173dad57ad6552b0d5a694be24a34ea763dd",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "59950f4fc265745c542e4db9835db11e3606994d",
+        "replayed": "591da02f231beb6e12cec6c73dde7c508fc27b38",
+        "original_tree": "0dc9ccec60c1cad5bb8b286ecdefabef60fbed71",
+        "replayed_tree": "8fa538245cc7d758a633e9569523e996ca9a3a49",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "a329a6e6e8166b39631a3b2bd9a8a248f1ecb50c",
+        "replayed": "2681875fab112271602ef516e52b5a95ee560bae",
+        "original_tree": "3dc607b77b28143b7ad2798d0b37dc9b183a507d",
+        "replayed_tree": "1a5b1484603051b97310772d10e78dfcc0547810",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "cb37c0bf216c6e35d5cfca006403f0f7a6091b23",
+        "replayed": "9a19669ce52c7e0e1fcf6fa3ad0e05969c158b4d",
+        "original_tree": "a7b294bf3ee3a06ee9cd54d067ae9f347aae9093",
+        "replayed_tree": "37ee820ad438625c28a38662cbea7d9ad88d33aa",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "8be846f5e093e5efe2fa0f6ca0fc2312eb5654ea",
+        "replayed": "e445bf7cc7479023685548a66aa00a00f2f1b573",
+        "original_tree": "ec82d41c89e104816fc3d4664f138e2bf26587e2",
+        "replayed_tree": "3ca8c59f8f59ae96852759dd04aa3e68a8aec32d",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      },
+      {
+        "original": "accaa1be7085b38c78054938e9852cce756f6aea",
+        "replayed": "6166ef61501ce2dda221d364e0afa631c30d444a",
+        "original_tree": "7cdba69a2112c9c17f5f07a786e04e9b2a03cc93",
+        "replayed_tree": "0090c36654141d3c67f64361a2031edd284080be",
+        "different_paths": [
+          "corpus/validation-page-regions.json"
+        ]
+      }
+    ],
+    "all_source_checker_input_report_hashes_unchanged": 216,
+    "frozen_native_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+    "frozen_wasm_sha256": "aa24cb55ac04370ac414018b23ffbc525182e7f18212fcf0806a48237843eea3",
+    "allowed_parent_metadata_paths": [
+      "corpus/validation-page-regions.json"
+    ],
+    "scope": "History/provenance replay only. Every current pinned source/checker/input/report byte remains qualified by the prior execution. No claim that a different implementation was retested.",
+    "original_qualification_refs": {
+      "reference_revision": "59950f4fc265745c542e4db9835db11e3606994d",
+      "qualification_revision": "8be846f5e093e5efe2fa0f6ca0fc2312eb5654ea",
+      "qualified_source_tree": "ec82d41c89e104816fc3d4664f138e2bf26587e2",
+      "replayed_gold_declaration_revision": "d74459355dd6e50ff4da48e416be8dabb4560ab6"
+    },
+    "parent_qualification_facts_and204_hashes_identical_except_history_and_equivalent_refs": true,
+    "publication_scope": "Regional evaluator and FIPS204 collection share one combined PR on merged PR12; regional parent is an intermediate qualified evaluation revision, not a separate merged PR."
   }
 }
