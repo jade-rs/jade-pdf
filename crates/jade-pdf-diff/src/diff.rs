@@ -311,6 +311,9 @@ pub struct PageDiff {
     pub block_alignment_limited: bool,
     pub visual: Option<crate::VisualPageDiff>,
     pub form_changes: Vec<crate::FormFieldChange>,
+    /// 抽出順に沿うページ本文の差分。旧JSONで未計算の場合はNone。
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub text_diff: Option<crate::PageTextDiff>,
     pub blocks: Vec<BlockChange>,
 }
 
@@ -383,6 +386,9 @@ pub struct Diagnostics {
     pub new_pages_with_unknown_units: usize,
     pub page_alignment_limited: bool,
     pub block_alignment_limited_pages: usize,
+    /// ページ本文の対応付けが計算予算に制限されたページ数。
+    #[serde(default, skip_serializing_if = "is_zero")]
+    pub page_text_alignment_limited_pages: usize,
 }
 
 fn is_zero(value: &usize) -> bool {
@@ -391,7 +397,9 @@ fn is_zero(value: &usize) -> bool {
 
 impl Diagnostics {
     pub fn alignment_limited(&self) -> bool {
-        self.page_alignment_limited || self.block_alignment_limited_pages > 0
+        self.page_alignment_limited
+            || self.block_alignment_limited_pages > 0
+            || self.page_text_alignment_limited_pages > 0
     }
     pub fn has_unmapped_text(&self) -> bool {
         self.old_pages_with_unmapped_text > 0 || self.new_pages_with_unmapped_text > 0
@@ -681,6 +689,10 @@ pub fn diff_documents(
     let diagnostics = Diagnostics {
         page_alignment_limited,
         block_alignment_limited_pages: pages.iter().filter(|p| p.block_alignment_limited).count(),
+        page_text_alignment_limited_pages: pages
+            .iter()
+            .filter(|p| p.text_diff.as_ref().is_some_and(|t| t.alignment_limited))
+            .count(),
         old_pages: old.pages.len(),
         new_pages: new.pages.len(),
         old_pages_without_text: old.pages.iter().filter(|p| p.blocks.is_empty()).count(),
@@ -867,6 +879,11 @@ fn one_sided_page(page: &PageIr, removed: bool) -> PageDiff {
         block_alignment_limited: false,
         visual: None,
         form_changes: Vec::new(),
+        text_diff: Some(if removed {
+            crate::page_text::compare(&page.blocks, &[], &[])
+        } else {
+            crate::page_text::compare(&[], &page.blocks, &[])
+        }),
         blocks,
     }
 }
@@ -975,6 +992,7 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         options,
     );
 
+    let text_diff = crate::page_text::compare(&raw_old.blocks, &raw_new.blocks, &matched);
     let mut blocks: Vec<BlockChange> = Vec::new();
     for (o, n) in matched {
         let mut change = diff_block(&old.blocks[o], &new.blocks[n], options);
@@ -1007,7 +1025,26 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
     });
 
     let geometry_changed = page_geometry_changed(raw_old, raw_new, options.position_tolerance);
+    let minor_old: HashSet<_> = blocks
+        .iter()
+        .filter(|block| block.minor)
+        .filter_map(|block| block.old_index)
+        .collect();
+    let minor_new: HashSet<_> = blocks
+        .iter()
+        .filter(|block| block.minor)
+        .filter_map(|block| block.new_index)
+        .collect();
+    let text_changed = !text_diff.groups.is_empty()
+        && (minor_old.is_empty() && minor_new.is_empty()
+            || !crate::page_text::equal_without_blocks(
+                &raw_old.blocks,
+                &raw_new.blocks,
+                &minor_old,
+                &minor_new,
+            ));
     let changed = geometry_changed
+        || text_changed
         || blocks
             .iter()
             .any(|block| block.kind != ChangeKind::Unchanged && !block.minor);
@@ -1043,6 +1080,7 @@ fn diff_page(old: &PageIr, new: &PageIr, moved: bool, options: &DiffOptions) -> 
         block_alignment_limited,
         visual: None,
         form_changes: Vec::new(),
+        text_diff: Some(text_diff),
         blocks,
     }
 }
@@ -1991,6 +2029,49 @@ mod tests {
         assert_eq!(diff.status, Status::Unchanged);
     }
 
+    /// 一意な本文アンカーがなくても、ページ番号だけの繰り上がりを本文編集にしない。
+    #[test]
+    fn repeated_body_does_not_promote_minor_pagination_to_text_edits() {
+        let mut old = page(vec![
+            block(1, 40.0, 300.0, "same"),
+            block(2, 40.0, 350.0, "same"),
+            block(3, 40.0, 55.0, "- 9 -"),
+        ]);
+        let mut new = old.clone();
+        old.index = 9;
+        new.index = 10;
+        new.blocks[2].text = "- 10 -".to_string();
+        let diff = diff_page(&old, &new, false, &DiffOptions::default());
+        assert!(diff.blocks.iter().any(|b| b.minor));
+        assert!(!diff.text_diff.as_ref().unwrap().groups.is_empty());
+        assert_eq!(diff.status, Status::Unchanged);
+    }
+
+    /// ページ番号の除外があっても、許容誤差内の位置にある本文の語順変更は残す。
+    #[test]
+    fn substantive_text_order_remains_visible_with_minor_pagination() {
+        let mut old = page(vec![
+            block(1, 40.0, 300.0, "alpha"),
+            block(2, 40.0, 320.0, "beta"),
+            block(3, 40.0, 340.0, "alpha"),
+            block(4, 40.0, 360.0, "beta"),
+            block(5, 40.0, 55.0, "- 9 -"),
+        ]);
+        let mut new = old.clone();
+        old.index = 9;
+        new.index = 10;
+        new.blocks[0].text = "beta".to_string();
+        new.blocks[1].text = "alpha".to_string();
+        new.blocks[4].text = "- 10 -".to_string();
+        let options = DiffOptions {
+            position_tolerance: 100.0,
+            ..DiffOptions::default()
+        };
+        let diff = diff_page(&old, &new, false, &options);
+        assert!(diff.blocks.iter().any(|b| b.minor));
+        assert_eq!(diff.status, Status::Modified);
+    }
+
     #[test]
     fn footer_amounts_dates_and_identifiers_are_substantive_changes() {
         for (before, after) in [
@@ -2298,6 +2379,27 @@ mod tests {
     }
 
     proptest! {
+        /// 本文の繰り返しの数とページ番号が変わっても、軽微な番号変更を昇格させない。
+        #[test]
+        fn repeated_body_preserves_minor_pagination_policy(
+            count in 2usize..25,
+            word in "[a-z]{1,8}",
+            index in 1usize..1000,
+        ) {
+            let mut blocks: Vec<_> = (0..count)
+                .map(|i| block(i+1,40.0,300.0+i as f64*14.0,&word))
+                .collect();
+            blocks.push(block(count+1,40.0,55.0,&format!("- {index} -")));
+            let mut old=page(blocks);
+            let mut new=old.clone();
+            old.index=index;
+            new.index=index+1;
+            new.blocks[count].text=format!("- {} -",index+1);
+            let diff=diff_page(&old,&new,false,&DiffOptions::default());
+            prop_assert!(diff.blocks.iter().any(|b|b.minor));
+            prop_assert_eq!(diff.status,Status::Unchanged);
+        }
+
         #[test]
         fn pdf文字サイズの変更は本文と領域が同じでも必ず報告される(
             base_hundredths in 2_001u16..10_000,

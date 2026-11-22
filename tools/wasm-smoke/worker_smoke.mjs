@@ -4,6 +4,7 @@ import path from 'node:path';
 import {fileURLToPath,pathToFileURL} from 'node:url';
 import {createHash} from 'node:crypto';
 import {checkScalarRevision} from './scalar_revision.mjs';
+import {loadPageRevisionGold,checkPageRevision} from './page_revision.mjs';
 import {semanticEntries,goldByCohort} from './semantic_gold.mjs';
 const root=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../..');
 if(process.env.JADE_PDF_BROWSER_ENGINE && process.env.JADE_PDF_BROWSER_ENGINE!=='chromium')
@@ -167,6 +168,28 @@ try {
       results.push(row);console.log((row.passed?'PASS ':'FAIL ')+id);
     } catch(error) {results.push({id,passed:false,error:String(error)});console.log('FAIL '+id+' '+error);}
   }
+  for(const ref of process.env.JADE_PDF_WORKER_FAULTS_ONLY ? [] : manifest.page_revision_gold??[]) {
+    if(![ref.old_id,ref.new_id].every(id=>entries.some(e=>e.id===id))) continue;
+    const id='page-revision-gold-'+ref.id;
+    try {
+      const gold=await loadPageRevisionGold(root,ref);
+      for(const side of ['old','new']) if(entries.find(e=>e.id===gold[side+'_id']).sha256!==gold[side+'_sha256'])
+        throw new Error('Page revision source differs from reviewed gold');
+      const output=await page.evaluate(async gold=>{
+        const load=async id=>new Uint8Array(await(await fetch('/corpus/cache/'+id+'.pdf')).arrayBuffer());
+        const old=await load(gold.old_id),next=await load(gold.new_id),params={old_name:'old',new_name:'new'};
+        const direct=JSON.parse(probe.worker_json('compare',old,next,JSON.stringify(params)));
+        const worker=await client.run('compare',[old,next],params);
+        return {direct,worker,idle:client.activeWorkers===0,
+          operation:{operation:'pageTextRevision-compare',passed:JSON.stringify(direct)===JSON.stringify(worker),rejected:false}};
+      },gold);
+      revisionOperations.push(output.operation);
+      const checks={direct:checkPageRevision(root,gold,output.direct),worker:checkPageRevision(root,gold,output.worker)};
+      const row={id,passed:output.idle&&output.operation.passed&&checks.direct.passed&&checks.worker.passed,
+        checks,operations:[output.operation],worker_idle:output.idle};
+      results.push(row);console.log((row.passed?'PASS ':'FAIL ')+id);
+    } catch(error) {results.push({id,passed:false,error:String(error)});console.log('FAIL '+id+' '+error);}
+  }
   const fixtures=process.env.JADE_PDF_WORKER_FAULTS_ONLY ? [] : await page.evaluate(async()=>{
     const checks=[];
     for(const name of JSON.parse(probe.appearance_cases())) {
@@ -296,7 +319,7 @@ try {
     await page.waitForTimeout(20);
   }
   results.push({id:'no-remaining-worker-targets',passed:remainingTargets.length===0,remainingTargets});
-  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py'];
+  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/audit_page_revision.py'];
   const sourceHashes=Object.fromEntries(await Promise.all(sourceFiles.map(async f=>[f,hash(await fs.readFile(path.join(root,f)))])));
   const operations=[...documents.flatMap(d=>d.checks),...revisionOperations];
   const goldByKind={};
@@ -308,6 +331,8 @@ try {
     methodology:'Disposable real module Workers under self-only script/worker CSP; exact direct-WASM differential results, including all selected text pages and binary PNG/viewport outputs. Parent enforces input/output transport budgets, admission slots, deadline/abort/disposal and requests Worker termination on every outcome. Interrupted slots remain reserved for three seconds: Chrome can defer forcibly stopping running code by two seconds. Non-returning WASM and startup stalls are terminated; Chrome DevTools independently observes target destruction. Not an immediate CPU/memory ceiling, filesystem/network sandbox, aggregate host bound, or cross-browser qualification.',
     documents:documents.length,passed_documents:documents.filter(d=>d.passed).length,operation_checks:operations.length,matching_operations:operations.filter(x=>x.passed).length,matching_successful_operations:operations.filter(x=>x.passed&&!x.rejected).length,matching_rejections:operations.filter(x=>x.passed&&x.rejected).length,
     scalar_revision_operation_checks:revisionOperations.length,
+    page_revision_gold_checks:results.filter(r=>r.id.startsWith('page-revision-gold-')).length,
+    page_revision_gold_passed:results.filter(r=>r.id.startsWith('page-revision-gold-')&&r.passed).length,
     scalar_revision_gold_checks:results.filter(r=>r.id.startsWith('scalar-revision-gold-')).length,
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_checks:documents.filter(d=>d.semantic_gold).length,semantic_gold_failures:documents.filter(d=>d.semantic_gold&&!d.semantic_gold.matches).length,

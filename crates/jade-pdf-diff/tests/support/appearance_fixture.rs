@@ -53,6 +53,10 @@ pub const CASES: &[&str] = &[
     "rtl_unicode_partial_punctuation",
     "rtl_unicode_partial_edit",
     "rtl_unicode_partial_order_edit",
+    "page_text_wrap",
+    "page_text_edit",
+    "page_text_order",
+    "page_text_repeat",
     "agl_union",
     "agl_universal",
     "agl_uacute",
@@ -1288,6 +1292,9 @@ pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
         }
         return bytes;
     }
+    if let Some(mode) = case.strip_prefix("page_text_") {
+        return page_text_layout(mode, revised, 1., 0, false);
+    }
     if let Some(mode) = case.strip_prefix("rtl_unicode_") {
         let mut bytes = match mode {
             "equivalent" => unicode_spelling(if revised { "لخ" } else { "\u{fccb}" }),
@@ -2021,6 +2028,41 @@ pub fn named_glyph_cells(names: &[&str], unit: f64, rotation: u16, shear: bool) 
 /// 同じ描画文字に別の Unicode 対応を宣言し、原文照合と文字差分を検証する。
 pub fn unicode_spelling(text: &str) -> Vec<u8> {
     unicode_spelling_geometry(text, 1.0, 0, false)
+}
+
+/// 折り返し・本当の編集・順序・反復語を、ASCIIだけの小さなPDFで検証する。
+pub fn page_text_layout(
+    mode: &str,
+    revised: bool,
+    unit: f64,
+    rotation: u16,
+    reverse: bool,
+) -> Vec<u8> {
+    let lines: &[&str] = match (mode, revised) {
+        ("wrap", false) | ("edit", false) => &["Header", "If you", "agree", "End"],
+        ("wrap", true) => &["Header", "If", "you agree", "End"],
+        ("edit", true) => &["Header", "If the", "you agree", "End"],
+        ("order", false) => &["Header", "alpha", "beta", "End"],
+        ("order", true) => &["Header", "beta", "alpha", "End"],
+        ("repeat", false) => &["Header", "same same", "same", "End"],
+        ("repeat", true) => &["Header", "same", "same same", "End"],
+        _ => panic!("Unknown page text fixture"),
+    };
+    let mut order: Vec<_> = (0..lines.len()).collect();
+    if reverse {
+        order.reverse();
+    }
+    let content: String = order
+        .into_iter()
+        .map(|i| format!("BT /F1 12 Tf 30 {} Td ({}) Tj ET\n", 200 - i * 24, lines[i]))
+        .collect();
+    document(vec![
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 240 240] /UserUnit {unit} /Rotate {rotation} /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >>"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        stream(&content, ""),
+    ])
 }
 
 /// 表示回転・物理単位・せん断を変えても、一文字コードの所有関係を保持する。

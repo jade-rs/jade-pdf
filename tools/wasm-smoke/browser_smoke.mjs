@@ -10,6 +10,7 @@ import { isDeepStrictEqual } from 'node:util';
 import { selectBrowser } from './browser_engine.mjs';
 import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort} from './semantic_gold.mjs';
 import {checkScalarRevision} from './scalar_revision.mjs';
+import {loadPageRevisionGold,checkPageRevision} from './page_revision.mjs';
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');
 const playwright = await import(process.env.JADE_PDF_PLAYWRIGHT_PATH
@@ -384,6 +385,25 @@ try {
       console.log((row.passed?'PASS ':'FAIL ')+id);
     } catch(error) {results.push({id,passed:false,error:String(error)});console.log('FAIL '+id+' '+error);}
   }
+  for(const ref of manifest.page_revision_gold??[]) {
+    if(![ref.old_id,ref.new_id].every(id=>documents.some(e=>e.id===id))) continue;
+    const id='page-revision-gold-'+ref.id;
+    try {
+      const gold=await loadPageRevisionGold(root,ref);
+      for(const side of ['old','new']) if(documents.find(e=>e.id===gold[side+'_id']).sha256!==gold[side+'_sha256'])
+        throw new Error('Page revision source differs from reviewed gold');
+      const file=side=>path.join(root,'corpus/cache',gold[side+'_id']+'.pdf');
+      const run=spawnSync(binary,[file('old'),file('new')],{encoding:'utf8',timeout:180000,maxBuffer:32*1024*1024});
+      if(![0,1,3].includes(run.status)) throw new Error(run.stderr||String(run.error));
+      const wasm=await page.evaluate(async gold=>{
+        const load=async id=>new Uint8Array(await(await fetch('/corpus/cache/'+id+'.pdf')).arrayBuffer());
+        return JSON.parse(window.jadeProbe.compare(await load(gold.old_id),await load(gold.new_id)));
+      },gold);
+      const checks={native:checkPageRevision(root,gold,JSON.parse(run.stdout)),WASM:checkPageRevision(root,gold,wasm)};
+      const row={id,passed:checks.native.passed&&checks.WASM.passed,checks};results.push(row);
+      console.log((row.passed?'PASS ':'FAIL ')+id);
+    } catch(error) {results.push({id,passed:false,error:String(error)});console.log('FAIL '+id+' '+error);}
+  }
   const geometryResults = await page.evaluate(async () => {
     const results=[];
     // Independent PDF streams with exact colored rectangles. DOMMatrix applies
@@ -499,6 +519,16 @@ try {
           passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
           if(name==='named_unicode_edit') passed&&=summary.blocks_changed===1;
           else passed&&=Object.values(summary).every(value=>value===0);
+        } else if(name.startsWith('page_text_')) {
+          const mode=name.slice('page_text_'.length),view=diff.pages[0]?.text_diff;
+          passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===1
+            &&diff.pages.length===1&&view&&!view.alignment_limited
+            &&(view.groups.length===0)===['wrap','repeat'].includes(mode);
+          if(mode==='edit') {
+            const segments=view.groups.flatMap(g=>g.segments);
+            passed&&=segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')===''
+              &&segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')==='the ';
+          }
         } else if(name.startsWith('rtl_unicode_')) {
           const mode=name.slice('rtl_unicode_'.length);
           const complete=!['ambiguous','mixed'].includes(mode);
@@ -812,6 +842,11 @@ try {
     scalar_revision_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/scalar_revision_gold.py'))).digest('hex'),
     scalar_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_scalar_revision.py'))).digest('hex'),
     scalar_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/scalar_revision.mjs'))).digest('hex'),
+    page_revision_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/page_revision_gold.py'))).digest('hex'),
+    page_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_page_revision.py'))).digest('hex'),
+    page_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/page_revision.mjs'))).digest('hex'),
+    page_revision_gold_checks:results.filter(r=>r.id.startsWith('page-revision-gold-')).length,
+    page_revision_gold_passed:results.filter(r=>r.id.startsWith('page-revision-gold-')&&r.passed).length,
     scalar_revision_gold_checks:results.filter(r=>r.id.startsWith('scalar-revision-gold-')).length,
     scalar_revision_gold_passed:results.filter(r=>r.id.startsWith('scalar-revision-gold-')&&r.passed).length,
     semantic_gold_by_kind:goldByKind,
