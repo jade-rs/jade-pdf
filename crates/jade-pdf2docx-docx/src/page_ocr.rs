@@ -172,6 +172,16 @@ fn convert(
             region_lines.entry(page).or_default().extend(lines);
             removed_images.insert(index);
         } else {
+            let lines = if let Some(positions) = positions {
+                let geometry = parsed
+                    .pages
+                    .iter()
+                    .find(|geometry| geometry.page_number == page)
+                    .expect("raster geometry was validated");
+                whole_page_ocr::Lines::positioned(lines, positions, geometry)?
+            } else {
+                whole_page_ocr::Lines::unpositioned(lines)
+            };
             recognized.insert(page, lines);
         }
     }
@@ -198,7 +208,7 @@ fn convert(
     region_ocr::merge_lines(&mut preview_pages, &region_lines);
     for page in preview_pages {
         if let Some(lines) = recognized.get(&page.page) {
-            preview.extend(lines.iter().cloned());
+            preview.extend(lines.text.iter().cloned());
         } else {
             preview.extend(page.lines.into_iter().map(|line| line.text));
         }
@@ -221,9 +231,9 @@ fn convert(
 }
 
 /// 認識済み行を再正規化せず、1行1段落として追加する。
-pub(super) fn add_lines<C: StructuredPageContainer>(mut container: C, lines: &[String]) -> C {
-    for line in lines {
-        container = container.add_structured_paragraph(Paragraph::new().add_run(text_run(line)));
-    }
-    container
+pub(super) fn add_lines<C: StructuredPageContainer>(
+    container: C,
+    lines: &whole_page_ocr::Lines,
+) -> C {
+    lines.add_to(container)
 }

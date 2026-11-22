@@ -757,6 +757,94 @@ fn request(directory: &std::path::Path) -> MinimumPdfToDocxRequest {
     }
 }
 
+/// 全ページOCRの行座標と、列を先に読むcaller順序を両立して保持する。
+#[test]
+fn whole_page_positioned_ocr_keeps_frames_and_column_order() {
+    use jade_pdf2docx_docx::{
+        OcrPageContent, PageOcrLimits, PositionedOcrLine,
+        convert_minimum_pdf_to_docx_with_bounded_page_ocr_content,
+    };
+    let directory = tempfile::tempdir().unwrap();
+    let request = request(directory.path());
+    let original = fs::read(&request.input_pdf_path).unwrap();
+    let expected = [
+        ("Right one", [120, 40, 180, 52]),
+        ("Right two", [120, 100, 180, 112]),
+        ("Left one", [20, 40, 80, 52]),
+        ("Left two", [20, 100, 80, 112]),
+    ];
+    let report = convert_minimum_pdf_to_docx_with_bounded_page_ocr_content(
+        &request,
+        &ParseOptions {
+            strict: true,
+            ..Default::default()
+        },
+        &PageOcrLimits {
+            dpi: 72,
+            ..Default::default()
+        },
+        |raster| {
+            assert_eq!(raster.page, 1);
+            assert_eq!(raster.region, None);
+            Ok(OcrPageContent::PositionedText(
+                expected
+                    .iter()
+                    .map(|(text, bounds)| PositionedOcrLine {
+                        text: (*text).into(),
+                        bounds: *bounds,
+                    })
+                    .collect(),
+            ))
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        report.source_text_preview,
+        "Native before\nRight one\nRight two\nLeft one\nLeft two\nNative after"
+    );
+    let mut archive =
+        zip::ZipArchive::new(fs::File::open(&request.output_docx_path).unwrap()).unwrap();
+    let mut xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert_eq!(
+        xml.matches("<w:framePr ").count(),
+        4,
+        "whole-page OCR coordinates were lost: {xml}"
+    );
+    let mut cursor = 0;
+    for (text, [x0, y0, x1, y1]) in expected {
+        let at = cursor
+            + xml[cursor..]
+                .find(text)
+                .expect("caller reading order must be retained");
+        let frame_start = xml[..at].rfind("<w:framePr ").unwrap();
+        let frame = &xml[frame_start..frame_start + xml[frame_start..].find('>').unwrap()];
+        for attribute in [
+            format!("w:x=\"{}\"", x0 * 20),
+            format!("w:y=\"{}\"", y0 * 20),
+            format!("w:w=\"{}\"", (x1 - x0) * 20),
+            format!("w:h=\"{}\"", (y1 - y0) * 20),
+            "w:hAnchor=\"page\"".into(),
+            "w:vAnchor=\"page\"".into(),
+        ] {
+            assert!(
+                frame.contains(&attribute),
+                "{text}: missing {attribute}: {frame}"
+            );
+        }
+        cursor = at + text.len();
+    }
+    assert!(
+        !xml.contains("<w:drawing"),
+        "whole-page OCR must not duplicate its original image"
+    );
+    assert_eq!(fs::read(&request.input_pdf_path).unwrap(), original);
+}
+
 /// OCRページだけを置換し、前後のnative本文とページ境界・空白を保持する。
 #[test]
 fn page_ocr_preserves_native_pages_and_order() {

@@ -40,6 +40,7 @@ mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
 mod region_ocr;
+mod whole_page_ocr;
 pub use page_ocr::{
     convert_minimum_pdf_to_docx_with_bounded_page_ocr,
     convert_minimum_pdf_to_docx_with_bounded_page_ocr_content,
@@ -704,7 +705,7 @@ fn build_structured_docx_with_page_ocr(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-    recognized: &BTreeMap<usize, Vec<String>>,
+    recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
 ) -> Result<Docx, ConvertError> {
     build_structured_docx_with_image_payloads(
@@ -722,7 +723,7 @@ fn build_structured_docx_with_image_payloads(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-    recognized: &BTreeMap<usize, Vec<String>>,
+    recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
