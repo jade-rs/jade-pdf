@@ -7,6 +7,7 @@ use std::collections::HashMap;
 
 use crate::Bounds;
 
+mod grid;
 mod inline;
 mod order;
 #[cfg(test)]
@@ -32,6 +33,8 @@ pub(crate) struct ExtractedRun {
     angle: f64,
     vertical: bool,
     layout: Bounds,
+    /// 罫線による推定セル。信頼済みタグの所有とは混同しない。
+    ruled_cell: Option<usize>,
     tagged_cell: Option<crate::tagged_table::Cell>,
     outside_mark: Option<i32>,
 }
@@ -63,6 +66,8 @@ struct RunBuilder {
     first_origin: Option<(f64, f64)>,
     layout: Option<Bounds>,
     rtl: bool,
+    /// 罫線による推定セル。信頼済みタグの所有とは混同しない。
+    ruled_cell: Option<usize>,
     tagged_cell: Option<crate::tagged_table::Cell>,
     outside_mark: Option<i32>,
 }
@@ -86,6 +91,7 @@ impl RunBuilder {
             first_origin: None,
             layout: None,
             rtl: false,
+            ruled_cell: None,
             tagged_cell: None,
             outside_mark: None,
         }
@@ -121,6 +127,7 @@ impl RunBuilder {
                 angle: self.angle.unwrap_or(0.0),
                 vertical: self.vertical == Some(true),
                 layout: self.layout.context("Text has no PDF origins")?,
+                ruled_cell: self.ruled_cell,
                 tagged_cell: self.tagged_cell,
                 outside_mark: self.outside_mark,
             });
@@ -169,6 +176,18 @@ fn extract_unrotated_runs(
     user_unit: Option<f64>,
     max_blocks: usize,
     max_chars: u64,
+) -> Result<ExtractedPage> {
+    extract_with_grid_fallback(page, unicode_facts, user_unit, max_blocks, max_chars, None)
+}
+
+/// 完全なタグ表を優先し、棄却されたタグ表だけを一度だけ罫線で再抽出する。
+fn extract_with_grid_fallback(
+    page: &PdfPage<'_>,
+    unicode_facts: &crate::unicode_facts::PageFacts,
+    user_unit: Option<f64>,
+    max_blocks: usize,
+    max_chars: u64,
+    rejected_tables: Option<&std::collections::HashSet<u32>>,
 ) -> Result<ExtractedPage> {
     // Coordinates and exported font sizes stay raw. Absolute layout floors are
     // physical points, converted once to this page's coordinate basis.
@@ -461,8 +480,15 @@ fn extract_unrotated_runs(
             )
         });
         let content = unicode_facts.tagged_content(ch.index());
-        let tagged_cell = content.cell;
-        if run.tagged_cell != tagged_cell {
+        let tagged_cell = content
+            .cell
+            .filter(|c| !rejected_tables.is_some_and(|tables| tables.contains(&c.table)));
+        let ruled_cell = if tagged_cell.is_none() {
+            unicode_facts.ruled_grid.owner(bounds)
+        } else {
+            None
+        };
+        if run.tagged_cell != tagged_cell || run.ruled_cell != ruled_cell {
             run.finish(&mut output, max_blocks)?;
             run.tagged_cell = tagged_cell;
         }
@@ -611,6 +637,7 @@ fn extract_unrotated_runs(
         }
         separated = false;
         generated_space = false;
+        run.ruled_cell = ruled_cell;
         if run.text.is_empty() {
             run.advance.first = advance;
             run.outside_mark = content.outside;
@@ -714,14 +741,51 @@ fn extract_unrotated_runs(
                 x1: region.bounds.x1.max(origin.0),
                 y1: region.bounds.y1.max(origin.1),
             },
-            tagged_cell: region.content.cell,
+            ruled_cell: if region
+                .content
+                .cell
+                .is_none_or(|c| rejected_tables.is_some_and(|tables| tables.contains(&c.table)))
+            {
+                unicode_facts.ruled_grid.owner(region.bounds)
+            } else {
+                None
+            },
+            tagged_cell: region
+                .content
+                .cell
+                .filter(|c| !rejected_tables.is_some_and(|tables| tables.contains(&c.table))),
             outside_mark: region.content.outside,
         });
     }
+    let candidates: std::collections::HashSet<_> = output
+        .iter()
+        .filter_map(|r| r.tagged_cell.map(|c| c.table))
+        .collect();
     let reading_order_requires_review =
         table::retain_complete(&mut output, point, &unicode_facts.table_declarations)
-            || unicode_facts.reading_order_requires_review;
-    let mut runs = canonicalize_runs(output, point);
+            || unicode_facts.reading_order_requires_review
+            || rejected_tables.is_some();
+    if rejected_tables.is_none() && !unicode_facts.ruled_grid.faces.is_empty() {
+        let retained: std::collections::HashSet<_> = output
+            .iter()
+            .filter_map(|r| r.tagged_cell.map(|c| c.table))
+            .collect();
+        let rejected: std::collections::HashSet<_> =
+            candidates.difference(&retained).copied().collect();
+        if !rejected.is_empty() {
+            return extract_with_grid_fallback(
+                page,
+                unicode_facts,
+                user_unit,
+                max_blocks,
+                max_chars,
+                Some(&rejected),
+            );
+        }
+    }
+    let inferred_grid = output.iter().any(|r| r.ruled_cell.is_some());
+    let reading_order_requires_review = reading_order_requires_review || inferred_grid;
+    let mut runs = canonicalize_ruled_runs(output, point, &unicode_facts.ruled_grid);
     runs.retain(|run| !run.text.trim().is_empty());
     for run in &mut runs {
         if !run.source_text_region {
@@ -861,12 +925,30 @@ fn is_combining(c: char) -> bool {
         || matches!(c, '\u{200c}' | '\u{200d}' | '\u{fe0e}' | '\u{fe0f}')
 }
 
+/// 罫線のない自作レイアウトも、同じ行結合の実装で検証する。
+#[cfg(test)]
 fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
+    canonicalize_ruled_runs(runs, point, &crate::ruled_grid::Plan::default())
+}
+
+/// セルの所有を保持して行を結合し、信頼済み表と推定された表を順序付ける。
+fn canonicalize_ruled_runs(
+    runs: Vec<ExtractedRun>,
+    point: f64,
+    grid: &crate::ruled_grid::Plan,
+) -> Vec<ExtractedRun> {
     // A rotated page may return all italic text before the regular text, even
     // when they share a line. Collect by baseline before joining adjacent runs.
     let mut rows: Vec<Vec<ExtractedRun>> = Vec::new();
-    let mut buckets: HashMap<(i64, i64, i64, Option<crate::tagged_table::Cell>), Vec<usize>> =
-        HashMap::new();
+    /// 字号・角度・行の格子位置と、独立した二種類のセル所有を持つ探索キー。
+    type RowKey = (
+        i64,
+        i64,
+        i64,
+        Option<crate::tagged_table::Cell>,
+        Option<usize>,
+    );
+    let mut buckets: HashMap<RowKey, Vec<usize>> = HashMap::new();
     let mut result = Vec::new();
     for run in runs {
         if run.vertical || run.angle.rem_euclid(180.0).abs() > 0.1 {
@@ -891,9 +973,13 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
         // 元の実字号による許容差は保持する。丸めた格子幅より僅かに
         // 大きい許容差が境界を跨ぐ場合も、定数個の近傍で検査する。
         for offset in -2i64..=2 {
-            if let Some(candidates) =
-                buckets.get(&(font, angle, y.saturating_add(offset), run.tagged_cell))
-            {
+            if let Some(candidates) = buckets.get(&(
+                font,
+                angle,
+                y.saturating_add(offset),
+                run.tagged_cell,
+                run.ruled_cell,
+            )) {
                 row = candidates
                     .iter()
                     .copied()
@@ -907,7 +993,7 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
             rows[i].push(run);
         } else {
             buckets
-                .entry((font, angle, y, run.tagged_cell))
+                .entry((font, angle, y, run.tagged_cell, run.ruled_cell))
                 .or_default()
                 .push(rows.len());
             rows.push(vec![run]);
@@ -1041,7 +1127,7 @@ fn canonicalize_runs(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
     // top-to-bottom sort would interleave the two columns of a paper.
     let vertical = result.iter().filter(|r| r.vertical).count() > result.len() / 2;
     if !vertical {
-        return spacing::finish_order(table::sort(result, point));
+        return spacing::finish_order(grid::sort(result, point, grid));
     }
     // Origins come from PDF positioning operators and are independent of the
     // platform's substitute font ink metrics (notably native vs browser CID fonts).

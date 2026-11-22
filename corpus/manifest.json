@@ -1929,9 +1929,34 @@
           "anchors": [
             "この申請書は、令和五年十月一日から令和十二年九月二十九日までの間に提出する場合に使用します。"
           ]
+        },
+        {
+          "case_id": "nta-applicant-field-order-page1",
+          "page": 1,
+          "anchors": [
+            "F01",
+            "F08",
+            "F10",
+            "E01",
+            "F09",
+            "F05",
+            "F07",
+            "E02",
+            "F06",
+            "E03",
+            "H06",
+            "E04",
+            "H07",
+            "F02"
+          ],
+          "gold_file": "nta-applicant-field-order-gold.json",
+          "gold_sha256": "8c8adb6ea737f2246f6a5cef1b55ce198610bd0b5e5a78041725ee084d7801ca",
+          "review_file": "nta-applicant-field-order-review.json",
+          "review_sha256": "12314610dc6a0fdcb292ce4a03afb273375b52c68de3d34c674a57819865a5a0",
+          "scope": "Selected printed field-ID sequence only. Not complete table text, semantic cell association, whitespace, global page order, filled values, form extraction, tax advice, or document precision/recall. Existing vertical-note reading gold remains separate and must stay enforced."
         }
       ],
-      "reading_order_gold_source": "Right-side vertical sentence on original pages1/2 manually transcribed before product extraction; NFC and whitespace removal for its within-sentence order only. Does not declare the reading order of the mixed form/table, other text or glyph geometry."
+      "reading_order_gold_source": "Right-side vertical sentence on original pages1/2 manually transcribed before product extraction; NFC and whitespace removal for its within-sentence order only. Does not declare the reading order of the mixed form/table, other text or glyph geometry. Separate page1 applicant-panel rule declares only14 printed field IDs from nta-applicant-field-order-gold.json, committed before baseline inspection. Existing two vertical-note rules remain unchanged."
     },
     {
       "id": "pdfjs-issue16880-rtl",

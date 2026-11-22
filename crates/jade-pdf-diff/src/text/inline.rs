@@ -281,6 +281,7 @@ mod tests {
             source_text_region: false,
             source_text_anchor: false,
             source_regions: Vec::new(),
+            ruled_cell: None,
             tagged_cell: None,
             outside_mark: None,
             text: "x".into(),

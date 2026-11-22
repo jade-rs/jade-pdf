@@ -24,6 +24,8 @@ pub(crate) struct PageFacts {
     paired_low_bits: Vec<u64>,
     tagged_cells: Vec<(usize, crate::tagged_table::Content)>,
     pub table_declarations: Vec<crate::tagged_table::Declaration>,
+    /// タグ構造とは独立した、閉じた罫線による任意のセル候補。
+    pub ruled_grid: crate::ruled_grid::Plan,
     pub reading_order_requires_review: bool,
     /// 原文で一意に確認した、同一文字セル内の RTL 順序補正。
     pub rtl_order: crate::rtl_order::Corrections,
@@ -179,6 +181,9 @@ pub(crate) fn read(
     let mut object_budget = TextObjectBudget::default();
     let mut actual_budget = crate::actual_text::Budget::default();
     for number in range {
+        // 選択ページだけを読む文字レイヤでも同じ配分を使う。前ページの
+        // 消費量によってIRと文字レイヤでセル所有を変えない。
+        let mut ruling_work = ruling_page_budget(count as usize);
         let page = b.FPDF_LoadPage(document.cast(), number as i32);
         ensure!(
             !page.is_null(),
@@ -283,6 +288,13 @@ pub(crate) fn read(
                     paired_low_bits: Vec::new(),
                     tagged_cells: Vec::new(),
                     table_declarations: table_facts.declarations,
+                    ruled_grid: crate::ruled_grid::Plan::read(
+                        pdfium,
+                        page.cast(),
+                        scale / units.get(number).unwrap_or(1.0),
+                        characters as usize,
+                        &mut ruling_work,
+                    ),
                     reading_order_requires_review: table_facts.requires_review,
                     rtl_order: crate::rtl_order::Corrections::default(),
                     supplementary: crate::supplementary_glyph::Corrections::default(),
@@ -528,6 +540,11 @@ pub(crate) fn read(
         result.push(page_result?);
     }
     Ok(result)
+}
+
+/// 文書全体の任意推定を有限にし、ページの呼び出し順序から予算を切り離す。
+fn ruling_page_budget(pages: usize) -> usize {
+    64_000_000 / pages.max(1)
 }
 
 // A text page can silently omit entire text objects, including a glyph whose
@@ -800,6 +817,16 @@ mod surrogate_tests {
 #[cfg(test)]
 mod text_object_budget_tests {
     use super::TextObjectBudget;
+    /// 選択ページのAPIでも全ページのAPIでも、同じページ予算を使う。
+    #[test]
+    fn ruling_budget_is_independent_of_preceding_page_consumption() {
+        for pages in [1, 3, 65, 5000] {
+            let each = super::ruling_page_budget(pages);
+            assert!(each > 0 && each.saturating_mul(pages) <= 64_000_000);
+            assert_eq!(super::ruling_page_budget(pages), each);
+        }
+        assert!(super::ruling_page_budget(3) >= 16_000_000);
+    }
     #[test]
     fn object_work_is_document_wide_and_checked_before_enumeration() {
         let mut budget = TextObjectBudget::default();

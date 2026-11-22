@@ -294,5 +294,4 @@ fn compare_loaded(
 #[cfg(target_arch = "wasm32")]
 mod wasm_runtime;
 
-#[cfg(test)]
 mod ruled_grid;

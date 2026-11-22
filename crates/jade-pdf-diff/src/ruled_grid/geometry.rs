@@ -19,7 +19,7 @@ pub(super) struct Line {
 
 /// 罫線グラフの有限な一面。結合セルの凹形状も保持する。
 #[derive(Debug)]
-pub(super) struct Face {
+pub(crate) struct Face {
     /// 面の周囲の頂点。最後の辺は先頭へ戻る。
     pub polygon: Vec<(f64, f64)>,
     /// 頂点すべてを覆う矩形。
