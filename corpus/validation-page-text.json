@@ -2,12 +2,12 @@
   "version": 47,
   "date": "2026-11-22",
   "production_ready": false,
-  "base_revision": "653ef49ab32b10ccf356e0b5aa9590410c495559",
+  "base_revision": "8e2b7f3c9f285f52ba0bf9c4ff77e74dea65b156",
   "base_pr": 11,
-  "core_revision": "57e30bc7be5bb10564040505d6153867c0aff3d3",
-  "qualification_revision": "50f9b8c1c0afccf591b3a2c9d03f472627edef5e",
-  "qualified_core_tree": "309fb53c3d6ba15afa8a7a7e6f4b0d754daaeb7e",
-  "qualified_source_tree": "d26a40716c88c6d7648326b59f4641f97b5a6ad1",
+  "core_revision": "7d332aba528dcf0f0b816e987e2c74e3693537d2",
+  "qualification_revision": "3d4e731f60fc74d5ee0eabb312b0fe33a42987fd",
+  "qualified_core_tree": "62116d803a93c8105655cc8c08d642c8af2816b5",
+  "qualified_source_tree": "b105be318bf27362f2fb224d18bdf3ffa44e7116",
   "scope": "Add an ordered normalized IR page-text view while retaining original line/block strings, segments, positions, visual/form evidence and reading-order/Unicode diagnostics. Whole text equality handles repeated-word wrapping; unique exact block anchors only bound contiguous windows. Never cancel word bags. Optional legacy None means uncomputed. Trimmed grapheme-pair work is capped at 4,000,000 per page; coarse fallback preserves all text and requires review. Does not reconstruct paragraph/table semantics or repair unknown reading order.",
   "collection": {
     "registered_documents": 88,
@@ -434,5 +434,66 @@
     "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
     "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
     "tools/wasm-smoke/worker_smoke.mjs": "48238dfb56586af6266170adad7c8870430fdb652d55929529523c8e3e285d80"
+  },
+  "history_replay": {
+    "previous_base_revision": "653ef49ab32b10ccf356e0b5aa9590410c495559",
+    "previous_result_revision": "9f1cc501a2f02ff0b2d03248838fb09ec1721968",
+    "qualified_result_revision": "5994205a1bb4a106215ee45101cc2d1d54895124",
+    "original_qualified_core_tree": "309fb53c3d6ba15afa8a7a7e6f4b0d754daaeb7e",
+    "original_qualified_source_tree": "d26a40716c88c6d7648326b59f4641f97b5a6ad1",
+    "commits": [
+      {
+        "original": "c37f77ffcf81a263b1bd340af3eafda55b17bfae",
+        "replayed": "4a07eac1ef82259e523bf23179ee0b57323ef018",
+        "original_tree": "f54e84d5932f5a54e6ccf96033815b012e090277",
+        "replayed_tree": "17ca1b766c327b60f26c3dcc782551cfd1d4de72",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "b4040a694b0d875eac04a7325331272be0098b79",
+        "replayed": "1bac0eba02fa9ddd22713c8c74e03c82199aabed",
+        "original_tree": "3bb6533505f127a50cb7bee7ea120dc270869ace",
+        "replayed_tree": "0f84dcb6f3794f3b7d8eba3718a7ed9cb73e9c2d",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "57e30bc7be5bb10564040505d6153867c0aff3d3",
+        "replayed": "7d332aba528dcf0f0b816e987e2c74e3693537d2",
+        "original_tree": "309fb53c3d6ba15afa8a7a7e6f4b0d754daaeb7e",
+        "replayed_tree": "62116d803a93c8105655cc8c08d642c8af2816b5",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "d0aef0d4ef93e37291f9ff9bcf93d9dc144f6943",
+        "replayed": "c08923989102ac6a5dd47485ceabfdb4667a27a9",
+        "original_tree": "15ffe94fe6c792993487548241dddbc1f10b4f09",
+        "replayed_tree": "9dd76cd607478e74d6787bad1b0bc628316241fe",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "50f9b8c1c0afccf591b3a2c9d03f472627edef5e",
+        "replayed": "3d4e731f60fc74d5ee0eabb312b0fe33a42987fd",
+        "original_tree": "d26a40716c88c6d7648326b59f4641f97b5a6ad1",
+        "replayed_tree": "b105be318bf27362f2fb224d18bdf3ffa44e7116",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "9f1cc501a2f02ff0b2d03248838fb09ec1721968",
+        "replayed": "5994205a1bb4a106215ee45101cc2d1d54895124",
+        "original_tree": "c5b10bbf9d7183ff479774cac2f8ba8dffb1c79b",
+        "replayed_tree": "93fac256ef348efad56c3a90f00d8837e4e171ba",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      }
+    ],
+    "parent_metadata_only_path": "corpus/validation-mixed-rtl.json",
+    "parent_metadata_only_fields": [
+      "base_revision",
+      "core_revision",
+      "history_replay",
+      "qualification_revision"
+    ],
+    "parent_qualification_facts_and149_hashes_identical": true,
+    "all201_product_checker_report_hashes_identical": true,
+    "scope": "All six qualified trees differ only by the inherited parent v46 history metadata. Parent qualification facts and all149 source/checker/report hashes are identical; every201 v47 product/checker/report hash and frozen runtime byte remains unchanged. No runtime requalification claim for a different implementation."
   }
 }
