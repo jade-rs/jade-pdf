@@ -9,6 +9,7 @@ import tempfile
 
 from pdf_corpus import ROOT, fetch
 from semantic_gold import check_gold, normalize_text, page_has_text_review
+from selected_order_reference import validate_selected_order_reference
 
 
 def same_text(actual, expected):
@@ -36,6 +37,7 @@ def main():
     rows, errors = [], []
     for entry in manifest.get('pending_semantic', []):
         try:
+            validate_selected_order_reference(entry, ROOT/'corpus')
             fetch(entry, ROOT/'corpus/cache', offline=True)
             source = ROOT/'corpus/cache'/(entry['id']+'.pdf')
             _, ir = invoke(binary, '--ir', source)
@@ -43,6 +45,11 @@ def main():
             actual = '\n'.join(block['text'] for block in page['blocks'])
             gold_check = check_gold(actual, entry['gold'])
             matches = gold_check['matches']
+            layer_check = None
+            if gold_check['kind'] == 'reading_order':
+                _, layer = invoke(binary, '--text-layer', source, entry['gold']['page'])
+                layer_check = check_gold('\n'.join(run['text'] for run in layer), entry['gold'])
+                matches = matches and layer_check['matches']
             with tempfile.TemporaryDirectory(prefix='jade-semantic-gold-') as directory:
                 rewrite = Path(directory)/'equivalent.pdf'
                 rewrite.write_bytes(source.read_bytes() + b'\n% equivalent source rewrite\n')
@@ -51,6 +58,7 @@ def main():
             page_review = page_has_text_review(page)
             rows.append(dict(id=entry['id'], page=entry['gold']['page'],
                              source_sha256=entry['sha256'], gold_check=gold_check,
+                             text_layer_gold_check=layer_check,
                              semantic_gold_matches=matches,
                              comparison_exit=code, selected_page_has_text_review=page_review,
                              mismatch_is_guarded=not matches and code == 3 and page_review,

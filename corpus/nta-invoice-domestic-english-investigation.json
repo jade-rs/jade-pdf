@@ -1,0 +1,159 @@
+{
+  "source_id": "nta-invoice-domestic-english-2026",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "original_declaration_revision": "a7245b794435d7002778fe5c7731557ae8c5ee2e",
+  "reference_revision": "a260bbf021674c8cb52b0452c3f7d42cf2cfed07",
+  "selected_cases": {
+    "initial_passed": 1,
+    "corrected_reference_passed": 2,
+    "cases": 3,
+    "source_transcription_correction": "Sole -> Solo, confirmed from original288dpi; not product improvement"
+  },
+  "genuine_unresolved": {
+    "case_id": "nta-english-applicant-field-ids-page1",
+    "page": 1,
+    "all14_printed_ids_missing_from_IR_and_character_layer": true,
+    "IR_passed": false,
+    "character_layer_passed": false,
+    "guarded": true,
+    "source_representation": "A1607x2272 image is painted over the central Japanese form on original pages1/2; IDs lie in this raster form while English callouts supply text. Image pixels cannot be treated as encoded source characters; no OCR correction has been implemented."
+  },
+  "source_image_metadata": {
+    "method": "Independent pypdf metadata only: no image/font programs decoded, exported or reused",
+    "results": [
+      {
+        "page": 1,
+        "media_box": [
+          0.0,
+          0.0,
+          540.0,
+          780.0
+        ],
+        "images": [
+          {
+            "path": "page1//Im0",
+            "width": 1607,
+            "height": 2272,
+            "image_mask": false
+          }
+        ],
+        "font_names": [
+          "/FQSQUY+Aptos",
+          "/KIDPMO+CambriaMath",
+          "/RVUFGA+YuGothic-Regular",
+          "/XERPMO+MS-Gothic"
+        ]
+      },
+      {
+        "page": 2,
+        "media_box": [
+          0.0,
+          0.0,
+          540.0,
+          780.0
+        ],
+        "images": [
+          {
+            "path": "page2//Im0",
+            "width": 1607,
+            "height": 2272,
+            "image_mask": false
+          }
+        ],
+        "font_names": [
+          "/FQSQUY+Aptos",
+          "/JWVOYQ+Aptos",
+          "/RVUFGA+YuGothic-Regular",
+          "/XERPMO+MS-Gothic"
+        ]
+      },
+      {
+        "page": 3,
+        "media_box": [
+          0.0,
+          0.0,
+          595.32,
+          841.92
+        ],
+        "images": [],
+        "font_names": [
+          "/IJUXWY+MS-Mincho",
+          "/JNJDKW+ArialMT",
+          "/UGTRIA+PalatinoLinotype-Roman",
+          "/ZLGAAQ+PalatinoLinotype-Bold"
+        ]
+      },
+      {
+        "page": 4,
+        "media_box": [
+          0.0,
+          0.0,
+          595.32,
+          841.92
+        ],
+        "images": [],
+        "font_names": [
+          "/DEHTEI+MS-Mincho",
+          "/IJUXWY+MS-Mincho",
+          "/JNJDKW+ArialMT",
+          "/UGTRIA+PalatinoLinotype-Roman"
+        ]
+      },
+      {
+        "page": 5,
+        "media_box": [
+          0.0,
+          0.0,
+          595.32,
+          841.92
+        ],
+        "images": [
+          {
+            "path": "page5//Im0",
+            "width": 130,
+            "height": 129,
+            "image_mask": false
+          }
+        ],
+        "font_names": [
+          "/DEHTEI+MS-Mincho",
+          "/IJUXWY+MS-Mincho",
+          "/JNJDKW+ArialMT",
+          "/UGTRIA+PalatinoLinotype-Roman"
+        ]
+      }
+    ]
+  },
+  "source_image_placement": {
+    "method": "Independent original page q/Q/cm/Do operators and image metadata only. No image/font data decoded or exported.",
+    "results": [
+      {
+        "page": 1,
+        "name": "/Im0",
+        "width": 1607,
+        "height": 2272,
+        "painted_bounds": [
+          69.5973282,
+          103.1675116,
+          455.2215551,
+          648.3999023
+        ]
+      },
+      {
+        "page": 2,
+        "name": "/Im0",
+        "width": 1607,
+        "height": 2272,
+        "painted_bounds": [
+          69.5973129,
+          103.1675072,
+          455.1937459,
+          648.3998413
+        ]
+      }
+    ]
+  },
+  "registration_status": "Unregistered: retain all3 cases and original failure; do not drop the image-field case to add only successful regular coverage. Need explicit pending/reading-order reporting before registration.",
+  "product_runtime_changed": false,
+  "production_ready": false
+}

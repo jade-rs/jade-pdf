@@ -1,0 +1,301 @@
+use ndlocr_lite_rs::infer::{cached::ParseqSession, deim::detect_rgb_u8};
+use ndlocr_lite_rs::pipeline::run_page::{PageInput, run_page};
+use serde_json::json;
+use std::{cell::RefCell, path::PathBuf};
+
+/// 製品を変更せず、既存の行検出と参照実装のDEIM検出を固定画像で比較する。
+fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let args: Vec<_> = std::env::args_os().skip(1).collect();
+    if args.len() != 3 && args.len() != 4 {
+        return Err("usage: probe mode image models [region.json]".into());
+    }
+    let mode = args[0].to_string_lossy();
+    let image = PathBuf::from(&args[1]);
+    let assets = PathBuf::from(&args[2]);
+    let models = [
+        "parseq-ndl-24x256-30-tiny-189epoch-tegaki3-r8data-202604.onnx",
+        "parseq-ndl-24x384-50-tiny-300epoch-tegaki3-r8data-202604.onnx",
+        "parseq-ndl-24x768-100-tiny-153epoch-tegaki3-r8data-202604.onnx",
+    ];
+    if mode == "naive" || mode == "naive-region" {
+        let mut request = jade_pdf2docx_ocr::OcrRequest::new("nta-english-page1")
+            .with_image_path(&image)
+            .with_parseq_paths(assets.join(models[1]), assets.join("NDLmoji.yaml"))
+            .with_parseq_min_confidence(0.5);
+        if mode == "naive-region" {
+            let file = args.get(3).ok_or("region.json required")?;
+            let bounds: [usize; 4] = serde_json::from_slice(&std::fs::read(file)?)?;
+            request = request.with_image_region(bounds);
+        }
+        let output = match jade_pdf2docx_ocr::run_ocr(&request) {
+            Ok(result) => json!({"succeeded":true,"blocks":result.blocks.iter().map(|b|
+                json!({"text":b.text,"bounds":b.bounds,"confidence":b.confidence,
+                       "kind":format!("{:?}",b.kind)})).collect::<Vec<_>>()}),
+            Err(error) => json!({"succeeded":false,"error":error.to_string()}),
+        };
+        println!("{}", serde_json::to_string_pretty(&output)?);
+        return Ok(());
+    }
+    if mode == "ruling-segment" || mode == "ruling-tiles" {
+        return ruling_probe(&image, &assets, mode == "ruling-tiles");
+    }
+    if mode != "deim" && mode != "deim-tiles" {
+        return Err("unknown mode".into());
+    }
+    let rgb = ndlocr_lite_rs::io::load_rgb_u8(&image)?;
+    let mut detections = Vec::new();
+    let mut tiles = Vec::new();
+    if mode == "deim-tiles" {
+        for y in origins(rgb.height) {
+            for x in origins(rgb.width) {
+                let tile = ndlocr_lite_rs::pipeline::crop::crop_rgb_u8(
+                    &rgb.data,
+                    rgb.width,
+                    rgb.height,
+                    ndlocr_lite_rs::pipeline::crop::BBox::new(
+                        x,
+                        y,
+                        (x + 1024).min(rgb.width),
+                        (y + 1024).min(rgb.height),
+                    ),
+                )?;
+                let found = detect_rgb_u8(
+                    &assets.join("deim-s-1024x1024.onnx"),
+                    &tile.data,
+                    tile.width,
+                    tile.height,
+                    0.3,
+                )?;
+                tiles.push(json!({"origin":[x,y],"size":[tile.width,tile.height],"detections":found.len()}));
+                for mut detection in found {
+                    let [a, b, c, d] = detection.box_xyxy;
+                    let clamped = [
+                        a.clamp(0, tile.width as i32),
+                        b.clamp(0, tile.height as i32),
+                        c.clamp(0, tile.width as i32),
+                        d.clamp(0, tile.height as i32),
+                    ];
+                    if clamped[0] >= clamped[2] || clamped[1] >= clamped[3] {
+                        continue;
+                    }
+                    detection.box_xyxy = [
+                        clamped[0] + x as i32,
+                        clamped[1] + y as i32,
+                        clamped[2] + x as i32,
+                        clamped[3] + y as i32,
+                    ];
+                    detections.push(detection);
+                }
+            }
+        }
+    } else {
+        detections = detect_rgb_u8(
+            &assets.join("deim-s-1024x1024.onnx"),
+            &rgb.data,
+            rgb.width,
+            rgb.height,
+            0.3,
+        )?;
+    }
+    let sessions = models
+        .map(|model| ParseqSession::load(&assets.join(model), &assets.join("NDLmoji.yaml")))
+        .into_iter()
+        .collect::<Result<Vec<_>, _>>()?;
+    let calls = RefCell::new(Vec::new());
+    let errors = RefCell::new(Vec::new());
+    let recognize = |index: usize, crop: &ndlocr_lite_rs::pipeline::crop::CroppedImage| {
+        match sessions[index].recognize_rgb_u8_unprocessed(&crop.data, crop.width, crop.height) {
+            Ok(result) => {
+                calls.borrow_mut().push(json!({"model_index":index,"width":crop.width,
+                    "height":crop.height,"text":result.text,"mean_confidence":result.mean_confidence}));
+                result.text
+            }
+            Err(error) => {
+                errors.borrow_mut().push(error.to_string());
+                String::new()
+            }
+        }
+    };
+    let output = run_page(
+        PageInput {
+            rgb: &rgb.data,
+            width: rgb.width,
+            height: rgb.height,
+            detections: &detections,
+        },
+        |crop| recognize(0, crop),
+        |crop| recognize(1, crop),
+        |crop| recognize(2, crop),
+    )?;
+    println!(
+        "{}",
+        serde_json::to_string_pretty(&json!({
+            "scope":"Research only: upstream DEIM+PARSeq cascade; not integrated into Jade, no recognition confidence filter, cross-tile deduplication or gold-based correction",
+            "mode":mode,"tiles":tiles,
+            "total_detections":output.total_detection_count,"line_detections":output.line_detection_count,
+            "lines":output.lines.iter().map(|l|json!({"text":l.text,"bounds":l.bbox_xyxy,
+                "detector_confidence":l.confidence,"is_vertical":l.is_vertical})).collect::<Vec<_>>(),
+            "recognizer_calls":calls.into_inner(),"errors":errors.into_inner(),
+        }))?
+    );
+    Ok(())
+}
+
+/// 末尾の小さな帯を避け、固定幅1024・重なり256以上の切り出し始点を列挙する。
+fn origins(size: usize) -> Vec<usize> {
+    if size <= 1024 {
+        return vec![0];
+    }
+    let last = size - 1024;
+    let mut values: Vec<_> = (0..=last).step_by(768).collect();
+    if values.last().copied() != Some(last) {
+        values.push(last);
+    }
+    values
+}
+
+/// 認識画素は変更せず、無彩色の長い罫線を除いた検出マスクを実験する。
+fn ruling_probe(
+    image: &std::path::Path,
+    assets: &std::path::Path,
+    tiled: bool,
+) -> Result<(), Box<dyn std::error::Error>> {
+    use ndlocr_lite_rs::infer::parseq::ParseqOrientation;
+    use ndlocr_lite_rs::pipeline::{
+        crop::{BBox, crop_rgb_u8},
+        line_chunks::{crop_line_chunk_rgb_u8, split_line_for_input},
+        line_segment::detect_textline_bands_naive,
+    };
+    let rgb = ndlocr_lite_rs::io::load_rgb_u8(image)?;
+    let (w, h) = (rgb.width, rgb.height);
+    let mut mask = vec![255u8; rgb.data.len()];
+    let mut ink = vec![false; w * h];
+    for (i, pixel) in rgb.data.chunks_exact(3).enumerate() {
+        let lo = *pixel.iter().min().unwrap();
+        let hi = *pixel.iter().max().unwrap();
+        if hi - lo <= 24 && (pixel.iter().map(|v| u16::from(*v)).sum::<u16>() / 3) < 220 {
+            ink[i] = true;
+        }
+    }
+    let mut remove = vec![false; w * h];
+    for y in 0..h {
+        let mut x = 0;
+        while x < w {
+            if !ink[y * w + x] {
+                x += 1;
+                continue;
+            }
+            let start = x;
+            while x < w && ink[y * w + x] {
+                x += 1;
+            }
+            if x - start >= (w / 20).max(64) {
+                for i in start..x {
+                    remove[y * w + i] = true;
+                }
+            }
+        }
+    }
+    for x in 0..w {
+        let mut y = 0;
+        while y < h {
+            if !ink[y * w + x] {
+                y += 1;
+                continue;
+            }
+            let start = y;
+            while y < h && ink[y * w + x] {
+                y += 1;
+            }
+            if y - start >= (h / 20).max(64) {
+                for i in start..y {
+                    remove[i * w + x] = true;
+                }
+            }
+        }
+    }
+    for i in 0..w * h {
+        if ink[i] && !remove[i] {
+            mask[i * 3..i * 3 + 3].fill(0);
+        }
+    }
+    let mut bands = Vec::new();
+    if tiled {
+        for y in segmentation_origins(h) {
+            for x in segmentation_origins(w) {
+                let tile = crop_rgb_u8(
+                    &mask,
+                    w,
+                    h,
+                    BBox::new(x, y, (x + 512).min(w), (y + 512).min(h)),
+                )?;
+                for [a, b, c, d] in
+                    detect_textline_bands_naive(&tile.data, tile.width, tile.height, 220)
+                {
+                    bands.push([a + x, b + y, c + x, d + y]);
+                }
+            }
+        }
+        bands.sort_by_key(|b| (b[1], b[0]));
+    } else {
+        bands = detect_textline_bands_naive(&mask, w, h, 220);
+    }
+    let session = ParseqSession::load(
+        &assets.join("parseq-ndl-24x384-50-tiny-300epoch-tegaki3-r8data-202604.onnx"),
+        &assets.join("NDLmoji.yaml"),
+    )?;
+    let (iw, ih) = session.input_dimensions();
+    let mut lines = Vec::new();
+    let mut errors = Vec::new();
+    for [x0, y0, x1, y1] in bands {
+        let crop = crop_rgb_u8(&rgb.data, w, h, BBox::new(x0, y0, x1, y1))?;
+        let detector_crop = crop_rgb_u8(&mask, w, h, BBox::new(x0, y0, x1, y1))?;
+        let chunks =
+            match split_line_for_input(&detector_crop.data, crop.width, crop.height, 220, iw, ih) {
+                Ok(chunks) => chunks,
+                Err(error) => {
+                    errors.push(json!({"bounds":[x0,y0,x1,y1],"error":error}));
+                    continue;
+                }
+            };
+        let mut results = Vec::new();
+        let mut text = String::new();
+        for (i, chunk) in chunks.iter().enumerate() {
+            let part = crop_line_chunk_rgb_u8(&crop.data, crop.width, crop.height, &chunks, i)?;
+            let result = session.recognize_rgb_u8_unprocessed_with_orientation(
+                &part.data,
+                part.width,
+                part.height,
+                ParseqOrientation::Horizontal,
+            )?;
+            if chunk.insert_space_before(&text, &result.text, crop.height) {
+                text.push(' ');
+            }
+            text.push_str(&result.text);
+            results.push(json!({"text":result.text,"confidence":result.mean_confidence}));
+        }
+        lines.push(json!({"bounds":[x0,y0,x1,y1],"text":text,"chunks":results}));
+    }
+    println!(
+        "{}",
+        serde_json::to_string_pretty(
+            &json!({"mode":if tiled {"ruling-tiles"} else {"ruling-segment"},
+        "scope":"Research only. Segmentation excludes chromatic ink/long monochrome runs; recognition uses original RGB without erasure. No confidence filtering, cross-tile deduplication or product integration. Colored text completeness and grid overlap are unproven.",
+        "removed_detection_pixels":remove.iter().filter(|v|**v).count(),"lines":lines,"errors":errors})
+        )?
+    );
+    Ok(())
+}
+
+/// 512画素の固定領域を128画素以上重ね、原本のラベル位置によらず列挙する。
+fn segmentation_origins(size: usize) -> Vec<usize> {
+    if size <= 512 {
+        return vec![0];
+    }
+    let last = size - 512;
+    let mut out: Vec<_> = (0..=last).step_by(384).collect();
+    if out.last().copied() != Some(last) {
+        out.push(last);
+    }
+    out
+}

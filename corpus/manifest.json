@@ -2567,6 +2567,94 @@
         "sdk_unicode_mapping_errors_page_2": 80,
         "source_unicode_accounting_unavailable_page_2": true
       }
+    },
+    {
+      "id": "nta-invoice-domestic-english-2026",
+      "url": "https://www.nta.go.jp/english/taxes/consumption_tax/201606-9en.pdf",
+      "source": "https://www.nta.go.jp/taxes/tetsuzuki/shinsei/annai/hojin/annai/invoice_01.htm",
+      "category": "English annotated Japanese invoice form: raster field IDs missing; selected identification/publication table order",
+      "sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+      "bytes": 1879905,
+      "pages": 5,
+      "gold": {
+        "case_id": "nta-english-applicant-field-ids-page1",
+        "page": 1,
+        "anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "kind": "reading_order"
+      },
+      "reading_order": [
+        {
+          "case_id": "nta-english-identification-table-page4",
+          "page": 4,
+          "anchors": [
+            "Type",
+            "Identification document",
+            "Those who have an Individual Number Card",
+            "Individual Number Card",
+            "Those who",
+            "have an",
+            "Individual Number Card",
+            "Document to verify the Number",
+            "Document to verify identification"
+          ],
+          "scope": "Selected headers and both rows of the identification-document table. The second row uses literal fragments around its apostrophe; no punctuation identity or surrounding legal prose gold."
+        },
+        {
+          "case_id": "nta-english-publication-table-page5",
+          "page": 5,
+          "anchors": [
+            "Business enterprise type",
+            "Items you wish to publish",
+            "Solo proprietors",
+            "Main business name",
+            "Location of the principal office, etc.",
+            "Common name",
+            "Maiden name",
+            "Association or foundation without juridical personality, etc.",
+            "Location of the head office or principal office"
+          ],
+          "scope": "Selected table headers, both left row labels and ordered right-column items. Not footnote markers, full prose, exact cell geometry or legal guidance."
+        }
+      ],
+      "rights": "NTA page currently specifies PDL1.0 with attribution and notice of derived material; no observed separate rights notice on the selected ordinary form/instruction text. Original PDF retained unchanged in ignored cache; no fonts or glyph outlines exported/reused.",
+      "rights_source": "https://www.nta.go.jp/chuijiko/copy.htm",
+      "reviewed": "2026-11-22",
+      "reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "retrieved": "2026-11-22",
+      "known_failure": "All14 original page1 field IDs lie inside the rasterized Japanese form and are absent in IR/text layer. Existing source completeness warnings guard the mismatch; no OCR recovery is implemented. Other2 declared table rules remain enforced, including original Solo transcription correction; not a product improvement.",
+      "baseline_diagnostics": {
+        "sdk_text_objects_without_characters_page_1": 2,
+        "source_text_characters_missing_page_1": 2,
+        "source_unicode_accounting_unavailable_page_1": true
+      },
+      "selected_order_reference": {
+        "gold_file": "nta-invoice-domestic-english-gold.json",
+        "gold_sha256": "a34878cf749043c4e6974e8f3d08513e603c5fd5707a8b7748835a0c86874140",
+        "review_file": "nta-invoice-domestic-english-review.json",
+        "review_sha256": "3df7c8aad5fb901c36e09c88c837bbc4876f83515c14143f9af62ccc9557f750"
+      }
     }
   ],
   "updated": "2026-11-22",

@@ -1,0 +1,11 @@
+[package]
+name = "jade-english-ocr-probe"
+version = "0.0.0"
+edition = "2024"
+
+[workspace]
+
+[dependencies]
+jade-pdf2docx-ocr = { path = "/Users/bokuweb/.codex/worktrees/pdf-english-ocr-research/jade-pdf/crates/jade-pdf2docx-ocr", features = ["onnx"] }
+ndlocr-lite-rs = { git = "https://github.com/bokuweb/ndlocr-lite-rs", tag = "0.0.14", features = ["onnx"] }
+serde_json = "1"

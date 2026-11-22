@@ -1,0 +1,107 @@
+{
+  "declaration_revision": "a7245b794435d7002778fe5c7731557ae8c5ee2e",
+  "measured_utc": "2026-11-22T08:24:09.936363+00:00",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "gold_sha256": "a34878cf749043c4e6974e8f3d08513e603c5fd5707a8b7748835a0c86874140",
+  "binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "registered": false,
+  "cases": 3,
+  "passed": 2,
+  "results": [
+    {
+      "case_id": "nta-english-applicant-field-ids-page1",
+      "page": 1,
+      "IR_passed": false,
+      "text_layer_passed": false,
+      "IR_positions": [
+        -1
+      ],
+      "text_layer_positions": [
+        -1
+      ],
+      "selected_page_has_text_review": true,
+      "source_guards": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 2,
+        "source_text_characters_missing": 2,
+        "source_unicode_accounting_unavailable": true
+      }
+    },
+    {
+      "case_id": "nta-english-identification-table-page4",
+      "page": 4,
+      "IR_passed": true,
+      "text_layer_passed": true,
+      "IR_positions": [
+        888,
+        892,
+        914,
+        948,
+        968,
+        981,
+        987,
+        1007,
+        1061
+      ],
+      "text_layer_positions": [
+        888,
+        892,
+        914,
+        948,
+        968,
+        981,
+        987,
+        1007,
+        1061
+      ],
+      "selected_page_has_text_review": true,
+      "source_guards": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 60,
+        "source_text_characters_missing": 60,
+        "source_unicode_accounting_unavailable": true
+      }
+    },
+    {
+      "case_id": "nta-english-publication-table-page5",
+      "page": 5,
+      "IR_passed": true,
+      "text_layer_passed": true,
+      "IR_positions": [
+        687,
+        709,
+        730,
+        746,
+        763,
+        797,
+        865,
+        976,
+        1032
+      ],
+      "text_layer_positions": [
+        687,
+        709,
+        730,
+        746,
+        763,
+        797,
+        865,
+        976,
+        1032
+      ],
+      "selected_page_has_text_review": true,
+      "source_guards": {
+        "sdk_unicode_mapping_errors": 0,
+        "sdk_text_objects_without_characters": 62,
+        "source_text_characters_missing": 62,
+        "source_unicode_accounting_unavailable": true
+      }
+    }
+  ],
+  "scope": "Independent selected anchors only; not whole-page/global callout order or encoded-source conservation. Do not register failed cases as regular success or alter the declared rules to match product output.",
+  "reference_revision": "a260bbf021674c8cb52b0452c3f7d42cf2cfed07",
+  "reference_corrected_utc": "2026-11-22T08:31:11.024068+00:00",
+  "same_frozen_product_outputs_reused": true,
+  "not_a_product_improvement": true,
+  "initial_failed_transcription_preserved": "results-nta-english-initial.json"
+}

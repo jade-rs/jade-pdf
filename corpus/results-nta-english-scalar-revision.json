@@ -1,0 +1,134 @@
+{
+  "cases": 1,
+  "passed": 1,
+  "results": [
+    {
+      "id": "nist-fips180-4-introductory-upper-bound",
+      "comparison_exit": 3,
+      "old_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "new_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "passed": true,
+      "scalar_edit": {
+        "passed": true,
+        "scope": "Selected literal context and one scalar edit only",
+        "page_pair_matches": true,
+        "old_block": 19,
+        "old_bounds": {
+          "x0": 441.7304992675781,
+          "y0": 502.00799560546875,
+          "x1": 539.3858642578125,
+          "y1": 512.3280029296875
+        },
+        "new_block": 24,
+        "new_bounds": {
+          "x0": 437.03802490234375,
+          "y0": 502.197998046875,
+          "x1": 539.6079711914062,
+          "y1": 512.5180053710938
+        },
+        "reason": null,
+        "scoped_hunks": [
+          {
+            "old": "<",
+            "new": "≤",
+            "old_start": 649,
+            "new_start": 650
+          }
+        ]
+      },
+      "character_cells": {
+        "old": {
+          "passed": true,
+          "scope": "Horizontal character cell and line-height centre only",
+          "block": 19,
+          "horizontal_iou": 0.9308492601904141,
+          "span": {
+            "x0": 514.1978759765625,
+            "x1": 520.4978637695312
+          },
+          "line_bounds": {
+            "x0": 441.7304992675781,
+            "y0": 502.00799560546875,
+            "x1": 539.3858642578125,
+            "y1": 512.3280029296875
+          },
+          "reference_cell": {
+            "x0": 513.9819,
+            "y0": 501.408,
+            "x1": 520.7499,
+            "y1": 513.408
+          }
+        },
+        "new": {
+          "passed": true,
+          "scope": "Horizontal character cell and line-height centre only",
+          "block": 24,
+          "horizontal_iou": 0.8961773703680977,
+          "span": {
+            "x0": 511.71533203125,
+            "x1": 518.7192993164062
+          },
+          "line_bounds": {
+            "x0": 437.03802490234375,
+            "y0": 502.197998046875,
+            "x1": 539.6079711914062,
+            "y1": 512.5180053710938
+          },
+          "reference_cell": {
+            "x0": 511.30251618288,
+            "y0": 501.497469448446,
+            "x1": 519.1178968393671,
+            "y1": 513.54274854921
+          }
+        }
+      },
+      "reported_block_contains_source_cell": {
+        "old": true,
+        "new": true
+      },
+      "diagnostics": {
+        "old_pages": 36,
+        "new_pages": 36,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 36,
+        "new_pages_with_uncertain_reading_order": 11,
+        "old_pages_with_unobserved_text_objects": 36,
+        "new_pages_with_unobserved_text_objects": 36,
+        "old_pages_with_missing_source_characters": 36,
+        "new_pages_with_missing_source_characters": 36,
+        "new_pages_with_unavailable_source_accounting": 2,
+        "old_pages_with_unavailable_source_unicode": 35,
+        "new_pages_with_unavailable_source_unicode": 3,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      },
+      "comparison": {
+        "identical_source": false,
+        "visual_dpi": 144,
+        "channel_tolerance": 0,
+        "max_total_pixels": 200000000,
+        "max_source_image_pixels": 64000000,
+        "rendered_page_pairs": 34,
+        "skipped_page_pairs": 0,
+        "pixel_budget_used": 131839488,
+        "interactive_pages_requiring_review": 4,
+        "widget_fields_examined": 0,
+        "canonical_fields_examined": 0,
+        "canonical_properties_unavailable": 0,
+        "canonical_form_review_reasons": []
+      },
+      "scope": "One independently reviewed scalar edit and horizontal character-cell positions only; not whole-document precision/recall or pixel-outline highlight gold."
+    }
+  ],
+  "execution_errors": [],
+  "binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "manifest_sha256": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
+  "checker_sha256": "08d851d7c8b619e9f150f72086783348858e8e9e0e78a72619b6a093929d5cf2",
+  "source_sha256": "eccbacdb9c321ae9d86e48d5ffa790386a926760b6d7712fb860c692c50e55ba",
+  "scope": "Selected natural-revision scalar and character-cell gold only; not whole-page or full-document precision/recall."
+}

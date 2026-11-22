@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "scope": "Bounded reading_order evaluator only; not product recognition or registered corpus coverage",
+  "registered": false,
+  "runtime_changed": false,
+  "production_ready": false,
+  "Python_tests_passed": 70,
+  "JavaScript_semantic_suite_passed": true,
+  "red": "Python/JS rejected reading_order as unknown before implementation; logs retained",
+  "green": "Missing/reordered/reused occurrences fail; NFC+whitespace alone normalized; joiners and compatibility retained; declarations bounded to256 anchors,2048 scalars each,32768 total; scope required",
+  "case_recheck": {
+    "rules": 3,
+    "anchors": 32,
+    "correct": 2,
+    "failed": 1,
+    "IR_and_text_layer_all_fourteen_raster_field_ids_absent": true,
+    "Python_JavaScript_all_six_checks_identical": true
+  },
+  "pending_work": "Integrate pending-semantic cohort without dropping page1; validate pinned source/gold references across all3 cases; run native/browser/Worker qualification before registration",
+  "sha256": {
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-python-red.log": "d6447050b7b256111b151c80ceeaed26e9e0b90bba7a96500177f735bc56207b",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-js-red.log": "b40557eafeef081991befd8d1348717a19ee2e890746c38502b5df23196ba317",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-python-green.log": "49b9fc837654dd15747337f7352303be335c9bb17967359df858a68f9b8a0beb",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-js-green.log": "47242e9f9643fb7396273f7aa9095fa260473373f419a6b19e8e30465582cb6f",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-language-parity.json": "fde515db38df51c9b1192c33e5037d0028aa41caf0f61cae58e4239f83f85e1a",
+    "corpus/wasm-runtime/nta-english-source-qualification/main14-replay.json": "5f62a9eb9cf283922394232318bfcf7c73b70f8f5269ffca4c48490c4d446d12"
+  }
+}

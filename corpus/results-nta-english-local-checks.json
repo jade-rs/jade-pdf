@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T09:44:20.906318+00:00",
+  "runtime_source_head": "3dfafb7ac7471ae2b25f3be948fec5531f2e9bd1",
+  "production_ready": false,
+  "scope": "Fresh candidate source/evaluator/harness qualification; runtime-only checks explicitly inherited from identical PR15 inputs, not new native-suite execution.",
+  "fresh": {
+    "Python_passed": 75,
+    "fixture_hygiene_passed": 2,
+    "chromium_cases": 334,
+    "webkit_cases": 334,
+    "worker_documents": 89,
+    "worker_operations": 1217,
+    "worker_additional_cases": 244,
+    "verified_offline_sources": 90,
+    "native_positive_rules": 21,
+    "native_positive_anchors": 238,
+    "pending_primary_cases": 3,
+    "pending_primary_correct": 0,
+    "pending_primary_guarded_failures": 3
+  },
+  "inherited": {
+    "PR": 15,
+    "head": "960f502bfd8ab2160ad9a3460382c8bf37959847",
+    "ledger": "corpus/validation-ruled-cell-containment.json",
+    "native_passed": 354,
+    "native_ignored": 8,
+    "native_groups": 31,
+    "public_passed": 6,
+    "regular_pages_exact_IR_unchanged": 717,
+    "all_Rust_Cargo_probe_inputs_identical": true,
+    "all_other_manifest_sections_identical": true,
+    "no_existing_pending_rules_changed": true
+  },
+  "native_binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "wasm_sha256": "382062b1fc3752fbd32b881de80296fc33b032ac17c8c3046f8a50266082597f",
+  "sha256": {
+    "corpus/results-nta-english-chromium.json": "e12d7e7c1175581c2f34b46d17791d277b51d0b3492320c8282db9770bf8ef6f",
+    "corpus/results-nta-english-webkit.json": "671692a9d7255412f180b293aaededc7f09a55f7ed557a919219c40dfdcdb863",
+    "corpus/results-nta-english-workers.json": "eeeb55faf82582bcd171131e1a619ba98ead030adb5dfdd205e519cecfa6de23",
+    "corpus/results-nta-english-pending-integration.json": "91d2d30b24aab27331906e4ae0e39e521d6ebf19d5f083c7be717d0566e6a9f5",
+    "corpus/results-nta-english-reading-integration.json": "1cf205d610f22b8fb1ec80e572b885df1c5cb93c39efadbe04474c2a78675c83",
+    "corpus/results-nta-english-page-gold.json": "3a807658845e9f0aa21d00fb0fff54380c45f7259225b2d5ecc3e5544903c4ce",
+    "corpus/results-nta-english-operators.json": "f3f78d3d1d1e8b8a06c0f64300ba69ff5d3f322c21db7007d207bc359d47c565",
+    "corpus/results-nta-english-scalar-revision.json": "1604462fc37de11f8da16cdeee5aeed28dccf95ceb9d06e3898e04cc22c7c40f",
+    "corpus/results-nta-english-page-revision.json": "52406e0f0a87612d5c2d8cc779981d684c13e8eea7bbfe9bcfd1b430c436b002",
+    "corpus/results-nta-english-natural-contract.json": "21a76368c3772b00b0ac904c441f3a417a5f278ea0f154a72e043e6473fb8ffd"
+  },
+  "local_evidence_sha256": {
+    "corpus/wasm-runtime/nta-english-source-qualification/integration-python-green.log": "e709b3a211d24dbdc431691a5273b166a50321825d1ca07e88e8de29b382a749",
+    "corpus/wasm-runtime/nta-english-source-qualification/integration-js-green.log": "1afedbcf188171b963eede62e362d6d37f9da19c65c3226ac2502b5a1d6bbb93",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-python-red.log": "d6447050b7b256111b151c80ceeaed26e9e0b90bba7a96500177f735bc56207b",
+    "corpus/wasm-runtime/nta-english-source-qualification/reading-gold-js-red.log": "b40557eafeef081991befd8d1348717a19ee2e890746c38502b5df23196ba317",
+    "corpus/wasm-runtime/nta-english-source-qualification/source-reference-red.log": "0cba6a5927b072864e50dbe465d2ac92e7ac87ea5535bdfbdb09df8c4caf607f",
+    "corpus/wasm-runtime/nta-english-source-qualification/source-reference-js-red.log": "c71443a147def21d115d4a0579e83a07340a498068f4e26e496305b8ba8e7d2e",
+    "corpus/wasm-runtime/nta-english-source-qualification/registration-red.log": "2431461a26628562ae2c6b4430e479bf7baa1c44d89db3ef188e68ff15af700e",
+    "corpus/wasm-runtime/nta-english-source-qualification/offline-sources.log": "7a54069314dd81e3d1d2e36b74b8ca2340dd043ffd99cae0639a9496c883a39a",
+    "corpus/wasm-runtime/nta-english-source-qualification/main14-replay.json": "5f62a9eb9cf283922394232318bfcf7c73b70f8f5269ffca4c48490c4d446d12",
+    "corpus/wasm-runtime/nta-english-source-qualification/main15-head-replay.json": "5b3e432a0d7ad963344868452ab5259be487d73c3ec307222f4149726b4d6f67"
+  },
+  "remaining": [
+    "PR15 remote CI and merge",
+    "Replay identical source tree onto PR15 squash main",
+    "Current ledger then separate PR and exact-head checks"
+  ]
+}

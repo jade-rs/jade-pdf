@@ -1,0 +1,454 @@
+{
+  "version": 1,
+  "measured_utc": "2026-11-22T10:06:21.931871+00:00",
+  "product_source_revision": "6e882ff76e852b6b26578c5d01abe48e2e9531a8",
+  "source_id": "nta-invoice-domestic-english-2026",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "source_gold_sha256": "a34878cf749043c4e6974e8f3d08513e603c5fd5707a8b7748835a0c86874140",
+  "selected_case_id": "nta-english-applicant-field-ids-page1",
+  "page": 1,
+  "declared_IDs": 14,
+  "original_gold_unchanged": true,
+  "normalization": "NFC and whitespace removal only; no compatibility folding, confusable substitution or gold-based correction",
+  "production_ready": false,
+  "production_runtime_changed": false,
+  "integrated_into_pdf_diff": false,
+  "full_PDF_to_DOCX_CLI_executed": false,
+  "scope": "OCR API and standalone research only, using existing local NDL models and original Poppler rendering at288dpi. Six experimental methods do not establish product recognition, completeness, whole-page reading order or coordinate accuracy. Full14-ID rule remains failed.",
+  "results": [
+    {
+      "mode": "naive",
+      "process_exit": 0,
+      "API_succeeded": true,
+      "API_error": null,
+      "output_lines": 2,
+      "distinct_declared_IDs_present": 0,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 0,
+        "E01": 0,
+        "F09": 0,
+        "F05": 0,
+        "F07": 0,
+        "E02": 0,
+        "F06": 0,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [],
+      "case_passed": false,
+      "raw_output_sha256": "1506fab1cabc04124cbe4940815d3a8ea26395ec926dedaddf6f19c3373cf82e"
+    },
+    {
+      "mode": "naive-region",
+      "process_exit": 0,
+      "API_succeeded": false,
+      "API_error": "OCR engine failure: failed to recognize OCR band [2,0,1543,22] with PARSeq: OCR engine failure: below minimum confidence: got 0.3686, required 0.5000",
+      "output_lines": 0,
+      "distinct_declared_IDs_present": 0,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 0,
+        "E01": 0,
+        "F09": 0,
+        "F05": 0,
+        "F07": 0,
+        "E02": 0,
+        "F06": 0,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [],
+      "case_passed": false,
+      "raw_output_sha256": "ccab13badb725ed32a5c8465cbc3aeca2b494b1e5cbfba6f51b36b066db5d5cb"
+    },
+    {
+      "mode": "deim",
+      "process_exit": 0,
+      "API_succeeded": null,
+      "API_error": null,
+      "output_lines": 4,
+      "distinct_declared_IDs_present": 0,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 0,
+        "E01": 0,
+        "F09": 0,
+        "F05": 0,
+        "F07": 0,
+        "E02": 0,
+        "F06": 0,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [],
+      "case_passed": false,
+      "raw_output_sha256": "4298315d6b9fb7914037ce83da98ce182d852a4d32a76615400139213062e272"
+    },
+    {
+      "mode": "deim-tiles",
+      "process_exit": 0,
+      "API_succeeded": null,
+      "API_error": null,
+      "output_lines": 239,
+      "distinct_declared_IDs_present": 0,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 0,
+        "E01": 0,
+        "F09": 0,
+        "F05": 0,
+        "F07": 0,
+        "E02": 0,
+        "F06": 0,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [],
+      "case_passed": false,
+      "raw_output_sha256": "e69fb9f66badeac4cfbb77fe56af3182db0394ca0a0c337e0296236f084528f8"
+    },
+    {
+      "mode": "ruling-segment",
+      "process_exit": 0,
+      "API_succeeded": null,
+      "API_error": null,
+      "output_lines": 35,
+      "distinct_declared_IDs_present": 0,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 0,
+        "E01": 0,
+        "F09": 0,
+        "F05": 0,
+        "F07": 0,
+        "E02": 0,
+        "F06": 0,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [],
+      "case_passed": false,
+      "raw_output_sha256": "5a3c54edc9bc8ebcd4ac1b399d657867a12e6771c400bc6a77d7982e1a37bb61"
+    },
+    {
+      "mode": "ruling-tiles",
+      "process_exit": 0,
+      "API_succeeded": null,
+      "API_error": null,
+      "output_lines": 444,
+      "distinct_declared_IDs_present": 6,
+      "declared_ID_occurrences": {
+        "F01": 0,
+        "F08": 0,
+        "F10": 2,
+        "E01": 1,
+        "F09": 2,
+        "F05": 1,
+        "F07": 0,
+        "E02": 1,
+        "F06": 2,
+        "E03": 0,
+        "H06": 0,
+        "E04": 0,
+        "H07": 0,
+        "F02": 0
+      },
+      "reading_order_check": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "execution_errors": [
+        {
+          "bounds": [
+            768,
+            1707,
+            1280,
+            1732
+          ],
+          "error": "long OCR line has no safe blank-column boundary after column 0"
+        },
+        {
+          "bounds": [
+            1154,
+            1728,
+            1662,
+            1756
+          ],
+          "error": "long OCR line has no safe blank-column boundary after column 0"
+        }
+      ],
+      "case_passed": false,
+      "raw_output_sha256": "65936a136f9b3981844e66c3b58f4cf4c3e56f05dbc5720e3a370fb03c8295bc"
+    }
+  ],
+  "confidence_counterexample": {
+    "mode": "naive",
+    "API_confidence_threshold": 0.5,
+    "API_succeeded": true,
+    "bounds": [
+      0,
+      425,
+      2160,
+      2971
+    ],
+    "text": "00000000000000000000000000000000000000000000000000",
+    "mean_confidence": 0.7070991396903992,
+    "declared_IDs_present": 0,
+    "interpretation": "Passing the recognition confidence threshold did not establish the declared semantic expectation."
+  },
+  "research_caveats": [
+    "DEIM cascade prototypes do not apply product recognition-confidence policy and cross-tile duplicate handling is absent.",
+    "Ruling-mask experiments omit chromatic ink for detection only; recognition always uses original rendered RGB. Colored text completeness is unproven, so these algorithms are not shipped.",
+    "512px segmentation yields6 distinct IDs, some duplicated,2 explicit failed regions and0 matched initial anchors; do not count6 as complete-case success.",
+    "Region experiment derives its crop from independently measured original PDF image geometry, not gold-label coordinates; no hidden source image pixels extracted.",
+    "Original fail-fast512px run exited1; retained separately before a research-only error collector allowed reporting partial observations. No partial result is used to pass a case."
+  ],
+  "next_work": [
+    "Evaluate actual bounded mixed-content PDF-to-DOCX path separately before making conversion claims.",
+    "Derive and validate visible raster cell/column boundaries independently of recognized labels; preserve original RGB and colored text.",
+    "Retain all14 IDs, order, duplicates, error handling, geometry, rotation/DPI and resource-limit controls before production integration."
+  ],
+  "reproduction": {
+    "probe_source": "corpus/nta-english-ocr-probe.rs.txt",
+    "probe_manifest": "corpus/nta-english-ocr-probe.Cargo.toml.txt",
+    "note": "Snapshots are research data, not a supported product utility. Replace only local jade-pdf2docx-ocr dependency path for another checkout; begin with matching root Cargo.lock. Models remain separately licensed local files; none are added to Git.",
+    "frozen_inputs": "corpus/wasm-runtime/english-ocr-research/final-probe-inputs.json"
+  },
+  "sha256": {
+    "corpus/nta-english-ocr-probe.rs.txt": "611fafad14204b1aa37825f882aca084588195c9db523ba474db2cb1ba984890",
+    "corpus/nta-english-ocr-probe.Cargo.toml.txt": "d3dd395343be2d68a70bfb2c2a58b4e7a9c94094dd155bc7e9954b4888ea3ba9",
+    "corpus/wasm-runtime/english-ocr-research/final-probe-inputs.json": "3d246e253569d67904b7caea308f043e6d5c644445074c5459794d8b5db0beca",
+    "corpus/wasm-runtime/english-ocr-research/assets.json": "53b7afbbe1a084e607a7f3e41cd1e26ae21235b741edb50cd0b39f5b1f1b6c6a",
+    "corpus/wasm-runtime/english-ocr-research/source-region-provenance.json": "0c0a9a0591223a51bf3fa3bfeaa94864f9183a5e480f85971bc60b7d56ef3406"
+  },
+  "local_asset_evidence": {
+    "time_utc": "2026-11-22T09:47:45.945145+00:00",
+    "existing_local_assets_only": true,
+    "model_or_PDF_binaries_added_to_Git": false,
+    "files": [
+      {
+        "local": "corpus/wasm-runtime/english-ocr-research/assets/parseq.onnx",
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/parseq-ndl-24x384-50-tiny-300epoch-tegaki3-r8data-202604.onnx",
+        "bytes": 37808553,
+        "sha256": "49cea9db4552f19eb05c8ee202fcf74714977749b2f4c9376b127fde41b07a99"
+      },
+      {
+        "local": "corpus/wasm-runtime/english-ocr-research/assets/NDLmoji.yaml",
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/NDLmoji.yaml",
+        "bytes": 42434,
+        "sha256": "f6ad5a2de444b495155866af811cf1a98309dcae3225db802767ea531a2dc529"
+      },
+      {
+        "local": "corpus/wasm-runtime/english-ocr-research/assets/LICENCE",
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/LICENCE",
+        "bytes": 18653,
+        "sha256": "12538e73c4a1e05fc0c0b75d9d4de657f139d94ebc5f44b03a84cc1f793358f0"
+      },
+      {
+        "local": "corpus/wasm-runtime/english-ocr-research/assets/LICENCE_DEPENDENCEIES",
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/LICENCE_DEPENDENCEIES",
+        "bytes": 105169,
+        "sha256": "73bf4bb88c77c302c00e7c237460beff4c63219c73c7521dab0f2f79dca324e6"
+      },
+      {
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/deim-s-1024x1024.onnx",
+        "bytes": 40256763,
+        "sha256": "c156ce0c4e704bc3bf7e4016d0a87b949cffa8b3724f4b4cc696b8284c3c7373"
+      },
+      {
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/parseq-ndl-24x256-30-tiny-189epoch-tegaki3-r8data-202604.onnx",
+        "bytes": 36457393,
+        "sha256": "9e651bae4c1a4d5254da1127e86e82e21ef62d5339b37e62d4a3d3d30831772d"
+      },
+      {
+        "source": "/Users/bokuweb/ghq/github.com/bokuweb/ndlocr-lite-rs/models/parseq-ndl-24x768-100-tiny-153epoch-tegaki3-r8data-202604.onnx",
+        "bytes": 42588187,
+        "sha256": "06462b0dbd5b0b8508545c8c3d485cf20dbf4ffa652fe145e69c9e7457080602"
+      }
+    ],
+    "locked_ndlocr_git_revision": "b490ade0",
+    "external_authenticity_note": "Existing local named asset files were used and hashed. This experiment did not re-fetch them or independently verify their upstream release provenance; conclusions are specific to these bytes."
+  },
+  "frozen_probe_inputs": {
+    "product_source_head": "6e882ff76e852b6b26578c5d01abe48e2e9531a8",
+    "root_Cargo_lock_unchanged": true,
+    "research_only": true,
+    "sha256": {
+      "corpus/wasm-runtime/english-ocr-research/qualified-ocr-probe": "20c0be65f7961d8ae8b1e2afcb644b210e691d1a4eab377615b603bb52d7d4d1",
+      "corpus/wasm-runtime/english-ocr-research/qualified-probe.rs": "611fafad14204b1aa37825f882aca084588195c9db523ba474db2cb1ba984890",
+      "corpus/wasm-runtime/english-ocr-research/probe/Cargo.toml": "d3dd395343be2d68a70bfb2c2a58b4e7a9c94094dd155bc7e9954b4888ea3ba9",
+      "corpus/wasm-runtime/english-ocr-research/probe/Cargo.lock": "7240735f9b15ba3bd0631f03e03bc9a4d6a6e1f58345cf4df5dab4bb31143a88",
+      "corpus/wasm-runtime/english-ocr-research/source-page1-288dpi.png": "c1f3e298b7821b5bf2b213d1ee8abde3ebf136662bf567e7d7820e115e536152",
+      "corpus/wasm-runtime/english-ocr-research/source-region.json": "5438d6ba9b26425f333cb1350d07d0ad133dcdf9f4d443bc9cf485897de12a48",
+      "corpus/wasm-runtime/english-ocr-research/assets.json": "53b7afbbe1a084e607a7f3e41cd1e26ae21235b741edb50cd0b39f5b1f1b6c6a"
+    }
+  },
+  "region_derivation": {
+    "source": "Original PDF image placement already measured before OCR experiments; not a gold-label crop",
+    "PDF_image_bounds": [
+      69.5973282,
+      103.1675116,
+      455.2215551,
+      648.3999023
+    ],
+    "page_height_points": 780,
+    "dpi": 288,
+    "pixel_bounds": [
+      278,
+      526,
+      1821,
+      2708
+    ],
+    "formula": "floor(x0*4),floor((780-y1)*4),ceil(x1*4),ceil((780-y0)*4)",
+    "recognition_pixels": "Rendered original, including visible overlays; no hidden source image pixels used"
+  }
+}

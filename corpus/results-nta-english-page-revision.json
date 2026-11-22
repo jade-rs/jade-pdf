@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "cases": 2,
+  "passed": 2,
+  "results": [
+    {
+      "id": "irs-w4-2024-2025-page1-text-edits",
+      "comparison_exit": 3,
+      "gold_sha256": "985ed52a4f32df76821378229d3afb6372ed1f0f70dac4247306c4bc6c71de40",
+      "passed": true,
+      "gold_kind": "atomic_hunks",
+      "view": "page_text",
+      "alignment_limited": false,
+      "raw_block_observations": 10,
+      "true_positives": 4,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "raw_observations": 4,
+      "expected_edit_regions": 4,
+      "matched_edits": [
+        "header-year",
+        "estimator-tip",
+        "estimator-definite-article",
+        "footer-year"
+      ],
+      "unexpected_edits": [],
+      "unmatched_edits": [],
+      "scope": "Exhaustive logical text-edit regions on the selected page pair only. Validated page text groups must reconstruct all source characters and leave only identical ordered text in their gaps. Raw line evidence is retained. Positional/line-wrap moves, formatting, forms and other pages are separate; no cancellation by inventory equality."
+    },
+    {
+      "id": "irs-w4-2023-2024-page1-text-edits",
+      "comparison_exit": 3,
+      "gold_sha256": "3daff4de650cb4805c6a2fcc2b27f71fb726f9f340a9fd2b83602c73fe8bbf2b",
+      "passed": true,
+      "gold_kind": "source_regions",
+      "view": "page_text",
+      "alignment_limited": false,
+      "raw_block_observations": 33,
+      "true_positives": 5,
+      "false_positives": 0,
+      "false_negatives": 0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "raw_observations": 35,
+      "expected_edit_regions": 5,
+      "matched_edits": [
+        "header-year",
+        "page2-reference-clause",
+        "step2a",
+        "removed-tip",
+        "footer-year"
+      ],
+      "unexpected_edits": [],
+      "unmatched_edits": [],
+      "outside_regions_ordered_text_equal": true,
+      "scope": "Independently declared exact source regions on the selected page only. Internal shared letters and multiple grapheme hunks are allowed within each region. Every nonwhitespace insertion/deletion outside those regions remains a false positive; outside ordered text must match. Full source coverage and segment reconstruction are mandatory. Raw line evidence, limits and existing atomic-hunk gold are retained. Not scalar-level or full-document precision/recall."
+    }
+  ],
+  "execution_errors": [],
+  "binary_sha256": "6986ba86d40dd935b425487a96f5915e6c15d746b4de8b4b260951387d034c1d",
+  "manifest_sha256": "b85d46a1a43a08f6859978981ff8b7d0b9d3a600bc4564416542e3c1b3692efd",
+  "gold_sha256": null,
+  "gold_file_sha256": {
+    "/Users/bokuweb/.codex/worktrees/pdf-nta-english-source/jade-pdf/corpus/w4-page-revision-gold.json": "985ed52a4f32df76821378229d3afb6372ed1f0f70dac4247306c4bc6c71de40",
+    "/Users/bokuweb/.codex/worktrees/pdf-nta-english-source/jade-pdf/corpus/w4-2023-2024-page-gold.json": "3daff4de650cb4805c6a2fcc2b27f71fb726f9f340a9fd2b83602c73fe8bbf2b"
+  },
+  "checker_sha256": "4270b980a714d2518ad666af4c418461ab77b4fce480ec0ae258b2c5b92f1c96",
+  "audit_sha256": "bb7d8db6986cac6d305200eb641639195d354a1ae6fd9bee45514707d3078fcf",
+  "region_checker_sha256": "f254ac14acfb83257177512204fd16e6ef513525745be83ab3499db5b7aa19ca",
+  "scope": "Exhaustive logical text-edit regions on the declared original page pair only. Positional/line-wrap/format/form changes and other pages are separate. Full-page review and typed gold are independent of the engine diff; partial source contexts alone cannot establish precision/recall."
+}

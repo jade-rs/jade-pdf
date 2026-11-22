@@ -1,0 +1,82 @@
+{
+  "id": "nta-invoice-domestic-english-selected-order",
+  "schema_version": 1,
+  "declared_utc": "2026-11-22T08:22:45.786183+00:00",
+  "source_id": "nta-invoice-domestic-english-2026",
+  "source_url": "https://www.nta.go.jp/english/taxes/consumption_tax/201606-9en.pdf",
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "source_review": "nta-invoice-domestic-english-review.json",
+  "normalization": "NFC and whitespace removal for anchor order only",
+  "reading_order": [
+    {
+      "case_id": "nta-english-applicant-field-ids-page1",
+      "page": 1,
+      "anchors": [
+        "F01",
+        "F08",
+        "F10",
+        "E01",
+        "F09",
+        "F05",
+        "F07",
+        "E02",
+        "F06",
+        "E03",
+        "H06",
+        "E04",
+        "H07",
+        "F02"
+      ],
+      "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text."
+    },
+    {
+      "case_id": "nta-english-identification-table-page4",
+      "page": 4,
+      "anchors": [
+        "Type",
+        "Identification document",
+        "Those who have an Individual Number Card",
+        "Individual Number Card",
+        "Those who",
+        "have an",
+        "Individual Number Card",
+        "Document to verify the Number",
+        "Document to verify identification"
+      ],
+      "scope": "Selected headers and both rows of the identification-document table. The second row uses literal fragments around its apostrophe; no punctuation identity or surrounding legal prose gold."
+    },
+    {
+      "case_id": "nta-english-publication-table-page5",
+      "page": 5,
+      "anchors": [
+        "Business enterprise type",
+        "Items you wish to publish",
+        "Solo proprietors",
+        "Main business name",
+        "Location of the principal office, etc.",
+        "Common name",
+        "Maiden name",
+        "Association or foundation without juridical personality, etc.",
+        "Location of the head office or principal office"
+      ],
+      "scope": "Selected table headers, both left row labels and ordered right-column items. Not footnote markers, full prose, exact cell geometry or legal guidance."
+    }
+  ],
+  "registration_status": "Unregistered candidate. Cohort and supported failure reporting must be decided only after this declaration is committed and measured; do not weaken or drop failed rules to register as regular coverage.",
+  "initial_declaration_revision": "a7245b7",
+  "product_output_inspected_before_initial_declaration": false,
+  "source_transcription_corrections": [
+    {
+      "page": 5,
+      "original": "Sole proprietors",
+      "corrected": "Solo proprietors",
+      "basis": "Actual original page5 table at288dpi: closed round final o is unambiguous; source text has Solo, not the grammatical correction Sole.",
+      "original_detail_sha256": "33d694b70abc0d7ec6a71b4f499ea4350a1ee4e600b56143bf677d8fc5b0d900",
+      "initial_gold_sha256": "2bf83884169b06e3de3e786428cc5f524285b48344ec39b0e1e1e5c46391cc8b",
+      "corrected_utc": "2026-11-22T08:28:42.535263+00:00",
+      "product_baseline_already_inspected": true,
+      "not_a_product_improvement": true,
+      "initial_failure_preserved": "results-nta-english-initial.json"
+    }
+  ]
+}

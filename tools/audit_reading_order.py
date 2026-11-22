@@ -15,10 +15,12 @@ import unicodedata
 import re
 
 from pdf_corpus import ROOT, fetch
+from selected_order_reference import validate_selected_order_reference
 
 
 def validate_references(entry, corpus):
     """Optional independently declared gold/review must match their registered rule."""
+    validate_selected_order_reference(entry, corpus)
     for rule in entry.get('reading_order', []):
         if not any(key in rule for key in ('gold_file','gold_sha256','review_file','review_sha256')):
             continue
@@ -74,7 +76,9 @@ def main():
     hashes = {name: hashlib.sha256(path.read_bytes()).hexdigest() if path else None
               for name, path in [('binary', args.binary), ('baseline', args.baseline)]}
     results = []
-    for entry in manifest['documents']:
+    cohorts = [(cohort, entry) for cohort in ('documents', 'pending_semantic')
+               for entry in manifest.get(cohort, [])]
+    for cohort, entry in cohorts:
         if not entry.get('reading_order'):
             continue
         validate_references(entry, ROOT/'corpus')
@@ -126,7 +130,7 @@ def main():
                                baseline_passed=baseline_passed, positions=current_positions,
                                baseline_positions=baseline_positions))
         passed = inventory_retained is not False and all(c['passed'] and c['text_layer_passed'] for c in checks)
-        results.append(dict(id=entry['id'], passed=passed, pages=entry['pages'],
+        results.append(dict(id=entry['id'], cohort=cohort, passed=passed, pages=entry['pages'],
                             all_page_character_inventory_unchanged=inventory_equal,
                             all_page_character_inventory_retained_after_declared_utf16=inventory_retained,
                             declared_utf16_inventory_adjustments=utf16_adjustments, checks=checks))
@@ -138,6 +142,8 @@ def main():
                   selected_gold_pages=len({(r['id'],c['page']) for r in results for c in r['checks']}),
                   selected_gold_rules=sum(len(r['checks']) for r in results),
                   selected_anchor_checks=sum(len(c['anchors']) for r in results for c in r['checks']),
+                  rules_by_cohort={cohort: sum(len(r['checks']) for r in results if r['cohort'] == cohort)
+                                   for cohort in ('documents', 'pending_semantic')},
                   baseline_failing_documents=sum(any(c['baseline_passed'] is False for c in r['checks']) for r in results) if args.baseline else None,
                   results=results)
     args.report.write_text(json.dumps(report, ensure_ascii=False, indent=2)+'\n')

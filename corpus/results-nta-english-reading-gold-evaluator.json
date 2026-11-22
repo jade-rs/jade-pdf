@@ -1,0 +1,202 @@
+{
+  "version": 1,
+  "measured_utc": "2026-11-22T09:25:28.034417+00:00",
+  "registered": false,
+  "runtime_changed": false,
+  "production_ready": false,
+  "source_sha256": "b59b930ddeebd71a50aac74417af7ebf37521f26d5b58094e58a5d7af90652f0",
+  "frozen_baseline_binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "cached_product_outputs_reused": true,
+  "selected_rules": 3,
+  "selected_anchors": 32,
+  "correct_rules": 2,
+  "failed_rules": 1,
+  "all_fourteen_field_ids_absent_in_IR_and_layer": true,
+  "results": [
+    {
+      "case_id": "nta-english-applicant-field-ids-page1",
+      "page": 1,
+      "IR": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "text_layer": {
+        "kind": "reading_order",
+        "scope": "Only14 printed field IDs in the central Japanese applicant panel of the annotated original. Row-major order; not English callout/global order, complete table text or proof that visible letters have encoded SDK text.",
+        "matches": false,
+        "expected_anchors": [
+          "F01",
+          "F08",
+          "F10",
+          "E01",
+          "F09",
+          "F05",
+          "F07",
+          "E02",
+          "F06",
+          "E03",
+          "H06",
+          "E04",
+          "H07",
+          "F02"
+        ],
+        "matched_prefix": 0
+      },
+      "selected_page_has_text_review": true,
+      "anchors_absent_from_IR": [
+        "F01",
+        "F08",
+        "F10",
+        "E01",
+        "F09",
+        "F05",
+        "F07",
+        "E02",
+        "F06",
+        "E03",
+        "H06",
+        "E04",
+        "H07",
+        "F02"
+      ],
+      "anchors_absent_from_layer": [
+        "F01",
+        "F08",
+        "F10",
+        "E01",
+        "F09",
+        "F05",
+        "F07",
+        "E02",
+        "F06",
+        "E03",
+        "H06",
+        "E04",
+        "H07",
+        "F02"
+      ]
+    },
+    {
+      "case_id": "nta-english-identification-table-page4",
+      "page": 4,
+      "IR": {
+        "kind": "reading_order",
+        "scope": "Selected headers and both rows of the identification-document table. The second row uses literal fragments around its apostrophe; no punctuation identity or surrounding legal prose gold.",
+        "matches": true,
+        "expected_anchors": [
+          "Type",
+          "Identification document",
+          "Those who have an Individual Number Card",
+          "Individual Number Card",
+          "Those who",
+          "have an",
+          "Individual Number Card",
+          "Document to verify the Number",
+          "Document to verify identification"
+        ],
+        "matched_prefix": 9
+      },
+      "text_layer": {
+        "kind": "reading_order",
+        "scope": "Selected headers and both rows of the identification-document table. The second row uses literal fragments around its apostrophe; no punctuation identity or surrounding legal prose gold.",
+        "matches": true,
+        "expected_anchors": [
+          "Type",
+          "Identification document",
+          "Those who have an Individual Number Card",
+          "Individual Number Card",
+          "Those who",
+          "have an",
+          "Individual Number Card",
+          "Document to verify the Number",
+          "Document to verify identification"
+        ],
+        "matched_prefix": 9
+      },
+      "selected_page_has_text_review": true,
+      "anchors_absent_from_IR": [
+        "Those who have an Individual Number Card",
+        "Document to verify identification"
+      ],
+      "anchors_absent_from_layer": [
+        "Those who have an Individual Number Card",
+        "Document to verify identification"
+      ]
+    },
+    {
+      "case_id": "nta-english-publication-table-page5",
+      "page": 5,
+      "IR": {
+        "kind": "reading_order",
+        "scope": "Selected table headers, both left row labels and ordered right-column items. Not footnote markers, full prose, exact cell geometry or legal guidance.",
+        "matches": true,
+        "expected_anchors": [
+          "Business enterprise type",
+          "Items you wish to publish",
+          "Solo proprietors",
+          "Main business name",
+          "Location of the principal office, etc.",
+          "Common name",
+          "Maiden name",
+          "Association or foundation without juridical personality, etc.",
+          "Location of the head office or principal office"
+        ],
+        "matched_prefix": 9
+      },
+      "text_layer": {
+        "kind": "reading_order",
+        "scope": "Selected table headers, both left row labels and ordered right-column items. Not footnote markers, full prose, exact cell geometry or legal guidance.",
+        "matches": true,
+        "expected_anchors": [
+          "Business enterprise type",
+          "Items you wish to publish",
+          "Solo proprietors",
+          "Main business name",
+          "Location of the principal office, etc.",
+          "Common name",
+          "Maiden name",
+          "Association or foundation without juridical personality, etc.",
+          "Location of the head office or principal office"
+        ],
+        "matched_prefix": 9
+      },
+      "selected_page_has_text_review": true,
+      "anchors_absent_from_IR": [
+        "Association or foundation without juridical personality, etc."
+      ],
+      "anchors_absent_from_layer": [
+        "Association or foundation without juridical personality, etc."
+      ]
+    }
+  ],
+  "sha256": {
+    "tools/semantic_gold.py": "97e3d71f56b218c9194c8e75fa8fc91d3d0f68e7ffa03815336e94a77b4544f8",
+    "tools/wasm-smoke/semantic_gold.mjs": "331add3bbce1b105366927916d78cc15219f9bcdc814b1be26f4c43179ea2631",
+    "tools/test_pending_reading_order_gold.py": "752b5c8d6e738897f6401d7103f1a1f97286647f681bb8d6f1859ac872812b3e",
+    "tools/wasm-smoke/test_reading_order_gold.mjs": "0e04ed123111ade7bad2fc4e4aa4c1e0893f55845b9c28dcc2af24d074d8cd08",
+    "corpus/nta-invoice-domestic-english-gold.json": "a34878cf749043c4e6974e8f3d08513e603c5fd5707a8b7748835a0c86874140",
+    "corpus/wasm-runtime/nta-english-source-qualification/baseline-ir.json": "a38e72da06854412faebcb71c43c8572644cb819149e62d3bbe7ac5b4dda2061",
+    "corpus/wasm-runtime/nta-english-source-qualification/baseline-layer-page1.json": "7b146e73a0aa2efec18697fa87a8edf64c57302f81ce65cd84688e82f09ed980",
+    "corpus/wasm-runtime/nta-english-source-qualification/baseline-layer-page4.json": "37ce563306901be27f6e703d0c95360617b03337fc30fc8bc7c65433ea4c51d6",
+    "corpus/wasm-runtime/nta-english-source-qualification/baseline-layer-page5.json": "b0492db403a263b62b603ad11b1ff70c026cb9c8b4ba6410cb24db94f15661c0"
+  },
+  "note": "Evaluator support only. This rechecks identical cached product outputs; no extraction improvement is claimed. All3 originally declared cases stay retained. Candidate remains unregistered until cohort/source reference integration and runtime qualification. Existing page diagnostics are review evidence, not recognition of raster labels."
+}
