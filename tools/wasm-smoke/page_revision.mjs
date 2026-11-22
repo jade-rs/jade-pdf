@@ -22,8 +22,10 @@ export async function loadPageRevisionGold(root,ref) {
 }
 
 export function checkPageRevision(root,gold,diff) {
+  // 有限の原文範囲監査でも、低速なCIでは30秒を超える。CLI取得と同じ
+  // 120秒を認め、gold側の文字数・候補数・計算量上限と正誤判定は保持する。
   const run=spawnSync('python3',[path.join(root,'tools/audit_page_revision.py'),'--check-json'],
-    {input:JSON.stringify({gold,diff}),encoding:'utf8',timeout:30000,maxBuffer:4*1024*1024});
+    {input:JSON.stringify({gold,diff}),encoding:'utf8',timeout:120000,maxBuffer:4*1024*1024});
   if(![0,1].includes(run.status)||!run.stdout.trim())
     throw new Error('Independent page checker failed: '+(run.stderr||String(run.error)).slice(0,2000));
   const result=JSON.parse(run.stdout);
