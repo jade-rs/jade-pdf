@@ -158,5 +158,16 @@
       ]
     }
   ],
-  "geometry_finding": "All78 SDK-unobserved objects use nonembedded Times-Roman, confirming the source-font candidate. Their bounds are zero-area at their text matrices. Generated SDK whitespace boxes are also zero-area and do not contain these source points (0/78 under0.02pt). Font-name/count agreement is not a boundary ownership proof. Do not suppress warnings using this observation alone."
+  "geometry_finding": "All78 SDK-unobserved objects use nonembedded Times-Roman, confirming the source-font candidate. Their bounds are zero-area at their text matrices. Generated SDK whitespace boxes are also zero-area and do not contain these source points (0/78 under0.02pt). Font-name/count agreement is not a boundary ownership proof. Do not suppress warnings using this observation alone.",
+  "ordered_sdk_boundary_probe": {
+    "page": 2,
+    "unobserved_objects": 78,
+    "observed_object_order_monotonic": true,
+    "intervening_whitespace_records_present": 77,
+    "trailing_object_without_next_observed_object": 1,
+    "probe_report_sha256": "8a6e117fa5b357a4d1bb70c38e8f8cedf4f88409b56209117bdf50f82ebdce38",
+    "probe_script_sha256": "ac60cd23000c3fb9848ee5d8f76915a6166085e2df3a3b30531535e07de705e1",
+    "scope": "Exploratory public SDK evidence only.77 objects lie between consecutive observed text objects with intervening whitespace; the last object is trailing. This does not prove source font/encoding/ToUnicode ownership, object-source correspondence, normalized geometry or word-boundary completeness. No runtime suppression.",
+    "required_controls": "A source-coded U+0020 between touching A/B must remain reviewable when SDK gives AB. Meaningful blank-like glyphs, font aliases/subset collisions, custom Differences, embedded fonts, unknown source and ambiguous/nonmonotonic object order remain guarded. Repeated spaces and leading/trailing policy require explicit normalization controls."
+  }
 }
