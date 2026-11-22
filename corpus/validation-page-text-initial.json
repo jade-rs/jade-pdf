@@ -1,0 +1,499 @@
+{
+  "version": 47,
+  "date": "2026-11-22",
+  "production_ready": false,
+  "base_revision": "8e2b7f3c9f285f52ba0bf9c4ff77e74dea65b156",
+  "base_pr": 11,
+  "core_revision": "7d332aba528dcf0f0b816e987e2c74e3693537d2",
+  "qualification_revision": "3d4e731f60fc74d5ee0eabb312b0fe33a42987fd",
+  "qualified_core_tree": "62116d803a93c8105655cc8c08d642c8af2816b5",
+  "qualified_source_tree": "b105be318bf27362f2fb224d18bdf3ffa44e7116",
+  "scope": "Add an ordered normalized IR page-text view while retaining original line/block strings, segments, positions, visual/form evidence and reading-order/Unicode diagnostics. Whole text equality handles repeated-word wrapping; unique exact block anchors only bound contiguous windows. Never cancel word bags. Optional legacy None means uncomputed. Trimmed grapheme-pair work is capped at 4,000,000 per page; coarse fallback preserves all text and requires review. Does not reconstruct paragraph/table semantics or repair unknown reading order.",
+  "collection": {
+    "registered_documents": 88,
+    "regular_documents": 75,
+    "regular_pages": 652,
+    "new_documents": 0,
+    "pending_semantic_documents": 2,
+    "previous_manifest": "manifest-mixed-rtl.json",
+    "gold_source": "Previously registered 2024 and 2025 IRS originals. Independent full-page images and zooms reviewed; initial tax-word transcription and missed article were corrected before product improvement. Original and correction history retained in gold and earlier commits."
+  },
+  "semantic_gold": {
+    "exhaustive_selected_page_text_edits": {
+      "cases": 1,
+      "before_correct": 0,
+      "after_correct": 1,
+      "before_true_positives": 4,
+      "before_false_positives": 2,
+      "before_false_negatives": 0,
+      "after_true_positives": 4,
+      "after_false_positives": 0,
+      "after_false_negatives": 0,
+      "scope": "W-4 2024/2025 page1 logical text edits only; not full-document precision/recall"
+    },
+    "regular_page_gold": {
+      "full_page_text": {
+        "cases": 10,
+        "correct": 10,
+        "failed": 0
+      },
+      "text_context": {
+        "cases": 3,
+        "correct": 3,
+        "failed": 0
+      },
+      "scalar_inventory": {
+        "cases": 1,
+        "correct": 1,
+        "failed": 0
+      }
+    },
+    "reading_order": {
+      "documents": 14,
+      "pages": 17,
+      "anchors": 193
+    },
+    "visible_operators": {
+      "cases": 5,
+      "correct": 5
+    },
+    "natural_scalar_revision": {
+      "cases": 1,
+      "correct": 1
+    }
+  },
+  "contracts": {
+    "natural_revision_pairs": 5,
+    "natural_revision_pages": 23,
+    "raw_diff_exactly_preserved": true,
+    "ordered_source_coverage_and_segment_reconstruction": true,
+    "actual_sdk_geometry_cases": 128,
+    "owned_modes": [
+      "wrap",
+      "edit",
+      "order",
+      "repeat"
+    ],
+    "normalization": "Existing IR NFC/whitespace and known Latin ligature/long-s/soft-hyphen policy; all raw line text retained"
+  },
+  "verification": {
+    "native": {
+      "passed": 334,
+      "ignored": 8,
+      "test_groups": 30
+    },
+    "public_corpus": {
+      "passed": 6
+    },
+    "python_harness_passed": 53,
+    "fixture_hygiene_passed": 2,
+    "fmt_root_and_probe": true,
+    "clippy_root_and_probe_warnings_denied": true,
+    "browsers": [
+      {
+        "browser_engine": "chromium",
+        "browser": "159.0.8154.6",
+        "cases": 328,
+        "passed": 328,
+        "page_revision_gold_checks": 1,
+        "page_revision_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 10,
+              "correct": 10,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      },
+      {
+        "browser_engine": "webkit",
+        "browser": "27.2",
+        "cases": 328,
+        "passed": 328,
+        "page_revision_gold_checks": 1,
+        "page_revision_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 10,
+              "correct": 10,
+              "failed": 0
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 1,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      }
+    ],
+    "workers": {
+      "documents": 87,
+      "passed_documents": 87,
+      "operation_checks": 1130,
+      "matching_operations": 1130,
+      "matching_successful_operations": 1069,
+      "matching_rejections": 61,
+      "cases": 243,
+      "passed": 243,
+      "page_revision_gold_checks": 1,
+      "page_revision_gold_passed": 1,
+      "semantic_gold_by_cohort": {
+        "documents": {
+          "full_page_text": {
+            "cases": 10,
+            "correct": 10,
+            "failed": 0
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 1,
+            "failed": 0
+          }
+        },
+        "pending_semantic": {
+          "full_page_text": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          }
+        }
+      }
+    },
+    "native_binary_sha256": "0f977a0cc6f63dcef9d886a1b7ee6f07e1545c19ca23ce90c150a914bc56f803",
+    "baseline_binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+    "wasm_sha256": "bb748de4a70ab5a767fbcd30d2d50d40d91388f229cb6f42342f2e1ee1ea30bc",
+    "supporting_log_sha256": {
+      "native": "fc7a54dae744170d3031639c2e835d1a1cbbc9fd6d19044c8ee78efbae45574a",
+      "public": "779a0e78af7bb7494b89b5a21096ad9477c0a639ca1a4a94b89fcb3475b6458e",
+      "python-final": "2a0710e47d6aaa0190ba4d7aac0f8ae7373356f783fc1eaadc0dc14ad593b279",
+      "hygiene": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658",
+      "clippy": "2b0f15ecf0e84fbd88dee0123d8f3a1bdaed84a1e6eb44930292dd8089f67d2c",
+      "probe-clippy": "1c958fd8836dfcb6ad5c49274fed29eb055429b60e105c4a016397ef12f62203",
+      "wasm-build": "8fcfe36fb6ec9f4bf0cd97e7a1d6070565628804f4fa66d0bda7a3446544e58f",
+      "release-build": "227f92b1d0655f5f4e261fd7a46a06ef4c4dcb5a7c974940f673f69759def820",
+      "js": "77276a93337dd68deb1594a3a9da5d8d612fd66d8ad28f2a654762f1203a5b7b",
+      "tolerance-red": "6333a63139c3bfeeeab70bdec71947521b38713b0c6107fa85751856d28fac10",
+      "tolerance-green": "408fdd9a93d0a3035fd66bab0cad76d776310cb604f5be922d07efa820e433ca",
+      "natural-contract-red": "44cf961edfbcff4e2f435847bf47bc61c10afe465861ed6f7ddeeee266d0d55c",
+      "natural-contract-green": "d04675cd63a8ba2ae201c4ca4cc119d069bcc81cab7728086ff8a08f99658951",
+      "chromium": "8678817325c33f58551173535da92429125fd59e9820ab5ee408da45610c3a2e",
+      "webkit": "bfb5dae5c6c5eab5b692f0afbd0ab560f0b426015f6fc6dcb83167a02d485aba",
+      "workers": "04cba484a913d3d4be2f62ad9e22e70061d53a6a94cacb4d8b69eec136dd27b8"
+    }
+  },
+  "unresolved": {
+    "arabic_full_page_correct": 0,
+    "arabic_full_page_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "guarded_failures": 2,
+    "general_bidi_and_control_order_unproven": true,
+    "general_word_spacing_unproven": true,
+    "full_japanese_form_and_table_order_unproven": true,
+    "mathematical_structure_unproven": true,
+    "full_natural_revision_precision_recall_unproven": true
+  },
+  "previous_validation": "validation-mixed-rtl.json",
+  "sha256": {
+    ".github/workflows/ci.yml": "07534f2c9c91c05b9eafc31a81223919811a6aa1e285127cb1d48bf3c5d8ecc4",
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "README.md": "a1d7bbcf808f9fec05e39f3d7a124c5b352992d5f016b89bf995fa4bf040ef55",
+    "corpus/README.md": "c4a8f547f4e9facecfcb94ca292a14183869e1b1c698b4a401191f74c5ee408c",
+    "corpus/manifest-mixed-rtl.json": "1a4c6f9044d99980d09b271f70d6bb8d8bc74e3c2b20f13f6ca5dd92e0d3887e",
+    "corpus/manifest.json": "b5977bb5fc8cdbd08c51f8f0172d45e4cd31fa722bffdbdba7c58e71d80a9514",
+    "corpus/results-browser-chromium-page-text.json": "cd03912f32951fd3088827ec3e840fc7386276e3bb136512b0f5f231339a8aa7",
+    "corpus/results-browser-webkit-page-text.json": "f850a73faca522c80b8204b17aa658452252dce1c5a69820588045ac81c8ca40",
+    "corpus/results-natural-page-text-contract.json": "5b5a6c848a43e662f7d3c2d42855b6bd443436081272b42c86e26b8528695c0f",
+    "corpus/results-operators-page-text.json": "07373c9d5cd22700172ecd7f11e33970fa4f4a7d6cb769d2dd3ad3dc0c1c4acc",
+    "corpus/results-page-gold-page-text.json": "8b437a2ded968a790f65119029e3faec0bc8daf289a79be1b87d4fad7b63e8e5",
+    "corpus/results-pending-semantic-page-text.json": "3cde002ded3c5b023835fec5493f4cdc5dc9c1981aaee88a878431617896af39",
+    "corpus/results-reading-order-page-text.json": "a012c2000a8ee7ed778ab499ebf319a58857a4c77c950082370d524632847c36",
+    "corpus/results-scalar-revision-page-text.json": "840f78328334d3d200d6846c9d9e54d9d5e7329f28873f787e90cd06016b2edb",
+    "corpus/results-w4-page-revision-after.json": "73a0c794a7438d33b44666edf61ff37781d77de629266e6fb00c289cb7020311",
+    "corpus/results-w4-page-revision-before.json": "faa0e52ea06b56d8f3e16750383468e76eaba5d6999c4dfd1162622c0f18c593",
+    "corpus/results-workers-page-text.json": "660a5b5a30c5c3abc852489d4945b32b9fac55cf1660464ff056fdc13918bc55",
+    "corpus/w4-page-revision-gold.json": "985ed52a4f32df76821378229d3afb6372ed1f0f70dac4247306c4bc6c71de40",
+    "crates/jade-pdf-diff/Cargo.toml": "4070c168ff57846c5f5c0e67ba6e0c6ab88c76660548381d0847550a41e6473b",
+    "crates/jade-pdf-diff/build.rs": "9357a1946eba64d025bd6b21f898a5b0786ae89cab596ccf693b130759d37e68",
+    "crates/jade-pdf-diff/examples/audit_extraction.rs": "855bac5ca0d2153f53719c73f83bd90d7627a9150b96a8844e658ad71cfcd13a",
+    "crates/jade-pdf-diff/examples/audit_isolated_bytes.rs": "51190d31217a08f5fac70fdde3811589221585a07228bb1df0285a7ee2524c94",
+    "crates/jade-pdf-diff/examples/audit_isolation.rs": "c6e0d0efcb957a8379e3d347b5769b09a0389eb56e2ce696839d2d889237c47f",
+    "crates/jade-pdf-diff/examples/profile_large_document.rs": "5f7f24d929381337600397cb3a0b862e6a873c8249c447daca936719a3ee41a6",
+    "crates/jade-pdf-diff/licenses/adobe-glyphlist.txt": "56bc6924a002bd42baa0d7e05ed6f11d4d1febee8036307b527b0ce12e011cba",
+    "crates/jade-pdf-diff/licenses/adobe-symbol.txt": "36b310f8b35e5ab59d516842d2852ce669bef49d46960910c4dd1b2aa4100a56",
+    "crates/jade-pdf-diff/licenses/pdfium-8111.txt": "20ecddeec71ea8095b4b7180d55797493c85dd10bf514f73ffaae2e370d7d268",
+    "crates/jade-pdf-diff/licenses/ttf-parser-0.25.1.txt": "3bc3cd567cd41870ef430c2d374fc520270818b587ce13be04d062252a0279bb",
+    "crates/jade-pdf-diff/pdfium-assets.json": "9597b49773a16df27d0cf54d03322aa3dacca6dd4d0ab58da2cc9926f20646cc",
+    "crates/jade-pdf-diff/proptest-regressions/diff.txt": "1daeb7955d3df8ca7071feab4cf145b12d22de9b2f1e4c241e3de86f44286237",
+    "crates/jade-pdf-diff/proptest-regressions/text/row_tests.txt": "92fccb0b698e719e957e32ae04d76e262c1736dbf1e4f5dd91d152628756edea",
+    "crates/jade-pdf-diff/resources/adobe-glyphlist.json": "7644234e7ab9b5a558cded5d1b52a2e322dc51ff9fa7176ac3ca53d08be7c93e",
+    "crates/jade-pdf-diff/resources/adobe-glyphlist.txt": "a3b2f61ced9f3644cc0d4ecde5c59df34ca286c689d9484a43a710a81c466789",
+    "crates/jade-pdf-diff/resources/adobe-symbol.json": "683fc566d4c78355d941108e6b09ae72bca465c4f316b576cdcd3d51bc711754",
+    "crates/jade-pdf-diff/resources/adobe-symbol.txt": "deb78ca840a429311939b9d165890873f71fb23ef223ceeb144a6c6d641a7e52",
+    "crates/jade-pdf-diff/resources/japanese-tracking.json": "2e6387229ff349d6bfbe0f32403774ed5d6d0c964e916d44a19dc77399ba9b22",
+    "crates/jade-pdf-diff/resources/mt-extra.json": "095c1a9379843c9aed04fca4e2a46646da3f5719a22d5c868425ec4418d744b5",
+    "crates/jade-pdf-diff/resources/symbol-component-context.json": "2ef9626216c5facc915943129ff97123a7939250b5c9b691c10efed5718a6983",
+    "crates/jade-pdf-diff/resources/unicode-bidi-ltr.json": "47f0e4a2df3ae63007461ccfaf18aa97ccdc986a82e49c63f7cbc7d33485c00f",
+    "crates/jade-pdf-diff/resources/unicode-legacy-context.json": "1c83199eb9a817df557cbfb18ccaf2c6fbe6fe8149b0f3f0ff4bfd92270770c5",
+    "crates/jade-pdf-diff/resources/unicode-license-v3.txt": "e7a93b009565cfce55919a381437ac4db883e9da2126fa28b91d12732bc53d96",
+    "crates/jade-pdf-diff/src/actual_text.rs": "e01578b21f822f1930f6d9f97252703d748118e7d8d2184922dc9fb15a5f01cd",
+    "crates/jade-pdf-diff/src/canonical_forms.rs": "0959732727dba23ff1473d978d797376e24c312937ccc5d0a4f977cc20e67782",
+    "crates/jade-pdf-diff/src/comparison.rs": "78966754c825dac043d612db72e3ee0eeae768a25cac5b59f02b3fd2861d65bd",
+    "crates/jade-pdf-diff/src/diff.rs": "868b7ce0b020094ab81916d26ca9835db72b2f7c39fe0712830d8b87bb3d4e90",
+    "crates/jade-pdf-diff/src/geometry.rs": "3ef478c14685b699fd68dfff8849e8d7fd8b761f765926d21cd2992f9d22bc8b",
+    "crates/jade-pdf-diff/src/glyph_cell.rs": "2653bb203d3f5e7dccce970db969b2ec6d57ec28e595a526d5a1ff3b7453f8b1",
+    "crates/jade-pdf-diff/src/input.rs": "dad2611e0a2f0b057e9f511156b642509b7223ca899c395253011bbda8a39d15",
+    "crates/jade-pdf-diff/src/ir.rs": "88a31bf13def3cf87fbde5b8fdcfd882d8638317415e3c0c4b433f91f01fbf2a",
+    "crates/jade-pdf-diff/src/isolation.rs": "89bf711965c0f5e17bb35b25964fed1fdb1ae3a4ea8406e1a6352f28a637db7e",
+    "crates/jade-pdf-diff/src/isolation/client.rs": "8acfabf6f8b864c0218935d23d6c38e3bea6970c6ffd602c1822e6c815310928",
+    "crates/jade-pdf-diff/src/legacy_context.rs": "9edbfc195532fab0167e7bfd1ee27ae3b31a9dcb5fdb89323b883b2d0ce9d4ac",
+    "crates/jade-pdf-diff/src/legacy_context_data.rs": "873ce5e8c022af2d931560a43d3e5a436fbf94ea3fff4d3cbc6dcdd5f89ff560",
+    "crates/jade-pdf-diff/src/lib.rs": "b6e1b5e4657236ae44fa73b7d91a1770db49a1a844b23b03cb63444d296d8f6c",
+    "crates/jade-pdf-diff/src/main.rs": "1ba4ecb1db22a2f20743fd740267afd6c652f82f3d6d89e4359503c0349fcdce",
+    "crates/jade-pdf-diff/src/native_runtime.rs": "c4911d8419c793305a093f0a05424a073a432eb4972ae76f2121ef8847bdea76",
+    "crates/jade-pdf-diff/src/page_text.rs": "cc6b821c0173862886b116111e5c4d318c6b0fe41c2af4cc61c707035468d214",
+    "crates/jade-pdf-diff/src/page_units.rs": "e2fa488c588b138b95a422f08559890dce9e89293cddcc5159823a75fa7ffc34",
+    "crates/jade-pdf-diff/src/parse.rs": "168f397171739e121000258f986e506d29f1bae016f7bd0b1676efc5f6446751",
+    "crates/jade-pdf-diff/src/pdfium_asset_pins.rs": "a35d23f1c64ddb334fcd0aa1f5ae6614a2ee894a045c8633109b05af9cfcd9b6",
+    "crates/jade-pdf-diff/src/pdfium_assets.rs": "97a7cea3289faf1f024504c86c2f143dc801d534dc15a73cc4610d9cd742cb13",
+    "crates/jade-pdf-diff/src/physical_text.rs": "b4cfc1bf48aa615156c90456441147c02b8c18417db08b27b90d463ddaa28c99",
+    "crates/jade-pdf-diff/src/raster_limits.rs": "c6c43be2b2bf0bdb6b4b70393e35ccfbe818331a7b36e091a9b7f8d43cfc9032",
+    "crates/jade-pdf-diff/src/render.rs": "37ecd52e0cbbfff904bca2153bf696b3eabc803d2bf09a0c97a257eb45b4e86b",
+    "crates/jade-pdf-diff/src/rtl_order.rs": "dc462cde3f9964502448d22f4ef87345bcb9d5467d5bbbcac7edfd09d47c637e",
+    "crates/jade-pdf-diff/src/scan.rs": "0eb080c68519dd9c2bce12f2a266a6022177ef9f9dd327514d7f9a1a2094d202",
+    "crates/jade-pdf-diff/src/sdk_probes.rs": "eb4daa229a2c129ecea9e01753c7e70d1dc7998641e107f7ab6b53065cc213cb",
+    "crates/jade-pdf-diff/src/source_text.rs": "ce5db364d1594449a24ed9c1a2b665754a89c38ee2c401479c13fd8138d46eb0",
+    "crates/jade-pdf-diff/src/source_text/structure.rs": "e1653f3480ed0e9c322f953182be2c0c3c62d1539da57a18f382100d300a97ae",
+    "crates/jade-pdf-diff/src/source_text/symbol_font.rs": "1a9d3a1e8ade946be39be3d141aa353cee49bcb5461213074d59e62e9278313c",
+    "crates/jade-pdf-diff/src/source_text/unicode.rs": "67d7d0a9805ce7abb49ec9298b89e4a695ebed2316734a27f9f994dd02053ad0",
+    "crates/jade-pdf-diff/src/strong_ltr.rs": "9f512d0b428d381c28a50df739c02282ca2e081aa3fd7621f2cc6dfed9710437",
+    "crates/jade-pdf-diff/src/strong_ltr_data.rs": "02189e543f67d0e2f78d0609e15a92b36ae01edbd1d23bed5a9f497a9a141b83",
+    "crates/jade-pdf-diff/src/supplementary_glyph.rs": "dd44c2151b914c65fd60422bb49a9ec1e59234436a7640137b7c32d43969107f",
+    "crates/jade-pdf-diff/src/symbol_encoding.rs": "e9aff73a2181c1f61e7fabe6b36bdcac7dff7009d44b546cdb56f7c336fe54f1",
+    "crates/jade-pdf-diff/src/tagged_table.rs": "b2c32f52dc1bf05ab1d6ad90f6d5486d87f66bc7ba9bc2f0c36aefe3fb53b54f",
+    "crates/jade-pdf-diff/src/text.rs": "e724126198d08f58ae551803f81fb90c3ae99b8e7ac7170c58069cbe58cc6d5c",
+    "crates/jade-pdf-diff/src/text/inline.rs": "6340974e26edd4ce7cad89ccfb3bd7716e4dc591428c404bc5f393d1f59833e7",
+    "crates/jade-pdf-diff/src/text/japanese_data.rs": "78376f6ac3e39c71c406ab87e90bf4d07048d98dd48344ccef99830abd8a21f2",
+    "crates/jade-pdf-diff/src/text/order.rs": "c6efb9f6263c63d35ea7ac54b66642550b809088c7300ac580216097de7a1988",
+    "crates/jade-pdf-diff/src/text/row_tests.rs": "9353ba4df4ed9d2f0e56055188bdc45f049aa7c37a7f6c5e3c13fdbdc1b6ab1c",
+    "crates/jade-pdf-diff/src/text/spacing.rs": "2faff1352afad60b0cde2a50a80e8951534de7416ab592db737188273d400a67",
+    "crates/jade-pdf-diff/src/text/table.rs": "2b7bdaa6dbe76c998dccd09d2e05badc8840d99457a05ed40410790012ce7d2c",
+    "crates/jade-pdf-diff/src/unicode_facts.rs": "a90b270c526ff7cf721633b5c3f031da0373fcf50a6d223de1453a8052362596",
+    "crates/jade-pdf-diff/src/wasm_runtime.rs": "95cb9a2649a420ced26fdf376e40aa8b739aef23aff905fa332b255db7d78d6f",
+    "crates/jade-pdf-diff/src/widget_values.rs": "9799759bd7ca956d131bfd6f754db5c14597ac648533a8696dde33cd4aca3c8e",
+    "crates/jade-pdf-diff/tests/actual_text.rs": "dab4a3d5fed146448ef567bed5b2952575fcc099b69c788bccc6572263e0f147",
+    "crates/jade-pdf-diff/tests/advance_scripts.rs": "cd95b0cea2e2b8ea748b4879933851803946f31215ec3213260d2b84c98539e6",
+    "crates/jade-pdf-diff/tests/advance_spacing.rs": "c01b2ca83c71497b053425521f1bf2b55832e952c3779e91695a86602ef98669",
+    "crates/jade-pdf-diff/tests/appearance.rs": "05ebcf4a3ae95018bba5c6b8d3dc0e5b753970213a496fc35bf9a403f6efbf24",
+    "crates/jade-pdf-diff/tests/baseline_buckets.rs": "e28d1f16d48bab2c707a8a063754eaa012e4611342549f81659721e4824fe1c0",
+    "crates/jade-pdf-diff/tests/canonical_forms.rs": "cd8a2f92a2b5d9d5f272ea615d78f8af19d4f5a17a385c372b414dbf7ade07ec",
+    "crates/jade-pdf-diff/tests/cli.rs": "f12cc87ea73b1bc85cc0741824383180eea60d63ecd26a9a05448d4b79dac8c7",
+    "crates/jade-pdf-diff/tests/display_rotation.rs": "dea116cd6be46d1ab32b9c283899eb3a84bada3d8b37f598f94a884bde352e16",
+    "crates/jade-pdf-diff/tests/extraction.rs": "18471b27ae40cfb6017db5ba8d6fc4d343f9b6efa4c8945ac2c40a2837357d9b",
+    "crates/jade-pdf-diff/tests/geometry.rs": "c74be13d4b391cff4a25614d4fd35256452e344caa043b5ac333478551151874",
+    "crates/jade-pdf-diff/tests/input_limits.rs": "eb1ec511a00210d927394c9cdc9155b06e551f75143d2eda3ab786d3469e0618",
+    "crates/jade-pdf-diff/tests/isolated_bytes.rs": "7cee53b56ae23d5a6891041447e83c8e33dc7a111a8c37555794280519b0258a",
+    "crates/jade-pdf-diff/tests/isolation.rs": "051e63468565ff48d9890c50dab060258d1962f676e3fe24195d6a348ab54a42",
+    "crates/jade-pdf-diff/tests/japanese_tracking.rs": "66f6b35cbd8a865e9f4692ac91f061515466a0f7b86c1efb7268fb8dfe58a597",
+    "crates/jade-pdf-diff/tests/mt_extra_glyphs.rs": "ca52bca6876ae76718b25902cc332772a9a074c0cec593d5c413c18d75b227eb",
+    "crates/jade-pdf-diff/tests/oblique.rs": "6b99265a37bea587afb27b7400a4c6ef3669ab7f5d645637d97725c12e6c899b",
+    "crates/jade-pdf-diff/tests/ocr_ir.rs": "18d4b48e2d4e4c71bed1661e31bbeea9b2b6aefce6b1efcb66e06fbd96d7a1b4",
+    "crates/jade-pdf-diff/tests/options.rs": "3b6b3c8f9f8794a4ba18bc8aaacc1b76e9d0742cb1fbcd18d769393301d30347",
+    "crates/jade-pdf-diff/tests/page_text.rs": "7a86948c4719694297e055d08f65b9e37c7d55a81f9369671dd69dbb3135bc69",
+    "crates/jade-pdf-diff/tests/public_corpus.rs": "9b29d038cfd00332f2662fcd1015f9c7f2090b71029590304ab7fec31338769b",
+    "crates/jade-pdf-diff/tests/report.rs": "9a74798a0333ca2dcb2fe0caa77ff2e3d95b81bca866b6288dfabe73c0a4d49d",
+    "crates/jade-pdf-diff/tests/runtime.rs": "30494b531b82912cb435d5985042613129590b4f6a1f480186b872b180df585f",
+    "crates/jade-pdf-diff/tests/supplementary_glyphs.rs": "184d8bd7fda97e9a6b8b3916fcb47ce24740ad8a8b2de84574a446d4effb003f",
+    "crates/jade-pdf-diff/tests/support/advance_script_fixture.rs": "70fc207b90aefa34b05c5ca28b04163d601c0d8e685e123c33d29fac2cd26527",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "92370e31edee6ff712ff49b7f3aa8383fafa5a4f055f1dc35eefbba6862f45d3",
+    "crates/jade-pdf-diff/tests/support/japanese_tracking_fixture.rs": "dc1eccaacca6482eb1d2e0bbade986c1e514765eccd14171b27ce51edad8bed7",
+    "crates/jade-pdf-diff/tests/support/report_fixture.rs": "b9f2e26fc64e4c5865b410d78faa4ffb3cb430ec92d5059ea0eb3af7dad26fdf",
+    "crates/jade-pdf-diff/tests/support/sdk_text_oracle.rs": "674b6f75aa7c2046a7a26f6781da8556de01dc0ba1f795202ebe06cfa5cc702a",
+    "crates/jade-pdf-diff/tests/support/source_inventory.rs": "6f782418172c3878b06c4883e15b7d69588f5d07d18838a05f2444acdb17f048",
+    "crates/jade-pdf-diff/tests/support/symbol_components_fixture.rs": "5d28438e7012c1443b3890f9b8535e55ce91fc307448413b234664030c0dae72",
+    "crates/jade-pdf-diff/tests/symbol_components.rs": "c7d3e327c46b96633e7c6307aef4b2189e1b6d85ed673c6c453467e8419a6a61",
+    "crates/jade-pdf-diff/tests/symbol_glyphs.rs": "f063815199410588068b98bfb84a708311a50c99d3753ca118c61203cfb366e1",
+    "crates/jade-pdf-diff/tests/text_objects.rs": "c4143d7bb6b006fb91d5c6b5f11a2d64c43f13649e6b86181cc43a26dd200758",
+    "crates/jade-pdf-diff/tests/unicode_equivalence.rs": "d33ece4357c81cccf0fbba3d3c6916b2339faa38276ccb48775620674e9243a0",
+    "crates/jade-pdf-diff/wasm/pdfium_adapter.mjs": "8dbc2ebaa7fbbee4cc1803780eb9ed33543bc7ec0879e7fc315dba57c0d3cdb2",
+    "crates/jade-pdf-diff/wasm/worker_client.mjs": "2b225d7d8a75246f24d85037de40dbc0784a6f51205cb4f221d7ff7cae90419b",
+    "crates/jade-pdf-diff/wasm/worker_protocol.mjs": "9ac07b2da10e5377ac788c1293c4c3811a1b1a4ee032fda16c3e743828d10cee",
+    "crates/jade-pdf-diff/wasm/worker_server.mjs": "b1717e053ca141ebe105ec85062987135da5817a287213208589f5196ad7aeab",
+    "docs/pdf_diff.md": "5a3822f378a18b92c3175d0780425d76bd3322fafd25955dd605aa4401565f49",
+    "tools/audit_actual_text.py": "927b10c83fdf5c7ca2e395bda45fcbd0f9d6c76f4b5e55ffa6b27f6ea3769ea3",
+    "tools/audit_adobe_glyphs.py": "8f710f273173afdf2b0b8bd20feed1ce528e5371198e86806bd48a2dd185a605",
+    "tools/audit_coordinate_units.py": "fdfe11e43f72f4aba9d723a5d9cc2e73df8cefaef11a0af01db91afdf5667fe4",
+    "tools/audit_empty_forms.py": "5681ca131738127ec51295598ee977b2908dd3b6d93e83c518e8e5e5093fb8d0",
+    "tools/audit_fips202_cells.py": "29e43db97e2a249e883d4e7bbb0b6269ff75c1a8ea3f6715c2245c9959ddfdf1",
+    "tools/audit_form_discovery.py": "86a33343842cd5d9b5334d1f74cb35e6a94145a9fb4fa1042e6322f7599ad422",
+    "tools/audit_form_fields.py": "c9a26671aa438c07a7b6d89cfc958ee24441e823c93202994422cb9b3772ac47",
+    "tools/audit_isolated_bytes.py": "cf7ae458e5ee0659169a41e53a82592f220e3c8a428c40efc45e0c53757935ed",
+    "tools/audit_marked_scopes.py": "b09f4a986b94063c4c4ace071d1aa93e7c5f30012f603752c46bf89f2c484a0e",
+    "tools/audit_oblique.py": "9a7b3219438d654eccca3c73a7cf87a749af721eca34b3dd5ba843a933f30a9f",
+    "tools/audit_orphan_forms.py": "fcba6dbf23f11f95e918fddeab028ca138332143450bb0e0c0a6b75d0521bd43",
+    "tools/audit_page_gold.py": "45dc474c15c875c07d7cbcccb1ba91cd5f7437a91b6d2c880abd2816b74a10a8",
+    "tools/audit_page_revision.py": "895033da5b8277f3330acbd0ca32e9f57d2ae49de1ea7c6be8efabf98845ee26",
+    "tools/audit_page_text_contract.py": "fd5223004730017282cb758631e8a4a6e0b8822b78596c9aec7820542648208a",
+    "tools/audit_pdf_structure.py": "039281612331fa7850f630dbfd47e9238fa65b2f5bc3d9b6af353882aa1e7f38",
+    "tools/audit_pending_semantic.py": "8f16e24008c0e2000843784226d51448f968653160e324113d50fe0a8e7c87df",
+    "tools/audit_process_isolation.py": "7364ea251e8a5ec6338d732a2c9cbfb547c15ce3a0554942cd3a17554882444c",
+    "tools/audit_reading_order.py": "6cd554a2ca990c899628b9ff528fa06a12a3102f43cede2b20946227720f3702",
+    "tools/audit_rtl_unicode.py": "a972c7e5bc67302bb5e2ca427aaf8826a52811f27027372d4cfc9709e907e944",
+    "tools/audit_run_grouping.py": "8d84e725fd9be6697257d7a716a49246080ee1fd2ef44a8208e8264143009a02",
+    "tools/audit_scalar_revision.py": "eccbacdb9c321ae9d86e48d5ffa790386a926760b6d7712fb860c692c50e55ba",
+    "tools/audit_sdk_cache_contention.py": "85a1eb67960e4512f417fbc042c86164c7f5fbb74735f85a2b61f2c898e98069",
+    "tools/audit_sdk_scalars.py": "2a04d400c260f8a9f392ee30aabf7e2e0089b0c954624256e0fdf10c6067d50a",
+    "tools/audit_source_text.py": "c8735e6855e4a36fe1ea47416a77d79d80edf5cceec598530f604e1e6f81bfe3",
+    "tools/audit_source_unicode.py": "978ccf159588092e8fd4f2495aff43cf6bb156440e910ca1e606d015736c5866",
+    "tools/audit_spacing_cells.py": "3d42c2c9d10067ea69068de0bb3ca9071772b4aa691e82421f3b12bc8c9ceb3f",
+    "tools/audit_symbol_operators.py": "669b2f1a9475b38c369d3b576cd36f6d4d17b36e2b724edd54f6c991dba68649",
+    "tools/audit_table_order.py": "6e78101b0dde471dbece07361d34fd03b7eeb7c2403affa8fccc21c403f13859",
+    "tools/audit_text_direction.py": "2510619a8609f89bbe68a79bc59fbcaf8a22c6446589bf959f27f2fb42c19166",
+    "tools/audit_text_objects.py": "6ee377155bedf2225b11ac13f3e48c81495161d788cd1af4eb4ab666c7e6a75e",
+    "tools/audit_text_rotation.py": "14ff13728980a2f9cdf5da8be24ba562e418af9ab2499d3555e10332cfb6cbb0",
+    "tools/evaluate_pdf_corpus.py": "a5f293be49db87bdc8605321e2afa4f058bae0db1bf8db3ca1f43cb4d4830075",
+    "tools/generate_japanese_letters.py": "d8a00ee3bba7de8b4a7c08297c71f847000216db4843debf91325164f3c64e9b",
+    "tools/generate_japanese_tracking_font.py": "6ab331b4778835ada298696c6b6e4a79f8c5ef81b00d5dad083b5e4fc29f615e",
+    "tools/generate_named_glyph_font.py": "fa786c69516a8b95c68498ac25cb967168e9fccb327a531a95e15e858b2caff7",
+    "tools/generate_strong_ltr.py": "15eadee4f45a2acfc26292c46ed5f9961f8257211b194d8eb948fe08896b4599",
+    "tools/generate_symbol_glyph_font.py": "9a334548fed8fb5726ef42bee2bb6bad7e734b694ca97b950a87874e38ef3e20",
+    "tools/page_revision_gold.py": "5f336c67ace430a14ece95cbdf44a5b06071da87fb56198f0ab2e026a3b324be",
+    "tools/pdf_corpus.py": "19b1cb5a35cf8bbe543f08b7ee23daf084c1302d3d827e0e0afca447b59a9402",
+    "tools/requirements-corpus.txt": "cbbbdb95234105f02712e91ae455a6657efb5108bb62dade4753a5864acee765",
+    "tools/scalar_revision_gold.py": "08d851d7c8b619e9f150f72086783348858e8e9e0e78a72619b6a093929d5cf2",
+    "tools/semantic_gold.py": "177f78aaed164ed8bf5e73703450e09ee6ab2d7aa050cab62b1e8dc39906bae9",
+    "tools/source_anchor_witness.py": "32b04dfead579a19497e6384e2dba99759425c0745abcb16a8c2c6614edd8da2",
+    "tools/test_fips202_cells.py": "435de7f9ae2b227d9f99962f5c8e2384d48ebd065f3e728c8da6b0f0f5bb1a36",
+    "tools/test_japanese_letters.py": "c7f699357ce4daedb473c8855714024ac2e580b7fc9d1046ac408e81dc2508da",
+    "tools/test_page_gold.py": "53a3ac540cdb35663b4ffcdae44523b53c775c0714222e541014c021ec72db11",
+    "tools/test_page_revision_gold.py": "df39e90c1107bdc8e2dbdda6308bbebe33cabac83dd4e70ddca0dcf3c6f573ed",
+    "tools/test_pdf_corpus.py": "b5a32e25fe57e72331718e61cfd7da4cc8c63df0f43ce048247e8bfed7214c83",
+    "tools/test_pending_semantic.py": "6423ae640e887d5f9a3a3cc52f9d927d33b8a11a7b4ed91853b09c2cab5b987d",
+    "tools/test_run_grouping.py": "cd35a9f32f04ee2d25dce930802ec5457f500c09a70ae7844e26459aea44e87a",
+    "tools/test_scalar_revision_gold.py": "60af95c07670f80aa24e26b00d9877b244d9be9c67775a0693bfb49a0d4035b2",
+    "tools/test_semantic_gold.py": "ba206d7927f4a18221b35be9776ecd6b0f18646557810fa7be1b2d388bed23c0",
+    "tools/test_spacing_cells.py": "4d8279c54ad38eb96def1e6f20dd137a221fc5caf3d1734e562d509180e655c5",
+    "tools/test_text_context_gold.py": "0dbc50551c8a9566c4911137b6bca43addbf5a890bc525cbcbc32c7c14fdbb19",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/Cargo.toml": "5c533a6d4dd4104e02ecb8507f673c708ea15350c6d5ff78aca3874fe95a10f0",
+    "tools/wasm-smoke/audit_text.mjs": "665437b9b102cc627095375d597322847b3fd0a8de18ca6efcf268e7736d3144",
+    "tools/wasm-smoke/browser_engine.mjs": "55cbe20021e730c48063d785801e94b2e5545180afabf1738cacae0fcd487508",
+    "tools/wasm-smoke/browser_smoke.mjs": "e6b129ba60db88fadbb6afdad46918de456f160169ff59e972f43f680c273f2f",
+    "tools/wasm-smoke/package-lock.json": "c4b116428a881381763408de55a083f5dca685d6d6d0962fe185f54bf93e2a93",
+    "tools/wasm-smoke/package.json": "9fc7058b22d7b65d2e1e536ec65723f7c1395b18f22be28744a9695e65b6ceea",
+    "tools/wasm-smoke/page_revision.mjs": "d49a31f908ef5d7e746fa5a9654af162fb4c180065fed824acaccea228b6f530",
+    "tools/wasm-smoke/prepare_runtime.py": "ef67ad6e6b945573b0e94ead2f5382fda6d169bcb50fc69a7697025436cdbb8a",
+    "tools/wasm-smoke/runtime.json": "9cbc5846b2c63210597d17a6c1a77e0569b277fc65c36c224a1e8fcbf25aaf7a",
+    "tools/wasm-smoke/scalar_revision.mjs": "3f135eade3818322ae86e943b99ed16c56ba5b8f8fef4690d04db48c20ddea56",
+    "tools/wasm-smoke/semantic_gold.mjs": "877f4ac8696971056e2d6a5ee38f99426f4780101723b87a9a43bfb1074e3260",
+    "tools/wasm-smoke/src/japanese_tracking.rs": "24ef80e450961a3ad1208243f9fc65280b0d10380b5375d8594b9de8d4d99c1a",
+    "tools/wasm-smoke/src/lib.rs": "a0459a43a46587b54cda318d96c96516990669193f3305ad301977d3e42c0bf1",
+    "tools/wasm-smoke/src/page_text.rs": "0f0c4373d22541fd130246b17740eb9343166cbe243a702451dbeea91001411c",
+    "tools/wasm-smoke/test_browser_engine.mjs": "429070cca80be7ba3459d5e998c097edc1322be78c3b07fd3845450ec1dbe8db",
+    "tools/wasm-smoke/test_pdfium_adapter.mjs": "8f21dfd7b721f31d6190fa17e8d9e691868293b72171edbae811fc4840095b34",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "4e7a1a2861e3146a2beddae35011ad671c255769e85185587337a73d84df0620",
+    "tools/wasm-smoke/worker_adapter.mjs": "f326bf38658f5a90cfee60dfe07f39425698918492e5b4cd45794e841f4aeba5",
+    "tools/wasm-smoke/worker_fault.mjs": "54d976654d93118388693418b1cf73392c4c95a2f8e81ceae7402a0ca24da9cf",
+    "tools/wasm-smoke/worker_operations.mjs": "2d4e5483c2fee9187740f5e801440324e0e4c01c7f2aaa3a6a98d4666288806f",
+    "tools/wasm-smoke/worker_smoke.mjs": "48238dfb56586af6266170adad7c8870430fdb652d55929529523c8e3e285d80"
+  },
+  "history_replay": {
+    "previous_base_revision": "653ef49ab32b10ccf356e0b5aa9590410c495559",
+    "previous_result_revision": "9f1cc501a2f02ff0b2d03248838fb09ec1721968",
+    "qualified_result_revision": "5994205a1bb4a106215ee45101cc2d1d54895124",
+    "original_qualified_core_tree": "309fb53c3d6ba15afa8a7a7e6f4b0d754daaeb7e",
+    "original_qualified_source_tree": "d26a40716c88c6d7648326b59f4641f97b5a6ad1",
+    "commits": [
+      {
+        "original": "c37f77ffcf81a263b1bd340af3eafda55b17bfae",
+        "replayed": "4a07eac1ef82259e523bf23179ee0b57323ef018",
+        "original_tree": "f54e84d5932f5a54e6ccf96033815b012e090277",
+        "replayed_tree": "17ca1b766c327b60f26c3dcc782551cfd1d4de72",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "b4040a694b0d875eac04a7325331272be0098b79",
+        "replayed": "1bac0eba02fa9ddd22713c8c74e03c82199aabed",
+        "original_tree": "3bb6533505f127a50cb7bee7ea120dc270869ace",
+        "replayed_tree": "0f84dcb6f3794f3b7d8eba3718a7ed9cb73e9c2d",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "57e30bc7be5bb10564040505d6153867c0aff3d3",
+        "replayed": "7d332aba528dcf0f0b816e987e2c74e3693537d2",
+        "original_tree": "309fb53c3d6ba15afa8a7a7e6f4b0d754daaeb7e",
+        "replayed_tree": "62116d803a93c8105655cc8c08d642c8af2816b5",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "d0aef0d4ef93e37291f9ff9bcf93d9dc144f6943",
+        "replayed": "c08923989102ac6a5dd47485ceabfdb4667a27a9",
+        "original_tree": "15ffe94fe6c792993487548241dddbc1f10b4f09",
+        "replayed_tree": "9dd76cd607478e74d6787bad1b0bc628316241fe",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "50f9b8c1c0afccf591b3a2c9d03f472627edef5e",
+        "replayed": "3d4e731f60fc74d5ee0eabb312b0fe33a42987fd",
+        "original_tree": "d26a40716c88c6d7648326b59f4641f97b5a6ad1",
+        "replayed_tree": "b105be318bf27362f2fb224d18bdf3ffa44e7116",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      },
+      {
+        "original": "9f1cc501a2f02ff0b2d03248838fb09ec1721968",
+        "replayed": "5994205a1bb4a106215ee45101cc2d1d54895124",
+        "original_tree": "c5b10bbf9d7183ff479774cac2f8ba8dffb1c79b",
+        "replayed_tree": "93fac256ef348efad56c3a90f00d8837e4e171ba",
+        "only_different_path": "corpus/validation-mixed-rtl.json"
+      }
+    ],
+    "parent_metadata_only_path": "corpus/validation-mixed-rtl.json",
+    "parent_metadata_only_fields": [
+      "base_revision",
+      "core_revision",
+      "history_replay",
+      "qualification_revision"
+    ],
+    "parent_qualification_facts_and149_hashes_identical": true,
+    "all201_product_checker_report_hashes_identical": true,
+    "scope": "All six qualified trees differ only by the inherited parent v46 history metadata. Parent qualification facts and all149 source/checker/report hashes are identical; every201 v47 product/checker/report hash and frozen runtime byte remains unchanged. No runtime requalification claim for a different implementation."
+  }
+}
