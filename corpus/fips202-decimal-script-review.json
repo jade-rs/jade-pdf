@@ -1,0 +1,12 @@
+{
+  "source_sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+  "page": 35,
+  "printed_page": 27,
+  "original_render_sha256": "1a84fe2a694fc15cb1bdac05380a70876115cc06953091ec3fdcb597ff1a4a61",
+  "original_review": "All37 pages visually reviewed before registration, page35 re-rendered at scale-to2000 for the two introductory math lines. Subscripts00..07 and10..17 follow their corresponding b before the equals sign.",
+  "before": "Native/WASM match character multisets but native puts subscripts10..17 after the equation, while WASM keeps them after each b. Native internal run10 contains a verified false space, 1 0, before deferred removal; the older script classifier treats it as a separate line.",
+  "verified_scope": "Only a nonempty decimal sequence of at most8 ASCII digits after omitting source-advance-proven generated U+0020 spaces is added to the existing script candidates. Literal blanks, newline, signs, punctuation and letters are not newly admitted. Text/cells are still updated together after ordering.",
+  "broader_change_rejected": "Removing pending blanks for every short expression affected10 pages, including8 old-cohort pages and uncertain summation layout. This broader candidate was discarded. The qualified change uses the narrower decimal-only rule; existing math structure remains unresolved.",
+  "reading_order_gold": "manifest.json reading_order on page35: two original introductory lines, whitespace removed for order only. Not whole-page text, word spacing, component semantics or position accuracy.",
+  "conservation_reference": "Original font aliases F02D minus, F0B7 bullet and F0C5 circled plus independently declared from source ToUnicode and singleton NFC official Adobe table values; source_dictionary/program hashes and SDK ownership reverified by the conservation oracle. This is not Unicode semantic gold."
+}
