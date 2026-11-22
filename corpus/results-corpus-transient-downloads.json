@@ -35,7 +35,6 @@
       "failed": 0
     },
     "offline_verified_sources": 90,
-    "owned_in_memory_test_PDFs": true,
     "no_live_network_fault_injection": true,
     "mocks_cover": [
       "TLS connect timeout then valid response with unchanged URL/User-Agent/45s",
@@ -43,7 +42,8 @@
       "Permanent timeout ends after second attempt and preserves original exception",
       "404/503/certificate errors never retry",
       "Same-size altered PDF following a timeout fails SHA and is never installed"
-    ]
+    ],
+    "owned_in_memory_download_payloads": "Header-prefixed owned byte payloads for fetching/hash checks; parser and rendering are outside these network controls."
   },
   "code_and_test_dependencies_unchanged": true,
   "PDF_font_model_binaries_added_to_Git": false,
