@@ -16,6 +16,51 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
     }
     let old = appearance_fixture::fixture(name, false);
     let new = appearance_fixture::fixture(name, true);
+    if let Some(mode) = name.strip_prefix("symbol_component_") {
+        let ir = pdf_diff::load_document_from_bytes(&new, &pdf_diff::Limits::default())
+            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+        if !ir.pages[0].source_unicode_accounting_unavailable {
+            return Err(JsValue::from_str(
+                "Opaque component semantics must remain reviewable",
+            ));
+        }
+        if matches!(mode, "valid" | "edit") {
+            let prefix = if mode == "edit" { "<−" } else { "≤−" };
+            let expected = format!(
+                "{prefix}{}",
+                appearance_fixture::symbol_component_codes()
+                    .iter()
+                    .map(|c| char::from_u32(0xf000 + u32::from(*c)).unwrap())
+                    .collect::<String>()
+            );
+            for unit in [1., 3., 64.] {
+                for rotation in [0, 90, 180, 270] {
+                    for shear in [false, true] {
+                        let bytes =
+                            appearance_fixture::symbol_component_cells(mode, unit, rotation, shear);
+                        let ir = pdf_diff::load_document_from_bytes(
+                            &bytes,
+                            &pdf_diff::Limits::default(),
+                        )
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        let layer = pdf_diff::text_layer_from_bytes(&bytes, 1)
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                        if ir.pages[0].text() != expected
+                            || layer.iter().map(|r| r.text.as_str()).collect::<String>() != expected
+                            || !ir.pages[0].source_unicode_accounting_unavailable
+                            || ir.pages[0].source_unicode_scalars_unmatched != 0
+                        {
+                            return Err(JsValue::from_str("Verified aliases or opaque component ownership changed under geometry"));
+                        }
+                    }
+                }
+            }
+        } else if ir.pages[0].text().contains('≤') || ir.pages[0].text().contains('−') {
+            return Err(JsValue::from_str(
+                "Unowned component context allowed a projection",
+            ));
+        }
+    }
     if name.starts_with("advance_") {
         for unit in [1. / 64., 1., 3., 64.] {
             for rotation in [0, 90, 180, 270] {
