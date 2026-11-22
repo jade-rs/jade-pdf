@@ -30,15 +30,16 @@
       "ignored": 0,
       "groups": 13
     },
-    "full_workspace_ocr_onnx_serial": {
+    "WASM_conversion_crate_check": "passed",
+    "Clippy": "Final DOCX all-targets passed with repository flags; preexisting warnings remain, -D warnings not claimed",
+    "formatting_and_diff_check": "passed",
+    "conversion_workspace_ocr_onnx_serial": {
       "passed": 1951,
       "failed": 0,
       "ignored": 4,
-      "groups": 109
-    },
-    "WASM_conversion_crate_check": "passed",
-    "Clippy": "Final DOCX all-targets passed with repository flags; preexisting warnings remain, -D warnings not claimed",
-    "formatting_and_diff_check": "passed"
+      "groups": 109,
+      "scope": "Converter workspace only; the retained log starts with jade_pdf2docx and does not contain jade-pdf-diff test binaries. The earlier key full_workspace_ocr_onnx_serial was too broad; counts and original logs are unchanged."
+    }
   },
   "retained_failure": {
     "initial_full_parallel": "Unchanged supervisor deadline test failed with childPID file missing after500ms;108/109root binary tests passed. Original log retained.",

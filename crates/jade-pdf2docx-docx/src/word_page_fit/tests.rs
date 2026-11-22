@@ -124,7 +124,7 @@ fn inherited_headers_and_footers_are_cloned_for_scaled_sections_only() {
 }
 
 proptest::proptest! {
-    /// 上限を超える全辺で長辺が正確に上限となり、短辺の誤差は半twip以内に収まる。
+    /// 上限を超える全辺で長辺が正確に上限となり、最小1twipへの丸めを含めて短辺の誤差は1twip以内に収まる。
     #[test]
     fn proportional_fit_has_bounded_rounding(longest in 31681u32..=u32::MAX, short in 1u32..=31680u32) {
         let plan=Plan {longest,..Plan::default()};
