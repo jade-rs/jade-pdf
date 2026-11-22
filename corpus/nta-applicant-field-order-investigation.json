@@ -101,5 +101,24 @@
       "integration-hypothesis.json": "1c5f00e6e9763c861bd1417291215d1b102bfd4b13d846585bcddb4ca7f213f7"
     },
     "scope": "Further read-only research. Source-ruling style/clip semantics and complete-run membership require owned controls and early per-character cell separation. Neither current extraction nor the original0/1 result changed."
+  },
+  "native_SDK_contract_controls": {
+    "owned_API_tests_passed": 2,
+    "combined_geometry_and_API_tests_passed": 9,
+    "clippy_lib_and_tests_warnings_denied": true,
+    "production_graphics_reader_implemented": false,
+    "production_integrated": false,
+    "native_only": true,
+    "requires_future_WASM_controls": true,
+    "observations": [
+      "Valid borrowed no-reference clip handle yields-1 under the managed8111 engine.",
+      "Path clipping has positive path count; text clipping can have zero geometric paths, so zero must not be treated as no clip.",
+      "Opaque black geometry is distinct from transparent fill and unknown content marks."
+    ],
+    "scope": "Owned in-memory PDF contracts for the future optional ruling reader only. No runtime no-clip inference or product repair yet.",
+    "logs": {
+      "jade-nta-grid-sdk-contracts.log": "71acdba956c0293c5a566bbb2aa4ca154500b4a27c1e91f74e396bc119ab9952",
+      "jade-nta-grid-sdk-clippy.log": "75fb2c84a50c308745a6c9c0ed58db8565f68fc180cc185ab1b1ac6128bca88d"
+    }
   }
 }
