@@ -2552,6 +2552,15 @@
       "new_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
       "path": "corpus/w4-page-revision-gold.json",
       "sha256": "985ed52a4f32df76821378229d3afb6372ed1f0f70dac4247306c4bc6c71de40"
+    },
+    {
+      "id": "irs-w4-2023-2024-page1-text-edits",
+      "old_id": "irs-w4-2023",
+      "new_id": "irs-w4-2024",
+      "old_sha256": "317d5f830475bde6867554415b80c1c4eed94d21b6390fe7fcdc119d3b4e96d4",
+      "new_sha256": "e60e3af7512073bffbd7ef3c4f3a2fc9593d2aed2e420718d4ccf17659e2c3ed",
+      "path": "corpus/w4-2023-2024-page-gold.json",
+      "sha256": "3daff4de650cb4805c6a2fcc2b27f71fb726f9f340a9fd2b83602c73fe8bbf2b"
     }
   ]
 }

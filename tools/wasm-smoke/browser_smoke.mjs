@@ -843,6 +843,7 @@ try {
     scalar_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_scalar_revision.py'))).digest('hex'),
     scalar_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/scalar_revision.mjs'))).digest('hex'),
     page_revision_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/page_revision_gold.py'))).digest('hex'),
+    page_region_checker_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/page_region_gold.py'))).digest('hex'),
     page_revision_audit_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/audit_page_revision.py'))).digest('hex'),
     page_revision_bridge_sha256:createHash('sha256').update(await fs.readFile(path.join(root,'tools/wasm-smoke/page_revision.mjs'))).digest('hex'),
     page_revision_gold_checks:results.filter(r=>r.id.startsWith('page-revision-gold-')).length,

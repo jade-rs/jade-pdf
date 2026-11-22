@@ -43,7 +43,7 @@
   "extraction_boundary": "No engine edit spans or extracted paragraph contents from this revision were consulted for these observations. Earlier all-pair structural audit reported only page/group counts and equality booleans. Do not use product output as source gold.",
   "privacy": "Full first page visually reviewed: blank public tax form, no filled personal data. These original PDFs were already registered and reviewed in the corpus; no new source added.",
   "production_ready": false,
-  "dot_leader_resolution": "Both original zooms show the same 18 leader periods. Source Tj metadata independently confirms 18 U+002E codes under the corresponding HelveticaNeueLTStd-Roman font, without reading font programs. The apparent addition at smaller display scale was a visual review uncertainty, not a product defect or a sixth text edit.",
+  "dot_leader_resolution": "Both original zooms show the same 18 leader periods. Source Tj metadata independently confirms 18 literal 0x2E source codes under the corresponding HelveticaNeueLTStd-Roman font, without reading font programs. The apparent addition at smaller display scale was a visual review uncertainty, not a product defect or a sixth text edit.",
   "source_leader_metadata": [
     {
       "year": "2023",

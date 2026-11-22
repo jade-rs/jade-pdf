@@ -10,7 +10,7 @@
   "new_page": 1,
   "scope": "All five visible logical text-edit regions on the original 2023/2024 first-page pair. Includes the complete replaced reference clause and Step2(a) paragraph and removed TIP. Reflow, geometry, styling, form widgets and pages2–4 are separate. The18 Step2(c) leader dots are present in both originals, not an omitted change. Region precision allows common internal letters within each declared full text span; every nonwhitespace inserted/deleted scalar outside those spans must still be rejected.",
   "source_review": "corpus/w4-2023-2024-page-review.json",
-  "source_review_sha256": "2ce63ad6caeae4ed9ba506ce2308eea49749e4aa529b323023776fe3bd9ed188",
+  "source_review_sha256": "1df25e7525a0f2f49e4644cafffe444deb65198430256f8e0c57ef6af0cea6d6",
   "declared_before_product_edit_span_inspection": true,
   "edits": [
     {

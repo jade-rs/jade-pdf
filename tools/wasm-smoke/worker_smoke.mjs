@@ -319,7 +319,7 @@ try {
     await page.waitForTimeout(20);
   }
   results.push({id:'no-remaining-worker-targets',passed:remainingTargets.length===0,remainingTargets});
-  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/audit_page_revision.py'];
+  const sourceFiles=['crates/jade-pdf-diff/wasm/worker_client.mjs','crates/jade-pdf-diff/wasm/worker_server.mjs','crates/jade-pdf-diff/wasm/worker_protocol.mjs','tools/wasm-smoke/worker_adapter.mjs','tools/wasm-smoke/worker_operations.mjs','tools/wasm-smoke/worker_fault.mjs','tools/wasm-smoke/worker_smoke.mjs','tools/wasm-smoke/semantic_gold.mjs','tools/wasm-smoke/scalar_revision.mjs','tools/scalar_revision_gold.py','tools/audit_scalar_revision.py','tools/wasm-smoke/page_revision.mjs','tools/page_revision_gold.py','tools/page_region_gold.py','tools/audit_page_revision.py'];
   const sourceHashes=Object.fromEntries(await Promise.all(sourceFiles.map(async f=>[f,hash(await fs.readFile(path.join(root,f)))])));
   const operations=[...documents.flatMap(d=>d.checks),...revisionOperations];
   const goldByKind={};
