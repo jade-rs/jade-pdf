@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort,operatorGoldCaseId} from './semantic_gold.mjs';
 
 const declared=semanticEntries({documents:[{id:'regular',pages:1,full_page_text:'text'},
   {id:'five-pages',pages:5,gold:{page:5,text:'Disclaimer'}}],
@@ -77,3 +77,12 @@ for(const change of [{ranges:[]},{ranges:[[2,1]]},{ranges:[[0xd7ff,0xe000]]},
   {count_each:Number.MAX_SAFE_INTEGER+1},{scope:''},{kind:'guess'}])
   assert.throws(()=>checkGold('',{...gold,...change}));
 console.log('Semantic gold: explicit full-text/inventory scope, supplementary counts, literal identity and bounded validation passed');
+
+const legacyOperator={id:"nist-legacy",page:15};
+assert.equal(operatorGoldCaseId(legacyOperator),"symbol-operator-gold-nist-legacy-page-15");
+const plusOperator={id:"nist-fips204-2024",page:15,case_id:"nist-fips204-p15-plus"};
+const minusOperator={...plusOperator,case_id:"nist-fips204-p15-minus"};
+assert.notEqual(operatorGoldCaseId(plusOperator),operatorGoldCaseId(minusOperator));
+assert.equal(operatorGoldCaseId(plusOperator),"symbol-operator-gold-nist-fips204-p15-plus");
+for(const case_id of [null,"",42,"a/b","x".repeat(129)])
+  assert.throws(()=>operatorGoldCaseId({...legacyOperator,case_id}));
