@@ -1,0 +1,78 @@
+{
+  "id": "nta-applicant-field-order-page1",
+  "source_id": "nta-invoice-domestic-case2-2026",
+  "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+  "page": 1,
+  "kind": "ordered_field_ids",
+  "rows": [
+    [
+      "F01"
+    ],
+    [
+      "F08",
+      "F10"
+    ],
+    [
+      "E01"
+    ],
+    [
+      "F09"
+    ],
+    [
+      "F05",
+      "F07"
+    ],
+    [
+      "E02"
+    ],
+    [
+      "F06"
+    ],
+    [
+      "E03",
+      "H06"
+    ],
+    [
+      "E04",
+      "H07"
+    ],
+    [
+      "F02"
+    ]
+  ],
+  "anchors": [
+    "F01",
+    "F08",
+    "F10",
+    "E01",
+    "F09",
+    "F05",
+    "F07",
+    "E02",
+    "F06",
+    "E03",
+    "H06",
+    "E04",
+    "H07",
+    "F02"
+  ],
+  "field_roles": {
+    "F01": "提出先",
+    "F08": "住所又は居所・本店等の郵便番号",
+    "F10": "住所又は居所・本店等の電話番号",
+    "E01": "住所等のフリガナ",
+    "F09": "住所等",
+    "F05": "納税地の郵便番号",
+    "F07": "納税地の電話番号",
+    "E02": "納税地のフリガナ",
+    "F06": "納税地",
+    "E03": "氏名又は名称のフリガナ",
+    "H06": "法人代表者のフリガナ",
+    "E04": "氏名又は名称",
+    "H07": "法人代表者氏名",
+    "F02": "法人番号"
+  },
+  "source_review": "corpus/nta-applicant-field-order-review.json",
+  "source_review_sha256": "12314610dc6a0fdcb292ce4a03afb273375b52c68de3d34c674a57819865a5a0",
+  "scope": "Selected printed field-ID sequence only. Not complete table text, semantic cell association, whitespace, global page order, filled values, form extraction, tax advice, or document precision/recall. Existing vertical-note reading gold remains separate and must stay enforced."
+}

@@ -1,0 +1,39 @@
+{
+  "original_raster": [
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "page": 1,
+      "render_width": 1200,
+      "original_raster_identical": true,
+      "before_sha256": "56514051b77f9594b1a8a41a09f7844cded16c51194942c59b037c52fd8b5d17",
+      "after_sha256": "56514051b77f9594b1a8a41a09f7844cded16c51194942c59b037c52fd8b5d17"
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 1,
+      "render_width": 1200,
+      "original_raster_identical": true,
+      "before_sha256": "80babc2dc3ce681c1b201a1bfddf7964bb90eeef8cf1405b8db8afe2fb3bff48",
+      "after_sha256": "80babc2dc3ce681c1b201a1bfddf7964bb90eeef8cf1405b8db8afe2fb3bff48"
+    }
+  ],
+  "public_horizontal_scalar_cells": [
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "page": 1,
+      "nonwhite_scalar_horizontal_cell_multiset_identical": true,
+      "scalar_cells": 844,
+      "before_runs": 189,
+      "after_runs": 190
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 1,
+      "nonwhite_scalar_horizontal_cell_multiset_identical": true,
+      "scalar_cells": 989,
+      "before_runs": 177,
+      "after_runs": 177
+    }
+  ],
+  "scope": "Only the two affected original pages. Nonwhite source scalar/horizontal-cell multisets and original render bytes, not global reading-order correctness or full2D glyph ownership."
+}

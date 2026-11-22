@@ -12,8 +12,36 @@ import json
 from pathlib import Path
 import subprocess
 import unicodedata
+import re
 
 from pdf_corpus import ROOT, fetch
+
+
+def validate_references(entry, corpus):
+    """Optional independently declared gold/review must match their registered rule."""
+    for rule in entry.get('reading_order', []):
+        if not any(key in rule for key in ('gold_file','gold_sha256','review_file','review_sha256')):
+            continue
+        values = {}
+        for kind in ('gold','review'):
+            name = rule.get(kind+'_file','')
+            if not re.fullmatch(r'[A-Za-z0-9][A-Za-z0-9_.-]{0,127}\.json',name):
+                raise ValueError('Invalid local reading-order reference')
+            path = corpus/name
+            if path.stat().st_size > 2_000_000:
+                raise ValueError('Oversized reading-order reference')
+            data = path.read_bytes()
+            if hashlib.sha256(data).hexdigest() != rule.get(kind+'_sha256'):
+                raise ValueError('Reading-order reference SHA-256 mismatch')
+            values[kind] = json.loads(data)
+        gold,review = values['gold'],values['review']
+        if (gold.get('id') != rule.get('case_id') or gold.get('source_id') != entry['id']
+                or gold.get('source_sha256') != entry['sha256']
+                or gold.get('page') != rule['page'] or gold.get('anchors') != rule['anchors']
+                or review.get('source_sha256') != entry['sha256']
+                or review.get('selected_page') != rule['page']
+                or review.get('baseline_product_inspected_for_new_gold') is not False):
+            raise ValueError('Reading-order rule differs from independently declared gold/review')
 
 
 def compact(text):
@@ -49,6 +77,7 @@ def main():
     for entry in manifest['documents']:
         if not entry.get('reading_order'):
             continue
+        validate_references(entry, ROOT/'corpus')
         fetch(entry, ROOT/'corpus/cache', offline=True)
         path = ROOT/'corpus/cache'/(entry['id']+'.pdf')
         def inspect(binary):
@@ -106,7 +135,8 @@ def main():
     report = dict(version=1, methodology=__doc__, manifest_sha256=hashlib.sha256(manifest_bytes).hexdigest(),
                   binary_sha256=hashes['binary'], baseline_binary_sha256=hashes['baseline'],
                   documents=len(results), passed=sum(r['passed'] for r in results),
-                  selected_gold_pages=sum(len(r['checks']) for r in results),
+                  selected_gold_pages=len({(r['id'],c['page']) for r in results for c in r['checks']}),
+                  selected_gold_rules=sum(len(r['checks']) for r in results),
                   selected_anchor_checks=sum(len(c['anchors']) for r in results for c in r['checks']),
                   baseline_failing_documents=sum(any(c['baseline_passed'] is False for c in r['checks']) for r in results) if args.baseline else None,
                   results=results)

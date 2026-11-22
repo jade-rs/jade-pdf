@@ -5,6 +5,14 @@ use wasm_bindgen::prelude::*;
 mod appearance_fixture;
 mod japanese_tracking;
 mod page_text;
+#[path = "../../../crates/jade-pdf-diff/tests/support/ruled_grid_fixture.rs"]
+mod ruled_grid_fixture;
+
+/// 自作の閉じた罫線、棄却条件、原文置換と幾何変換を実WASMで検証する。
+#[wasm_bindgen]
+pub fn ruled_grid_controls() -> Result<usize, JsValue> {
+    ruled_grid_fixture::check().map_err(|e| JsValue::from_str(&e))
+}
 
 #[wasm_bindgen]
 pub fn appearance_cases() -> String {

@@ -1,0 +1,64 @@
+{
+  "declaration_revision": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+  "gold_sha256": "8c8adb6ea737f2246f6a5cef1b55ce198610bd0b5e5a78041725ee084d7801ca",
+  "binary_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+  "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+  "cases": 1,
+  "passed": 0,
+  "checks": {
+    "ir": {
+      "passed": false,
+      "positions": [
+        46,
+        102,
+        121,
+        -1
+      ],
+      "all_ids_present_once": true,
+      "actual_first_occurrence_order": [
+        "F01",
+        "F08",
+        "E01",
+        "F09",
+        "F10",
+        "F05",
+        "E02",
+        "F06",
+        "F07",
+        "E03",
+        "E04",
+        "H06",
+        "H07",
+        "F02"
+      ]
+    },
+    "character_layer": {
+      "passed": false,
+      "positions": [
+        46,
+        102,
+        121,
+        -1
+      ],
+      "all_ids_present_once": true,
+      "actual_first_occurrence_order": [
+        "F01",
+        "F08",
+        "E01",
+        "F09",
+        "F10",
+        "F05",
+        "E02",
+        "F06",
+        "F07",
+        "E03",
+        "E04",
+        "H06",
+        "H07",
+        "F02"
+      ]
+    }
+  },
+  "selected_page_reading_order_requires_review": true,
+  "scope": "Selected printed field-ID sequence only. Not complete table text, semantic cell association, whitespace, global page order, filled values, form extraction, tax advice, or document precision/recall. Existing vertical-note reading gold remains separate and must stay enforced."
+}

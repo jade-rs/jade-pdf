@@ -1,0 +1,164 @@
+{
+  "id": "nta-applicant-field-order-page1",
+  "date_utc": "2026-11-22T06:18:35.386887+00:00",
+  "declaration_revision": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+  "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+  "gold_sha256": "8c8adb6ea737f2246f6a5cef1b55ce198610bd0b5e5a78041725ee084d7801ca",
+  "baseline_binary_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+  "baseline": {
+    "cases": 1,
+    "passed": 0,
+    "all14_ids_present_once": true,
+    "both_IR_and_character_layer_misordered": true,
+    "selected_page_reading_order_requires_review": true,
+    "actual_order": [
+      "F01",
+      "F08",
+      "E01",
+      "F09",
+      "F10",
+      "F05",
+      "E02",
+      "F06",
+      "F07",
+      "E03",
+      "E04",
+      "H06",
+      "H07",
+      "F02"
+    ],
+    "report": "results-nta-field-order-before.json"
+  },
+  "scope": "Fourteen selected printed field identifiers in row-major panel order only; not full table text, cell semantics, whitespace, filled values, global page order or document accuracy. Existing vertical-note reading rules must remain enforced.",
+  "geometry_research": {
+    "lines": 67,
+    "vertices": 261,
+    "directed_edges": 646,
+    "bounded_faces": 69,
+    "all14_have_unique_faces": true,
+    "face_top_left_order_matches_gold": true,
+    "not_runtime_proof": true,
+    "public_SDK_page_graphics_only": true,
+    "font_programs_or_glyph_outlines_read": false,
+    "evidence_sha256": {
+      "probe-rulings.py": "d37d2e4131969c8f43e557ca886b16931a2509a7ee56fb387e1d239dd05e6799",
+      "rulings.json": "04c29c48ba1121d59da9d2ba23ad4290d824d8c6fec74149f41e2a07c86c0613",
+      "prototype-faces.py": "db9c41908413b7823be2836f53e583682e547fa42e9768e022e0724719134e57",
+      "prototype-faces.json": "088f66b180e081189dd51084b2666fcf92e3633a612c6f2045592f362a3a574d"
+    },
+    "initial_evidence_archive": {
+      "probe-rulings.py": "corpus/wasm-runtime/nta-field-order-qualification/initial-probe-rulings.py",
+      "rulings.json": "corpus/wasm-runtime/nta-field-order-qualification/initial-rulings.json",
+      "prototype-faces.py": "corpus/wasm-runtime/nta-field-order-qualification/prototype-faces.py",
+      "prototype-faces.json": "corpus/wasm-runtime/nta-field-order-qualification/prototype-faces.json"
+    }
+  },
+  "rust_geometry_foundation": {
+    "production_integrated": false,
+    "compiled_only_under_cfg_test": true,
+    "initial_unit_red_failed": 3,
+    "unit_and_property_green_passed": 7,
+    "clippy_lib_and_tests_warnings_denied": true,
+    "scope": "Closed faces, concave spanning face and boundary exclusion, material contact vs real gap, invalid input, open columns, no partial result on budget exhaustion, generated grid position/order/duplicate-rule invariants.",
+    "logs": {
+      "jade-nta-grid-geometry-red.log": "81fed0bda3f19d025d3dd536ae3e7562a813f020057d8e4d5e4d0d877e06e679",
+      "jade-nta-grid-geometry-controls.log": "c49a7ee9f6d46aab3c06eff7b913f2c3ef25c6b0f72dbd0dfae90c7502c8b83c",
+      "jade-nta-grid-clippy.log": "d43d9042b3c2019919b70ba8eb589a2cb087e3b87a4f0e744c4f1b4393d4e48f"
+    }
+  },
+  "production_ready": false,
+  "natural_case_fixed": false,
+  "not_new_precision_improvement_yet": true,
+  "required_before_runtime": [
+    "Validate dark/opaque page rulings, clipping, transforms, nested/unsupported paths and source budgets with native/WASM parity.",
+    "Associate every moved run uniquely with closed cells; retain concave/spanning cells and source regions without splitting or losing scalars/positions.",
+    "Keep outside header/date text in flow and preserve scientific paragraph columns; retain reading-order review for inferred cells.",
+    "Preserve authoritative complete tagged tables and all prior gold, raw evidence and diagnostics; qualify every affected natural page before claiming improvement."
+  ],
+  "additional_association_research": {
+    "production_integrated": false,
+    "assigned_blocks": 158,
+    "unmatched_blocks": 31,
+    "crossing_blocks": [
+      {
+        "index": 21,
+        "text": "事務所の所在地 住"
+      }
+    ],
+    "applicant_outside_header_text": [
+      "年",
+      "月",
+      "日 提出"
+    ],
+    "critical_requirement": "Existing block21 is 事務所の所在地 住: it crosses the border from the left description cell into the address-label cell. Merely reordering already coalesced blocks would move text across cells. Assign compatible cell identity before both RunBuilder accumulation and canonicalize_runs inline coalescing.",
+    "current_evidence_sha256": {
+      "probe-rulings.py": "1f248387b469fda3a0f4f06db6c0f4454e40be157eff32453fa4826344210143",
+      "rulings.json": "5442183b7863d8ea148f93360e8f5d15b74ddbcf1dcc08b911cc5f86cfdac789",
+      "prototype-association.py": "1c491138901c11c8ac2dc6a1d048b909ab0e2b628f194c261c915fef352eb340",
+      "prototype-association.json": "ae213d573821fdc91945eab7cd8bf81529ee9294cf5ada97e6441ddb5d8a3fa2",
+      "fpdf_transformpage_8111.h": "15321dc2311ea60e04c28deb75a5decb560d29a3bc4b007588a9dbec6430f867",
+      "fpdf_transformpage_8111.cpp": "5a097d6581c31d00c3e197542be6526798fbc52bd33f12dc57debcafad33a0b7",
+      "integration-hypothesis.json": "1c5f00e6e9763c861bd1417291215d1b102bfd4b13d846585bcddb4ca7f213f7"
+    },
+    "scope": "Further read-only research. Source-ruling style/clip semantics and complete-run membership require owned controls and early per-character cell separation. Neither current extraction nor the original0/1 result changed."
+  },
+  "native_SDK_contract_controls": {
+    "owned_API_tests_passed": 2,
+    "combined_geometry_and_API_tests_passed": 9,
+    "clippy_lib_and_tests_warnings_denied": true,
+    "production_graphics_reader_implemented": false,
+    "production_integrated": false,
+    "native_only": true,
+    "requires_future_WASM_controls": true,
+    "observations": [
+      "Valid borrowed no-reference clip handle yields-1 under the managed8111 engine.",
+      "Path clipping has positive path count; text clipping can have zero geometric paths, so zero must not be treated as no clip.",
+      "Opaque black geometry is distinct from transparent fill and unknown content marks."
+    ],
+    "scope": "Owned in-memory PDF contracts for the future optional ruling reader only. No runtime no-clip inference or product repair yet.",
+    "logs": {
+      "jade-nta-grid-sdk-contracts.log": "71acdba956c0293c5a566bbb2aa4ca154500b4a27c1e91f74e396bc119ab9952",
+      "jade-nta-grid-sdk-clippy.log": "75fb2c84a50c308745a6c9c0ed58db8565f68fc180cc185ab1b1ac6128bca88d"
+    }
+  },
+  "history_replay": {
+    "original_base": "da5d4b0ee8c57718e7dbed45567aef57cc787451",
+    "replayed_base": "60c512fb8f9b01d0a562609169847601e43b05c6",
+    "base_pr": 13,
+    "original_head": "75466ccde5a8b0b6ebf9cda7dc3518fa97e03f6d",
+    "replayed_head_before_metadata": "4c6453fc7aa96dc603f57d6c59b7847785c23d34",
+    "all5_trees_identical": true,
+    "commits": [
+      {
+        "original": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+        "replayed": "b9795beaeffd34b16c9cb7f22b113523fa7d0003",
+        "tree": "88994dd20ae32a5f058f5839fc97b9596e0aa69c"
+      },
+      {
+        "original": "da5afa64daf3093da0724b945053f72e1f147c59",
+        "replayed": "0fa2a079323cddc108c69671ccbe0c6d87466173",
+        "tree": "25d0c8a9e544fefce2b40841f4906a43a07546f5"
+      },
+      {
+        "original": "3dac78d5af4e19831eb91f79528c30106ba90dca",
+        "replayed": "677df8e33f23075b48e6dfcbcf2df6a17dd3b73d",
+        "tree": "24270d33d966808bfff1798ae16b2916a24f362c"
+      },
+      {
+        "original": "e9d22717dd6cc8de6f491fd306dcdf43f5956b88",
+        "replayed": "599896b2bab64b61b3a15be5375284a7390510bb",
+        "tree": "d8b58296b3892a3bcd258d6dcfa25a5608fe38d2"
+      },
+      {
+        "original": "75466ccde5a8b0b6ebf9cda7dc3518fa97e03f6d",
+        "replayed": "4c6453fc7aa96dc603f57d6c59b7847785c23d34",
+        "tree": "90f09fe1a1dad8de8e312d8caee03de215a1f4f5"
+      }
+    ],
+    "scope": "Only commit identity changed. Gold declaration precedes baseline inspection; all original input, expected order, before report and test-only geometry/API code bytes remain identical. Production natural case remains0/1; not a runtime qualification."
+  },
+  "superseded_initial_investigation": true,
+  "current_runtime_review": "nta-applicant-field-order-implementation-review.json",
+  "current_runtime_source_revision": "803271898c5ad3f52c0fe9ed4856a4325ee7198e",
+  "historical_status_scope": "The0/1 and test-only foundation fields below describe the original pre-runtime investigation; current selected runtime result is1/1 in the implementation review and v50 qualification."
+}

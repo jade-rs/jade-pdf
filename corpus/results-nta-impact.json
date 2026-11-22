@@ -1,0 +1,411 @@
+{
+  "iteration2_all_ir_exactly_preserved": true,
+  "documents": 76,
+  "pages": 717,
+  "changed_pages": 2,
+  "all_nonwhite_scalar_inventories_equal": true,
+  "before_binary_sha256": "eefca822993b3164da1ecd1e1bd7a1d90156444a8f9e4969fa639e009835bae0",
+  "after_binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "results": [
+    {
+      "id": "hello",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "rotated",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "arabic",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "ligatures",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "vertical",
+      "pages": 3,
+      "changed_pages": []
+    },
+    {
+      "id": "empty",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "scanned",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "form",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "type3",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "cjk",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "tracemonkey",
+      "pages": 14,
+      "changed_pages": []
+    },
+    {
+      "id": "freeculture",
+      "pages": 352,
+      "changed_pages": []
+    },
+    {
+      "id": "w3c-word",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "w3c-openoffice",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "mhlw-employment",
+      "pages": 4,
+      "changed_pages": [
+        {
+          "page": 1,
+          "before_blocks": 177,
+          "after_blocks": 177,
+          "nonwhite_scalar_inventory_equal": true,
+          "text_sequence_equal": false,
+          "before_review": false,
+          "after_review": true
+        }
+      ]
+    },
+    {
+      "id": "irs-w4",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w4-2024",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-truetype-without-cmap",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-type3wordspacing",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-identitytounicodemap-charcodeof",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-arial-unicode-en-cidfont",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-french-diacritics",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-glyph-accent",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-rotation",
+      "pages": 2,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-text-rise-eol-bug",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-multiline",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-basicapi",
+      "pages": 3,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-cid-cff",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-text-clip-cff-cid",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-bug1947248-text",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-pattern-text-embedded-font",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-showtext-shadingpattern",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-image-rotated-black-white-ratio",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-form-two-pages",
+      "pages": 2,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-annotation-text-widget",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-issue-cmap12",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w4-2022",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w4-2023",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w4-2026",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-bigboundingbox",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-issue-cff-unsigned-bbox",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-cropped-text",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-combobox-form",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-listbox-form",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-text-form-multiline",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w9-2018",
+      "pages": 6,
+      "changed_pages": []
+    },
+    {
+      "id": "irs-w9-2024",
+      "pages": 6,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-user-unit",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "acl-bleu-2002",
+      "pages": 8,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "neurips-attention-2017",
+      "pages": 11,
+      "changed_pages": []
+    },
+    {
+      "id": "bipm-si-concise",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "w3c-tagged-table",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "w3c-complex-table",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "w3c-rowspan-table",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-multiple-form-types",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfbox-orphan-widgets",
+      "pages": 4,
+      "changed_pages": []
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-issue6612",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-issue14497",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-rotated-text",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfium-rotated-text-90",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-issue14497-original",
+      "pages": 3,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfjs-actualtext-eset",
+      "pages": 26,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfa-actualtext-graphics",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "pdfa-actualtext-ocr",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "pages": 36,
+      "changed_pages": []
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "pages": 36,
+      "changed_pages": []
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "pages": 5,
+      "changed_pages": []
+    },
+    {
+      "id": "nist-fips202-2015",
+      "pages": 37,
+      "changed_pages": []
+    },
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "pages": 3,
+      "changed_pages": [
+        {
+          "page": 1,
+          "before_blocks": 189,
+          "after_blocks": 190,
+          "nonwhite_scalar_inventory_equal": true,
+          "text_sequence_equal": false,
+          "before_review": true,
+          "after_review": true
+        }
+      ]
+    },
+    {
+      "id": "pdfjs-issue16880-rtl",
+      "pages": 1,
+      "changed_pages": []
+    },
+    {
+      "id": "nist-fips204-2024",
+      "pages": 65,
+      "changed_pages": []
+    }
+  ]
+}

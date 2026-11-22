@@ -1,0 +1,502 @@
+{
+  "version": 1,
+  "cohort": "documents",
+  "cases": 15,
+  "gold_by_kind": {
+    "full_page_text": {
+      "cases": 11,
+      "correct": 11,
+      "failed": 0
+    },
+    "text_context": {
+      "cases": 3,
+      "correct": 3,
+      "failed": 0
+    },
+    "scalar_inventory": {
+      "cases": 1,
+      "correct": 1,
+      "failed": 0
+    }
+  },
+  "correct_cases": 15,
+  "failed_cases": 0,
+  "false_change_cases": 0,
+  "execution_errors": [],
+  "results": [
+    {
+      "id": "arabic",
+      "page": 1,
+      "source_sha256": "1cad1de912ba29f89a6d8b08bc5b0f84382874ffedab2c8f9e05ef608c265bb1",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "انواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية",
+        "actual_text": "انواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية\nانواع الخطوط العربية"
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unobserved_text_objects": 1,
+        "new_pages_with_unobserved_text_objects": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfjs-nonembedded-type1-tounicode",
+      "page": 1,
+      "source_sha256": "95ef7cc7e6c80b3ce6e884407b0b695898a6f47a30b339d7472657406f041a82",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "óº€íºXABéê",
+        "actual_text": "óº€íºXABéê"
+      },
+      "selected_page_has_text_review": false,
+      "equivalent_rewrite_exit": 0,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfjs-user-unit",
+      "page": 1,
+      "source_sha256": "5fafd5649ade0b3f5b12c647d877f7f3723fa14d4104648548aa25c9b1add122",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "",
+        "actual_text": ""
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 0,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 1,
+        "new_pages_without_text": 1,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfium-font-matrix",
+      "page": 1,
+      "source_sha256": "b714ae5cd5d81d18b0d850d3ae7ffc6f0a98dac4ad6fb3f4b6df183184d75fd9",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "A3\nA1\nA2",
+        "actual_text": "A3\nA1\nA2"
+      },
+      "selected_page_has_text_review": false,
+      "equivalent_rewrite_exit": 0,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfium-multiple-form-types",
+      "page": 1,
+      "source_sha256": "cdff8afa99ed38cf602f13877d5be8d5aa4c9ed56b85e799349fece2bfeda129",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "Test Form",
+        "actual_text": "Test Form"
+      },
+      "selected_page_has_text_review": false,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfjs-issue6612",
+      "page": 1,
+      "source_sha256": "2940293c5f32c23c1ccf5df34c44d226cff4e46c7ff633772b9f677d6c4e5738",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "To be, or not to be, that is the question:",
+        "actual_text": "To be, or not to be, that is the question:"
+      },
+      "selected_page_has_text_review": false,
+      "equivalent_rewrite_exit": 0,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfa-actualtext-graphics",
+      "page": 1,
+      "source_sha256": "c1179396dc0eb4ffacbdfbadba896fb1a6e9661f272ee9cd28b2623d5b506c0d",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "This is the\nparagraph.",
+        "actual_text": "This is the\nparagraph."
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 1,
+        "new_pages_with_uncertain_reading_order": 1,
+        "old_pages_with_unobserved_text_objects": 1,
+        "new_pages_with_unobserved_text_objects": 1,
+        "old_pages_with_missing_source_characters": 1,
+        "new_pages_with_missing_source_characters": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfa-actualtext-ocr",
+      "page": 1,
+      "source_sha256": "d7de1e10e633b7e6b5e93d7c45c9153e225eee5ae1e961186b93ae21d00025f0",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "Available 24/7, you can book an appointment online.\nPage 1",
+        "actual_text": "Available 24/7, you can book an appointment online.\nPage 1"
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 1,
+        "new_pages_with_uncertain_reading_order": 1,
+        "old_pages_with_unavailable_source_unicode": 1,
+        "new_pages_with_unavailable_source_unicode": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "page": 5,
+      "source_sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "Disclaimer\nAny mention of commercial products or reference to commercial organizations is for information\nonly; it does not imply recommendation or endorsement by NIST, nor does it imply that the\nproducts mentioned are necessarily the best available for the purpose.",
+        "actual_text": "Disclaimer\nAny mention of commercial products or reference to commercial organizations is for information\nonly; it does not imply recommendation or endorsement by NIST, nor does it imply that the\nproducts mentioned are necessarily the best available for the purpose."
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 5,
+        "new_pages": 5,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unobserved_text_objects": 5,
+        "new_pages_with_unobserved_text_objects": 5,
+        "old_pages_with_missing_source_characters": 5,
+        "new_pages_with_missing_source_characters": 5,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "page": 1,
+      "source_sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "text_context",
+        "scope": "Only the complete selected printed line on original page1, visually confirmed with Poppler and independently interpreted source advances. Not full-page prose, source encoding accuracy, other contexts or highlight geometry.",
+        "matches": true,
+        "expected_context": "standard replaces FIPS 180-3 and specifies seven secure hash algorithms.",
+        "context_occurrences": 1,
+        "anchor_occurrences": 1
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 5,
+        "new_pages": 5,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unobserved_text_objects": 5,
+        "new_pages_with_unobserved_text_objects": 5,
+        "old_pages_with_missing_source_characters": 5,
+        "new_pages_with_missing_source_characters": 5,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nist-fips202-2015",
+      "page": 34,
+      "source_sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "scalar_inventory",
+        "scope": "Only the five printed ≤ operators on PDFpage34/printedpage26: input n≤8m; Algorithm10 steps1,2,and two in step3. Counted manually on original high-resolution image before any native extraction. No full prose, ordering, source encoding, highlight geometry or other-operator gold.",
+        "matches": true,
+        "expected_inventory": {
+          "U+02264": 5
+        },
+        "actual_inventory": {
+          "U+02264": 5
+        },
+        "forbidden_inventory": {}
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 37,
+        "new_pages": 37,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 10,
+        "new_pages_with_uncertain_reading_order": 10,
+        "old_pages_with_unobserved_text_objects": 37,
+        "new_pages_with_unobserved_text_objects": 37,
+        "old_pages_with_missing_source_characters": 37,
+        "new_pages_with_missing_source_characters": 37,
+        "old_pages_with_unavailable_source_unicode": 3,
+        "new_pages_with_unavailable_source_unicode": 3,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "page": 1,
+      "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "text_context",
+        "scope": "Main Japanese form title only, visually transcribed before product extraction; not whole-page text, table structure or geometry.",
+        "matches": true,
+        "expected_context": "適格請求書発行事業者の登録申請書",
+        "context_occurrences": 1,
+        "anchor_occurrences": 1
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 3,
+        "new_pages": 3,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 2,
+        "new_pages_with_uncertain_reading_order": 2,
+        "old_pages_with_unobserved_text_objects": 3,
+        "new_pages_with_unobserved_text_objects": 3,
+        "old_pages_with_missing_source_characters": 3,
+        "new_pages_with_missing_source_characters": 3,
+        "old_pages_with_unavailable_source_unicode": 1,
+        "new_pages_with_unavailable_source_unicode": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nta-invoice-domestic-case2-2026",
+      "page": 3,
+      "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "text_context",
+        "scope": "Main introductory Japanese heading, visually transcribed before product extraction; not tax guidance or full-page/geometry gold.",
+        "matches": true,
+        "expected_context": "登録申請書の提出が事業を開始した課税期間でない免税事業者の方",
+        "context_occurrences": 1,
+        "anchor_occurrences": 1
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 3,
+        "new_pages": 3,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 2,
+        "new_pages_with_uncertain_reading_order": 2,
+        "old_pages_with_unobserved_text_objects": 3,
+        "new_pages_with_unobserved_text_objects": 3,
+        "old_pages_with_missing_source_characters": 3,
+        "new_pages_with_missing_source_characters": 3,
+        "old_pages_with_unavailable_source_unicode": 1,
+        "new_pages_with_unavailable_source_unicode": 1,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "pdfjs-issue16880-rtl",
+      "page": 1,
+      "source_sha256": "762c9801a97104e209e2a9d66285a1136cca57d7e2fb5996a4625e36b4f388ed",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "سلام کلاس لاله",
+        "actual_text": "سلام کلاس لاله"
+      },
+      "selected_page_has_text_review": false,
+      "equivalent_rewrite_exit": 0,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 1,
+        "new_pages": 1,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    },
+    {
+      "id": "nist-fips204-2024",
+      "page": 2,
+      "source_sha256": "57239b9f84c03227eda3ca0991204dc7764c79af9ce2e6824eda774918d46b6b",
+      "extraction_exit": 0,
+      "gold_check": {
+        "kind": "full_page_text",
+        "matches": true,
+        "expected_text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning this Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory",
+        "actual_text": "Foreword\nThe Federal Information Processing Standards Publication Series of the National Institute of Standards\nand Technology is the official series of publications relating to standards and guidelines developed under\n15 U.S.C. 278g-3, and issued by the Secretary of Commerce under 40 U.S.C. 11331.\nComments concerning this Federal Information Processing Standard publication are welcomed and should\nbe submitted using the contact information in the “Inquiries and comments” clause of the announcement\nsection.\nKevin M. Stine, Director\nInformation Technology Laboratory"
+      },
+      "selected_page_has_text_review": true,
+      "equivalent_rewrite_exit": 3,
+      "false_changes_on_equivalent_rewrite": false,
+      "diagnostics": {
+        "old_pages": 65,
+        "new_pages": 65,
+        "old_pages_without_text": 0,
+        "new_pages_without_text": 0,
+        "old_pages_with_unmapped_text": 0,
+        "new_pages_with_unmapped_text": 0,
+        "old_pages_with_uncertain_reading_order": 7,
+        "new_pages_with_uncertain_reading_order": 7,
+        "old_pages_with_unobserved_text_objects": 65,
+        "new_pages_with_unobserved_text_objects": 65,
+        "old_pages_with_missing_source_characters": 65,
+        "new_pages_with_missing_source_characters": 65,
+        "old_pages_with_unavailable_source_unicode": 7,
+        "new_pages_with_unavailable_source_unicode": 7,
+        "old_pages_with_unknown_units": 0,
+        "new_pages_with_unknown_units": 0,
+        "page_alignment_limited": false,
+        "block_alignment_limited_pages": 0
+      }
+    }
+  ],
+  "binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "manifest_sha256": "f9c594141975a35ac0ebca6dd5c94566ca2434d26943f81b14a9546fc0b1d3ed",
+  "audit_sha256": "45dc474c15c875c07d7cbcccb1ba91cd5f7437a91b6d2c880abd2816b74a10a8",
+  "gold_checker_sha256": "177f78aaed164ed8bf5e73703450e09ee6ab2d7aa050cab62b1e8dc39906bae9",
+  "method": "Only declared gold in regular documents, reported separately by kind. Full-page text compares all selected-page text using NFC and whitespace collapse, retaining order, marks and joiners. text_context checks only one bounded literal context with a unique anchor; it does not assess full-page prose, other pages or highlight geometry. Unresolved pending_semantic cases remain separately audited. Equivalent rewrite agreement is not semantic accuracy."
+}

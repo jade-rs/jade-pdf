@@ -464,6 +464,7 @@ pub(super) fn sort(runs: Vec<ExtractedRun>, point: f64) -> Vec<ExtractedRun> {
             angle: 0.0,
             vertical: false,
             layout,
+            ruled_cell: None,
             tagged_cell: Some(Cell {
                 table,
                 row: u32::MAX,
@@ -518,6 +519,7 @@ mod tests {
                     angle: 0.0,
                     vertical: false,
                     layout: b,
+                    ruled_cell: None,
                     tagged_cell: Some(Cell {
                         table: 0,
                         row,
@@ -565,6 +567,7 @@ mod tests {
                     angle: 0.0,
                     vertical: false,
                     layout: b,
+                    ruled_cell: None,
                     tagged_cell: Some(Cell {
                         table: i % 101,
                         row: i / 101,

@@ -25,6 +25,7 @@ fn run(text: &str, x: f64, y: f64, size: f64, point: f64) -> ExtractedRun {
         angle: 0.,
         vertical: false,
         layout: bounds,
+        ruled_cell: None,
         tagged_cell: None,
         outside_mark: None,
     }
