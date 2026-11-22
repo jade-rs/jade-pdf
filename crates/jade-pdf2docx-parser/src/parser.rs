@@ -607,6 +607,7 @@ fn normalize_elements_to_page_viewports(
 /// 外部抽出したテキストboundsを、pure Rust抽出と同じページ表示座標へ変換する。
 ///
 /// 表示範囲外へ外れる要素は他の要素と同じ規則で除く。
+#[cfg(not(target_arch = "wasm32"))]
 pub(crate) fn normalize_text_elements_to_display(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
