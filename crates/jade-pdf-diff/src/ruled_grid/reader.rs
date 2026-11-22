@@ -109,6 +109,10 @@ pub(super) fn read(pdfium: &Pdfium, page: *mut c_void, point: f64) -> Option<Vec
         if points
             .iter()
             .any(|&(x, y)| !x.is_finite() || !y.is_finite())
+            || points
+                .iter()
+                .enumerate()
+                .any(|(i, p)| points[..i].contains(p))
         {
             continue;
         }

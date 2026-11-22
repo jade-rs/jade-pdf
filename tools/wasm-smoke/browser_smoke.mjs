@@ -133,7 +133,7 @@ try {
   results.push(...initialization.checks);
   for (const result of initialization.checks) console.log((result.passed?'PASS ':'FAIL ')+JSON.stringify(result));
   const ruledGrid=await page.evaluate(()=>window.jadeProbe.ruled_grid_controls());
-  results.push({id:'ruled-grid-controls',passed:ruledGrid===109,scenarios:ruledGrid});
+  results.push({id:'ruled-grid-controls',passed:ruledGrid===121,scenarios:ruledGrid});
   const glyphBoxGold = await page.evaluate(() => {
     // Independent Type3 glyph: 400x700 font units at 20pt and (60,100).
     // Its painted box is [60,100,68,114]; all axes deliberately differ.

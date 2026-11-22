@@ -12,6 +12,26 @@ pub fn fixture(mode: &str, unit: f64, rotation: u16, revised: bool) -> Vec<u8> {
     if mode == "header" {
         rules.push_str("20 205 80 0.5 re f 20 180 0.5 25 re f 100 180 0.5 25 re f ");
     }
+    if mode == "degenerate" {
+        // 四隅の一つを折り返した、塗り面積ゼロの線。外接矩形だけなら誤認する。
+        rules = String::from("0 g ");
+        for y in [20.0, 100.0, 180.0] {
+            rules.push_str(&format!(
+                "20 {y} m 20 {} l 180 {} l 20 {} l h f ",
+                y + 0.5,
+                y + 0.5,
+                y + 0.5
+            ));
+        }
+        for x in [20.0, 100.0, 180.0] {
+            rules.push_str(&format!(
+                "{x} 20 m {} 20 l {} 180 l {} 20 l h f ",
+                x + 0.5,
+                x + 0.5,
+                x + 0.5
+            ));
+        }
+    }
     rules = match mode {
         "clip" => format!("q 0 0 150 190 re W n {rules} Q"),
         "transparent" => format!("q /GS gs {rules} Q"),
@@ -84,6 +104,7 @@ pub fn check() -> Result<usize, String> {
         "header",
         "actual",
         "multiline",
+        "degenerate",
     ] {
         for unit in [0.125, 1.0, 8.0] {
             for rotation in [0, 90, 180, 270] {
@@ -93,7 +114,7 @@ pub fn check() -> Result<usize, String> {
                 let layer =
                     pdf_diff::text_layer_from_bytes(&bytes, 1).map_err(|e| e.to_string())?;
                 let expected: &[&str] = match mode {
-                    "clip" | "transparent" | "marked" => &["A0 B0", "A1 B1"],
+                    "clip" | "transparent" | "marked" | "degenerate" => &["A0 B0", "A1 B1"],
                     "paragraphs" => &["A0", "A1", "B0", "B1"],
                     "header" => &["Title", "Date", "A0", "B0", "A1", "B1"],
                     "actual" => &["Region"],

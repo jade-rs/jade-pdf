@@ -24,6 +24,7 @@ fn source(mode: &str) -> Vec<u8> {
         "transparent" => "/GS gs 0 g 20 20 100 0.5 re f",
         "marked" => "/JadeUnknown BMC 0 g 20 20 100 0.5 re f EMC",
         "artifact" => "/Artifact BMC 0 g 20 20 100 0.5 re f EMC",
+        "degenerate" => "0 g 20 20 m 20 20.5 l 120 20.5 l 20 20.5 l h f",
         _ => "0 g 20 20 100 0.5 re f",
     };
     owned_pdf(content)
@@ -229,6 +230,7 @@ fn ruling_reader_rejects_clipped_transparent_and_unknown_marked_material() {
         ("text-clip", 0),
         ("transparent", 0),
         ("marked", 0),
+        ("degenerate", 0),
     ] {
         let pdfium = crate::render::bind().unwrap();
         crate::input::with_raw_bytes(
