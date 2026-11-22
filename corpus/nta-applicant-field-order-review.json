@@ -1,0 +1,24 @@
+{
+  "id": "nta-applicant-field-order-page1",
+  "date_utc": "2026-11-22T05:55:34.976638+00:00",
+  "source": "https://www.nta.go.jp/taxes/shiraberu/zeimokubetsu/shohi/keigenzeiritsu/pdf/0023011-068_02.pdf",
+  "source_sha256": "7980238f8eb424fb6af5716c404a7c5942636af91f7df76603918f56942b4bc9",
+  "pages": 3,
+  "original_pages_reviewed": [
+    1,
+    2,
+    3
+  ],
+  "selected_page": 1,
+  "source_already_registered_and_reviewed": true,
+  "images_sha256": {
+    "original-1.png": "a9da3c693f64f647209103ec7bb53c58a74446164dcfe326670c3b3224014312",
+    "original-2.png": "5fb44d8fbe81a90282d5fe11b55490fd39024dc461beb92b7a755301555db9f8",
+    "original-3.png": "dd4735932df3cdb46e688bc8a28498fc567762b367de5403ca091d41c40db794",
+    "applicant-table.png": "328e4e355e814a8e9fbf9a04afa6f15982f37d32916b6f03e665295ab2387110"
+  },
+  "method": "Original full pages at1500px and original page1 applicant-panel crop at180dpi reviewed before any product inspection for this new gold. Row-major order of fourteen distinct visible field identifiers, top to bottom and left to right within a row. Source dictionaries/ToUnicode/font programs not consulted for declaration; no rendered glyph/font binaries saved to Git.",
+  "privacy": "Original public form/instructions with blank areas and specimen X/era/circle/triangle placeholders, no observed real applicant details. QR code and links not followed.",
+  "baseline_product_inspected_for_new_gold": false,
+  "scope": "Selected printed field-ID sequence only. Not complete table text, semantic cell association, whitespace, global page order, filled values, form extraction, tax advice, or document precision/recall. Existing vertical-note reading gold remains separate and must stay enforced."
+}
