@@ -8,10 +8,12 @@ use crate::ParseError;
 #[derive(Debug, Clone, Copy)]
 pub struct ParseLimits {
     /// PDF 入力の最大バイト数。ファイルは上限 + 1 byte まで読み込んで判定する。
+    /// nativeで暗号化を内部復号するときは、その表現にも同じ上限を別途適用する。
     pub max_input_bytes: u64,
     /// 共通Vec/String容量と予算付きBox/Arc本体の解析ごとの累積上限。
     /// Arcは本体と二つのcounterのalignment込み容量を数え、共有cloneは再予約しない。
     /// file読込の再確保も新容量全体を数える。native/codec/allocator内部は対象外。
+    /// native内部復号bufferの新capacityも、このRust側の累積容量へ加算する。
     pub max_total_allocation_bytes: u64,
     /// 解析可能な最大ページ数。
     pub max_pages: usize,

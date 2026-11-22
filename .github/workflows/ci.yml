@@ -116,6 +116,16 @@ jobs:
           .venv-corpus/bin/python tools/audit_orphan_forms.py --binary target/release/pdf-diff
           .venv-corpus/bin/python tools/audit_empty_forms.py --binary target/release/pdf-diff
           python3 tools/audit_sdk_cache_contention.py --binary target/release/pdf-diff
+      - name: Native encrypted-file parser (public and owned controls)
+        run: |
+          .venv-corpus/bin/python tools/generate_encrypted_parser_controls.py --destination "$RUNNER_TEMP/jade-encrypted-parser-controls"
+          encrypted_pdfium_url=$(python3 -c 'import sys; sys.path.insert(0, "scripts"); import pdfium_bundle as p, json; print(json.loads(p.LOCK_PATH.read_text())["platforms"][p.host_platform()]["url"])')
+          curl --fail --location --retry 3 --max-time 120 "$encrypted_pdfium_url" --output "$RUNNER_TEMP/encrypted-parser-pdfium.tgz"
+          python3 scripts/pdfium_bundle.py install --archive "$RUNNER_TEMP/encrypted-parser-pdfium.tgz" --destination "$RUNNER_TEMP/encrypted-parser-pdfium"
+          export PDFIUM_LIB_PATH="$(python3 scripts/pdfium_bundle.py verify --bundle "$RUNNER_TEMP/encrypted-parser-pdfium")"
+          export JADE_ENCRYPTED_PARSER_CONTROLS="$RUNNER_TEMP/jade-encrypted-parser-controls"
+          cargo test -p jade-pdf2docx --locked --release --test encrypted_native_parser -- --ignored --nocapture
+          cargo test -p jade-pdf2docx-parser --locked --release --lib native_encryption_normalization_retains_rendering -- --ignored --nocapture
       - name: Scoped semantic gold (unresolved failures retained)
         run: |
           audit_exit_code=0
