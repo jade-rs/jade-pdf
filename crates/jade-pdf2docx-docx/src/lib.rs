@@ -2954,9 +2954,12 @@ struct PositionedTable {
     cell_padding_pt: Option<f32>,
     /// 上から順の各マスの文字サイズ（pt、マス内の中央値）。
     cell_font_sizes: Vec<Vec<Option<f32>>>,
-    /// 上から順の各マスの段落ごとのタブ位置（セル左端からの距離 pt と右揃えか）。
-    cell_tab_stops: Vec<Vec<Vec<Vec<(f32, bool)>>>>,
+    /// 上から順の各マスの段落ごとのタブ位置。
+    cell_tab_stops: Vec<Vec<CellParagraphTabs>>,
 }
+
+/// 1 マスの段落ごとのタブ位置（セル左端からの距離 pt と、右揃えか）。
+type CellParagraphTabs = Vec<Vec<(f32, bool)>>;
 
 /// DOCX 出力用の表モデル。
 #[derive(Debug, Clone, PartialEq)]
@@ -4834,9 +4837,9 @@ fn infer_positioned_table_from_graphics(
         .iter()
         .map(|x| *x as f32)
         .collect::<Vec<_>>();
-    let (_, vertical_rules) = grid_rules_from_graphics(&page_graphics);
+    let (_, vertical_rules) = grid_rules_from_graphics(page_graphics);
     let underline_graphics = graphics_without_row_rules(
-        &page_graphics,
+        page_graphics,
         &ys.iter().map(|y| *y as f32).collect::<Vec<_>>(),
     );
     for text in parsed

@@ -149,6 +149,20 @@ fn split_at_wide_gaps(segment: &PdfPageTextSegment<'_>) -> Option<Vec<SegmentPie
             fill_color: character.fill_color().ok().map(|color| color.to_hex()),
         });
     }
+    // 矩形で拾う文字は隣の segment の文字を含むことがあるため、segment の本文と
+    // 同じ文字列になる場合だけ分ける。
+    let compact = |text: &str| {
+        text.chars()
+            .filter(|ch| !ch.is_whitespace())
+            .collect::<String>()
+    };
+    let joined = infos
+        .iter()
+        .map(|info| info.text.as_str())
+        .collect::<String>();
+    if compact(&joined) != compact(&segment.text()) {
+        return None;
+    }
     let pieces = group_chars_at_wide_gaps(&infos, horizontal);
     (pieces.len() > 1).then_some(pieces)
 }
@@ -194,49 +208,6 @@ fn group_chars_at_wide_gaps(chars: &[CharInfo], horizontal: bool) -> Vec<Segment
         }
     }
     pieces
-}
-
-#[cfg(test)]
-mod split_tests {
-    use super::*;
-
-    /// 1 文字分の情報を作る。
-    fn info(text: &str, x0: f32, x1: f32) -> CharInfo {
-        CharInfo {
-            text: text.to_string(),
-            bounds: ParsedBounds {
-                x0,
-                y0: 0.0,
-                x1,
-                y1: 8.0,
-            },
-            font_size: 8.0,
-            font_name: Some("F".into()),
-            fill_color: None,
-        }
-    }
-
-    /// 隣の表の列ほど離れた文字は別の要素に分け、語間の空白では分けない。
-    #[test]
-    fn splits_only_at_gaps_wider_than_one_em() {
-        let chars = [
-            info("2", 405.0, 409.0),
-            info("4", 409.0, 413.0),
-            info("0", 413.0, 417.0),
-            info(" ", 417.0, 417.0),
-            info("４", 567.0, 575.0),
-            info(" ", 575.0, 575.0),
-            info("級", 578.0, 586.0),
-        ];
-        let pieces = group_chars_at_wide_gaps(&chars, true);
-        let texts = pieces
-            .iter()
-            .map(|piece| piece.text.trim())
-            .collect::<Vec<_>>();
-        assert_eq!(texts, vec!["240", "４ 級"]);
-        assert_eq!(pieces[0].bounds.x1, 417.0);
-        assert_eq!(pieces[1].bounds.x0, 567.0);
-    }
 }
 
 /// segment.charsと同じ端点・許容幅で検索し、範囲の先頭だけを無確保で取得する。
@@ -300,4 +271,47 @@ pub(crate) fn horizontal_baseline(character: &PdfPageTextChar<'_>) -> Option<f32
     }
     let y = character.origin_y().ok()?.value;
     y.is_finite().then_some(y)
+}
+
+#[cfg(test)]
+mod split_tests {
+    use super::*;
+
+    /// 1 文字分の情報を作る。
+    fn info(text: &str, x0: f32, x1: f32) -> CharInfo {
+        CharInfo {
+            text: text.to_string(),
+            bounds: ParsedBounds {
+                x0,
+                y0: 0.0,
+                x1,
+                y1: 8.0,
+            },
+            font_size: 8.0,
+            font_name: Some("F".into()),
+            fill_color: None,
+        }
+    }
+
+    /// 隣の表の列ほど離れた文字は別の要素に分け、語間の空白では分けない。
+    #[test]
+    fn splits_only_at_gaps_wider_than_one_em() {
+        let chars = [
+            info("2", 405.0, 409.0),
+            info("4", 409.0, 413.0),
+            info("0", 413.0, 417.0),
+            info(" ", 417.0, 417.0),
+            info("４", 567.0, 575.0),
+            info(" ", 575.0, 575.0),
+            info("級", 578.0, 586.0),
+        ];
+        let pieces = group_chars_at_wide_gaps(&chars, true);
+        let texts = pieces
+            .iter()
+            .map(|piece| piece.text.trim())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["240", "４ 級"]);
+        assert_eq!(pieces[0].bounds.x1, 417.0);
+        assert_eq!(pieces[1].bounds.x0, 567.0);
+    }
 }
