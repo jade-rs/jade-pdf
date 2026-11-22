@@ -153,6 +153,26 @@ fn short_script(text: &str) -> bool {
     })
 }
 
+/// 送りセルで偽と確認した生成空白を含む十進数だけを、既存の添字候補へ追加する。
+/// 数式全体の構造や単語の意味は推測せず、本文と公開セルは変更しない。
+fn script_candidate(run: &ExtractedRun) -> bool {
+    if run.pending_spaces.is_empty() {
+        return short_script(&run.text);
+    }
+    // 候補は最大8文字。長い入力の複製を避け、超過を示す一文字だけ余分に読む。
+    let text: String = run
+        .text
+        .chars()
+        .enumerate()
+        .filter_map(|(i, c)| {
+            (c != ' ' || run.pending_spaces.binary_search(&i).is_err()).then_some(c)
+        })
+        .take(9)
+        .collect();
+    (!text.is_empty() && text.chars().count() <= 8 && text.chars().all(|c| c.is_ascii_digit()))
+        || short_script(&run.text)
+}
+
 pub(super) fn sort(runs: &mut [ExtractedRun], point: f64) {
     let mut indices: Vec<_> = (0..runs.len()).collect();
     let em = |r: &ExtractedRun| r.size.unwrap_or(12.0 * point).max(point);
@@ -177,7 +197,7 @@ pub(super) fn sort(runs: &mut [ExtractedRun], point: f64) {
         let run_em = em(run);
         // Long/word-separated text is a separate line, not a script on a
         // nearby heading. Typical local indices and exponents are short.
-        let script_text = short_script(&run.text);
+        let script_text = script_candidate(run);
         let coordinate = key(y);
         // Bound candidate work on hostile/sparse layouts. Four neighboring
         // baselines in each direction cover local scripts without a page scan.
@@ -349,7 +369,58 @@ mod tests {
         }
     }
 
+    /// 送りセルで除去が確定した空白だけを添字の判定から除き、実際の単語間空白は保つ。
+    #[test]
+    fn verified_false_space_does_not_turn_a_numeric_script_into_a_new_line() {
+        for pending in [false, true] {
+            let mut base = run(100., 100., 12.);
+            base.text = "b".into();
+            let mut script = run(108., 98., 8.);
+            script.text = "1 0".into();
+            if pending {
+                script.pending_spaces.push(1);
+            }
+            let mut next = run(120., 100., 12.);
+            next.text = "=".into();
+            let mut runs = vec![next, script, base];
+            sort(&mut runs, 1.);
+            let observed: Vec<_> = runs.iter().map(|r| r.text.as_str()).collect();
+            let expected = if pending {
+                vec!["b", "1 0", "="]
+            } else {
+                vec!["b", "=", "1 0"]
+            };
+            assert_eq!(observed, expected);
+        }
+        for text in ["t -16", "2 3,1", "1 .5", "a b", "1\n0"] {
+            let mut candidate = run(108., 98., 8.);
+            candidate.text = text.into();
+            candidate.pending_spaces.push(1);
+            assert!(!script_candidate(&candidate), "{text:?}");
+        }
+    }
+
     proptest! {
+        /// 物理単位・平行移動・入力順を変えても、確認した偽空白だけが添字の判定から外れる。
+        #[test]
+        fn verified_script_order_is_translation_unit_and_input_order_covariant(
+            x in -1000i16..1000, y in -1000i16..1000, exponent in -6i32..7, reverse in any::<bool>()
+        ) {
+            let point=2f64.powi(exponent);
+            let mut base=run(f64::from(x)*point,f64::from(y)*point,12.*point);
+            base.text="b".into();
+            let mut script=run((f64::from(x)+8.)*point,(f64::from(y)-2.)*point,8.*point);
+            script.text="1 0".into();
+            script.pending_spaces.push(1);
+            let mut next=run((f64::from(x)+20.)*point,f64::from(y)*point,12.*point);
+            next.text="=".into();
+            let mut runs=vec![base,script,next];
+            if reverse {runs.reverse();}
+            sort(&mut runs,point);
+            prop_assert_eq!(runs.iter().map(|r|r.text.as_str()).collect::<Vec<_>>(),vec!["b","1 0","="]);
+            prop_assert_eq!(&runs[1].pending_spaces, &vec![1]);
+        }
+
         #[test]
         fn sweep_matches_independent_rectangle_and_font_distance_checks(
             input in prop::collection::vec((-500i16..500, -500i16..500, 3u8..31, 1u8..41), 0..24)

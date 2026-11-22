@@ -468,13 +468,13 @@ try {
               &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')==='≤'
               &&blocks[0].segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')==='<';
           } else passed&&=Object.values(summary).every(n=>n===0);
-        } else if(name.startsWith('advance_')) {
+        } else if(name.startsWith('advance_')||name.startsWith('script_')) {
           passed&&=result.complete&&result.text_complete&&summary.pages_visual_changed===0;
-          if(name==='advance_unicode_edit') {
+          if(name==='advance_unicode_edit'||name==='script_edit') {
             const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');
             passed&&=summary.blocks_changed===1&&summary.blocks_added===0&&summary.blocks_removed===0
-              &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')==='8'
-              &&blocks[0].segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')==='7';
+              &&blocks.length===1&&blocks[0].segments.filter(s=>s.kind==='delete').map(s=>s.text).join('')===(name==='script_edit'?'0':'8')
+              &&blocks[0].segments.filter(s=>s.kind==='insert').map(s=>s.text).join('')===(name==='script_edit'?'2':'7');
           } else passed&&=Object.values(summary).every(v=>v===0);
         } else if(name==='baseline_bucket_edit') {
           const blocks=diff.pages.flatMap(p=>p.blocks).filter(b=>b.kind==='changed');

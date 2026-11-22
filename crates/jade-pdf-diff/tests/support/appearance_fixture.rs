@@ -7,6 +7,9 @@ pub const CASES: &[&str] = &[
     "symbol_component_unowned",
     "symbol_component_actual_collision",
     "symbol_component_same_cell",
+    "script_touching",
+    "script_gap",
+    "script_edit",
     "advance_touching",
     "advance_word_gap",
     "advance_unicode_edit",
@@ -1192,6 +1195,15 @@ pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
         }
         return bytes;
     }
+    if case.starts_with("script_") {
+        return advance_script_layout(
+            1.,
+            0,
+            revised,
+            if case == "script_gap" { 6. } else { 0. },
+            case == "script_edit" && revised,
+        );
+    }
     if case.starts_with("advance_") {
         return advance_word_layout(
             1.,
@@ -2232,4 +2244,18 @@ pub fn symbol_component_codes() -> &'static [u8] {
 /// 部品の所有・字体・実編集の資料を、外部PDFや字体へ依存せず生成する。
 pub fn symbol_component_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
     symbol_components_fixture::symbol_component_cells(mode, unit, rotation, shear)
+}
+
+#[path = "advance_script_fixture.rs"]
+mod advance_script_fixture;
+
+/// 自作字体で、偽の生成空白を含む二桁添字の読み順を検証する。
+pub fn advance_script_layout(
+    unit: f64,
+    rotation: u16,
+    reverse: bool,
+    gap: f64,
+    revised: bool,
+) -> Vec<u8> {
+    advance_script_fixture::advance_script_layout(unit, rotation, reverse, gap, revised)
 }

@@ -61,6 +61,41 @@ pub fn appearance_case(name: &str) -> Result<String, JsValue> {
             ));
         }
     }
+    if name.starts_with("script_") {
+        for unit in [1. / 64., 1., 3., 64.] {
+            for rotation in [0, 90, 180, 270] {
+                for reverse in [false, true] {
+                    let gap = if name == "script_gap" { 6. } else { 0. };
+                    let revised = name == "script_edit";
+                    let bytes = appearance_fixture::advance_script_layout(
+                        unit, rotation, reverse, gap, revised,
+                    );
+                    let ir =
+                        pdf_diff::load_document_from_bytes(&bytes, &pdf_diff::Limits::default())
+                            .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                    let layer = pdf_diff::text_layer_from_bytes(&bytes, 1)
+                        .map_err(|e| JsValue::from_str(&e.to_string()))?;
+                    let expected = if revised {
+                        "b12="
+                    } else if gap > 0. {
+                        "b=10"
+                    } else {
+                        "b10="
+                    };
+                    if ir.pages[0].text().split_whitespace().collect::<String>() != expected
+                        || layer.iter().map(|r| r.text.as_str()).collect::<String>()
+                            != ir.pages[0]
+                                .blocks
+                                .iter()
+                                .map(|b| b.text.as_str())
+                                .collect::<String>()
+                    {
+                        return Err(JsValue::from_str("Verified script ordering changed under units, rotation or source order"));
+                    }
+                }
+            }
+        }
+    }
     if name.starts_with("advance_") {
         for unit in [1. / 64., 1., 3., 64.] {
             for rotation in [0, 90, 180, 270] {
