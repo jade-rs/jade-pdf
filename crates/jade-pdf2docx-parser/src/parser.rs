@@ -596,6 +596,19 @@ fn normalize_elements_to_page_viewports(
         .retain_mut(|image| normalize_bounds_for_page(image.page, &mut image.bounds, viewports));
 }
 
+/// 外部抽出したテキストboundsを、pure Rust抽出と同じページ表示座標へ変換する。
+///
+/// 表示範囲外へ外れる要素は他の要素と同じ規則で除く。
+pub(crate) fn normalize_text_elements_to_display(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    text_elements: &mut Vec<ParsedTextElement>,
+) {
+    let viewports = parse_page_viewports(decode_budget, bytes);
+    text_elements
+        .retain_mut(|text| normalize_bounds_for_page(text.page, &mut text.bounds, &viewports));
+}
+
 /// 1要素のboundsを表示原点へ移し、page内に残る場合だけ`true`を返す。
 fn normalize_bounds_for_page(
     page: usize,

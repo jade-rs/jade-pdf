@@ -48,7 +48,7 @@ pub(crate) fn extract(
         let mut fill_color = None;
         let mut baseline_y = None;
         if let Some(first) = first_in_rect(characters, segment.bounds()) {
-            font_size = first.scaled_font_size().value;
+            font_size = effective_font_size(&first);
             baseline_y = horizontal_baseline(&first);
             let name = first.font_name();
             font_name = copy(budget, (!name.is_empty()).then_some(name.as_str()))?;
@@ -91,6 +91,21 @@ fn first_in_rect<'a>(
         (None, Some(end)) => Some(end),
         (None, None) => None,
     }
+}
+
+/// 文字行列の縦方向の長さで font size を拡大縮小する。
+///
+/// Pdfium の `scaled_font_size` は行列の `d` 成分だけを掛けるため、90 度回転した文字では 0 になる。
+/// 回転に依らない縦ベクトル `(c, d)` の長さを使い、取得できない場合は未拡大の値を返す。
+fn effective_font_size(character: &PdfPageTextChar<'_>) -> f32 {
+    let unscaled = character.unscaled_font_size().value;
+    let scale = character
+        .matrix()
+        .ok()
+        .map(|matrix| matrix.c().hypot(matrix.d()))
+        .filter(|scale| scale.is_finite() && *scale > 0.0)
+        .unwrap_or(1.0);
+    unscaled * scale
 }
 
 /// 本文・属性の保存コピーを予約し、容量不足を公開エラーへ伝播する。

@@ -59,6 +59,7 @@ mod output_path;
 pub use output_path::resolve_output_parent;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
+mod table_cell_text;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
 
@@ -2779,6 +2780,10 @@ struct PositionedTable {
     docx_table: Option<DocxTableModel>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
+    /// 上から順の各行の高さ（pt）。空の場合は表の高さを行数で等分する。
+    row_heights_pt: Vec<f32>,
+    /// 上から順の各行で、1 セル内に並ぶ最大の行数。
+    row_line_counts: Vec<usize>,
 }
 
 /// DOCX 出力用の表モデル。
@@ -3063,10 +3068,10 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
 
 /// 位置付き表モデルから `docx-rs` の表要素を生成する。
 fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> Table {
-    let row_height_twips = if table.nested_tables.is_empty() {
-        positioned_table_row_height_twips(table)
+    let row_heights = if table.nested_tables.is_empty() {
+        positioned_table_row_heights(table)
     } else {
-        None
+        Vec::new()
     };
     let border_size = table_border_size_for_pdf_rule(table.stroke_width);
     let docx_table = table
@@ -3077,7 +3082,7 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
             let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
             let model = docx_table_model_with_border_size(&model, border_size);
-            docx_table_from_model_with_row_height_and_nested(&model, row_height_twips, Some(table))
+            docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         })
         .unwrap_or_else(|| {
             let model = docx_table_model_with_column_widths(
@@ -3087,7 +3092,7 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
             let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
             let model = docx_table_model_with_border_size(&model, border_size);
-            docx_table_from_model_with_row_height_and_nested(&model, row_height_twips, Some(table))
+            docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         });
     apply_positioned_table_layout(docx_table, table, origin_x)
 }
@@ -3220,6 +3225,41 @@ fn docx_table_model_with_border_size(
     DocxTableModel { rows }
 }
 
+/// PDF 上の各行の高さを DOCX の行高へ変換する。
+///
+/// 1 行だけの行は PDF の高さで固定し、折り返しや改行を含む行は内容に合わせて伸ばせるようにする。
+fn positioned_table_row_heights(table: &PositionedTable) -> Vec<DocxRowHeight> {
+    let row_count = table.table.rows.len();
+    if row_count > 0 && table.row_heights_pt.len() == row_count {
+        let adjustment = thin_table_rule_height_adjustment(table.stroke_width) / row_count as f32;
+        return table
+            .row_heights_pt
+            .iter()
+            .enumerate()
+            .filter_map(|(row, height)| {
+                let twips = pdf_points_to_twips_f32(height + adjustment)?;
+                let lines = table.row_line_counts.get(row).copied().unwrap_or(1);
+                Some(DocxRowHeight {
+                    twips,
+                    exact: lines <= 1,
+                })
+            })
+            .collect();
+    }
+    positioned_table_row_height_twips(table)
+        .map(|twips| vec![DocxRowHeight { twips, exact: true }; row_count])
+        .unwrap_or_default()
+}
+
+/// DOCX の 1 行分の高さ指定。
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct DocxRowHeight {
+    /// 行の高さ（twips）。
+    twips: f32,
+    /// `exact` で固定するか。`false` は `atLeast` で内容に合わせて伸ばす。
+    exact: bool,
+}
+
 /// PDF 上の表高さを DOCX の行高（twips）に変換する。
 fn positioned_table_row_height_twips(table: &PositionedTable) -> Option<f32> {
     let row_count = table.table.rows.len();
@@ -3315,13 +3355,16 @@ fn docx_table_from_model_with_row_height(
     model: &DocxTableModel,
     row_height_twips: Option<f32>,
 ) -> Table {
-    docx_table_from_model_with_row_height_and_nested(model, row_height_twips, None)
+    let row_heights = row_height_twips
+        .map(|twips| vec![DocxRowHeight { twips, exact: true }; model.rows.len()])
+        .unwrap_or_default();
+    docx_table_from_model_with_row_height_and_nested(model, &row_heights, None)
 }
 
 /// 結合情報つき表モデルから子表を含めて `docx-rs` の表要素を生成する。
 fn docx_table_from_model_with_row_height_and_nested(
     model: &DocxTableModel,
-    row_height_twips: Option<f32>,
+    row_heights: &[DocxRowHeight],
     parent: Option<&PositionedTable>,
 ) -> Table {
     let rows = model
@@ -3340,36 +3383,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
-                    let mut run = text_run(text.as_str());
-                    if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
-                        let embedded = parent.is_some_and(|table| table.font_embedded);
-                        run = apply_pdf_font_name_to_run(run, font_name, embedded);
-                        if !embedded
-                            && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name)
-                        {
-                            run = run.stretch(stretch);
-                        }
+                    let mut table_cell = TableCell::new();
+                    for line in text.split('\n') {
+                        table_cell =
+                            table_cell.add_paragraph(table_cell_paragraph(line, cell, parent));
                     }
-                    if let Some(size) = parent
-                        .and_then(|table| table.font_size)
-                        .and_then(pdf_font_size_to_half_points)
-                        .filter(|size| *size != DEFAULT_DOCX_FONT_SIZE_HALF_POINTS)
-                    {
-                        run = run.size(size);
-                    }
-                    if cell.underlined && !text.trim().is_empty() {
-                        run = run.underline("single");
-                    }
-                    let mut paragraph = Paragraph::new().add_run(run);
-                    paragraph = match cell.alignment {
-                        ParagraphAlignment::Left => paragraph,
-                        ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
-                        ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
-                    };
-                    if parent.is_some() {
-                        paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
-                    }
-                    let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(VAlignType::Center);
                     }
@@ -3407,17 +3425,57 @@ fn docx_table_from_model_with_row_height_and_nested(
             if parent.is_some() {
                 table_row = table_row.cant_split();
             }
-            if let Some(row_height_twips) = row_height_twips
-                && row_height_twips > 0.0
+            if let Some(height) = row_heights.get(row_index)
+                && height.twips > 0.0
             {
                 table_row = table_row
-                    .row_height(row_height_twips)
-                    .height_rule(HeightRule::Exact);
+                    .row_height(height.twips)
+                    .height_rule(if height.exact {
+                        HeightRule::Exact
+                    } else {
+                        HeightRule::AtLeast
+                    });
             }
             table_row
         })
         .collect::<Vec<_>>();
     Table::without_borders(rows)
+}
+
+/// セル本文の 1 段落分を、表の font・下線・配置を適用して作る。
+fn table_cell_paragraph(
+    text: &str,
+    cell: &DocxTableCellModel,
+    parent: Option<&PositionedTable>,
+) -> Paragraph {
+    let mut run = text_run(text);
+    if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
+        let embedded = parent.is_some_and(|table| table.font_embedded);
+        run = apply_pdf_font_name_to_run(run, font_name, embedded);
+        if !embedded && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name) {
+            run = run.stretch(stretch);
+        }
+    }
+    if let Some(size) = parent
+        .and_then(|table| table.font_size)
+        .and_then(pdf_font_size_to_half_points)
+        .filter(|size| *size != DEFAULT_DOCX_FONT_SIZE_HALF_POINTS)
+    {
+        run = run.size(size);
+    }
+    if cell.underlined && !text.trim().is_empty() {
+        run = run.underline("single");
+    }
+    let mut paragraph = Paragraph::new().add_run(run);
+    paragraph = match cell.alignment {
+        ParagraphAlignment::Left => paragraph,
+        ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
+        ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
+    };
+    if parent.is_some() {
+        paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
+    }
+    paragraph
 }
 
 /// 親表セルに含まれる子表を返す。
@@ -3465,7 +3523,11 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
             }
         }
     }
-    out.split_whitespace().collect::<Vec<_>>().join(" ")
+    out.split('\n')
+        .map(|line| line.split_whitespace().collect::<Vec<_>>().join(" "))
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// セル罫線フラグを DOCX の `w:tcBorders` へ変換する。
@@ -3964,6 +4026,8 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
         docx_table: None,
         nested_tables: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
     }
 }
 
@@ -4258,7 +4322,8 @@ fn infer_positioned_table_from_graphics(
     xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
     ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
     let mut text_augmented_columns = false;
-    if xs.len() >= 2
+    // 内側の縦罫線で列が確定している表は、文字の隙間から列を増やさない。
+    if xs.len() == 2
         && ys.len() >= 2
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
     {
@@ -4287,6 +4352,7 @@ fn infer_positioned_table_from_graphics(
     let mut assigned_font_sizes = Vec::new();
     let mut assigned_rows = Vec::new();
     let mut assigned_text_ys = Vec::new();
+    let mut cell_fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
     for text in parsed
         .text_elements
         .iter()
@@ -4302,7 +4368,11 @@ fn infer_positioned_table_from_graphics(
         else {
             continue;
         };
-        append_cell_fragment(&mut cells[row][col], text.text.trim());
+        cell_fragments[row][col].push(table_cell_text::CellFragment {
+            bounds: normalized_bounds(text.bounds),
+            text: text.text.clone(),
+            font_size: text.font_size,
+        });
         cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
         let bounds = normalized_bounds(text.bounds);
         cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
@@ -4321,6 +4391,20 @@ fn infer_positioned_table_from_graphics(
         assigned_rows.push(row);
         assigned_text_ys.push(grid_center_y);
     }
+    let mut row_line_counts = vec![0usize; rows];
+    for (row_index, row) in cell_fragments.iter().enumerate() {
+        for (col, fragments) in row.iter().enumerate() {
+            cells[row_index][col] =
+                table_cell_text::compose_cell_text(fragments, xs[col] as f32, xs[col + 1] as f32);
+            row_line_counts[row_index] =
+                row_line_counts[row_index].max(table_cell_text::cell_line_count(fragments));
+        }
+    }
+    let mut row_heights_pt = ys
+        .windows(2)
+        .rev()
+        .map(|pair| (pair[1] - pair[0]) as f32)
+        .collect::<Vec<_>>();
     let flipped_rows = should_flip_table_rows_from_text_order(&assigned_rows)
         || should_flip_table_rows_from_text_y_order(&assigned_text_ys)
         || should_flip_table_rows_from_cell_text(&cells);
@@ -4328,6 +4412,8 @@ fn infer_positioned_table_from_graphics(
         cells.reverse();
         cell_underlines.reverse();
         cell_text_bounds.reverse();
+        row_line_counts.reverse();
+        row_heights_pt.reverse();
     }
     let cell_alignments = cell_text_bounds
         .iter()
@@ -4388,6 +4474,8 @@ fn infer_positioned_table_from_graphics(
         cell_alignments,
         docx_table,
         nested_tables: Vec::new(),
+        row_heights_pt,
+        row_line_counts,
     })
 }
 
@@ -5224,6 +5312,8 @@ fn infer_positioned_table_from_text_grid_page(
         cell_alignments: Vec::new(),
         docx_table: None,
         nested_tables: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
     })
 }
 

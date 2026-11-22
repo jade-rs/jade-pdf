@@ -152,6 +152,10 @@ pub(crate) fn parse_pdf(
         decode_budget.check()?;
     }
 
+    // Pdfiumの文字矩形は回転前のユーザー空間なので、pure Rust抽出の罫線・画像と同じ
+    // CropBox原点・表示回転の座標へ揃えてから合成する。
+    crate::parser::normalize_text_elements_to_display(decode_budget, bytes, &mut text_elements);
+    decode_budget.check()?;
     parsed.page_count = document.pages().len() as usize;
     parsed.pages = pages::merge(decode_budget, &parsed.pages, pdfium_pages)?;
     let normalized = normalize_pdfium_text_preview(decode_budget, &text_preview);
