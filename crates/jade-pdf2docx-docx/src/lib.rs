@@ -717,7 +717,7 @@ fn build_structured_docx_from_owned_images(
     )
 }
 
-/// 罫線用フォントで描いた細長い私用領域の字（傍線・罫）を本文から除く。
+/// 罫線用フォントで描いた細長い、または同じ字をつないだ私用領域の字（傍線・罫）を本文から除く。
 ///
 /// 官報などは傍線を罫線用フォントの字で組み、私用領域の文字として抽出される。
 /// 文字のまま残すと代替フォントで豆腐になり、セル内の行の判定も乱す。線として
@@ -733,7 +733,11 @@ fn drop_rule_glyphs(parsed: &mut ParsedDocument) {
         let bounds = normalized_bounds(text.bounds);
         let (width, height) = (bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
         let line_like = (height <= 1.5 && width >= 3.0) || (width <= 1.5 && height >= 3.0);
-        !line_like
+        // 同じ字を 3 つ以上つないだだけの文字片も、罫線を字で組んだものとみなす。
+        let mut chars = body.chars();
+        let first = chars.next();
+        let repeated = body.chars().count() >= 3 && chars.all(|ch| Some(ch) == first);
+        !(line_like || repeated)
     });
 }
 
@@ -6527,6 +6531,7 @@ mod tests {
                 text(10.0, 99.5, 40.0, 100.0, "\u{E005}\u{E005}"),
                 text(20.0, 100.0, 21.0, 101.0, "\u{EA74}"),
                 text(10.0, 102.0, 40.0, 110.0, "1.061"),
+                text(50.0, 96.0, 90.0, 104.0, "\u{E02D}\u{E02D}\u{E02D}\u{E02D}"),
             ],
             image_elements: Vec::new(),
             embedded_fonts: Vec::new(),
