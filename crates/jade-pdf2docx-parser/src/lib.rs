@@ -22,6 +22,7 @@ mod form_matrices;
 mod form_operands;
 mod form_storage;
 mod form_text_state;
+mod image_color_space;
 mod image_filter;
 mod image_metadata;
 mod indexed_predictor;

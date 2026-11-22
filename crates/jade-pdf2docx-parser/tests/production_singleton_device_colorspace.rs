@@ -45,7 +45,7 @@ fn singleton_device_arrays_preserve_source_pixels() {
     );
 }
 
-/// 配列自体が間接objectでも、元の参照世代を維持してRGBを解決する。
+/// 配列自体が間接objectでも、既存の属性参照解決を使ってRGBを読む。
 #[test]
 fn indirect_singleton_color_array_is_resolved() {
     let source = fixture::image_with_resources(
