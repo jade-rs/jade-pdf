@@ -1,0 +1,39 @@
+{
+  "runtime_source_revision": "803271898c5ad3f52c0fe9ed4856a4325ee7198e",
+  "native_tests": {
+    "passed": 353,
+    "failed": 0,
+    "ignored": 8,
+    "groups": 31,
+    "command": "cargo test -p jade-pdf-diff --locked --target-dir target/nta-qualification-final",
+    "fresh_source": true
+  },
+  "public_corpus_tests": {
+    "passed": 6,
+    "failed": 0,
+    "regular_documents": 76,
+    "regular_pages": 717
+  },
+  "Python_tests": {
+    "passed": 67,
+    "failed": 0
+  },
+  "fixture_hygiene": {
+    "passed": 2,
+    "failed": 0
+  },
+  "shared_native_WASM_ruling_scenarios": 121,
+  "clippy": "all-targets -D warnings passed",
+  "formatting": "root and WASM probe passed",
+  "native_binary_sha256": "0d8dfb64f1826bed3780951a696f381d5b676556b401bc168158271efd1d18e5",
+  "wasm_sha256": "74151f7dd8eb1d56744e781431f1c9acc8cc94ed46b5fb240943be05b3f73faa",
+  "log_sha256": {
+    "native-qualified.log": "94718ce94a89dbfbbb47d7068b86c93c9e820f4a894a31f1606a6a1bdbe7a992",
+    "public-qualified.log": "708d91f79eaca19a442ee2a7546a3b52de82d69f6a49f1173dbc6eec3241c170",
+    "clippy-qualified.log": "f1ef2519d95abc59f3bb50c62d4e63739a51e273a6a7e360993dfdaf79332d36",
+    "fmt-qualified.log": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "python-final.log": "774b465c40bec17e01c71e0adb7492f263f5d76e7e310f104cce95b75a5d132d",
+    "hygiene-qualified.log": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658"
+  },
+  "scope": "Fresh final Rust runtime source8032718. Subsequent bridge change only raises the bounded external page-gold wall deadline30s to120s; no Rust/probe/lock/input bytes change. Final PR exact-head16 checks still required."
+}

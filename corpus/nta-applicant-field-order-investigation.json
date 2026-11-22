@@ -156,5 +156,9 @@
       }
     ],
     "scope": "Only commit identity changed. Gold declaration precedes baseline inspection; all original input, expected order, before report and test-only geometry/API code bytes remain identical. Production natural case remains0/1; not a runtime qualification."
-  }
+  },
+  "superseded_initial_investigation": true,
+  "current_runtime_review": "nta-applicant-field-order-implementation-review.json",
+  "current_runtime_source_revision": "803271898c5ad3f52c0fe9ed4856a4325ee7198e",
+  "historical_status_scope": "The0/1 and test-only foundation fields below describe the original pre-runtime investigation; current selected runtime result is1/1 in the implementation review and v50 qualification."
 }

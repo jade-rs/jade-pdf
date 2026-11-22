@@ -1,0 +1,164 @@
+{
+  "id": "nta-applicant-field-order-page1",
+  "date_utc": "2026-11-22T07:34:00.127923+00:00",
+  "runtime_source_revision": "803271898c5ad3f52c0fe9ed4856a4325ee7198e",
+  "source_gold": "nta-applicant-field-order-gold.json",
+  "source_gold_sha256": "8c8adb6ea737f2246f6a5cef1b55ce198610bd0b5e5a78041725ee084d7801ca",
+  "original_independent_declaration_revision": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+  "replayed_declaration_revision": "b9795beaeffd34b16c9cb7f22b113523fa7d0003",
+  "scope": "Post-change implementation/impact review. Only the14 NTA field-ID sequence was independently declared before baseline inspection. The MHLW review and broader page observations are not additional independent accuracy gold.",
+  "selected_case": {
+    "before_passed": 0,
+    "after_passed": 1,
+    "total": 1,
+    "all14_field_ids_present_once": true,
+    "IR_and_public_character_layer_pass": true,
+    "reading_order_requires_review": true,
+    "both_existing_vertical_notice_rules_preserved": true
+  },
+  "border_case": {
+    "before": "事務所の所在地 住",
+    "after": [
+      "事務所の所在地",
+      "住"
+    ],
+    "source_scalars_and_horizontal_cells_conserved": true,
+    "not_a_full_table_cell_semantics_claim": true
+  },
+  "implementation": {
+    "source_input_unchanged": true,
+    "pure_rust": true,
+    "new_dependencies": 0,
+    "PDF_or_font_binaries_added_to_git": false,
+    "source_replacement_regions_never_split": true,
+    "complete_tagged_tables_preferred": true,
+    "rejected_tagged_tables_reextracted_at_most_once": true,
+    "accepted_material": "Opaque dark axis-aligned thin rectangle fills with four distinct corners; unmarked or parameter-free Artifact, fixed publicSDK8111 no-reference clip contract",
+    "inferred_row_order": "At least two populated rows with multiple columns in a connected closed grid; exclude outside text bands; decline RTL/oblique/vertical groups; keep in-cell baseline line order",
+    "work": "Bounded objects/lines/vertices/edges, deterministic64M document budget divided by total page count to match selected-page and full-document APIs",
+    "all_inferred_membership_remains_reviewable": true
+  },
+  "impact": {
+    "regular_documents": 76,
+    "regular_pages": 717,
+    "exactly_unchanged_IR_pages": 715,
+    "changed": [
+      {
+        "id": "mhlw-employment",
+        "pages": 4,
+        "changed_pages": [
+          {
+            "page": 1,
+            "before_blocks": 177,
+            "after_blocks": 177,
+            "nonwhite_scalar_inventory_equal": true,
+            "text_sequence_equal": false,
+            "before_review": false,
+            "after_review": true
+          }
+        ]
+      },
+      {
+        "id": "nta-invoice-domestic-case2-2026",
+        "pages": 3,
+        "changed_pages": [
+          {
+            "page": 1,
+            "before_blocks": 189,
+            "after_blocks": 190,
+            "nonwhite_scalar_inventory_equal": true,
+            "text_sequence_equal": false,
+            "before_review": true,
+            "after_review": true
+          }
+        ]
+      }
+    ],
+    "all_nonwhite_scalar_inventories_equal": true,
+    "final_distinct_corner_check_preserves_iteration2_IR_on_all717_pages": true
+  },
+  "visual_review": {
+    "original_pages": [
+      {
+        "source_id": "nta-invoice-domestic-case2-2026",
+        "pages": [
+          1,
+          2
+        ],
+        "basis": "Original1500px full-page renders, plus predeclared applicant-panel review; all3 originals previously reviewed before registration and this gold"
+      },
+      {
+        "source_id": "mhlw-employment",
+        "pages": [
+          1
+        ],
+        "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+        "basis": "Unchanged registered original at1800px: holiday/leave labels precede their corresponding body cell; each closing parenthesis retains its original line. No new independent gold claimed."
+      }
+    ],
+    "affected_original_rasters": [
+      {
+        "id": "nta-invoice-domestic-case2-2026",
+        "page": 1,
+        "render_width": 1200,
+        "original_raster_identical": true,
+        "before_sha256": "56514051b77f9594b1a8a41a09f7844cded16c51194942c59b037c52fd8b5d17",
+        "after_sha256": "56514051b77f9594b1a8a41a09f7844cded16c51194942c59b037c52fd8b5d17"
+      },
+      {
+        "id": "mhlw-employment",
+        "page": 1,
+        "render_width": 1200,
+        "original_raster_identical": true,
+        "before_sha256": "80babc2dc3ce681c1b201a1bfddf7964bb90eeef8cf1405b8db8afe2fb3bff48",
+        "after_sha256": "80babc2dc3ce681c1b201a1bfddf7964bb90eeef8cf1405b8db8afe2fb3bff48"
+      }
+    ],
+    "affected_public_character_cells": [
+      {
+        "id": "nta-invoice-domestic-case2-2026",
+        "page": 1,
+        "nonwhite_scalar_horizontal_cell_multiset_identical": true,
+        "scalar_cells": 844,
+        "before_runs": 189,
+        "after_runs": 190
+      },
+      {
+        "id": "mhlw-employment",
+        "page": 1,
+        "nonwhite_scalar_horizontal_cell_multiset_identical": true,
+        "scalar_cells": 989,
+        "before_runs": 177,
+        "after_runs": 177
+      }
+    ]
+  },
+  "initial_failures_preserved": [
+    {
+      "iteration": 1,
+      "source_revision": "49c1995",
+      "finding": "Runtime parity and selected14-ID pass did not catch MHLW in-cell parenthesis column-order regression; corrected using line order and a new failing owned control"
+    },
+    {
+      "iteration": 2,
+      "source_revision": "c586489",
+      "finding": "Degenerate zero-area path could mimic a thin rectangle bounding box; four-distinct-corner predicate added after a failing native control and tested in121 shared native/WASM scenarios"
+    },
+    {
+      "kind": "audit_reference",
+      "finding": "Natural raw-diff preservation initially used the newer page-text baseline and failed schema comparison; original695694e861... legacy baseline restored, giving5/5 pairs23 pages without changing product or gold"
+    },
+    {
+      "kind": "CI wall-time",
+      "job": 137135018333,
+      "source_revision": "8032718",
+      "finding": "Firefox passed selected NTA and all regular semantic checks, but the independent W-4 2023/2024 page-gold Python process reached its30-second bridge wall timeout. Bridge deadline aligned with the120-second CLI invocation bound; gold, work/candidate/input limits and semantic checks are unchanged."
+    }
+  ],
+  "limitations": [
+    "Not full-page/table/global reading-order gold, logical cell semantics, filled-form extraction or document precision/recall",
+    "NTA page2 and715 total regular pages remain exactly unchanged",
+    "Generic bidi, pending Arabic/Deseret0/2, word spacing, math structure and other unresolved production gates remain open"
+  ],
+  "production_ready": false
+}
