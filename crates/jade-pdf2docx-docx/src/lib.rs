@@ -30,6 +30,7 @@ mod conversion_control;
 
 mod html_table;
 mod native_baseline;
+mod native_line_pitch;
 mod native_spacing;
 mod ocr_reconcile;
 mod output;
@@ -1027,7 +1028,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     })
                     .unwrap_or(0);
                 let after = paragraph_after_spacing[block_index].unwrap_or(0);
-                if before > 0 || after > 0 {
+                if let Some(spacing) =
+                    native_line_pitch::spacing(structured_line_max_font_size(&line), before, after)
+                {
+                    paragraph = paragraph.line_spacing(spacing);
+                } else if before > 0 || after > 0 {
                     paragraph =
                         paragraph.line_spacing(LineSpacing::new().before(before).after(after));
                 }

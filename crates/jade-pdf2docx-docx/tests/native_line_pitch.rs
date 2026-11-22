@@ -6,7 +6,13 @@ use std::io::{Cursor, Read};
 /// 同じ書体・字号で4行を置き、PDFの行高と空白を独立に宣言する。
 fn owned_pdf(size: u32, pitch: u32) -> Vec<u8> {
     let content = (0..4)
-        .map(|i| format!("BT /F1 {size} Tf 72 {} Td (Line {}) Tj ET", 740 - i * pitch, i + 1))
+        .map(|i| {
+            format!(
+                "BT /F1 {size} Tf 72 {} Td (Line {}) Tj ET",
+                740 - i * pitch,
+                i + 1
+            )
+        })
         .collect::<Vec<_>>()
         .join(" ");
     let objects = [
@@ -27,26 +33,38 @@ fn owned_pdf(size: u32, pitch: u32) -> Vec<u8> {
     for offset in offsets {
         bytes.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
     }
-    bytes.extend_from_slice(format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes());
+    bytes.extend_from_slice(
+        format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
+    );
     bytes
 }
 
 /// 本文段落の行高と段落前空白を、属性順に依存せず読む。
 fn paragraph_spacing(size: u32, pitch: u32) -> Vec<std::collections::BTreeMap<String, String>> {
-    let docx = convert_minimum_pdf_bytes_to_docx_bytes("owned-pitch.pdf", &owned_pdf(size, pitch)).unwrap();
+    let docx = convert_minimum_pdf_bytes_to_docx_bytes("owned-pitch.pdf", &owned_pdf(size, pitch))
+        .unwrap();
     let mut archive = zip::ZipArchive::new(Cursor::new(docx)).unwrap();
     let mut xml = String::new();
-    archive.by_name("word/document.xml").unwrap().read_to_string(&mut xml).unwrap();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
     let mut reader = Reader::from_str(&xml);
     let mut rows = Vec::new();
     loop {
         match reader.read_event().unwrap() {
-            Event::Start(ref e) if e.name().as_ref() == b"w:p" => rows.push(std::collections::BTreeMap::new()),
+            Event::Start(ref e) if e.name().as_ref() == b"w:p" => {
+                rows.push(std::collections::BTreeMap::new())
+            }
             Event::Empty(ref e) if e.name().as_ref() == b"w:spacing" => {
                 let row = rows.last_mut().unwrap();
                 for attribute in e.attributes() {
                     let attribute = attribute.unwrap();
-                    row.insert(String::from_utf8(attribute.key.as_ref().to_vec()).unwrap(), String::from_utf8(attribute.value.to_vec()).unwrap());
+                    row.insert(
+                        String::from_utf8(attribute.key.as_ref().to_vec()).unwrap(),
+                        String::from_utf8(attribute.value.to_vec()).unwrap(),
+                    );
                 }
             }
             Event::Eof => break,
@@ -62,7 +80,11 @@ fn authored_twenty_point_pitch_uses_explicit_line_box() {
     let rows = paragraph_spacing(10, 20);
     assert_eq!(rows.len(), 4);
     for (index, row) in rows.iter().enumerate() {
-        assert_eq!(row.get("w:lineRule").map(String::as_str), Some("exact"), "paragraph {index}: {row:?}");
+        assert_eq!(
+            row.get("w:lineRule").map(String::as_str),
+            Some("exact"),
+            "paragraph {index}: {row:?}"
+        );
         assert_eq!(row.get("w:line").map(String::as_str), Some("200"));
         assert_eq!(row.get("w:after").map(String::as_str), Some("0"));
         if index > 0 {
