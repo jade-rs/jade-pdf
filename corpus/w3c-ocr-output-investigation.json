@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "production_ready": false,
+  "source_review": "corpus/w3c-pdf7-ocr-source-review.json",
+  "source_gold": [
+    "corpus/w3c-pdf7-ocr-example-2026-gold.json",
+    "corpus/w3c-pdf7-ocr-tagged-2026-gold.json"
+  ],
+  "baseline": "corpus/results-w3c-ocr-initial.json",
+  "runtime_unchanged": true,
+  "source_OCR_wrong_value": "Visible ingredient is one-eighth; source OCR and current raw diff/text layer report one-quarter. Do not edit either original or rewrite numeric output from this known label.",
+  "whole_page_position_loss": {
+    "path": "crates/jade-pdf2docx-docx/src/page_ocr.rs",
+    "behavior": "OcrPageContent::PositionedText positions are validated and converted, but target.image=None stores only string lines in recognized. Rendering via page_ocr::add_lines discards bounds and uses default body formatting.",
+    "required_invariant": "When the caller supplies valid whole-page OCR coordinates, preserve them together with caller line order. Keep existing unpositioned text/blank/resource/output-preservation contracts. Do not sort columns into a different reading order to make geometry easier."
+  },
+  "oversized_page": {
+    "path": "crates/jade-pdf2docx-docx/src/lib.rs",
+    "behavior": "parsed_page_size_twips emits43527 width, above Word31680. Bundled LibreOffice renders this width but that is not evidence of Word compatibility.",
+    "required_invariant": "All output page dimensions must meet Word bounds. Preserve content and relative geometry through a documented proportionate fit when possible, with quality/strict behavior explicit. Do not clamp only page size and crop content."
+  },
+  "registration": "Not yet registered; failures and correlated source family remain explicit."
+}
