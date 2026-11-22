@@ -86,8 +86,16 @@ impl Plan {
         for (index, face) in self.faces.iter().enumerate() {
             if [(x0,y0), (x0,y1), (x1,y0), (x1,y1), ((x0+x1)/2.0, (y0+y1)/2.0)]
                 .into_iter().all(|(x,y)| face.contains(x,y))
-                // 凹んだセルの壁を長い字面がまたぐ場合も、四隅だけで受け入れない。
-                && !face.polygon.iter().any(|&(x,y)| x0 < x && x < x1 && y0 < y && y < y1)
+                // 頂点が字面の外にあっても、長い壁が途中を通り抜けることがある。
+                // 閉矩形と境界の各線分を照合し、切り欠きや内部の壁を埋めない。
+                && !face.polygon.iter().zip(face.polygon.iter().cycle().skip(1))
+                    .take(face.polygon.len()).any(|(&(ax,ay),&(bx,by))| {
+                        if ax == bx {
+                            x0 <= ax && ax <= x1 && ay.min(by) <= y1 && y0 <= ay.max(by)
+                        } else if ay == by {
+                            y0 <= ay && ay <= y1 && ax.min(bx) <= x1 && x0 <= ax.max(bx)
+                        } else { true }
+                    })
             {
                 if found.is_some() {
                     return None;
@@ -111,4 +119,61 @@ fn root(parents: &mut [usize], mut index: usize) -> usize {
         index = next;
     }
     top
+}
+
+#[cfg(test)]
+mod ownership_tests {
+    use super::*;
+
+    /// 四隅と中心が内部でも、途中に別セルへの細い切り欠きがあれば所属を推定しない。
+    #[test]
+    fn owned_rectangle_does_not_cross_an_off_center_notch() {
+        for scale in [0.5, 1.0, 8.0] {
+            for shift in [-1000.0, 0.0, 1000.0] {
+                let bounds = |x0, x1, y0, y1| Bounds {
+                    x0: x0 * scale + shift,
+                    x1: x1 * scale + shift,
+                    y0: y0 * scale + shift / 2.0,
+                    y1: y1 * scale + shift / 2.0,
+                };
+                let polygon = [
+                    (0., 0.),
+                    (10., 0.),
+                    (10., 10.),
+                    (8., 10.),
+                    (8., 2.),
+                    (7., 2.),
+                    (7., 10.),
+                    (0., 10.),
+                ]
+                .into_iter()
+                .map(|(x, y)| (x * scale + shift, y * scale + shift / 2.0))
+                .collect();
+                let plan = Plan {
+                    faces: vec![geometry::Face {
+                        polygon,
+                        bounds: bounds(0., 10., 0., 10.),
+                    }],
+                    components: vec![0],
+                    point: 1.0,
+                };
+                let crossing = bounds(1., 9., 4., 5.);
+                for (x, y) in [
+                    (crossing.x0, crossing.y0),
+                    (crossing.x0, crossing.y1),
+                    (crossing.x1, crossing.y0),
+                    (crossing.x1, crossing.y1),
+                    crossing.center(),
+                ] {
+                    assert!(
+                        plan.faces[0].contains(x, y),
+                        "The control's corners and center must lie inside"
+                    );
+                }
+                assert_eq!(plan.owner(crossing), None, "scale={scale}, shift={shift}");
+                assert_eq!(plan.owner(bounds(1., 2., 4., 5.)), Some(0));
+                assert_eq!(plan.owner(bounds(8.5, 9., 4., 5.)), Some(0));
+            }
+        }
+    }
 }
