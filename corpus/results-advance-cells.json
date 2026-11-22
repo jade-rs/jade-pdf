@@ -1,0 +1,565 @@
+{
+  "version": 1,
+  "cases": 55,
+  "matched": 55,
+  "nonwhitespace_scalars": 119178,
+  "results": [
+    {
+      "id": "tracemonkey",
+      "page": 4,
+      "source_sha256": "3662ff519e485810520552bf301d8c3b2b917fd2f83303f4965d7abed367e113",
+      "nonwhitespace_scalars": 6294,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "1622fcc8da0d81ac104cf980f0ea4a6622b29f4ebca503cfd49acfe7b264cb64",
+      "new_sha256": "1622fcc8da0d81ac104cf980f0ea4a6622b29f4ebca503cfd49acfe7b264cb64",
+      "matches": true
+    },
+    {
+      "id": "freeculture",
+      "page": 31,
+      "source_sha256": "753441c619c529c8d0fc3e7e470f07c9547838fc7229bea8c1dcf854acee03b4",
+      "nonwhitespace_scalars": 844,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "8e3844949d5a42ceb0592329e32f2f56de39776d2c04d1671b1d40103665b211",
+      "new_sha256": "8e3844949d5a42ceb0592329e32f2f56de39776d2c04d1671b1d40103665b211",
+      "matches": true
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 1,
+      "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "nonwhitespace_scalars": 989,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "2d1825b1c7f62f13d801fa2587eeaf584a47d16a7a4b6c61f3f651c4ee87a09a",
+      "new_sha256": "2d1825b1c7f62f13d801fa2587eeaf584a47d16a7a4b6c61f3f651c4ee87a09a",
+      "matches": true
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 2,
+      "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "nonwhitespace_scalars": 819,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "94c60c91da0ed3e00d7e3605392761e2438b175b5a0449c73d8b694b4c21dff3",
+      "new_sha256": "94c60c91da0ed3e00d7e3605392761e2438b175b5a0449c73d8b694b4c21dff3",
+      "matches": true
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 3,
+      "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "nonwhitespace_scalars": 1460,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "2e1fd5586fc433061f9a323cf5edb21e16a0225ec5fc9e8e04be293a827581ef",
+      "new_sha256": "2e1fd5586fc433061f9a323cf5edb21e16a0225ec5fc9e8e04be293a827581ef",
+      "matches": true
+    },
+    {
+      "id": "mhlw-employment",
+      "page": 4,
+      "source_sha256": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+      "nonwhitespace_scalars": 1417,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "3dc50c0962bcda48117b8cb17966b300d4f123206f9a6cac0251ae8a42cc4884",
+      "new_sha256": "3dc50c0962bcda48117b8cb17966b300d4f123206f9a6cac0251ae8a42cc4884",
+      "matches": true
+    },
+    {
+      "id": "irs-w4",
+      "page": 4,
+      "source_sha256": "94fa236f26c1a6dbbdeb40b8bd8870793e7a5be0f74ead3c2799d2b0961be68a",
+      "nonwhitespace_scalars": 4538,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "b9ab82f3ce1e216bce4d0dce9eee56149addbf52b7a9e8cf22a8a5d211d02176",
+      "new_sha256": "b9ab82f3ce1e216bce4d0dce9eee56149addbf52b7a9e8cf22a8a5d211d02176",
+      "matches": true
+    },
+    {
+      "id": "irs-w4-2026",
+      "page": 4,
+      "source_sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "nonwhitespace_scalars": 4886,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "7880e9e582da4379d7ac6e647ed7677dcb50cb3edf58facd66c891e916cd2234",
+      "new_sha256": "7880e9e582da4379d7ac6e647ed7677dcb50cb3edf58facd66c891e916cd2234",
+      "matches": true
+    },
+    {
+      "id": "irs-w4-2026",
+      "page": 5,
+      "source_sha256": "92444d8856ce55d9e25dca8b6d1420634fc68b11e1ab1f760916ea29ddd312b2",
+      "nonwhitespace_scalars": 4209,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "bb2da4e95788331fe61137716c047bdd4e94aa31ddcbcaed988279675fa7f005",
+      "new_sha256": "bb2da4e95788331fe61137716c047bdd4e94aa31ddcbcaed988279675fa7f005",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 2,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 3358,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "1415b8f8ee1230fdd5134dfdf8fe98caf2f8d93bb989d29fb9714e124b1ae60c",
+      "new_sha256": "1415b8f8ee1230fdd5134dfdf8fe98caf2f8d93bb989d29fb9714e124b1ae60c",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 3,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 3233,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "c37762d6c4fc1614a369e2c5c3f8d1051cbf11e9db5f6b2050f4581c11f59ca8",
+      "new_sha256": "c37762d6c4fc1614a369e2c5c3f8d1051cbf11e9db5f6b2050f4581c11f59ca8",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 4,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 3000,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "9976df7332d0cb33a2b769c6d077b954ce9ecd7c37f5ce8bf709219ad265736e",
+      "new_sha256": "9976df7332d0cb33a2b769c6d077b954ce9ecd7c37f5ce8bf709219ad265736e",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 5,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 3184,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "68993469ee47557cf6c8c194bfa376a6f8d8a568866e663f6c4e38706b337b9f",
+      "new_sha256": "68993469ee47557cf6c8c194bfa376a6f8d8a568866e663f6c4e38706b337b9f",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 7,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 1466,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "c4463077b3eef31e324cf600f4992a98604f20fc48ab718e999b3a2add38d29b",
+      "new_sha256": "c4463077b3eef31e324cf600f4992a98604f20fc48ab718e999b3a2add38d29b",
+      "matches": true
+    },
+    {
+      "id": "acl-bleu-2002",
+      "page": 8,
+      "source_sha256": "c0ee6aedcb674da26a640578ead33f66eb5bec87daa2656d4f845da37e096997",
+      "nonwhitespace_scalars": 3029,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "17ea5d7620f2f0d9516dc3f474ee80988871910a31bf1b4f792eb888d1fc987c",
+      "new_sha256": "17ea5d7620f2f0d9516dc3f474ee80988871910a31bf1b4f792eb888d1fc987c",
+      "matches": true
+    },
+    {
+      "id": "pdfjs-membership-mixed-columns",
+      "page": 1,
+      "source_sha256": "ce40a4f30d332478930eea0318e4784db5b3d6e4956bfff8256bf765fa22181c",
+      "nonwhitespace_scalars": 1130,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "56f9e0010e989476db96077d98c218344ba081b127a9147650208c5c1664441f",
+      "new_sha256": "56f9e0010e989476db96077d98c218344ba081b127a9147650208c5c1664441f",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 2,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 3631,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "5887ed5012beec59ce3557efbc32cb42f3dd0507744f52dadeb95146dc857761",
+      "new_sha256": "5887ed5012beec59ce3557efbc32cb42f3dd0507744f52dadeb95146dc857761",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 3,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 1474,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "77ba70e86093b0d02d56eb43694afc291780dd96c751ca706d849785062c1489",
+      "new_sha256": "77ba70e86093b0d02d56eb43694afc291780dd96c751ca706d849785062c1489",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 4,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 2068,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "50237938965c93f1e6e04a72165f7a0ec52ccd9d97bd369304299e02dc1b7c2b",
+      "new_sha256": "50237938965c93f1e6e04a72165f7a0ec52ccd9d97bd369304299e02dc1b7c2b",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 5,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 2677,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "97f22e57de998467daeb1f4af3e0e36df6a097d2d7000182e61ce9b1d535b770",
+      "new_sha256": "97f22e57de998467daeb1f4af3e0e36df6a097d2d7000182e61ce9b1d535b770",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 6,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 3000,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "3a0671de4775c72c2fd83242da70a75f3f2bf4203e15c9c21a8ec287f15d2c0d",
+      "new_sha256": "3a0671de4775c72c2fd83242da70a75f3f2bf4203e15c9c21a8ec287f15d2c0d",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 7,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 2711,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "65cd315042b9669ca2573decfb26e5ef18b12b07be34ce1cae86aa0d47934e45",
+      "new_sha256": "65cd315042b9669ca2573decfb26e5ef18b12b07be34ce1cae86aa0d47934e45",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 8,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 2778,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "b321fbb5ec1bf61e45dec11250aec583a84e2570d2185d9094a87521f327f60d",
+      "new_sha256": "b321fbb5ec1bf61e45dec11250aec583a84e2570d2185d9094a87521f327f60d",
+      "matches": true
+    },
+    {
+      "id": "neurips-attention-2017",
+      "page": 9,
+      "source_sha256": "d87d482d5ae7960e2e43d7dd6d21377e60e73e8fce1bf2a01aff7aca8a08c537",
+      "nonwhitespace_scalars": 2195,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "3807d87d8edc6ed636f40fe7b9014a179947a56ae9c505ea51bf1edadcca39cb",
+      "new_sha256": "3807d87d8edc6ed636f40fe7b9014a179947a56ae9c505ea51bf1edadcca39cb",
+      "matches": true
+    },
+    {
+      "id": "bipm-si-concise",
+      "page": 3,
+      "source_sha256": "0152ee82c2b3df89758c879238d23ee6bc1fa2d53303a5fec95509a3883e1a30",
+      "nonwhitespace_scalars": 3739,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "7b9697fbc17bd818961ff2b08a38c0e894a8fdf358af735e1b22cad6cde7c0eb",
+      "new_sha256": "7b9697fbc17bd818961ff2b08a38c0e894a8fdf358af735e1b22cad6cde7c0eb",
+      "matches": true
+    },
+    {
+      "id": "bipm-si-concise",
+      "page": 5,
+      "source_sha256": "0152ee82c2b3df89758c879238d23ee6bc1fa2d53303a5fec95509a3883e1a30",
+      "nonwhitespace_scalars": 1564,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "bd795f5b455e749b6ca94298407fe571d5deba2158dc62c3a031d008e6433587",
+      "new_sha256": "bd795f5b455e749b6ca94298407fe571d5deba2158dc62c3a031d008e6433587",
+      "matches": true
+    },
+    {
+      "id": "bipm-si-concise-2026",
+      "page": 5,
+      "source_sha256": "5a46755dacd99540ef210ff8e6329f5df1fa426bbd5a7c9cd356cb81098c29eb",
+      "nonwhitespace_scalars": 1718,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "a3fe617d413b1535af79ac76748518bd19a9286bc00eade45f41b830fd425225",
+      "new_sha256": "a3fe617d413b1535af79ac76748518bd19a9286bc00eade45f41b830fd425225",
+      "matches": true
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "page": 3,
+      "source_sha256": "db2f085b0017a777830e73c7310a1cdc55f23cced6224b3941df154396ea333b",
+      "nonwhitespace_scalars": 3640,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "6b3d2bfbdfdfe6f2a4a9604fd338cd7fa7f5871af70c14a763b0520b9d2e9df4",
+      "new_sha256": "6b3d2bfbdfdfe6f2a4a9604fd338cd7fa7f5871af70c14a763b0520b9d2e9df4",
+      "matches": true
+    },
+    {
+      "id": "bipm-si-concise-fr-2026",
+      "page": 5,
+      "source_sha256": "db2f085b0017a777830e73c7310a1cdc55f23cced6224b3941df154396ea333b",
+      "nonwhitespace_scalars": 2378,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "dba120189fb28b643a285d28df830806a32e679c44a61ef841eaced5466fc425",
+      "new_sha256": "dba120189fb28b643a285d28df830806a32e679c44a61ef841eaced5466fc425",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 7,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 4883,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "6c4bfde63070e7602499a6c002c6d242f74c8df8afd2c45effa662025f1175b2",
+      "new_sha256": "6c4bfde63070e7602499a6c002c6d242f74c8df8afd2c45effa662025f1175b2",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 8,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 2682,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "f0f6f5dcc3e8d434f05cbb983da9751ef75b15a4dad1e1760c4c8b0549a6584c",
+      "new_sha256": "f0f6f5dcc3e8d434f05cbb983da9751ef75b15a4dad1e1760c4c8b0549a6584c",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 13,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 1526,
+      "source_owned_nonwhitespace_scalars": 1,
+      "old_sha256": "74c37a976148c11c93b1622815e9e16a9b63758d773c28fba8f9505f5f6d97ff",
+      "new_sha256": "74c37a976148c11c93b1622815e9e16a9b63758d773c28fba8f9505f5f6d97ff",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 25,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 396,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "6bda1c8386610f8b4cb110c0b71afc258945648811499a3e9a2034ea9a617bd5",
+      "new_sha256": "6bda1c8386610f8b4cb110c0b71afc258945648811499a3e9a2034ea9a617bd5",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 26,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 1257,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "7fa8b050c78c8370cfb1c614ba46e045f2d532e1126b264db73d803de6d015a3",
+      "new_sha256": "7fa8b050c78c8370cfb1c614ba46e045f2d532e1126b264db73d803de6d015a3",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 28,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 743,
+      "source_owned_nonwhitespace_scalars": 1,
+      "old_sha256": "431dcf02599748033f9fb7f3bcaa9fe0b3e97d5bfcd3d89521c8e9b96bafd177",
+      "new_sha256": "431dcf02599748033f9fb7f3bcaa9fe0b3e97d5bfcd3d89521c8e9b96bafd177",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2012",
+      "page": 30,
+      "source_sha256": "5b88d70308c95106e713221c7085cbb8e89dc2eb6214d75c885af2f07ffc6b8a",
+      "nonwhitespace_scalars": 1285,
+      "source_owned_nonwhitespace_scalars": 1,
+      "old_sha256": "4228363a7122f8b533c0164ef9e11e7b1fa87277d4a0c57377a7617b17c6363f",
+      "new_sha256": "4228363a7122f8b533c0164ef9e11e7b1fa87277d4a0c57377a7617b17c6363f",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 1,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 473,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "c127a238eb0300a61589f459782e0a0b8045fb0fbe03ceda8a8c1cdb48bbf23e",
+      "new_sha256": "c127a238eb0300a61589f459782e0a0b8045fb0fbe03ceda8a8c1cdb48bbf23e",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 6,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 4857,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "b434e6f92fdf87ba8c472c286d19080e5264ac8300a09438f6edfd75ff2d232e",
+      "new_sha256": "b434e6f92fdf87ba8c472c286d19080e5264ac8300a09438f6edfd75ff2d232e",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 12,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1526,
+      "source_owned_nonwhitespace_scalars": 24,
+      "old_sha256": "d013914f893bb4854da7788967d1a704b99dd2de4b7d92c0d454682681c2b242",
+      "new_sha256": "d013914f893bb4854da7788967d1a704b99dd2de4b7d92c0d454682681c2b242",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 13,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1388,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "852028b96d70241ae05f0e0e77d7e7c768c1ef77a1ac4105fa07addd64ef2b60",
+      "new_sha256": "852028b96d70241ae05f0e0e77d7e7c768c1ef77a1ac4105fa07addd64ef2b60",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 14,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 534,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "9c80f6aa1bf720c2bf6f2e888596a06b2eb5e22c0c00f77b1dba13ca28446b22",
+      "new_sha256": "9c80f6aa1bf720c2bf6f2e888596a06b2eb5e22c0c00f77b1dba13ca28446b22",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 15,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1311,
+      "source_owned_nonwhitespace_scalars": 23,
+      "old_sha256": "370dc3187a59a28c17964664c83c92b06b4a86d4fef8341cb1343f56e50bf81d",
+      "new_sha256": "370dc3187a59a28c17964664c83c92b06b4a86d4fef8341cb1343f56e50bf81d",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 16,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1429,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "251d77c5247334d01660b0082d2bd8a6b128c9a5cf6812237f205411017b03f4",
+      "new_sha256": "251d77c5247334d01660b0082d2bd8a6b128c9a5cf6812237f205411017b03f4",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 17,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1599,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "2cc845ff49a30b60c3417b99fc157b5c9d0b6df42cf6fd5d38fb61ee1e9088c9",
+      "new_sha256": "2cc845ff49a30b60c3417b99fc157b5c9d0b6df42cf6fd5d38fb61ee1e9088c9",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 18,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1642,
+      "source_owned_nonwhitespace_scalars": 15,
+      "old_sha256": "44fce448130ad7aafcf18082148c04b86ebc4959264bd53d6448f3a22a898efe",
+      "new_sha256": "44fce448130ad7aafcf18082148c04b86ebc4959264bd53d6448f3a22a898efe",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 19,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1204,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "506ac673ea70e3fa16b0f7b00f234fbfc1ad3f247fa48db052c61f0581315da0",
+      "new_sha256": "506ac673ea70e3fa16b0f7b00f234fbfc1ad3f247fa48db052c61f0581315da0",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 20,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 882,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "d553f058958db402c8da120997cface8089ef2c182cf92717e199397e1d8c222",
+      "new_sha256": "d553f058958db402c8da120997cface8089ef2c182cf92717e199397e1d8c222",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 21,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1143,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "24aac768b32cab5e2291e110671f9ac2fe39b4992532ef9180ebc97eab0d70b3",
+      "new_sha256": "24aac768b32cab5e2291e110671f9ac2fe39b4992532ef9180ebc97eab0d70b3",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 23,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1614,
+      "source_owned_nonwhitespace_scalars": 22,
+      "old_sha256": "dd180aefbe0cc00f8c28b82b41110c6848d1caec36cfb3491e619d347d291947",
+      "new_sha256": "dd180aefbe0cc00f8c28b82b41110c6848d1caec36cfb3491e619d347d291947",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 24,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 396,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "cba5c1ea4f0ac2b96f5b2eae3754100b409e4207cbaa9209188ffe308643c72c",
+      "new_sha256": "cba5c1ea4f0ac2b96f5b2eae3754100b409e4207cbaa9209188ffe308643c72c",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 25,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1257,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "f5a16b3fe044d218975bd22b9de693ea0cf42edc1d9c59bd9b08948f57625059",
+      "new_sha256": "f5a16b3fe044d218975bd22b9de693ea0cf42edc1d9c59bd9b08948f57625059",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 27,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 743,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "5295ca56d109defb951c7680e30973a5ac8b32a62aeff728b60f0a504c2ecf46",
+      "new_sha256": "5295ca56d109defb951c7680e30973a5ac8b32a62aeff728b60f0a504c2ecf46",
+      "matches": true
+    },
+    {
+      "id": "nist-fips180-4-2015",
+      "page": 29,
+      "source_sha256": "0455b406d89648d20cbde375561e19c245b9815e894164c2670772e3d54deb82",
+      "nonwhitespace_scalars": 1285,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "795a646b208b1075e698d3f91bd7cdd75a4a1a7e95a3894dbb5d11e7edbde70f",
+      "new_sha256": "795a646b208b1075e698d3f91bd7cdd75a4a1a7e95a3894dbb5d11e7edbde70f",
+      "matches": true
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "page": 1,
+      "source_sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+      "nonwhitespace_scalars": 2835,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "4fef919b3fb8e3fe870ffc994f9a3777bd9e9872014f6428ae445679e3438dcb",
+      "new_sha256": "4fef919b3fb8e3fe870ffc994f9a3777bd9e9872014f6428ae445679e3438dcb",
+      "matches": true
+    },
+    {
+      "id": "nist-itl-shs-2012-05",
+      "page": 3,
+      "source_sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+      "nonwhitespace_scalars": 2859,
+      "source_owned_nonwhitespace_scalars": 0,
+      "old_sha256": "294546660cd096c54ccf89118dfae9cbd18d744ff246af6410f0a397a761130a",
+      "new_sha256": "294546660cd096c54ccf89118dfae9cbd18d744ff246af6410f0a397a761130a",
+      "matches": true
+    }
+  ],
+  "source_owned_nonwhitespace_scalars": 87,
+  "binary_sha256": "bd190b906b6dbd0a32e90a9028c058d777da9657c990ab4680d14fab259022d1",
+  "baseline_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+  "manifest_sha256": "5c32771f436a6935c98bdf063f58e98e18884293bab4ce40d5393f6190425619",
+  "impact_sha256": "8520e689fa3d42d826dcf259111a6fe87b5b918e1a6c26f741f5d03cea3ea1a9",
+  "audit_sha256": "3d42c2c9d10067ea69068de0bb3ca9071772b4aa691e82421f3b12bc8c9ceb3f",
+  "scope": "All pages changed by the paired native extraction audit. Literal nonwhitespace scalar sequence, public character spans, run bounds/font sizes, diagnostics and per-character source-region ownership must remain exact. Source-region indices may shift with removed blanks but ownership must not. Not semantic text gold, glyph-ink truth or full diff precision/recall."
+}

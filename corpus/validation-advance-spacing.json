@@ -1,0 +1,228 @@
+{
+  "version": 43,
+  "date": "2026-11-22",
+  "core_revision": "9bca37cba225fb4fd8475b40b6f3b68b6a97d625",
+  "qualification_revision": "79d979e81ed0cfbbd94ddbc3a5607d8e6c6ae4ce",
+  "base_revision": "48054e70a2d8143f539c8882df4b9c321a377328",
+  "production_ready": false,
+  "scope": "Correct a confirmed false space within the NIST ITL standard number; preserve geometric reading order and source ownership while suppressing row-join-generated spacing between verified touching horizontal LTR advance cells. Not universal word spacing, whole-page1 text, source encoding or glyph-ink accuracy.",
+  "collection": {
+    "registered_documents": 85,
+    "regular_documents": 72,
+    "regular_pages": 611,
+    "pending_semantic_documents": 2,
+    "new_registered_documents_since_v42": 0,
+    "unregistered_reviewed_candidate_pages": 37
+  },
+  "semantic_gold": {
+    "regular_full_page": {
+      "correct": 9,
+      "cases": 9
+    },
+    "new_text_context": {
+      "before_correct": 0,
+      "after_correct": 1,
+      "cases": 1,
+      "page": 1
+    },
+    "retained_visible_operator": {
+      "correct": 4,
+      "cases": 4
+    },
+    "retained_natural_revision": {
+      "correct": 1,
+      "cases": 1
+    }
+  },
+  "transition": {
+    "documents": 72,
+    "pages": 611,
+    "changed_whitespace_pages": 55,
+    "changed_ordered_nonwhitespace_scalar_pages": 0,
+    "changed_block_geometry_size_and_scalar_ownership_pages": 0,
+    "changed_diagnostic_pages": 0,
+    "public_cell_pages": 55,
+    "public_cell_pages_matched": 55,
+    "literal_nonwhitespace_scalars_with_exact_cells_and_ownership": 119178,
+    "source_region_owned_nonwhitespace_scalars": 87
+  },
+  "verification": {
+    "native": {
+      "passed": 302,
+      "ignored": 8,
+      "test_groups": 26,
+      "exit_code": 0,
+      "log_sha256": "9d60f2155a8ebaf6e6fce4498586706575c721c32259dcdcb0e3b9975a40d2ec"
+    },
+    "public_corpus": {
+      "passed": 6,
+      "semantic_characters_conserved": 1074057,
+      "exit_code": 0,
+      "log_sha256": "566fc047d326fab5045aa40d2752fb96ba6a72c03c9f4124ad91d1ed7f2f4544"
+    },
+    "owned_api_cases": 3,
+    "owned_unit_rotation_source_order_combinations": 32,
+    "spacing_unit_and_property_tests": 2,
+    "deferred_source_region_test": 1,
+    "fmt_root_and_probe": true,
+    "clippy_warnings_denied": true,
+    "python_harness_passed": 39,
+    "fixture_hygiene_passed": 2,
+    "javascript_semantic_gold": true,
+    "javascript_engine_selector": true,
+    "browsers": [
+      {
+        "browser_engine": "chromium",
+        "browser": "159.0.8154.6",
+        "cases": 293,
+        "passed": 293,
+        "context_gold_checks": 1,
+        "context_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      },
+      {
+        "browser_engine": "webkit",
+        "browser": "27.2",
+        "cases": 293,
+        "passed": 293,
+        "context_gold_checks": 1,
+        "context_gold_passed": 1,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      }
+    ],
+    "workers": {
+      "documents": 84,
+      "passed_documents": 84,
+      "operation_checks": 1053,
+      "matching_operations": 1053,
+      "matching_successful_operations": 992,
+      "matching_rejections": 61,
+      "cases": 212,
+      "passed": 212,
+      "context_gold_checks": 1,
+      "context_gold_passed": 1,
+      "semantic_gold_by_cohort": {
+        "documents": {
+          "full_page_text": {
+            "cases": 9,
+            "correct": 9,
+            "failed": 0
+          }
+        },
+        "pending_semantic": {
+          "full_page_text": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          }
+        }
+      }
+    },
+    "native_binary_sha256": "bd190b906b6dbd0a32e90a9028c058d777da9657c990ab4680d14fab259022d1",
+    "baseline_binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+    "wasm_sha256": "78fc9ba5b93fb494399b31c445c36bcaa5010d113b51268e16bde73e6f45a33a",
+    "style_refactor": "An equivalent else-if collapse was required by Clippy. Fresh final native302/public6 and all three runtime audits use the final source/artifacts; pre-style logs/artifacts remain ignored, not substituted for final qualification."
+  },
+  "unresolved": {
+    "arabic_full_page_correct": 0,
+    "arabic_full_page_cases": 1,
+    "deseret_inventory_correct": 0,
+    "deseret_inventory_cases": 1,
+    "guarded_failures": 2,
+    "mathematical_reading_order_unproven": true,
+    "mt_extra_assembly_fragments_unresolved": true,
+    "full_natural_revision_precision_recall_unproven": true,
+    "general_word_spacing_accuracy_unproven": true
+  },
+  "previous_validation": "validation-itl-page-gold.json",
+  "previous_manifest": "manifest-itl-page-gold.json",
+  "sha256": {
+    ".github/workflows/ci.yml": "82aa2d2e28b9f1cde44b02a89353adc1a37bd3048b2609e4d616d9817e7097d4",
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "corpus/README.md": "6528cefd0e667a1698c54f705e89d2b5e26e05ac36a6a1b2247daa75118c59b8",
+    "corpus/manifest.json": "5c32771f436a6935c98bdf063f58e98e18884293bab4ce40d5393f6190425619",
+    "corpus/manifest-itl-page-gold.json": "76788f3b1b6d82a58acdc715a7854164dd4f3a75bf6ced92637bd6a68ac5edaf",
+    "corpus/advance-spacing-review.json": "faa4d09f388c03918f0d77eaad386e1154cd2319f188a8c9cd754e7a010a7ba7",
+    "corpus/validation-itl-page-gold.json": "4ea1bc72726298cf6918614253c77a43a55943f6e7dcec4644b93015b78c3695",
+    "crates/jade-pdf-diff/src/text.rs": "23fe1d34050c3d993066e7f78767104300f9bc5b912ab1838bad107308452f30",
+    "crates/jade-pdf-diff/src/text/spacing.rs": "f6244763ec56d2812fce5474902cb1b848c489272ca96d1fb6fe2f3f982e0c7a",
+    "crates/jade-pdf-diff/src/text/row_tests.rs": "9353ba4df4ed9d2f0e56055188bdc45f049aa7c37a7f6c5e3c13fdbdc1b6ab1c",
+    "crates/jade-pdf-diff/src/text/inline.rs": "12211cdb9f9b30422f6fd2aaf9f88aac2470a1947274440e625b2123dfc0946a",
+    "crates/jade-pdf-diff/src/text/table.rs": "2b7bdaa6dbe76c998dccd09d2e05badc8840d99457a05ed40410790012ce7d2c",
+    "crates/jade-pdf-diff/tests/advance_spacing.rs": "c01b2ca83c71497b053425521f1bf2b55832e952c3779e91695a86602ef98669",
+    "crates/jade-pdf-diff/tests/support/appearance_fixture.rs": "772484d9c548f63e5317a59d0ec2c7ac40de029dcd63ba1d1bcf245f3474751f",
+    "docs/pdf_diff.md": "77143d419252994a2e13fb9244132d5ea5e159c605d3d6bb44981ec93a3adc6c",
+    "tools/audit_page_gold.py": "45dc474c15c875c07d7cbcccb1ba91cd5f7437a91b6d2c880abd2816b74a10a8",
+    "tools/audit_run_grouping.py": "c731f1d37e5227696f875b8c415db1a1fff9abdc9f561abbe70ff1a473fa3621",
+    "tools/audit_spacing_cells.py": "3d42c2c9d10067ea69068de0bb3ca9071772b4aa691e82421f3b12bc8c9ceb3f",
+    "tools/semantic_gold.py": "177f78aaed164ed8bf5e73703450e09ee6ab2d7aa050cab62b1e8dc39906bae9",
+    "tools/test_run_grouping.py": "b9bf73943f138e6467eea4e9107edd0a15a1cb96d62778ff830896003e2f638b",
+    "tools/test_spacing_cells.py": "4d8279c54ad38eb96def1e6f20dd137a221fc5caf3d1734e562d509180e655c5",
+    "tools/test_text_context_gold.py": "0dbc50551c8a9566c4911137b6bca43addbf5a890bc525cbcbc32c7c14fdbb19",
+    "tools/wasm-smoke/src/lib.rs": "0801b682aa7c68b668c0d7876f2b79528ab1e59f8a07728c1ff86df6ad9bf443",
+    "tools/wasm-smoke/Cargo.lock": "5da88616428c16e8575bf5a247ef09bce9302aae77acbf71b59f0fb760dfde17",
+    "tools/wasm-smoke/browser_smoke.mjs": "5c9be015889206a1f3241173694477206c30d8d5fa94cb8ea8ea96a8c998bdcc",
+    "tools/wasm-smoke/worker_smoke.mjs": "aaf9f355508ae9778b5cfe74ccdc3cd70a96360ea522526b7750591ec56c8e58",
+    "tools/wasm-smoke/semantic_gold.mjs": "877f4ac8696971056e2d6a5ee38f99426f4780101723b87a9a43bfb1074e3260",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "4e7a1a2861e3146a2beddae35011ad671c255769e85185587337a73d84df0620",
+    "corpus/results-page-gold-advance-before.json": "6c030ae86a782f716d13c74fa651dc6777ea3564b93ab01aac6851d39b08c71f",
+    "corpus/results-page-gold-advance.json": "1e88d9d48d2c103ee5eeb8ad55e4ffb380ef58b699fc1ed036be1502f942ffc2",
+    "corpus/results-pending-semantic-advance.json": "36584ff41ad5fa73c0bc31cace98b188e6074f9c7f86d1767fe80a04ba4b2b8c",
+    "corpus/results-symbol-operators-advance.json": "2784550ee423ac6f6cc9514be6b621dfd8828e028d6d97b24d6ade1aaf916501",
+    "corpus/results-scalar-revision-advance.json": "29f5c45bb85c1e4f8d90e41149ddcb7772d4ca855a401f2c465814e546ca6d24",
+    "corpus/results-advance-impact.json": "8520e689fa3d42d826dcf259111a6fe87b5b918e1a6c26f741f5d03cea3ea1a9",
+    "corpus/results-advance-cells.json": "f8a42e4cfc1d4527328d5c2fa7629730a489eb28a30faacdeecd9f4c3aeb6697",
+    "corpus/results-browser-chromium-advance.json": "fb410ed426f9bda7839c8a139e2f8804c60ae2dc24574edcde22df553f1b2703",
+    "corpus/results-browser-webkit-advance.json": "f018385df8252a86951993af87d6d9648877fe0ea815ce795113d2e25694002b",
+    "corpus/results-workers-advance.json": "770f0ca7e16f16d061e22484fbfe13a14f9dd0cdabdc71d86ccb748d180b449b"
+  },
+  "qualified_core_tree": "bbf410f06a0d36acefc87e74d92184456a6e3eee",
+  "qualified_source_tree": "5297d1f96816c93251037a7f25b34d860b8e629e",
+  "qualified_result_tree": "cb9bd7767781ad6bd740ad0254ab7e8cd3b25871",
+  "rebase_verification": "All five qualified source/result trees are byte-identical before/after replay onto merged PR7. Only ledger history references and a README history clarification were subsequently changed. Rust/probe/checker bytes, native/WASM artifacts, manifests and reports remain qualified."
+}

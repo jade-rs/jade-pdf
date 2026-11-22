@@ -103,6 +103,7 @@ jobs:
       - run: python3 tools/audit_reading_order.py --binary target/release/pdf-diff
       - run: python3 tools/audit_symbol_operators.py --binary target/release/pdf-diff --offline
       - run: python3 tools/audit_scalar_revision.py --binary target/release/pdf-diff
+      - run: python3 tools/audit_page_gold.py --binary target/release/pdf-diff
       - run: |
           python3 -m venv .venv-corpus
           .venv-corpus/bin/pip install -r tools/requirements-corpus.txt

@@ -1,4 +1,42 @@
 // Report the check's actual scope; scalar inventories do not validate page prose or order.
+export function semanticEntries(manifest) {
+  return ['documents','pending_semantic'].flatMap(cohort=>(manifest[cohort]??[]).map(entry=>{
+    const contexts=Object.hasOwn(entry,'context_gold')?entry.context_gold:[];
+    if(!Array.isArray(contexts)||contexts.length>32||contexts.some(g=>!g||g.kind!=='text_context'))
+      throw new Error('Invalid bounded text contexts');
+    if(Object.hasOwn(entry,'gold')&&Object.hasOwn(entry,'full_page_text'))
+      throw new Error('Ambiguous page gold declarations');
+    let gold=entry.gold;
+    if(Object.hasOwn(entry,'full_page_text')) {
+      if(entry.pages!==1) throw new Error('Legacy full_page_text requires one page');
+      gold={page:1,kind:'full_page_text',text:entry.full_page_text};
+    }
+    return {...entry,semantic_gold_cohort:cohort,...(gold?{gold}:{})};
+  }));
+}
+
+export function goldOutcomeAccepted(cohort,matches,guarded) {
+  if(!['documents','pending_semantic'].includes(cohort)) throw new Error('Unknown semantic gold cohort');
+  return matches===true || cohort==='pending_semantic'&&guarded===true;
+}
+
+export function checkPageGold(ir,gold) {
+  if(!Number.isSafeInteger(gold.page)||gold.page<1||gold.page>ir.pages.length)
+    throw new Error('Gold page must be a one-based integer within the extracted document');
+  return checkGold(ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n'),gold);
+}
+
+export function goldByCohort(rows) {
+  const result={};
+  for(const {cohort,kind,matches} of rows) {
+    if(!['documents','pending_semantic'].includes(cohort)) throw new Error('Unknown semantic gold cohort');
+    const kinds=result[cohort]??={};
+    const count=kinds[kind]??={cases:0,correct:0,failed:0};
+    count.cases++;count[matches?'correct':'failed']++;
+  }
+  return result;
+}
+
 function inventorySpec(gold) {
   const {ranges,count_each:count,scope}=gold;
   if(!Array.isArray(ranges)||!ranges.length||ranges.length>4096||!Number.isSafeInteger(count)
@@ -34,6 +72,17 @@ export function pageHasTextReview(page) {
 
 export function checkGold(actual,gold) {
   const kind=gold.kind??'full_page_text';
+  if(kind==='text_context') {
+    const values=['text','anchor','scope'].map(key=>gold[key]);
+    if(values.some(value=>typeof value!=='string'||!normalizeText(value)||[...value].length>2048))
+      throw new Error('Text context requires bounded nonempty text, anchor and scope');
+    const [expected,anchor]=values.slice(0,2).map(normalizeText);
+    const count=(text,part)=>text.split(part).length-1;
+    if(count(expected,anchor)!==1) throw new Error('Text context anchor must occur once within expected context');
+    const actualText=normalizeText(actual),contexts=count(actualText,expected),anchors=count(actualText,anchor);
+    return {kind,scope:gold.scope,matches:contexts===1&&anchors===1,
+      expected_context:gold.text,context_occurrences:contexts,anchor_occurrences:anchors};
+  }
   if(kind==='full_page_text') {
     if(typeof gold.text!=='string') throw new Error('Full-page text gold requires expected text');
     return {kind,matches:normalizeText(actual)===normalizeText(gold.text),expected_text:gold.text,actual_text:actual};

@@ -256,6 +256,8 @@ mod tests {
             y1: y,
         };
         ExtractedRun {
+            advance: Default::default(),
+            pending_spaces: Vec::new(),
             source_text_region: false,
             source_text_anchor: false,
             source_regions: Vec::new(),

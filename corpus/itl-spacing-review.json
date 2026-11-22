@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "status": "unresolved",
+  "id": "nist-itl-shs-2012-05",
+  "source_sha256": "c74b43d40999ba9d89deab62be58e72d82020183d53ec350991601f218b71f2a",
+  "page": 1,
+  "expected_line": "standard replaces FIPS 180-3 and specifies seven secure hash algorithms.",
+  "actual_line": "standard replaces FIPS 1 80-3 and specifies seven secure hash algorithms.",
+  "original_review": "Original full-page Poppler image at 100dpi inspected; the printed standard number is 180-3, without an intra-number space. This review was made after observing the extracted discrepancy; the original image and independently interpreted source character cells corroborate it.",
+  "independent_parser": "pdfplumber 0.11.9",
+  "independent_source_line": "standard replaces FIPS 180-3 and specifies seven secure hash algorithms.  ",
+  "source_character_cells": [
+    {
+      "text": "1",
+      "x0": 193.546,
+      "x1": 199.066
+    },
+    {
+      "text": "8",
+      "x0": 199.1,
+      "x1": 204.62
+    },
+    {
+      "text": "0",
+      "x0": 204.62,
+      "x1": 210.14
+    }
+  ],
+  "public_layer_ink_cells": [
+    {
+      "text": "1",
+      "x0": 194.83773803710938,
+      "x1": 197.71917724609375
+    },
+    {
+      "text": "8",
+      "x0": 199.77345275878906,
+      "x1": 203.9796905517578
+    }
+  ],
+  "inserted_blank_span": {
+    "x0": 197.71917724609375,
+    "x1": 197.71917724609375
+  },
+  "size": 11.039999961853027,
+  "diagnostics": {
+    "sdk_unicode_mapping_errors": 0,
+    "sdk_text_objects_without_characters": 36,
+    "source_text_characters_missing": 36
+  },
+  "hypothesis": "The SDK stream has adjacent indices 2087 (1) and 2088 (8), neither generated, with no blank between them. The extra blank is introduced during product run extraction or row canonicalization. Their advance-cell gap is about .034pt but ink gap is about2.054pt, exceeding the existing 0.15em heuristic. Source-object boundary and row-merge behavior still need an owned TDD reproduction before a fix.",
+  "scope": "A documented unresolved spacing defect, not a passing semantic gold, not part of the nine page-full-text cases, and not evidence that pages 1-4 are correct. The page5 gold does not cover it.",
+  "binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+  "sdk_stream_observation": {
+    "before": {
+      "index": 2087,
+      "text": "1",
+      "generated": false,
+      "origin_x": 193.54607,
+      "loose_x1": 199.06607
+    },
+    "after": {
+      "index": 2088,
+      "text": "8",
+      "generated": false,
+      "origin_x": 199.1,
+      "loose_x1": 204.62001
+    },
+    "no_intervening_sdk_character": true
+  }
+}

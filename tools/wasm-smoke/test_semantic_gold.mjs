@@ -1,5 +1,29 @@
 import assert from 'node:assert/strict';
-import {checkGold,pageHasTextReview,compactFragmentMatches} from './semantic_gold.mjs';
+import {checkGold,pageHasTextReview,compactFragmentMatches,semanticEntries,checkPageGold,goldOutcomeAccepted,goldByCohort} from './semantic_gold.mjs';
+
+const declared=semanticEntries({documents:[{id:'regular',pages:1,full_page_text:'text'},
+  {id:'five-pages',pages:5,gold:{page:5,text:'Disclaimer'}}],
+  pending_semantic:[{id:'pending',gold:{page:1,text:'not recovered'}}]});
+assert.equal(declared[0].semantic_gold_cohort,'documents');
+assert.deepEqual(declared[0].gold,{page:1,kind:'full_page_text',text:'text'});
+assert.equal(declared[1].gold.page,5);
+assert.equal(declared[2].semantic_gold_cohort,'pending_semantic');
+assert.throws(()=>semanticEntries({documents:[{pages:2,full_page_text:'fragment'}]}));
+assert.throws(()=>semanticEntries({documents:[{pages:1,full_page_text:'old',gold:{page:1,text:'new'}}]}));
+assert.equal(goldOutcomeAccepted('documents',false,true),false);
+assert.equal(goldOutcomeAccepted('pending_semantic',false,true),true);
+assert.equal(goldOutcomeAccepted('pending_semantic',false,false),false);
+assert.equal(goldOutcomeAccepted('documents',true,false),true);
+assert.throws(()=>goldOutcomeAccepted('unknown',false,true));
+const pages={pages:[{blocks:[{text:'other'}]},{blocks:[{text:'Disclaimer'},{text:'exact text'}]}]};
+assert.equal(checkPageGold(pages,{page:2,text:'Disclaimer exact text'}).matches,true);
+assert.equal(checkPageGold(pages,{page:2,text:'Disclaimer'}).matches,false);
+for(const page of [0,-1,3,true,'1',null,1.5]) assert.throws(()=>checkPageGold(pages,{page,text:'other'}));
+assert.deepEqual(goldByCohort([
+  {cohort:'documents',kind:'full_page_text',matches:true},
+  {cohort:'pending_semantic',kind:'full_page_text',matches:false}]),{
+  documents:{full_page_text:{cases:1,correct:1,failed:0}},
+  pending_semantic:{full_page_text:{cases:1,correct:0,failed:1}}});
 
 assert.equal(compactFragmentMatches('…ℓ',{}),true);
 assert.equal(compactFragmentMatches('0 ≤ t\n≤ 79',{compact_fragment:'0≤t≤79'}),true);
@@ -10,6 +34,15 @@ for(const value of ['', ' \n', '\u0085', '\u001c', null, 4])
   assert.throws(()=>compactFragmentMatches('anything',{compact_fragment:value}));
 
 const clean={blocks:[{text:'wrong'}],user_unit:null};
+const context={kind:'text_context',text:'replaces FIPS 180-3 and specifies',anchor:'replaces FIPS',scope:'One printed line, not page prose or geometry'};
+assert.equal(checkGold('prefix\nreplaces FIPS 180-3 and specifies\nsuffix',context).matches,true);
+for(const text of ['replaces FIPS 1 80-3 and specifies','replaces FIPS 180-3 and\u200dspecifies',
+  context.text+'\nreplaces FIPS 1 80-3 and specifies',context.text+'\n'+context.text])
+  assert.equal(checkGold(text,context).matches,false);
+for(const change of [{text:''},{text:' '},{text:'a'.repeat(2049)},{anchor:''},{anchor:'absent'},{scope:''},{scope:'\u0085'},{scope:'\u001c'},{text:null}])
+  assert.throws(()=>checkGold('',{...context,...change}));
+for(const context_gold of [null,{},Array(33).fill(context),[{kind:'full_page_text'}]])
+  assert.throws(()=>semanticEntries({documents:[{id:'bad',context_gold}]}));
 assert.equal(pageHasTextReview(clean),false);
 for(const field of ['sdk_unicode_mapping_errors','sdk_text_objects_without_characters',
   'source_text_characters_missing','source_unicode_scalars_unmatched'])

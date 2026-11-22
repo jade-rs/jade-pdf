@@ -1,0 +1,182 @@
+{
+  "version": 42,
+  "date": "2026-11-22",
+  "qualification_revision": "29700111623b4bcfed014884976b5dbf13c61b1c",
+  "base_revision": "48054e70a2d8143f539c8882df4b9c321a377328",
+  "production_ready": false,
+  "scope": "New independently reviewed five-page NIST bulletin; strict selected-page gold across native, two browsers and Workers. Cohorts remain separate. No product Rust changes and no full-document precision/recall claim.",
+  "collection": {
+    "registered_documents": 85,
+    "regular_documents": 72,
+    "regular_pages": 611,
+    "robustness_documents": 10,
+    "reference_documents": 1,
+    "pending_semantic_documents": 2,
+    "new_registered_documents": 1,
+    "new_reviewed_pages": 5
+  },
+  "native_page_gold": {
+    "cases": 9,
+    "correct": 9,
+    "failed": 0,
+    "legacy_one_page_cases": 8,
+    "new_selected_page": 5,
+    "equivalent_rewrite_false_changes": 0,
+    "exit_code": 0
+  },
+  "verification": {
+    "public_corpus": {
+      "passed": 6,
+      "exit_code": 0,
+      "semantic_characters_conserved": 1074057,
+      "log_sha256": "2f6b2304ab44f92a25037b82ca32eeed1f2f189dce3ba87baa133ad449971a6e"
+    },
+    "python_harness_passed": 31,
+    "fixture_hygiene_passed": 2,
+    "javascript_semantic_gold": true,
+    "javascript_browser_selector": true,
+    "browsers": [
+      {
+        "browser_engine": "chromium",
+        "browser": "159.0.8154.6",
+        "cases": 290,
+        "passed": 290,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      },
+      {
+        "browser_engine": "webkit",
+        "browser": "27.2",
+        "cases": 290,
+        "passed": 290,
+        "semantic_gold_by_cohort": {
+          "documents": {
+            "full_page_text": {
+              "cases": 9,
+              "correct": 9,
+              "failed": 0
+            }
+          },
+          "pending_semantic": {
+            "full_page_text": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            },
+            "scalar_inventory": {
+              "cases": 1,
+              "correct": 0,
+              "failed": 1
+            }
+          }
+        }
+      }
+    ],
+    "workers": {
+      "documents": 84,
+      "passed_documents": 84,
+      "operation_checks": 1052,
+      "matching_operations": 1052,
+      "matching_successful_operations": 991,
+      "matching_rejections": 61,
+      "cases": 209,
+      "passed": 209,
+      "semantic_gold_by_cohort": {
+        "documents": {
+          "full_page_text": {
+            "cases": 9,
+            "correct": 9,
+            "failed": 0
+          }
+        },
+        "pending_semantic": {
+          "full_page_text": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          },
+          "scalar_inventory": {
+            "cases": 1,
+            "correct": 0,
+            "failed": 1
+          }
+        }
+      }
+    },
+    "retained_visible_operator_gold": {
+      "cases": 4,
+      "correct": 4
+    },
+    "retained_natural_revision_gold": {
+      "cases": 1,
+      "correct": 1
+    },
+    "native_binary_sha256": "1eda792127f3e80e67263b41c0bf5b5566ae18e9d296dfd864cc19e1097d832c",
+    "wasm_sha256": "9ae74cf5f94b9cce6384799ddba7dcb38debba422101a58354b0b06e76994564",
+    "rust_source_unchanged_since": "6ac9a44343bdcf729c22f2e0c04deb122eead1da",
+    "rust_default_tests": "Not rerun locally for this harness/manifest-only change. Previous v41 records 296 passed and 8 ignored for identical Rust/probe sources; exact new PR-head CI must still pass."
+  },
+  "unresolved": {
+    "arabic_full_page": {
+      "correct": 0,
+      "cases": 1
+    },
+    "deseret_inventory": {
+      "correct": 0,
+      "cases": 1
+    },
+    "guarded_failures": 2,
+    "new_bulletin_page1_spacing": "FIPS 180-3 is emitted as FIPS 1 80-3. Original image, independent advance cells and adjacent SDK indices confirm an extra product-inserted blank; not covered by page5 gold.",
+    "mt_extra_assembly_fragments": true,
+    "full_natural_revision_precision_recall_unproven": true
+  },
+  "previous_validation": "validation-baseline-grid.json",
+  "previous_manifest": "manifest-baseline-grid.json",
+  "sha256": {
+    ".github/workflows/ci.yml": "82aa2d2e28b9f1cde44b02a89353adc1a37bd3048b2609e4d616d9817e7097d4",
+    "corpus/README.md": "1e64527ef46694f0193ab8ea92c736836ee14aa040ff49835476ac11bc86dc3c",
+    "corpus/manifest.json": "76788f3b1b6d82a58acdc715a7854164dd4f3a75bf6ced92637bd6a68ac5edaf",
+    "corpus/manifest-baseline-grid.json": "a1bbf9bafed556988f26beb356651c216f2c38dc48106375f641255b5679e77d",
+    "corpus/itl-spacing-review.json": "3b9b5d2becc248d5e152343d461e434f1fc7b652ae54afdb7a0592114beb43eb",
+    "corpus/validation-baseline-grid.json": "471503e5b5f4e258d3783b141c384aa7108042faabe479e49427212484d7566a",
+    "Cargo.lock": "ec9e88381d3275d08a2a8f74f8db8805671443f3bdefba71c31af06a0ba175d1",
+    "tools/audit_page_gold.py": "72c4e401bb36af124309315d40b89d5dbf8c54da81f35f0b9056bac7b801e5a7",
+    "tools/test_page_gold.py": "53a3ac540cdb35663b4ffcdae44523b53c775c0714222e541014c021ec72db11",
+    "tools/audit_pending_semantic.py": "8f16e24008c0e2000843784226d51448f968653160e324113d50fe0a8e7c87df",
+    "tools/semantic_gold.py": "0d7beb76ed49e6389956ab01c2858658bc1cc83ec9b33f5a3d89b067b2adca04",
+    "tools/wasm-smoke/browser_smoke.mjs": "a438e2c7718000bbb9ee905d40a3a9ad59a3976b6922eace640fc1a9d671b483",
+    "tools/wasm-smoke/worker_smoke.mjs": "d6c1d5093da3a4088440ef294096778ed6d1c3f4e1eff3caff0dac820aae8a7c",
+    "tools/wasm-smoke/semantic_gold.mjs": "33d5bf9baa1746bd38765936aa9cb789f470a3b626f2daeec611e4ec79cb3b4c",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "126bbec78897a9fa8aaaf09a617e198ed6c92216a7e86a90d4ba5fdae398b5bf",
+    "tools/wasm-smoke/runtime.json": "9cbc5846b2c63210597d17a6c1a77e0569b277fc65c36c224a1e8fcbf25aaf7a",
+    "corpus/results-page-gold-itl.json": "2e7cad5efde9c6feda3aae79e2c72951b9aec7310c78b2c6a216f6c567f4fa02",
+    "corpus/results-pending-semantic-itl.json": "ec05262fc85940b57d8639b1ffff5b577e78750f8e41b078c8f446d553d94ce2",
+    "corpus/results-symbol-operators-itl.json": "ff59a93dca09b9820795844b85d548fafbbb3660882e55f4ec9e5ff3023dc2de",
+    "corpus/results-scalar-revision-itl.json": "d84d0d3069a80058510196a9e2eeec6cc70254206b005a794da0a755c5827767",
+    "corpus/results-browser-chromium-itl.json": "5f9e4e27d97d6afc6ca6d8d61669832db0c72c2399a9bacb61aa82eec053a42e",
+    "corpus/results-browser-webkit-itl.json": "8ab8bd3315287bce0a9f3af3ebb7c4e6a1044945282da28b55ee229ed5f208ff",
+    "corpus/results-workers-itl.json": "7431301e52b98964aeb7978cc5612adaed570fa668e0c66b3ae5aede9dfea56e"
+  },
+  "qualified_source_tree": "569c8eed74cb9023980f3f9c6a5d1d7cb07db869",
+  "qualified_result_tree": "c0b826ab050baa3cdb76de30b9f3cf27a3801e17",
+  "rebase_verification": "Qualification and result trees are byte-identical when replayed onto merged PR7. Only these history references were subsequently updated; v42 reports and frozen artifact hashes retain the pre-spacing baseline."
+}
