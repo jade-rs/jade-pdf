@@ -4565,6 +4565,9 @@ fn infer_positioned_table_from_graphics(
     xs.dedup();
     ys.sort();
     ys.dedup();
+    // セルごとに枠を描く表や二重線は、間隔の狭い平行線を 1 本の境界にまとめる。
+    xs = merge_close_edges(&xs);
+    ys = merge_close_edges(&ys);
     // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
     let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
     let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
@@ -4583,8 +4586,8 @@ fn infer_positioned_table_from_graphics(
     {
         ys = augmented_ys;
     }
-    xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
-    ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    xs = merge_close_edges(&augment_xs_from_partial_verticals(&xs, &ys, &vertical));
+    ys = merge_close_edges(&augment_ys_from_partial_horizontals(&xs, &ys, &horizontal));
     let mut text_augmented_columns = false;
     // 内側の縦罫線で列が確定している表は、文字の隙間から列を増やさない。
     if xs.len() == 2
@@ -4604,6 +4607,7 @@ fn infer_positioned_table_from_graphics(
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
             && !(has_open_edges && has_open_grid_lines(&page_graphics, &xs, &ys))
+            && !has_covered_grid_lines(&page_graphics, &xs, &ys)
     {
         return None;
     }
@@ -5874,6 +5878,49 @@ fn open_table_edges(
     edges.sort();
     edges.dedup();
     edges
+}
+
+/// 間隔が狭い（二重線・セルごとの枠）境界座標を、その平均の 1 本へまとめる。
+fn merge_close_edges(edges: &[i32]) -> Vec<i32> {
+    const DOUBLE_RULE_GAP_PT: i32 = 3;
+    let mut groups: Vec<Vec<i32>> = Vec::new();
+    for &edge in edges {
+        match groups.last_mut() {
+            Some(group)
+                if edge - *group.last().expect("group is not empty") <= DOUBLE_RULE_GAP_PT =>
+            {
+                group.push(edge)
+            }
+            _ => groups.push(vec![edge]),
+        }
+    }
+    groups
+        .into_iter()
+        .map(|group| {
+            let sum = group.iter().map(|edge| *edge as f32).sum::<f32>();
+            (sum / group.len() as f32).round() as i32
+        })
+        .collect()
+}
+
+/// 全ての格子線が、分割描画も含めた罫線区間でほぼ覆われているか判定する。
+fn has_covered_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (Some(&min_y), Some(&max_y)) = (ys.first(), ys.last()) else {
+        return false;
+    };
+    let (Some(&min_x), Some(&max_x)) = (xs.first(), xs.last()) else {
+        return false;
+    };
+    xs.len() >= 2
+        && ys.len() >= 2
+        && (xs.len() >= 3 || ys.len() >= 3)
+        && xs
+            .iter()
+            .all(|x| table_grid::coverage(&vertical, *x as f32, min_y as f32, max_y as f32) >= 0.9)
+        && ys.iter().all(|y| {
+            table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9
+        })
 }
 
 /// 外枠を補った表で、全ての列境界が縦罫線で区切られているか判定する。

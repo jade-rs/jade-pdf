@@ -65,6 +65,38 @@ fn emit(
     Some(())
 }
 
+/// 現在の点からサブパスの始点へ戻る辺を加え、現在の点を始点へ移す。
+fn close_subpath(
+    budget: &DecodeBudget,
+    segments: &mut Vec<ParsedBounds>,
+    point: &mut Option<(f32, f32)>,
+    start: Option<(f32, f32)>,
+) -> Option<()> {
+    if let (Some((x0, y0)), Some((x1, y1))) = (*point, start)
+        && (x0 != x1 || y0 != y1)
+    {
+        push(budget, segments, ParsedBounds { x0, y0, x1, y1 })?;
+    }
+    *point = start;
+    Some(())
+}
+
+/// 矩形の 4 辺のうち、長さのある辺を返す。
+fn rectangle_edges(x: f32, y: f32, w: f32, h: f32) -> Vec<ParsedBounds> {
+    let (x0, x1) = (x.min(x + w), x.max(x + w));
+    let (y0, y1) = (y.min(y + h), y.max(y + h));
+    let mut edges = Vec::with_capacity(4);
+    if x1 > x0 {
+        edges.push(ParsedBounds { x0, y0, x1, y1: y0 });
+        edges.push(ParsedBounds { x0, y0: y1, x1, y1 });
+    }
+    if y1 > y0 {
+        edges.push(ParsedBounds { x0, y0, x1: x0, y1 });
+        edges.push(ParsedBounds { x0: x1, y0, x1, y1 });
+    }
+    edges
+}
+
 /// ページをまたぐ結果配列へ追記する。失敗時は呼び出し元が全結果を破棄する。
 pub(super) fn append(
     budget: &DecodeBudget,
@@ -85,6 +117,7 @@ pub(super) fn append(
     let mut state = State::default();
     let mut saved = Vec::new();
     let mut point = None;
+    let mut start = None;
     let mut segments = Vec::new();
     let mut rectangles = Vec::new();
     while let Some(token) = lexer.next() {
@@ -135,10 +168,14 @@ pub(super) fn append(
                         )?;
                     }
                     point = Some((x, y));
+                    if word == b"m" {
+                        start = point;
+                    }
                 } else {
                     point = None;
                 }
             }
+            b"h" => close_subpath(budget, &mut segments, &mut point, start)?,
             b"re" if count >= 4 => {
                 let a = &args[count - 4..];
                 let b = transform_rect_bounds(state.matrix, a[0], a[1], a[2], a[3]);
@@ -159,7 +196,11 @@ pub(super) fn append(
             b"w" if count > 0 => {
                 state.width = args[count - 1];
             }
-            b"S" => {
+            // 線を描く演算子（塗りと同時のものを含む）。`s`・`b`・`b*` はパスを閉じてから描く。
+            b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*" => {
+                if matches!(word, b"s" | b"b" | b"b*") {
+                    close_subpath(budget, &mut segments, &mut point, start)?;
+                }
                 for segment in segments.drain(..) {
                     if is_axis_aligned(segment) {
                         emit(
@@ -171,10 +212,16 @@ pub(super) fn append(
                         )?;
                     }
                 }
-                rectangles.clear();
+                // 矩形の枠線（セル枠を矩形で描く表など）は 4 辺の罫線として出す。
+                for [x, y, w, h] in rectangles.drain(..) {
+                    for edge in rectangle_edges(x, y, w, h) {
+                        emit(budget, output, page, edge, state.width)?;
+                    }
+                }
                 point = None;
+                start = None;
             }
-            b"f" | b"f*" => {
+            b"f" | b"f*" | b"F" => {
                 for [x, y, w, h] in rectangles.drain(..) {
                     if let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
                         emit(budget, output, page, bounds, width)?;
@@ -190,6 +237,7 @@ pub(super) fn append(
                 segments.clear();
                 rectangles.clear();
                 point = None;
+                start = None;
             }
             // 未対応のinline画像のbinary本文を命令として解釈しない。
             b"BI" => break,
@@ -199,3 +247,7 @@ pub(super) fn append(
     }
     Some(())
 }
+
+#[cfg(test)]
+#[path = "graphics_draws_tests.rs"]
+mod tests;
