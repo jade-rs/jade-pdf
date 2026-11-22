@@ -120,5 +120,41 @@
       "jade-nta-grid-sdk-contracts.log": "71acdba956c0293c5a566bbb2aa4ca154500b4a27c1e91f74e396bc119ab9952",
       "jade-nta-grid-sdk-clippy.log": "75fb2c84a50c308745a6c9c0ed58db8565f68fc180cc185ab1b1ac6128bca88d"
     }
+  },
+  "history_replay": {
+    "original_base": "da5d4b0ee8c57718e7dbed45567aef57cc787451",
+    "replayed_base": "60c512fb8f9b01d0a562609169847601e43b05c6",
+    "base_pr": 13,
+    "original_head": "75466ccde5a8b0b6ebf9cda7dc3518fa97e03f6d",
+    "replayed_head_before_metadata": "4c6453fc7aa96dc603f57d6c59b7847785c23d34",
+    "all5_trees_identical": true,
+    "commits": [
+      {
+        "original": "3d07536e7ac2f04541f8e92308793e9de03de4d6",
+        "replayed": "b9795beaeffd34b16c9cb7f22b113523fa7d0003",
+        "tree": "88994dd20ae32a5f058f5839fc97b9596e0aa69c"
+      },
+      {
+        "original": "da5afa64daf3093da0724b945053f72e1f147c59",
+        "replayed": "0fa2a079323cddc108c69671ccbe0c6d87466173",
+        "tree": "25d0c8a9e544fefce2b40841f4906a43a07546f5"
+      },
+      {
+        "original": "3dac78d5af4e19831eb91f79528c30106ba90dca",
+        "replayed": "677df8e33f23075b48e6dfcbcf2df6a17dd3b73d",
+        "tree": "24270d33d966808bfff1798ae16b2916a24f362c"
+      },
+      {
+        "original": "e9d22717dd6cc8de6f491fd306dcdf43f5956b88",
+        "replayed": "599896b2bab64b61b3a15be5375284a7390510bb",
+        "tree": "d8b58296b3892a3bcd258d6dcfa25a5608fe38d2"
+      },
+      {
+        "original": "75466ccde5a8b0b6ebf9cda7dc3518fa97e03f6d",
+        "replayed": "4c6453fc7aa96dc603f57d6c59b7847785c23d34",
+        "tree": "90f09fe1a1dad8de8e312d8caee03de215a1f4f5"
+      }
+    ],
+    "scope": "Only commit identity changed. Gold declaration precedes baseline inspection; all original input, expected order, before report and test-only geometry/API code bytes remain identical. Production natural case remains0/1; not a runtime qualification."
   }
 }
