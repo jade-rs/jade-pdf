@@ -4,6 +4,8 @@ A Rust workspace for comparing PDFs and converting PDF documents to DOCX.
 
 The project is under active development. Conversion coverage and layout fidelity vary by document; see the guides below for supported features and limitations.
 
+Native conversion now recovers unreadable TrueType display names from verified embedded font metadata and retains subsets with nonprinting control glyphs. The reviewed Japanese form renders its text again, but pagination remains incorrect; see the [font and rendering evidence](corpus/validation-native-fonts.json).
+
 ## Features
 
 - **PDF comparison:** align pages and text blocks, inspect extracted document structure, and render pages with Pdfium.
