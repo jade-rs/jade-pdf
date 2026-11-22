@@ -50,6 +50,8 @@ Inferred centred text lines within the body area retain their PDF centre through
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
 
+Text paragraphs use an explicit line box based on the source font size, with the PDF's blank space applied separately. This prevents font-dependent automatic leading from accumulating between source lines. Font substitution can still shift the first baseline or change glyph widths.
+
 PDF comparison qualification uses 90 registered public PDFs (76 regular documents with 717 pages, 10 robustness inputs, one specification reference, and three unresolved semantic gold cases). Three additional reviewed W3C files represent two independent visible contents and remain outside the registered corpus. See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
 
 ## Development

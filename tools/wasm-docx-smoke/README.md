@@ -23,7 +23,10 @@ The checks compare the generated DOCX paragraph and table coordinates with
 authored PDF coordinates. Owned Helvetica inputs are created in a temporary
 directory. Both default and strict conversion exports, inspection, Word's maximum
 page size and rejection of the pinned encrypted NTA input are exercised. Each
-output's OOXML is checked independently with Python's standard library.
+output's OOXML is checked independently with Python's standard library. Four
+authored text lines also check that the explicit line box and paragraph gap
+reconstruct their 20-point source pitch. The suite requires every fixture and
+both default and strict outputs to be present.
 
 This suite verifies byte-PDF conversion and inspection. It does not establish
 rendered-PNG API behavior, font or artwork fidelity, Microsoft Word rendering,
