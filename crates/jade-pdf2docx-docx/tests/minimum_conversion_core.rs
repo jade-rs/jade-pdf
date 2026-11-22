@@ -3879,3 +3879,101 @@ fn minimum_conversion_clean_output_emits_only_ocr_paragraphs() {
     let _ = fs::remove_file(input_path);
     let _ = fs::remove_file(output_docx);
 }
+
+/// 通常サイズの混在sectionでもheader/footerの両方を全ページへ保持する。
+#[test]
+fn mixed_normal_pages_keep_both_header_and_footer_references() {
+    verify_mixed_chrome_references(&[(300, 200), (200, 300)]);
+}
+
+/// 大判sectionを縮小しても、途中sectionのfooterを落とさない。
+#[test]
+fn mixed_oversized_pages_keep_both_header_and_footer_references() {
+    verify_mixed_chrome_references(&[(2000, 1000), (1000, 500), (1000, 2000)]);
+}
+
+/// 反復chromeを持つowned PDFの全sectionと、参照先partの本文を検証する。
+fn verify_mixed_chrome_references(sizes: &[(u32, u32)]) {
+    let contents: Vec<Vec<u8>>=sizes.iter().enumerate().map(|(i,(_,height))|format!("BT /F1 10 Tf 20 {} Td (Owned common header) Tj ET BT /F1 10 Tf 20 10 Td (Owned common footer) Tj ET BT /F1 20 Tf 20 {} Td (Owned body {}) Tj ET",height-15,height-60,i+1).into_bytes()).collect();
+    let contents: Vec<&[u8]> = contents.iter().map(Vec::as_slice).collect();
+    let pdf = flate_pdf_with_page_contents_base_fonts_and_page_sizes(
+        &contents,
+        &[("F1", "Helvetica")],
+        sizes,
+    );
+    let output = convert_minimum_pdf_bytes_to_docx_bytes("owned-mixed-chrome.pdf", &pdf).unwrap();
+    let mut zip = zip::ZipArchive::new(std::io::Cursor::new(output)).unwrap();
+    let mut xml = String::new();
+    zip.by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert_eq!(
+        xml.matches("<w:headerReference").count(),
+        sizes.len(),
+        "{xml}"
+    );
+    assert_eq!(
+        xml.matches("<w:footerReference").count(),
+        sizes.len(),
+        "every mixed section must retain its footer: {xml}"
+    );
+    let mut rels = String::new();
+    zip.by_name("word/_rels/document.xml.rels")
+        .unwrap()
+        .read_to_string(&mut rels)
+        .unwrap();
+    let mut reader = quick_xml::Reader::from_str(&rels);
+    let mut targets = std::collections::BTreeMap::new();
+    while let Ok(event) = reader.read_event() {
+        match event {
+            quick_xml::events::Event::Empty(e) if e.name().as_ref() == b"Relationship" => {
+                let id = e.try_get_attribute("Id").unwrap().unwrap();
+                let target = e.try_get_attribute("Target").unwrap().unwrap();
+                targets.insert(
+                    String::from_utf8(id.value.into_owned()).unwrap(),
+                    String::from_utf8(target.value.into_owned()).unwrap(),
+                );
+            }
+            quick_xml::events::Event::Eof => break,
+            _ => {}
+        }
+    }
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    while let Ok(event) = reader.read_event() {
+        match event {
+            quick_xml::events::Event::Empty(e)
+                if matches!(
+                    e.name().as_ref(),
+                    b"w:headerReference" | b"w:footerReference"
+                ) =>
+            {
+                let header = e.name().as_ref() == b"w:headerReference";
+                let id = e.try_get_attribute("r:id").unwrap().unwrap();
+                let path = format!(
+                    "word/{}",
+                    targets
+                        .get(std::str::from_utf8(&id.value).unwrap())
+                        .unwrap()
+                );
+                let mut part = String::new();
+                zip.by_name(&path)
+                    .unwrap()
+                    .read_to_string(&mut part)
+                    .unwrap();
+                assert!(
+                    part.contains(if header {
+                        "Owned common header"
+                    } else {
+                        "Owned common footer"
+                    }),
+                    "wrong part {path}: {part}"
+                );
+            }
+            quick_xml::events::Event::Eof => break,
+            _ => {}
+        }
+    }
+    assert!(!xml.contains("Owned common header"));
+    assert!(!xml.contains("Owned common footer"));
+}

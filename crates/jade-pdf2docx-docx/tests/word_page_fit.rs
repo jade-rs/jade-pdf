@@ -166,7 +166,7 @@ fn rendered_page_fits_image_and_page_with_original_payload() {
     let mut archive = zip::ZipArchive::new(Cursor::new(output)).unwrap();
     let name = archive
         .file_names()
-        .find(|n| n.starts_with("word/media/"))
+        .find(|n| n.starts_with("word/media/") && !n.ends_with('/'))
         .unwrap()
         .to_owned();
     let mut embedded = Vec::new();

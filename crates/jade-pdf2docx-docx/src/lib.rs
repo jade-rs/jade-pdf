@@ -827,7 +827,6 @@ fn build_structured_docx_with_image_payloads(
         if has_mixed_page_sizes && page_index + 1 < pages.len() {
             let section =
                 structured_section_with_page_layout(parsed, positioned_tables, page, &page_chrome);
-            let section = add_repeated_page_chrome_to_section(section, &page_chrome);
             let section = if let Some(lines) = recognized.get(&page.page) {
                 page_ocr::add_lines(section, lines)
             } else {
@@ -841,7 +840,7 @@ fn build_structured_docx_with_image_payloads(
                     image_payloads,
                 )?
             };
-            docx = docx.add_section(section);
+            docx = append_section_with_repeated_chrome(docx, section, &page_chrome)?;
         } else {
             let text_column_layout = (pages.len() == 1)
                 .then_some(document_text_columns.as_ref())
@@ -2551,20 +2550,31 @@ fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome)
     docx
 }
 
-/// 反復 page chrome を中間 DOCX section の header/footer part へ追加する。
-fn add_repeated_page_chrome_to_section(
+/// 反復header/footerを順に確定し、混在ページの中間sectionへ本文とともに追加する。
+/// docx-rs 0.4.22の同時設定は未確定footerを落とすため、footer確定後にheaderを追加する。
+/// 一時追加した同じsectionをmoveして戻し、本文・画像payloadの複製を避ける。
+fn append_section_with_repeated_chrome(
+    mut docx: Docx,
     mut section: Section,
     chrome: &RepeatedPageChrome,
-) -> Section {
-    if let Some(header) = chrome.header.as_ref() {
-        section = section
-            .header(Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)));
-    }
+) -> Result<Docx, ConvertError> {
     if let Some(footer) = chrome.footer.as_ref() {
         section = section
             .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
     }
-    section
+    docx = docx.add_section(section);
+    if let Some(header) = chrome.header.as_ref() {
+        let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
+            return Err(ConvertError::Pack(
+                "missing intermediate DOCX section".into(),
+            ));
+        };
+        docx =
+            docx.add_section(section.header(
+                Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)),
+            ));
+    }
+    Ok(docx)
 }
 
 /// DOCX header/footer に移した PDF 行を本文 flow から除外する。
