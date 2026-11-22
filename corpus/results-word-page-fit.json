@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "time_utc": "2026-11-22T13:31:19.896949+00:00",
+  "time_utc": "2026-11-22T14:11:02.591049+00:00",
   "production_ready": false,
   "source_revision": "b88ae16",
   "runtime_revision": "fc9d5c015b5ca24ee5f39d83df061def177075db",
@@ -38,7 +38,16 @@
     },
     "WASM_conversion_check": "passed on wasm32-unknown-unknown after footer fix",
     "Clippy": "DOCX all-targets passed with repository flags; existing warnings retained; -D warnings not claimed",
-    "formatting_and_diff_check": "passed"
+    "formatting_and_diff_check": "passed",
+    "default_conversion_workspace": {
+      "command": "CARGO_TARGET_DIR=corpus/wasm-runtime/word-page-fit-qualification/native-default-target cargo test --workspace --exclude jade-pdf-diff --locked --offline -- --test-threads=1",
+      "passed": 1910,
+      "failed": 0,
+      "ignored": 4,
+      "groups": 110,
+      "dedicated_feature_output": true,
+      "explicit_ocr_requires_runtime_feature": "passed"
+    }
   },
   "retained_test_control_corrections": [
     "Initial owned OCR PDF used unsupported unfiltered RGB; changed generated control to valid FlateDecode, rather than changing product diagnostics or accepting extra issues. All original failures retained.",
@@ -149,13 +158,6 @@
     "meaning": "Recorded OCR text is not a proof of the visible scanned quantity. Further diff review diagnostics need owned controls and ABI/browser qualification; not implemented or counted as improved accuracy here."
   },
   "whole_page_report_scope_correction": "Earlier full_workspace_ocr_onnx_serial key referred to converter crates only. Renamed to conversion_workspace_ocr_onnx_serial with explicit exclusion note; historical1951 counts and raw logs unchanged.",
-  "ongoing_other_test": {
-    "path": "corpus/wasm-runtime/word-page-fit-qualification/workspace-serial.log",
-    "command": "cargo test --workspace --locked --offline -- --test-threads=1",
-    "session": 82091,
-    "scope": "Started before footer fix and control corrections. Diff implementation is unchanged. Do not treat this ongoing old snapshot as completed current-head qualification.",
-    "hashed": false
-  },
   "publication": "Local only. Requires source/main replay, current validation ledger and exact-head CI gates before merge.",
   "remaining": [
     "W3C source-gold registration remains blocked by unguarded raw OCR-layer visible-quantity mismatch; neither failed rule is removed.",
@@ -200,6 +202,20 @@
     "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-3.png": "1dab516aefb3fb05729142f4a77dfd3d48e2a919c04bdc69d0c05165cd172b5a",
     "corpus/wasm-runtime/word-page-fit-qualification/render-owned-native-final/page-4.png": "8173005e81a6d6c20bbc45c711dde43ad63c2c4f68889d9cb30414d4cc0502d6",
     "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-final/page-1.png": "e7ac0b3319b4962953c9da780b5a2075f2fde95f7f5548a44d879779be3e30f4",
-    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-tagged-final/page-1.png": "e7ac0b3319b4962953c9da780b5a2075f2fde95f7f5548a44d879779be3e30f4"
+    "corpus/wasm-runtime/word-page-fit-qualification/render-w3c-tagged-final/page-1.png": "e7ac0b3319b4962953c9da780b5a2075f2fde95f7f5548a44d879779be3e30f4",
+    "corpus/wasm-runtime/word-page-fit-qualification/conversion-default-isolated.log": "733a49cdc979d10116aed069cdac400a2a77417aa8a998a82e3dc60aa3f93a18",
+    "corpus/wasm-runtime/word-page-fit-qualification/workspace-serial.log": "ee376954729b1d33ebd2918afa619689438bca18ef722cfe6fa032873acb50e0"
+  },
+  "retained_mixed_feature_run": {
+    "path": "corpus/wasm-runtime/word-page-fit-qualification/workspace-serial.log",
+    "command": "cargo test --workspace --locked --offline -- --test-threads=1",
+    "session": 82091,
+    "scope": "Old snapshot and mixed CLI feature output; excluded from qualification.",
+    "hashed": false,
+    "terminal": true,
+    "qualified": false,
+    "failed_test": "explicit_ocr_requires_runtime_feature",
+    "reason": "While the old default-feature run was in diff tests, a separate ocr-onnx CLI build overwrote target/debug/jade-pdf2docx in the same target. The later default-feature CLI test therefore invoked an incompatible-feature executable. This was a test orchestration mistake, not a qualifying product regression result.",
+    "corrective_evidence": "Dedicated native-default-target rerun passed1910 including the same runtime-feature refusal test; ocr-onnx1966 remains independently passed."
   }
 }
