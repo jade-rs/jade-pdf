@@ -152,7 +152,7 @@ pub(crate) fn read(
             return output;
         }
         if let Some(alias) = alias {
-            if facts.rtl_order.reverse_index(index).is_some()
+            if facts.rtl_order.source_index(index).is_some()
                 || facts.supplementary.get(index).is_some()
             {
                 return output;

@@ -1,0 +1,16 @@
+{
+  "documents": 75,
+  "pages": 652,
+  "changed_pages": 0,
+  "changed_block_inventory_pages": 0,
+  "changed_ordered_scalar_pages": 0,
+  "changed_diagnostic_pages": 0,
+  "old_blocks_on_changed_pages": 0,
+  "new_blocks_on_changed_pages": 0,
+  "results": [],
+  "binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+  "baseline_sha256": "644a8765ba19aaf343fd4dd5746c0bad2fd50fc2e355bc7e97744b1ffcff18ce",
+  "manifest_sha256": "1a4c6f9044d99980d09b271f70d6bb8d8bc74e3c2b20f13f6ca5dd92e0d3887e",
+  "source_sha256": "8d84e725fd9be6697257d7a716a49246080ee1fd2ef44a8208e8264143009a02",
+  "scope": "Every page in the pinned cohort: native before/after ordered scalars after NFC and whitespace removal, block geometry/font-size/scalar-ownership inventory and existing diagnostics. Geometry-only changes are reported even when text and block counts agree. Unchanged output does not establish Unicode accuracy or whole-document diff precision/recall."
+}

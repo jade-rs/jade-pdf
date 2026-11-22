@@ -1932,6 +1932,30 @@
         }
       ],
       "reading_order_gold_source": "Right-side vertical sentence on original pages1/2 manually transcribed before product extraction; NFC and whitespace removal for its within-sentence order only. Does not declare the reading order of the mixed form/table, other text or glyph geometry."
+    },
+    {
+      "id": "pdfjs-issue16880-rtl",
+      "url": "https://raw.githubusercontent.com/mozilla/pdf.js/4dfe24fc43232a9b808d301f60764688c5631eeb/test/pdfs/issue16880.pdf",
+      "source": "https://github.com/mozilla/pdf.js/blob/4dfe24fc43232a9b808d301f60764688c5631eeb/test/pdfs/issue16880.pdf",
+      "category": "Persian/Arabic-script one-page lam-alef ligature regression; independent full-page gold",
+      "sha256": "762c9801a97104e209e2a9d66285a1136cca57d7e2fb5996a4625e36b4f388ed",
+      "bytes": 9899,
+      "pages": 1,
+      "text_fragments": [
+        "سلام"
+      ],
+      "gold": {
+        "page": 1,
+        "kind": "full_page_text",
+        "text": "سلام کلاس لاله",
+        "scope": "All three Persian/Arabic-script words on the complete one-page original. Visually transcribed from the original Poppler rendering before product extraction. The precise Kaf identity is independently checked against original ToUnicode declarations, not inferred from a font name or SDK output. NFC and whitespace collapse only; not highlight-position gold."
+      },
+      "rights": "Public minimised PDF.js regression at fixed commit4dfe24fc43232a9b808d301f60764688c5631eeb under repository Apache-2.0. Original PDF and embedded font stay unchanged in ignored internal cache; no PDF/font/glyph payload redistributed in Git. Source/rights/privacy/all-page review in pdfjs-16880-review.json.",
+      "reviewed": "2026-11-22",
+      "reviewed_pages": [
+        1
+      ],
+      "retrieved": "2026-11-22"
     }
   ],
   "revision_pairs": [

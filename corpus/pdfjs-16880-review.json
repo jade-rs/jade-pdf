@@ -1,0 +1,39 @@
+{
+  "id": "pdfjs-issue16880-rtl",
+  "source_sha256": "762c9801a97104e209e2a9d66285a1136cca57d7e2fb5996a4625e36b4f388ed",
+  "source": "https://raw.githubusercontent.com/mozilla/pdf.js/4dfe24fc43232a9b808d301f60764688c5631eeb/test/pdfs/issue16880.pdf",
+  "upstream_commit": "4dfe24fc43232a9b808d301f60764688c5631eeb",
+  "upstream_issue": "https://github.com/mozilla/pdf.js/issues/16880",
+  "pages": 1,
+  "bytes": 9899,
+  "reviewed": "2026-11-22",
+  "original_render_sha256": "fa50501a6f69ea1fb928e92440921a724f6b161a0db57119023291ca47266572",
+  "privacy": "Complete one-page minimised public regression file contains only three generic Persian/Arabic-script words. No personal names, addresses, identifiers, actual filled user record, external photograph, map or confidential content. PDF metadata is python-docx/Writer/LibreOffice26.2.5.2 with a generation date, not an individual author.",
+  "document_type": "Public upstream regression created in2026, not the original user attachment from the older issue. Its source and fixed commit are identified independently.",
+  "rights": {
+    "repository_license": "Apache-2.0",
+    "license_url": "https://raw.githubusercontent.com/mozilla/pdf.js/4dfe24fc43232a9b808d301f60764688c5631eeb/LICENSE",
+    "license_sha256": "0d542e0c8804e39aa7f37eb00da5a762149dc682d7829451287e11b938e94594",
+    "source_handling": "Original unchanged PDF stays in ignored cache, not redistributed in Git. Embedded Vazirmatn font stays inside the original with its own rights; no font stream, glyph program or outline extracted, copied or reused. Only PDF font dictionary and ToUnicode metadata read. Derived gold and audit records by Jade, not Mozilla endorsement."
+  },
+  "visual_review": "All of the original page inspected at scale-to1800. One line with three words; the remainder is blank. No forms, JavaScript, encryption, pictures or page overlays found.",
+  "gold": {
+    "page": 1,
+    "kind": "full_page_text",
+    "text": "سلام کلاس لاله",
+    "scope": "All three Persian/Arabic-script words on the complete one-page original. Visually transcribed from the original Poppler rendering before product extraction. The precise Kaf identity is independently checked against original ToUnicode declarations, not inferred from a font name or SDK output. NFC and whitespace collapse only; not highlight-position gold.",
+    "declared_before_product_extraction": true
+  },
+  "independent_character_identity": {
+    "font_dictionary_name": "/BAAAAA+Vazirmatn-Regular",
+    "to_unicode_sha256": "30df22a8cbc5ab632b7bf71e479f7ac9cc3d59f78875312f7805d0c52f658edf",
+    "kaf": "Original code07 declares U+06A9 (Persian Keheh), independently resolving visual similarity to Arabic U+0643. Two source entries each explicitly declare lam-alef U+0644 U+0627. No font name is treated as a Unicode mapping."
+  },
+  "native_preflight": {
+    "baseline_sha256": "644a8765ba19aaf343fd4dd5746c0bad2fd50fc2e355bc7e97744b1ffcff18ce",
+    "qualified_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+    "before_full_page_correct": true,
+    "after_full_page_correct": true,
+    "scope": "Both pass already; this adds independent full-page coverage and is not a claimed improvement from the new partial-permutation fix. The old whole-reversal/ligature handling is retained."
+  }
+}

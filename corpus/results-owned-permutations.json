@@ -1,0 +1,150 @@
+{
+  "cases": 6,
+  "before_correct": 0,
+  "after_correct": 6,
+  "public_cell_records_preserved": true,
+  "scope": "Owned generated one-glyph ToUnicode permutations only, not real-world semantic accuracy or whole-document bidi. Full API tests additionally cover144 geometry combinations and actual scalar/order edits. Existing ambiguous/control/supplementary cases remain reviewed.",
+  "generator_sha256": "a972c7e5bc67302bb5e2ca427aaf8826a52811f27027372d4cfc9709e907e944",
+  "binary_sha256": "695694e8615075b05570afab453e98e957121f8189cc807fa7623fafc1d70951",
+  "baseline_sha256": "644a8765ba19aaf343fd4dd5746c0bad2fd50fc2e355bc7e97744b1ffcff18ce",
+  "results": [
+    {
+      "expected": "بABت",
+      "generated_source_sha256": "3f33cd6ba70d3ed010bb77cae9f6ad8cfbf8a22aebfa9ee4fae820c7e7a30240",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "تABب",
+          "layer_text": "تABب",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "بABت",
+          "layer_text": "بABت",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    },
+    {
+      "expected": "ب12ت",
+      "generated_source_sha256": "47f6c7f8c00bec3550db299ae41d4a6281fefb7b6430bf584016d65ef7e74a84",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "ت12ب",
+          "layer_text": "ت12ب",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "ب12ت",
+          "layer_text": "ب12ت",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    },
+    {
+      "expected": "אב12גד",
+      "generated_source_sha256": "fe9e2d74e937a4e51de23c6afeaca589ca7f7cdefa4df4ddee99fdabbcfffdbd",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "דג12בא",
+          "layer_text": "דג12בא",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "אב12גד",
+          "layer_text": "אב12גד",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    },
+    {
+      "expected": "ب123.45ت",
+      "generated_source_sha256": "e3845c2a24dd6906377a83a27a9c3760ca644469148049a9d05a8c0811ef31d0",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "ت123.45ب",
+          "layer_text": "ت123.45ب",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "ب123.45ت",
+          "layer_text": "ب123.45ت",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    },
+    {
+      "expected": "ب(12)ت",
+      "generated_source_sha256": "6d9b37825c6fe7bd2be95f2cca9889a5e62913c6f0035e3dd93f725717574472",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "ت(12)ب",
+          "layer_text": "ت(12)ب",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "ب(12)ت",
+          "layer_text": "ب(12)ت",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    },
+    {
+      "expected": "ب/AB/ت",
+      "generated_source_sha256": "af7f49c838a49ba8ecc6ae7c981e52efef919d9632058e07cab139197ae8e500",
+      "public_literal_cell_inventory_unchanged": true,
+      "artifacts": [
+        {
+          "artifact": "baseline",
+          "ir_text": "ت/AB/ب",
+          "layer_text": "ت/AB/ب",
+          "correct": false,
+          "reading_review": true,
+          "unicode_mismatch": 0
+        },
+        {
+          "artifact": "qualified",
+          "ir_text": "ب/AB/ت",
+          "layer_text": "ب/AB/ت",
+          "correct": true,
+          "reading_review": false,
+          "unicode_mismatch": 0
+        }
+      ]
+    }
+  ]
+}
