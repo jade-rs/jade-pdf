@@ -27,7 +27,136 @@
     "Query actual unobserved SDK object font/base-name/embed status and geometry through public APIs; do not assume all78 use Times-Roman just from matching counts.",
     "FPDFTextObj_GetText uses the same SDK character list and cannot prove absence. Existing missing-meaningful-glyph controls must remain reviewed.",
     "Do not clear warnings just because source nonwhitespace counts match. Preserve source-coded U+0020 word boundaries, including separate-font zero-advance and repeated-space controls; prove or retain review when ambiguous.",
-    "Any bounded exemption must reject embedded/custom/Differences fonts, alias-name collisions, other codes/Unicode mappings, incomplete source evidence and unmatched geometry/boundary ownership. Do not rely on BaseFont name alone."
+    "Any bounded exemption must reject embedded/custom/Differences fonts, alias-name collisions, other codes/Unicode mappings, incomplete source evidence and unmatched geometry/boundary ownership. Do not rely on BaseFont name alone.",
+    "Investigate a source-to-existing-normalized-whitespace boundary witness or exact source-space projection; direct zero-area box containment fails on this original. Preserve zero-advance coded-space controls. The source minimum deficit63 is not the same quantity as78 unobserved objects."
   ],
-  "font_programs_read": false
+  "font_programs_read": false,
+  "public_sdk_probe": {
+    "pdfium_library_sha256": "baf7fdfd71c887c268224dd9fe102818ace962339875d78c2fcb0a55ba29d967",
+    "text_objects": 156,
+    "observed_text_objects": 78,
+    "unobserved": 78,
+    "unobserved_fonts": {
+      "Times-Roman:embedded=0": 78
+    },
+    "sdk_whitespace_records": 85,
+    "sdk_whitespace_by_scalar": {
+      "13": 8,
+      "10": 8,
+      "32": 69
+    },
+    "unobserved_with_exactly_one_whitespace_witness": 0,
+    "unobserved_without_whitespace_witness": 78
+  },
+  "public_sdk_probe_sha256": "5a044cbb3e47d74b1f9f5c724fd9f0916fbdb9fe51e22677ae116bf0ea920772",
+  "public_sdk_probe_script_sha256": "4b57b19b3d7926427431b5d6424285380eacaee9de6c75d58e35f272f9121b56",
+  "unobserved_object_sample": [
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        334.5245361328125,
+        708.5089721679688,
+        334.5245361328125,
+        708.5089721679688
+      ],
+      "matrix": {
+        "a": 14.346199989318848,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 14.346199989318848,
+        "e": 334.5245361328125,
+        "f": 708.5089721679688
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    },
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        93.89620208740234,
+        682.1909790039062,
+        93.89620208740234,
+        682.1909790039062
+      ],
+      "matrix": {
+        "a": 11.105500221252441,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 10.909099578857422,
+        "e": 93.89620208740234,
+        "f": 682.1909790039062
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    },
+    {
+      "base_font": "Times-Roman",
+      "embedded": 0,
+      "bounds": [
+        129.70033264160156,
+        682.1909790039062,
+        129.70033264160156,
+        682.1909790039062
+      ],
+      "matrix": {
+        "a": 11.105500221252441,
+        "b": 0.0,
+        "c": 0.0,
+        "d": 10.909099578857422,
+        "e": 129.70033264160156,
+        "f": 682.1909790039062
+      },
+      "font_size": 1.0,
+      "contained_in_sdk_whitespace_records": []
+    }
+  ],
+  "sdk_whitespace_sample": [
+    {
+      "index": 8,
+      "scalar": 13,
+      "generated": 1,
+      "box": [
+        327.3709716796875,
+        327.3709716796875,
+        708.5089721679688,
+        708.5089721679688
+      ]
+    },
+    {
+      "index": 9,
+      "scalar": 10,
+      "generated": 1,
+      "box": [
+        327.3709716796875,
+        327.3709716796875,
+        708.5089721679688,
+        708.5089721679688
+      ]
+    },
+    {
+      "index": 13,
+      "scalar": 32,
+      "generated": 1,
+      "box": [
+        88.87377166748047,
+        88.87377166748047,
+        682.1909790039062,
+        682.1909790039062
+      ]
+    },
+    {
+      "index": 21,
+      "scalar": 32,
+      "generated": 1,
+      "box": [
+        127.38617706298828,
+        127.38617706298828,
+        682.1909790039062,
+        682.1909790039062
+      ]
+    }
+  ],
+  "geometry_finding": "All78 SDK-unobserved objects use nonembedded Times-Roman, confirming the source-font candidate. Their bounds are zero-area at their text matrices. Generated SDK whitespace boxes are also zero-area and do not contain these source points (0/78 under0.02pt). Font-name/count agreement is not a boundary ownership proof. Do not suppress warnings using this observation alone."
 }
