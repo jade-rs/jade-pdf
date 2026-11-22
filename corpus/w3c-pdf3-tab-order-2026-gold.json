@@ -1,0 +1,43 @@
+{
+  "source_id": "w3c-pdf3-tab-order-2026",
+  "source_sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+  "page": 1,
+  "declared_at": "2026-11-22T13:47:00.989624+00:00",
+  "declared_before_Jade_product_output": true,
+  "scope": "Three selected visible reading-order cases on one page. Not a full prose, visual, interactive navigation, accessibility or required-field validation oracle.",
+  "notice": "Copyright © 2023 W3C®. This software or document includes material copied from or derived from Reading order example for WCAG's PDF3 Technique, https://www.w3.org/WAI/WCAG22/working-examples/pdf-reading-order/reading-order.pdf.",
+  "reading_order": [
+    {
+      "case_id": "w3c-pdf3-tab-order-2026-section-order",
+      "anchors": [
+        "Application for this and that",
+        "A list of things you should know about",
+        "Please complete the following form",
+        "After the form",
+        "Another list"
+      ],
+      "scope": "Only the five visible section headings in top-to-bottom order."
+    },
+    {
+      "case_id": "w3c-pdf3-tab-order-2026-form-label-order",
+      "anchors": [
+        "Please complete the following form",
+        "Name:",
+        "Email address:",
+        "Telephone:",
+        "After the form"
+      ],
+      "scope": "Only the visible field labels between the form and subsequent prose; not field values or interactive tab behavior."
+    },
+    {
+      "case_id": "w3c-pdf3-tab-order-2026-numbered-list-order",
+      "anchors": [
+        "The first thing to know.",
+        "Is that there’s a second thing.",
+        "And this third one.",
+        "Call the grammar police—that last item starts with a conjunction!"
+      ],
+      "scope": "Only the four visible numbered-list texts in order; not list serialization or complete prose."
+    }
+  ]
+}

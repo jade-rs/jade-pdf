@@ -1,0 +1,63 @@
+{
+  "version": 1,
+  "reviewed_at": "2026-11-22T13:47:00.989624+00:00",
+  "production_ready": false,
+  "source_id": "w3c-pdf3-tab-order-2026",
+  "url": "https://www.w3.org/WAI/WCAG22/working-examples/pdf-reading-order/reading-order.pdf",
+  "source": "https://www.w3.org/WAI/WCAG22/Techniques/pdf/PDF3",
+  "title": "Reading order example for WCAG's PDF3 Technique",
+  "sha256": "ac028899fb8fc4a828c7ad96d55712a7116c5719a29b00c138fce6be53a757cf",
+  "bytes": 147152,
+  "pages": 1,
+  "page_size_points": [
+    612,
+    792
+  ],
+  "rights": {
+    "license": "W3C Document License2023; software/supporting-material portions exception",
+    "license_url": "https://www.w3.org/copyright/document-license-2023/",
+    "permission_source": "https://www.w3.org/WAI/about/using-wai-material/",
+    "notice": "Copyright © 2023 W3C®. This software or document includes material copied from or derived from Reading order example for WCAG's PDF3 Technique, https://www.w3.org/WAI/WCAG22/working-examples/pdf-reading-order/reading-order.pdf.",
+    "status": "Working example linked from WCAG22 Technique PDF3; original unchanged, no endorsement implied.",
+    "binaries_added_to_Git": false
+  },
+  "review": {
+    "all_original_pages_individually_viewed": true,
+    "renderer": "Poppler 1800px before Jade extraction/conversion",
+    "private_information": "Generic blank job-application example. All3 text fields empty. No real name, email, telephone, credentials or private records.",
+    "actions": "Static inspection only. No root OpenAction/AA, no JavaScript and no widget A/AA; no actions executed.",
+    "forms": {
+      "fields": [
+        "Name",
+        "Email address",
+        "Telephone"
+      ],
+      "type": "Tx",
+      "values": [
+        "",
+        "",
+        ""
+      ],
+      "widget_count": 3,
+      "page_tabs": "S",
+      "tag_OBJR_order": [
+        "Name",
+        "Email address",
+        "Telephone"
+      ],
+      "required_field_note": "Visible red asterisks mark Name and Email address. Ff required bits are absent in the PDF. Do not infer machine flags from the visible marks.",
+      "keyboard_navigation_tested": false
+    },
+    "web_source_text_was_seen_before_manual_gold": true,
+    "Jade_product_output_seen": false
+  },
+  "independent_gold": "corpus/w3c-pdf3-tab-order-2026-gold.json",
+  "registered": false,
+  "unique_vs_registered_source_SHA256": true,
+  "qualification": "Awaiting product baseline; all failed rules must be retained before registration.",
+  "evidence_sha256": {
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/original.png": "0106ede35a4cfcc8586df5173a37b41108f46102a56882dff8e7666e92bb31ab",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/static-review.json": "ce055b786449875fd6737f32d19543affceaa4ebe3f18f8e32cc5fd0096c6b60",
+    "corpus/wasm-runtime/w3c-tab-order-source-qualification/tag-widget-review.json": "3baacc31c18037c1359bac9e5e76d7f98a1c41b4ef9029a6f489003cbede3768"
+  }
+}
