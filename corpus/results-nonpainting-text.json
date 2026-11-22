@@ -1,0 +1,254 @@
+{
+  "version": 1,
+  "time_utc": "2026-11-22T15:58:07.879398+00:00",
+  "production_ready": false,
+  "qualified_source_revision": "9d0291845f8bea0c208442b01fc67874d0f25c04",
+  "runtime_revision": "38d79f52e82635b653f143d1a3035d49fd2baead",
+  "runtime_identity_after_runtime_revision": {
+    "only_changes": [
+      "crates/jade-pdf-diff/src/text_visibility.rs",
+      "crates/jade-pdf-diff/tests/text_objects.rs"
+    ],
+    "Counter_runtime_prefix_identical": true,
+    "remaining_changes": "test-only completion expectation migration and PBT formatting, not runtime logic"
+  },
+  "implementation": {
+    "facts": "Count non-generated SDK records whose text object rendering mode is3 or7. Null objects or unsupported modes remain explicitly unavailable; generated records are excluded. Counter caches stable object modes within the existing bounded scan.",
+    "API": "PageIr and TextRun expose optional-default nonpainting_text_characters and text_visibility_accounting_unavailable; aggregate diagnostics gate text completeness and non-identical source comparisons.",
+    "preserved": "Raw text and glyph/coordinate evidence remain. Byte-identical source appearance identity remains valid. Verified empty source ActualText may yield an empty layer; page facts still retain raw visibility diagnostics.",
+    "not_proven": "Mode0 is not proof of visible glyph ink. Arbitrary color/opacity/clipping or OCR recognition accuracy are outside this mode accounting."
+  },
+  "native_validation": {
+    "initial_full_run": {
+      "groups": 32,
+      "passed": 365,
+      "failed": 1,
+      "ignored": 8,
+      "exit": 101,
+      "sole_failure": "A deliberateTr3 ActualText fixture still expected complete comparison; original failing log retained."
+    },
+    "whole_affected_target_rerun": {
+      "groups": 1,
+      "passed": 10,
+      "failed": 0,
+      "ignored": 0,
+      "exit": 0
+    },
+    "unique_tests_after_migration": 366,
+    "method": "All unchanged target groups completed in the full run. Only the affected test contract changed, retaining all original text/Unicode/source-empty/pixel checks and requiring observed nonpainting facts; its entire10-test target was rerun. The full32 groups were not rerun after that test-only edit.",
+    "final_Counter_tests": {
+      "groups": 1,
+      "passed": 4,
+      "failed": 0,
+      "ignored": 0
+    },
+    "fixed_public_source_audits": {
+      "groups": 1,
+      "passed": 6,
+      "failed": 0,
+      "ignored": 0
+    },
+    "cold_SDK_concurrency_and_corruption_repair": {
+      "groups": 1,
+      "passed": 1,
+      "failed": 0,
+      "ignored": 0
+    },
+    "bundled_SDK_runtime": {
+      "groups": 1,
+      "passed": 2,
+      "failed": 0,
+      "ignored": 1
+    },
+    "bundled_separate_target": true,
+    "original_default_ignored_count": 8,
+    "remaining_ignored": "Subprocess fault fixture is exercised by supervisor tests; public audits and cold SDK test were explicitly executed. Bundled cold-download case remains appropriately ignored.",
+    "Clippy": "all targets -Dwarnings passed; initial test-macro formatting lint failure retained",
+    "WASM_check": "lib wasm32-unknown-unknown passed"
+  },
+  "browser_validation": {
+    "engines": {
+      "chromium": {
+        "passed": 337,
+        "total": 337,
+        "browser": "159.0.8154.6",
+        "WASM_sha256": "62ce52bf5221def10fcaa02ae479580388580bbafcbe6c824822b300545c5272",
+        "native_binary_sha256": "dd8e6f547d1d3d33a39fde6e50c096bc91037464fc6c30b7301b9eccad115ed6"
+      },
+      "webkit": {
+        "passed": 337,
+        "total": 337,
+        "browser": "27.2",
+        "WASM_sha256": "62ce52bf5221def10fcaa02ae479580388580bbafcbe6c824822b300545c5272",
+        "native_binary_sha256": "dd8e6f547d1d3d33a39fde6e50c096bc91037464fc6c30b7301b9eccad115ed6"
+      }
+    },
+    "Firefox_local": "Unqualified. Shared install, clean private pinned install and owned persistent profile all exited before tests with Could not find profile folder onmacOS27.0.1. No OS permission changes. New final-head CI is required before publication.",
+    "Worker": {
+      "documents": 89,
+      "matching_documents": 89,
+      "operations": 1217,
+      "matching_operations": 1217,
+      "additional": 247,
+      "passed_additional": 247
+    },
+    "Python_tests": 81,
+    "fixture_hygiene_tests": 2,
+    "JS_semantic_gold": "passed",
+    "offline_manifest_sources_verified": 90,
+    "CLI_owned_controls": {
+      "binary_sha256": "dd8e6f547d1d3d33a39fde6e50c096bc91037464fc6c30b7301b9eccad115ed6",
+      "cases": [
+        {
+          "mode": 0,
+          "rewritten": false,
+          "exit": 0,
+          "expected_exit": 0,
+          "passed": true
+        },
+        {
+          "mode": 0,
+          "rewritten": true,
+          "exit": 0,
+          "expected_exit": 0,
+          "passed": true
+        },
+        {
+          "mode": 3,
+          "rewritten": false,
+          "exit": 0,
+          "expected_exit": 0,
+          "passed": true
+        },
+        {
+          "mode": 3,
+          "rewritten": true,
+          "exit": 3,
+          "expected_exit": 3,
+          "passed": true
+        },
+        {
+          "operation": "--ir",
+          "passed": true
+        },
+        {
+          "operation": "--text-layer",
+          "passed": true
+        },
+        {
+          "mode": 7,
+          "rewritten": false,
+          "exit": 0,
+          "expected_exit": 0,
+          "passed": true
+        },
+        {
+          "mode": 7,
+          "rewritten": true,
+          "exit": 3,
+          "expected_exit": 3,
+          "passed": true
+        }
+      ],
+      "passed": 8,
+      "total": 8,
+      "originals_unchanged": true,
+      "temporary_inputs_only": true
+    }
+  },
+  "actual_W3C_source": {
+    "variants": 2,
+    "independent_visible_contents": 1,
+    "original_source_gold_unchanged": true,
+    "nonpainting_records_each": 4088,
+    "visibility_accounting_unavailable": false,
+    "native_WASM_and_Worker_parity": true,
+    "raw_IR_text_and_layer_run_texts_unchanged": true,
+    "selected_gold_each_route": {
+      "passed": 4,
+      "total": 5
+    },
+    "incorrect_Roquefort_quarter_remains": true,
+    "equivalent_rewrite_CLI_exit": 3,
+    "byte_identical_appearance_CLI_exit": 0,
+    "recognition_accuracy_gain": false,
+    "initial_private_probe_error": "Retained initial naive run concatenation failure. Corrected only the probe to the unchanged existing newline-join baseline method and asserted exact run-text list equality; this is not the separate DOCX word-boundary metric."
+  },
+  "publication": {
+    "published": false,
+    "requires": "Replay/audit onto actual dependency main and all16 exact final-head CI checks; current local qualification does not replace Firefox CI."
+  },
+  "new_PDF_font_or_model_binaries_in_Git": false,
+  "sha256": {
+    "corpus/wasm-runtime/nonpainting-text-qualification/initial-red.log": "12551ef7ea37ddb003c5c491a657bbc543decc8c9d81e01e9503eb0cd367408a",
+    "corpus/wasm-runtime/nonpainting-text-qualification/empty-replacement-red.log": "8458d495ea32f48b39693a5d73d896ab69dacf99f256dd87939d5b6a9ed7fa09",
+    "corpus/wasm-runtime/nonpainting-text-qualification/empty-replacement-green.log": "f3cfcfb946135cd88b3ac406c9cb05c706afdca33e648ce73107f5b568e4ead4",
+    "corpus/wasm-runtime/nonpainting-text-qualification/existing-hidden-contract-red.log": "b11eaa13e2a42e9b9eefaf0fab296dcfaa669c0f3bad1b537a73ce870ae1765a",
+    "corpus/wasm-runtime/nonpainting-text-qualification/native-all-contract-migration.log": "51a53657d7b5e6457c60112e69afcae954a965b1289b788972d521d6cb1e6cc1",
+    "corpus/wasm-runtime/nonpainting-text-qualification/native-text-objects-visibility-contract.log": "fac83ff31ebae3aeecb32a2602c0ad3945407d251d1b6dca6f87aade1d724fd1",
+    "corpus/wasm-runtime/nonpainting-text-qualification/counter-final.log": "bc92d7d29a9302c24752cfc6fce80f5d88027463306fb4d0eed9db3f8c91b233",
+    "corpus/wasm-runtime/nonpainting-text-qualification/native-public-audits.log": "d044a1f6bdae4290cce53260117ec89383939aa98fca96be4d3ca417764f7f4f",
+    "corpus/wasm-runtime/nonpainting-text-qualification/runtime-cold.log": "4213e1968fb928eef8b5b8f4437b40e0d7f0e6c329b830e39a93aa4ddd8271a1",
+    "corpus/wasm-runtime/nonpainting-text-qualification/bundled-runtime.log": "e9046bfddeb1f451393c154fc11c05d2256884d22e0086b84041d6cb2e75aa42",
+    "corpus/wasm-runtime/nonpainting-text-qualification/clippy.log": "451e57c8ed0d836da1dfa3469eba761b7129e7e9922b1021ae9ed37a88366d60",
+    "corpus/wasm-runtime/nonpainting-text-qualification/clippy-final.log": "92bdbb6c8298ba0e39d5cae37f1bd4a52052b87579053ffc94c1e4c76acc680d",
+    "corpus/wasm-runtime/nonpainting-text-qualification/wasm-final-check.log": "e470608ef3cbefecfe176b57b4f0db459b15a7eda1ecf347abf0f9bb97479c2f",
+    "corpus/wasm-runtime/nonpainting-text-qualification/wasm-formatted-build.log": "87c1bd3a9a56941e6b524419065ccd4f3d31ce363f56dd3f964c12a28df56025",
+    "corpus/wasm-runtime/nonpainting-text-qualification/browser-chromium-full.json": "77c974b90b118ff51fcd755fb94b09bb2311747697649c91c48f2ff4ba9c21aa",
+    "corpus/wasm-runtime/nonpainting-text-qualification/browser-chromium-full.log": "a25718c5ad82c2283e7d73711c535c59591949562e2b785d98561ae3dc2c77e2",
+    "corpus/wasm-runtime/nonpainting-text-qualification/browser-webkit-full.json": "d54d1d2c5b7e29cdadefeff4debbd629e2043c7d9865473fcf15708607fb137c",
+    "corpus/wasm-runtime/nonpainting-text-qualification/browser-webkit-full.log": "a628ab9ae6101fe4b511a290f4606574858bd43bae1a9dfb8ec03bd0ee18cfe2",
+    "corpus/wasm-runtime/nonpainting-text-qualification/worker-full.json": "2eade4d2e822c9d7c86e00c9d2092ff0ba071e7cea345afe61e07f7b9a547fbd",
+    "corpus/wasm-runtime/nonpainting-text-qualification/worker-full.log": "c453b570f3b39d96ce2196fc8bc617589b5822b11cb1abd4455a7fc5d973de54",
+    "corpus/wasm-runtime/nonpainting-text-qualification/python-full.log": "7201a6431ffa7434d2d0a3010eeceacf6db86f1f834b8d18f7fce4b540a163ce",
+    "corpus/wasm-runtime/nonpainting-text-qualification/hygiene.log": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4",
+    "corpus/wasm-runtime/nonpainting-text-qualification/js-semantic-gold.log": "1c182560142b3b336221a82d7d1cd575e6ce992f1f42766aafaa07b9dfaa707a",
+    "corpus/wasm-runtime/nonpainting-text-qualification/offline-sources.log": "7a54069314dd81e3d1d2e36b74b8ca2340dd043ffd99cae0639a9496c883a39a",
+    "corpus/wasm-runtime/nonpainting-text-qualification/cli-mode-controls.json": "c45015751f162d46f87529d9bfffd431f085f265ca738862cd43d8a97d8bbbe1",
+    "corpus/wasm-runtime/nonpainting-text-qualification/cli-mode-controls.log": "8b385b17c2348de69cc57718c3bb96246dc4343855212cf5c9f78e2ba447beea",
+    "corpus/wasm-runtime/nonpainting-text-qualification/check-cli-modes.py": "c0e037e59f55df401c6a9b095013b75ee7ac90df20c6d9791b5d10ea0a8f12d2",
+    "corpus/wasm-runtime/nonpainting-text-qualification/check-w3c-nonpainting.py": "59fb0bade14a0ab625bb2f0e441d269352bb74c5f76afaa1e5a9105bab5305d8",
+    "corpus/wasm-runtime/nonpainting-text-qualification/check-w3c-nonpainting-initial.py": "960b079887c88956d818127c9b1b481c24a6cbd4cbaaeeeee84d14f4d1c69287",
+    "corpus/wasm-runtime/nonpainting-text-qualification/w3c-native-nonpainting.json": "5f4c0598603a09d302101968a8d3f3d43d75b8eea14208abe2b134d4f357188e",
+    "corpus/wasm-runtime/nonpainting-text-qualification/w3c-native-nonpainting.log": "997aeb27b67c24494f4a8d7ae0d77206f16489d8c2286ecfcee243e9a551e682",
+    "corpus/wasm-runtime/nonpainting-text-qualification/w3c-native-initial-probe-flatten-error.log": "4b085e541fb35cc486f6407a2c570efb62c3c7b3d573011d4d1d3b03e588d33b",
+    "corpus/wasm-runtime/nonpainting-text-qualification/check-w3c-browser.mjs": "627db5aff733fc27660d519b368bf1f77a7873223b79ff1d120bb7562bc61abb",
+    "corpus/wasm-runtime/nonpainting-text-qualification/w3c-browser-nonpainting.json": "53170fcd7476a43458d86df981e67ff04da4ac54ef6b9d643987a5666bc98fe8",
+    "corpus/wasm-runtime/nonpainting-text-qualification/w3c-browser-nonpainting.log": "bbf9e065a2bbf14a868d1ad7472134d7183b140d604383e96f910c24f0e09fd8",
+    "corpus/wasm-runtime/nonpainting-text-qualification/browser-firefox-private.log": "03f936bee1c4a1c30fab6d164afafa2dec85fbbc6266813da0c5731d15abe343",
+    "corpus/wasm-runtime/nonpainting-text-qualification/firefox-profile-probe.log": "ba0e140b3520e6beb5e4137d7a9800b29994f54a1ddd341e154b57c3cb6265b7",
+    "corpus/wasm-runtime/nonpainting-text-qualification/qualified-current-pdf-diff": "dd8e6f547d1d3d33a39fde6e50c096bc91037464fc6c30b7301b9eccad115ed6",
+    "corpus/wasm-runtime/nonpainting-text-qualification/build-result.py": "8fcffccbb031b08919ac2d5101df4dd39315c5eb249737b1ccd69647f7e64ce6",
+    "README.md": "ccd886ef23a0450c3e4f4a3ad646675a4be63ee4a2d92864942097cc6e71e856",
+    "corpus/results-word-page-fit.json": "b5d44211c3f88288df5f354a131e52bd1e88f32218f83a74f7a2d7ffa73b503f",
+    "crates/jade-pdf-diff/examples/profile_large_document.rs": "ad774e93a599d38f376ce6833e013b6cbc64e2f88a284b51ae956dcfe3acf637",
+    "crates/jade-pdf-diff/src/diff.rs": "2414277d6e484bbad9cdacca3b5fe3a279b931019858cb2907ea03cccc6a6308",
+    "crates/jade-pdf-diff/src/ir.rs": "9c9ea63830ad12d8f27aa7c2a47a8d84dd27593653cdda8f405dc17362dc6199",
+    "crates/jade-pdf-diff/src/lib.rs": "5191e06d5d254e764025e9927a39ec8530ed8d196762e37d23dfbe8998e73a79",
+    "crates/jade-pdf-diff/src/render.rs": "bbef286d7c69a210222d5cd33da4916138ab65e23cea88907a6dfffa1601d4a5",
+    "crates/jade-pdf-diff/src/scan.rs": "65699c8c3427d79f618d072a4ed0629c4bc5d28eaf9a61c95406dd3df39c4d7d",
+    "crates/jade-pdf-diff/src/text_visibility.rs": "7d47c9f9ed66986e97edfc100398c075418cb664acbce815433a0b3eb82c3c31",
+    "crates/jade-pdf-diff/src/unicode_facts.rs": "6cdb3b5f00daee9f4368d543fd6d5c4e5bc499697ae915c2e7bd7214d49de017",
+    "crates/jade-pdf-diff/tests/actual_text.rs": "9f452fdb8997d58d960a939dc6ebc4046e4ad58c10e3f4c54d7e6ef17b0d514d",
+    "crates/jade-pdf-diff/tests/nonpainting_text.rs": "c8ab5fc16453df9c78dabe104c01ed59b1462eedc7e9bc7edc62d648f4742d42",
+    "crates/jade-pdf-diff/tests/ocr_ir.rs": "f9d2fc5e440e37f36d8691a4623b7e59104b68f02928017eab65b806e6577b00",
+    "crates/jade-pdf-diff/tests/options.rs": "25aa3b2dc68a9ca0dda12cc141117dc1ce66666b01ebbbbd9220e2aab295cef5",
+    "crates/jade-pdf-diff/tests/support/nonpainting_fixture.rs": "1e5ab074b24ecf711f70e76958242bcf0874dbf8a8447179c8d2aad7e18c885c",
+    "crates/jade-pdf-diff/tests/text_objects.rs": "b131a2983ab54c91f402750ef5f490380dc4341023786a48d5c95f33b793ab97",
+    "crates/jade-pdf-diff/tests/unicode_equivalence.rs": "1e3918cc16b36036db1562d3a6a9154c25bdc9e1d5a7e4cb416a78fc86fb42ae",
+    "docs/pdf_diff.md": "564030cb1b84ea3c2a1f79b6de1ce4c5b528a16406e4003d217ab78e7267697f",
+    "tools/semantic_gold.py": "56b1377b1558e592d99d1f3d940ae9130024a126b86535e719e2117373d8c120",
+    "tools/test_semantic_gold.py": "936121af8a78938b49843ca394a03995b9020e7156c60691e112ba2f24a1b0b9",
+    "tools/wasm-smoke/browser_smoke.mjs": "8641b7d4492fda0bc0ad6aa03089fcc25ed8813213055618839099ae0329cfb2",
+    "tools/wasm-smoke/nonpainting_controls.mjs": "3a65e599b9af8b100d711d8d463a8ed919ea322f40a51ca1524cce5082ee38a9",
+    "tools/wasm-smoke/semantic_gold.mjs": "fbae8524d0158d9ff73f28b88672b37ca879cfc525fbd3db9166c6a8595e5a97",
+    "tools/wasm-smoke/src/lib.rs": "ccfc62bfeabd2925d6fedf65dc75c750f5880bc046095a5ffbfdfd7996784791",
+    "tools/wasm-smoke/test_semantic_gold.mjs": "28dad00503df9f1946e10deaad8acbc5337a5e025f621f34e5339cc464e5c23c",
+    "tools/wasm-smoke/worker_smoke.mjs": "ce7f0e3c3e99a0544498cb92ff477c8b912ab334bdd3e536519eab77a08b35b0",
+    "corpus/w3c-pdf7-ocr-example-2026-gold.json": "fac518b9fdf44e295f74871964c4ebb5962f23c384b8663eb534c395a2b6a350",
+    "corpus/w3c-pdf7-ocr-tagged-2026-gold.json": "a7a58cbd3e9a038f327bddfa0dab7c52310b6994bf6669479c2a4b14f4462f3f",
+    "corpus/w3c-pdf7-ocr-source-review.json": "a2489332a1002f81eaa1ad883c63d5b54be073cefad03aa960c65a998673da38",
+    "tools/wasm-smoke/runtime.json": "9cbc5846b2c63210597d17a6c1a77e0569b277fc65c36c224a1e8fcbf25aaf7a",
+    "Cargo.lock": "4b8fcc9aad503d65c37d8b3253e13666b05362f87f6d46175cbd710eb47811a2"
+  }
+}
