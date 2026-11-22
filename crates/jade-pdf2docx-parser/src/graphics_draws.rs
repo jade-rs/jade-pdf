@@ -1,8 +1,8 @@
 //! 罫線本文を借用byteで走査し、作業・結果配列の全容量を予約する。
 use super::{
-    DecodeBudget, ParsedBounds, ParsedGraphicElement, concat_matrix, is_axis_aligned,
-    normalized_bounds, thin_path_segments_to_line, thin_rect_to_line, transform_point,
-    transform_rect_bounds,
+    DecodeBudget, ParsedBounds, ParsedFillElement, ParsedGraphicElement, concat_matrix,
+    is_axis_aligned, normalized_bounds, thin_path_segments_to_line, thin_rect_to_line,
+    transform_point, transform_rect_bounds,
 };
 use crate::syntax::{Lexer, Token};
 
@@ -13,6 +13,8 @@ struct State {
     matrix: [f32; 6],
     /// 現在の線幅。
     width: f32,
+    /// 現在の塗り色（RGB）。
+    fill: [u8; 3],
 }
 
 impl Default for State {
@@ -21,6 +23,7 @@ impl Default for State {
         Self {
             matrix: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             width: 1.0,
+            fill: [0, 0, 0],
         }
     }
 }
@@ -65,6 +68,56 @@ fn emit(
     Some(())
 }
 
+/// 塗り色の演算子の成分から RGB を求める（成分の数が合わない場合は `None`）。
+fn fill_color(word: &[u8], args: &[f32]) -> Option<[u8; 3]> {
+    let byte = |value: f32| (value.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let components = match word {
+        b"g" => 1,
+        b"rg" => 3,
+        b"k" => 4,
+        _ => args.len(),
+    };
+    let values = args.get(args.len().checked_sub(components)?..)?;
+    match values {
+        [gray] => Some([byte(*gray); 3]),
+        [r, g, b] => Some([byte(*r), byte(*g), byte(*b)]),
+        [c, m, y, k] => Some([
+            byte((1.0 - c) * (1.0 - k)),
+            byte((1.0 - m) * (1.0 - k)),
+            byte((1.0 - y) * (1.0 - k)),
+        ]),
+        _ => None,
+    }
+}
+
+/// 白以外で塗った面積のある矩形を塗りつぶし要素として追記する。
+fn emit_fill(
+    budget: &DecodeBudget,
+    fills: &mut Vec<ParsedFillElement>,
+    page: usize,
+    [x, y, w, h]: [f32; 4],
+    color: [u8; 3],
+) -> Option<()> {
+    let near_white = color.iter().all(|channel| *channel >= 250);
+    if near_white || w.abs() < 2.0 || h.abs() < 2.0 || ![x, y, w, h].iter().all(|v| v.is_finite()) {
+        return Some(());
+    }
+    push(
+        budget,
+        fills,
+        ParsedFillElement {
+            page,
+            bounds: ParsedBounds {
+                x0: x.min(x + w),
+                y0: y.min(y + h),
+                x1: x.max(x + w),
+                y1: y.max(y + h),
+            },
+            color: format!("{:02X}{:02X}{:02X}", color[0], color[1], color[2]),
+        },
+    )
+}
+
 /// 現在の点からサブパスの始点へ戻る辺を加え、現在の点を始点へ移す。
 fn close_subpath(
     budget: &DecodeBudget,
@@ -98,11 +151,23 @@ fn rectangle_edges(x: f32, y: f32, w: f32, h: f32) -> Vec<ParsedBounds> {
 }
 
 /// ページをまたぐ結果配列へ追記する。失敗時は呼び出し元が全結果を破棄する。
+#[cfg(test)]
 pub(super) fn append(
     budget: &DecodeBudget,
     page: usize,
     content: &[u8],
     output: &mut Vec<ParsedGraphicElement>,
+) -> Option<()> {
+    append_with_fills(budget, page, content, output, &mut Vec::new())
+}
+
+/// 罫線に加えて、白以外で塗りつぶした矩形も `fills` へ追記する。
+pub(super) fn append_with_fills(
+    budget: &DecodeBudget,
+    page: usize,
+    content: &[u8],
+    output: &mut Vec<ParsedGraphicElement>,
+    fills: &mut Vec<ParsedFillElement>,
 ) -> Option<()> {
     if budget.is_stopped() {
         return None;
@@ -196,10 +261,21 @@ pub(super) fn append(
             b"w" if count > 0 => {
                 state.width = args[count - 1];
             }
+            // 塗り色。色空間名は見ず、成分の数でグレー・RGB・CMYK を判別する。
+            b"g" | b"rg" | b"k" | b"sc" | b"scn" => {
+                if let Some(color) = fill_color(word, args) {
+                    state.fill = color;
+                }
+            }
             // 線を描く演算子（塗りと同時のものを含む）。`s`・`b`・`b*` はパスを閉じてから描く。
             b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*" => {
                 if matches!(word, b"s" | b"b" | b"b*") {
                     close_subpath(budget, &mut segments, &mut point, start)?;
+                }
+                if matches!(word, b"B" | b"B*" | b"b" | b"b*") {
+                    for rect in &rectangles {
+                        emit_fill(budget, fills, page, *rect, state.fill)?;
+                    }
                 }
                 for segment in segments.drain(..) {
                     if is_axis_aligned(segment) {
@@ -225,6 +301,8 @@ pub(super) fn append(
                 for [x, y, w, h] in rectangles.drain(..) {
                     if let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
                         emit(budget, output, page, bounds, width)?;
+                    } else {
+                        emit_fill(budget, fills, page, [x, y, w, h], state.fill)?;
                     }
                 }
                 if let Some((bounds, width)) = thin_path_segments_to_line(&segments) {

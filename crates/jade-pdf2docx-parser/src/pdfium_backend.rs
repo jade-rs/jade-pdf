@@ -333,6 +333,7 @@ mod tests {
                 rotation: 0,
             }],
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![text_element("表と容")],
             image_elements: Vec::new(),
             embedded_fonts: Vec::new(),
@@ -504,6 +505,7 @@ mod tests {
                 rotation: 0,
             }],
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![ParsedTextElement {
                 baseline_y: None,
                 page: 3,

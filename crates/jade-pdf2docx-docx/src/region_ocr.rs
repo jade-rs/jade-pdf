@@ -261,6 +261,7 @@ mod tests {
                 })
                 .collect(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: Vec::new(),
             image_elements: Vec::new(),
             embedded_fonts: Vec::new(),

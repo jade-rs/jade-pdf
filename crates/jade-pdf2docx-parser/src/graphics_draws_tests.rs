@@ -57,3 +57,22 @@ fn fill_and_stroke_draws_rules() {
     assert_eq!(lines(b"10 20 30 0.0 re B").len(), 2);
     assert_eq!(lines(b"10 10 m 50 10 l b").len(), 2);
 }
+
+/// 白以外の塗りつぶし矩形は塗り色つきで取り出し、白や細い矩形は除く。
+#[test]
+fn filled_rectangles_keep_their_color() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let mut output = Vec::new();
+    let mut fills = Vec::new();
+    append_with_fills(
+        &budget,
+        0,
+        b"0.85 g 10 20 30 40 re f 1 1 1 rg 0 0 50 50 re f 1 0 0 rg 0 0 50 0.5 re f",
+        &mut output,
+        &mut fills,
+    )
+    .expect("append");
+    assert_eq!(fills.len(), 1);
+    assert_eq!(fills[0].color, "D9D9D9");
+    assert_eq!(output.len(), 1, "thin red rectangle stays a rule");
+}

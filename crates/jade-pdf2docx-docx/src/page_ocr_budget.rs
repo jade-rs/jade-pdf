@@ -131,6 +131,7 @@ mod tests {
             page_count: pages.len(),
             pages,
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: Vec::new(),
             image_elements: Vec::new(),
             embedded_fonts: Vec::new(),

@@ -9,9 +9,9 @@ use std::{
 use docx_rs::{
     AlignmentType, BorderType, BreakType, Docx, Footer, Header, HeightRule, LineSpacing,
     PageMargin, PageOrientationType, PageSize, Paragraph, ParagraphChild, Pic, Run, RunFonts,
-    Section, SectionProperty, SectionType, Tab, TabValueType, Table, TableAlignmentType, TableCell,
-    TableCellBorder, TableCellBorderPosition, TableCellBorders, TableCellMargins, TableLayoutType,
-    TableRow, VAlignType, VMergeType, WidthType,
+    Section, SectionProperty, SectionType, Shading, ShdType, Tab, TabValueType, Table,
+    TableAlignmentType, TableCell, TableCellBorder, TableCellBorderPosition, TableCellBorders,
+    TableCellMargins, TableLayoutType, TableRow, VAlignType, VMergeType, WidthType,
 };
 use jade_pdf2docx_parser::{
     ParseLimits, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
@@ -2962,6 +2962,8 @@ struct PositionedTable {
     cell_tab_stops: Vec<Vec<CellParagraphTabs>>,
     /// 上から順の各マスへ割り当てた文字片（子表を除いて組み直すために保持する）。
     cell_fragments: Vec<Vec<Vec<table_cell_text::CellFragment>>>,
+    /// 上から順の各マスの背景色（RGB hex）。
+    cell_shading: Vec<Vec<Option<String>>>,
 }
 
 /// 1 マスの段落ごとのタブ位置（セル左端からの距離 pt と、右揃えか）。
@@ -3720,6 +3722,15 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if let Some(borders) = cell.borders {
                         table_cell = table_cell.set_borders(table_cell_borders(borders));
                     }
+                    if let Some(color) = parent
+                        .and_then(|table| table.cell_shading.get(row_index))
+                        .and_then(|row| row.get(grid_col))
+                        .cloned()
+                        .flatten()
+                    {
+                        table_cell =
+                            table_cell.shading(Shading::new().shd_type(ShdType::Clear).fill(color));
+                    }
                     grid_col += cell.grid_span.max(1);
                     table_cell
                 })
@@ -4166,6 +4177,7 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
         cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     }
 }
 
@@ -4573,6 +4585,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
         cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     }
 }
 
@@ -5117,6 +5130,25 @@ fn infer_positioned_table_from_graphics(
         .filter_map(|(col, (bounds, _))| bounds.map(|bounds| bounds.x0 - xs[col] as f32))
         .filter(|gap| gap.is_finite() && *gap >= 0.0)
         .reduce(f32::min);
+    // マスの面積の大半を覆う塗りつぶし矩形を、そのマスの背景色にする。
+    let mut cell_shading = (0..rows)
+        .map(|row| {
+            (0..cols)
+                .map(|col| {
+                    cell_fill_color(
+                        parsed,
+                        page,
+                        ParsedBounds {
+                            x0: xs[col] as f32,
+                            y0: ys[rows - row - 1] as f32,
+                            x1: xs[col + 1] as f32,
+                            y1: ys[rows - row] as f32,
+                        },
+                    )
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
     let flipped_rows = should_flip_table_rows_from_text_order(&assigned_rows)
         || should_flip_table_rows_from_text_y_order(&assigned_text_ys)
         || should_flip_table_rows_from_cell_text(&cells);
@@ -5131,6 +5163,7 @@ fn infer_positioned_table_from_graphics(
         cell_font_sizes.reverse();
         cell_tab_stops.reverse();
         cell_fragments.reverse();
+        cell_shading.reverse();
     }
     let docx_table = if text_augmented_columns || flipped_rows {
         None
@@ -5182,6 +5215,7 @@ fn infer_positioned_table_from_graphics(
         cell_font_sizes,
         cell_tab_stops,
         cell_fragments,
+        cell_shading,
     })
 }
 
@@ -5365,6 +5399,31 @@ fn parsed_text_has_underline(text: &ParsedTextElement, graphics: &[ParsedGraphic
             && bounds.x0 <= text_bounds.x1 + x_tolerance
             && bounds.x1 >= text_bounds.x0 - x_tolerance
     })
+}
+
+/// マスの面積の 8 割以上を覆う塗りつぶし矩形の色を返す（複数あれば最も小さい矩形）。
+fn cell_fill_color(parsed: &ParsedDocument, page: usize, cell: ParsedBounds) -> Option<String> {
+    let area = (cell.x1 - cell.x0) * (cell.y1 - cell.y0);
+    if area <= 0.0 {
+        return None;
+    }
+    parsed
+        .fills
+        .iter()
+        .filter(|fill| fill.page == page)
+        .filter_map(|fill| {
+            let bounds = normalized_bounds(fill.bounds);
+            let width = bounds.x1.min(cell.x1) - bounds.x0.max(cell.x0);
+            let height = bounds.y1.min(cell.y1) - bounds.y0.max(cell.y0);
+            (width > 0.0 && height > 0.0 && width * height >= 0.8 * area).then(|| {
+                (
+                    (bounds.x1 - bounds.x0) * (bounds.y1 - bounds.y0),
+                    &fill.color,
+                )
+            })
+        })
+        .min_by(|a, b| a.0.total_cmp(&b.0))
+        .map(|(_, color)| color.clone())
 }
 
 /// 表の行境界に重なる横罫線を除いた graphics を返す（セル罫線を文字の下線と取り違えない）。
@@ -6066,6 +6125,7 @@ fn infer_positioned_table_from_text_grid_page(
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
         cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     })
 }
 
@@ -6611,6 +6671,7 @@ mod tests {
             page_count: 1,
             pages: Vec::new(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![
                 text(400.0, 526.9, 402.5, 532.8, "1"),
                 text(403.8, 526.5, 404.8, 527.5, "\u{EA74}"),
@@ -6650,6 +6711,7 @@ mod tests {
             page_count: 1,
             pages: Vec::new(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![
                 text(10.0, 99.5, 40.0, 100.0, "\u{E005}\u{E005}"),
                 text(20.0, 100.0, 21.0, 101.0, "\u{EA74}"),

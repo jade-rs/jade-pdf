@@ -532,6 +532,7 @@ mod tests {
             page_count: 1,
             pages: Vec::new(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             embedded_fonts: Vec::new(),
             text_elements: Vec::new(),
             image_elements: vec![jade_pdf2docx_parser::ParsedImageElement {
@@ -565,6 +566,7 @@ mod tests {
             page_count: 1,
             pages: Vec::new(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             embedded_fonts: Vec::new(),
             text_elements: vec![jade_pdf2docx_parser::ParsedTextElement {
                 baseline_y: None,
@@ -611,6 +613,7 @@ mod tests {
             page_count: 3,
             pages: Vec::new(),
             graphics: Vec::new(),
+            fills: Vec::new(),
             embedded_fonts: Vec::new(),
             text_elements: vec![
                 jade_pdf2docx_parser::ParsedTextElement {

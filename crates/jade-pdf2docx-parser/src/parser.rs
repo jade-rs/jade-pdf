@@ -20,8 +20,8 @@ use crate::{
     image_filter::ImageFilter,
     limits::{ParseLimits, check_limit},
     model::{
-        ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
-        ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
+        ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedFillElement,
+        ParsedGraphicElement, ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
     },
     object_bytes::ObjectBytes,
     text::{
@@ -346,7 +346,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     decode_budget.check()?;
     let mut quality = QualityReport::default();
     crate::page_geometry_diagnostics::collect(decode_budget, page_count, &pages, &mut quality)?;
-    let mut graphics = extract_graphics_from_pdf_bytes(decode_budget, &bytes);
+    let (mut graphics, mut fills) =
+        extract_graphics_and_fills_from_pdf_bytes(decode_budget, &bytes);
     decode_budget.check()?;
     let mut text_elements = extract_text_elements_from_pdf_bytes(decode_budget, &bytes);
     decode_budget.check()?;
@@ -359,6 +360,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     let mut image_elements =
         extract_image_elements_from_pdf_bytes(decode_budget, &bytes, &streams, &mut quality);
     decode_budget.check()?;
+    fills
+        .retain_mut(|fill| normalize_bounds_for_page(fill.page, &mut fill.bounds, &page_viewports));
     normalize_elements_to_page_viewports(
         &page_viewports,
         &mut graphics,
@@ -382,6 +385,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         page_count,
         pages,
         graphics,
+        fills,
         text_elements,
         image_elements,
         embedded_fonts,
@@ -751,29 +755,47 @@ fn append_compressed_objects_as_indirect_objects(
 }
 
 /// PDF のページ本文を filter に応じて展開し、線分 graphics を抽出する。
+#[cfg(test)]
 fn extract_graphics_from_pdf_bytes(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
 ) -> Vec<ParsedGraphicElement> {
+    extract_graphics_and_fills_from_pdf_bytes(decode_budget, bytes).0
+}
+
+/// 罫線と、白以外で塗りつぶした矩形をページ順に抽出する。
+fn extract_graphics_and_fills_from_pdf_bytes(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+) -> (Vec<ParsedGraphicElement>, Vec<ParsedFillElement>) {
     let mut segments = Vec::new();
+    let mut fills = Vec::new();
     let streams = extract_page_content_streams_with_page(decode_budget, bytes);
     let streams = if streams.is_empty() && !decode_budget.has_page_tree() {
         if has_more_than_image_xobject_streams(decode_budget, bytes, 20) {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
         extract_flate_streams(decode_budget, bytes)
     } else {
         streams
     };
     for (page, stream) in streams {
-        if graphics_draws::append(decode_budget, page, &stream, &mut segments).is_none() {
-            return Vec::new();
+        if graphics_draws::append_with_fills(
+            decode_budget,
+            page,
+            &stream,
+            &mut segments,
+            &mut fills,
+        )
+        .is_none()
+        {
+            return (Vec::new(), Vec::new());
         }
     }
     if decode_budget.is_stopped() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
-    merge_axis_aligned_segments(segments)
+    (merge_axis_aligned_segments(segments), fills)
 }
 
 /// PDFの座標付き本文を抽出し、空のページFont対応も全体fallbackより優先する。

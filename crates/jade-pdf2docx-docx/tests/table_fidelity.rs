@@ -295,3 +295,19 @@ fn nested_table_text_is_not_duplicated_and_keeps_order() {
         "text above, nested table, text below: {xml}"
     );
 }
+
+/// 見出し行の塗りつぶしは、セルの背景色として残す。
+#[test]
+fn header_row_fill_becomes_cell_shading() {
+    let content = format!(
+        "0.85 g 20 140 200 20 re f 0 g {TWO_BY_TWO_RULES} BT /F1 10 Tf 1 0 0 1 25 146 Tm (Head) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 125 146 Tm (Qty) Tj ET BT /F1 10 Tf 1 0 0 1 25 120 Tm (Box) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 125 120 Tm (12) Tj ET"
+    );
+    let xml = convert("table_fidelity_header_fill", &content);
+    assert_eq!(
+        xml.matches(r#"w:fill="D9D9D9""#).count(),
+        2,
+        "both header cells keep the gray fill: {xml}"
+    );
+}

@@ -10,6 +10,7 @@ Native conversion now recovers unreadable TrueType display names from verified e
 
 - **PDF comparison:** align pages and text blocks, inspect extracted document structure, and render pages with Pdfium.
 - **PDF to DOCX:** convert text, tables, and images, with quality diagnostics and an optional strict mode.
+  Ruled tables keep merged cells, per-edge borders, row heights, cell alignment and shading, including tables drawn without outer rules, with only horizontal rules, or as boxed cells; tables placed side by side stay side by side.
 - **Optional OCR:** recognize scanned content with `ndlocr-lite-rs` and ONNX Runtime. Models and character sets are supplied separately.
 - **Browser API:** use the `jade-pdf2docx-wasm` crate for conversion through WebAssembly. Native and browser extraction paths have different coverage.
 
