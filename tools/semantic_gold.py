@@ -1,6 +1,7 @@
 """Keep full-page text gold and explicitly scoped scalar inventories distinct."""
 from collections import Counter
 import unicodedata
+from quantity_gold import check_quantity_gold
 
 
 def normalize_text(text):
@@ -60,6 +61,8 @@ def inventory_spec(gold):
 def check_gold(actual, gold):
     """Return the exact check kind and evidence; an inventory is not full-page gold."""
     kind = gold.get('kind', 'full_page_text')
+    if kind == 'quantity_context':
+        return check_quantity_gold(actual, gold, normalize_text)
     if kind == 'reading_order':
         anchors, scope = gold.get('anchors'), gold.get('scope')
         if (not isinstance(anchors, list) or not 1 <= len(anchors) <= 256

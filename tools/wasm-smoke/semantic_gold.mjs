@@ -1,3 +1,4 @@
+import {checkQuantityGold} from './quantity_gold.mjs';
 // Report the check's actual scope; scalar inventories do not validate page prose or order.
 export function semanticEntries(manifest) {
   return ['documents','pending_semantic'].flatMap(cohort=>(manifest[cohort]??[]).map(entry=>{
@@ -72,6 +73,7 @@ export function pageHasTextReview(page) {
 
 export function checkGold(actual,gold) {
   const kind=gold.kind??'full_page_text';
+  if(kind==='quantity_context') return checkQuantityGold(actual,gold,normalizeText);
   if(kind==='reading_order') {
     const {anchors,scope}=gold;
     if(!Array.isArray(anchors)||anchors.length<1||anchors.length>256
