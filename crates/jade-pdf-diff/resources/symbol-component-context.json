@@ -1,0 +1,17 @@
+{
+  "sources": [
+    "https://www-archive.mozilla.org/projects/mathml/fonts/encoding/symbol",
+    "https://www.unicode.org/Public/18.0.0/ucd/UnicodeData.txt",
+    "https://raw.githubusercontent.com/LibreOffice/core/98492e9d8169c080d224e6ee60feb3277c5b1a17/sal/textenc/convertadobe.tab"
+  ],
+  "source_roles": "The bundled original Adobe Symbol table supplies glyph-role names and private values; Mozilla documents top/middle/bottom/glue assembly roles. Unicode technical-symbol names/classes corroborate non-RTL component roles. LibreOffice records later codepoint assignments, which are not used as output substitutions here.",
+  "adobe_table_sha256": "deb78ca840a429311939b9d165890873f71fb23ef223ceeb144a6c6d641a7e52",
+  "context_only_ranges": {
+    "0xE6..0xEF": "legacyU+F8EB..U+F8F4",
+    "0xF4": "legacyU+F8F5",
+    "0xF6..0xFE": "legacyU+F8F6..U+F8FE"
+  },
+  "scope": "Twenty named parenthesis/bracket/brace/integral assembly parts. Require original Type0/IdentityH/CIDToGIDIdentity, agreeing PDF/program Symbol names, Microsoft Symbol cmap GID, exact ToUnicode, all-source multiplicity and unique SDK cells. An identity alias retains raw PUA and keeps requires_review=true even after inventory verification; it is not Unicode semantic recovery.",
+  "excluded": "No arbitrary PUA, MT Extra, delta/mu ambiguity, radical or arrow extenders. Do not map these components to whole parentheses, floor/ceiling operators or modern Unicode component characters. Unknown/unowned/ActualText collisions still reject the page projection.",
+  "copied_material": "Only factual role/code relationships and references; no external source code, font program, outlines or full mapping table copied."
+}

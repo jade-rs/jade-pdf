@@ -1,6 +1,15 @@
 //! Independent PDF operators, shared as inputs by native and browser tests.
 
 pub const CASES: &[&str] = &[
+    "symbol_component_valid",
+    "symbol_component_edit",
+    "symbol_component_unknown",
+    "symbol_component_unowned",
+    "symbol_component_actual_collision",
+    "symbol_component_same_cell",
+    "script_touching",
+    "script_gap",
+    "script_edit",
     "advance_touching",
     "advance_word_gap",
     "advance_unicode_edit",
@@ -1174,6 +1183,27 @@ pub fn oblique_layout(
 }
 
 pub fn fixture(case: &str, revised: bool) -> Vec<u8> {
+    if let Some(mode) = case.strip_prefix("symbol_component_") {
+        let mode = if mode == "edit" && !revised {
+            "valid"
+        } else {
+            mode
+        };
+        let mut bytes = symbol_component_cells(mode, 1., 0, false);
+        if revised && mode != "edit" {
+            bytes.extend_from_slice(b"\n% equivalent source rewrite\n");
+        }
+        return bytes;
+    }
+    if case.starts_with("script_") {
+        return advance_script_layout(
+            1.,
+            0,
+            revised,
+            if case == "script_gap" { 6. } else { 0. },
+            case == "script_edit" && revised,
+        );
+    }
     if case.starts_with("advance_") {
         return advance_word_layout(
             1.,
@@ -2200,4 +2230,32 @@ pub fn mt_extra_glyph_font() -> &'static str {
         "0074006500730074004D0054002D004500780074007200610003000000000000000000000000000000000000",
         "000000000000000000000000>",
     )
+}
+
+#[path = "symbol_components_fixture.rs"]
+mod symbol_components_fixture;
+
+/// 中立部品の原文符号だけを、独立した生成資料から取得する。
+#[allow(dead_code)]
+pub fn symbol_component_codes() -> &'static [u8] {
+    symbol_components_fixture::symbol_component_codes()
+}
+
+/// 部品の所有・字体・実編集の資料を、外部PDFや字体へ依存せず生成する。
+pub fn symbol_component_cells(mode: &str, unit: f64, rotation: u16, shear: bool) -> Vec<u8> {
+    symbol_components_fixture::symbol_component_cells(mode, unit, rotation, shear)
+}
+
+#[path = "advance_script_fixture.rs"]
+mod advance_script_fixture;
+
+/// 自作字体で、偽の生成空白を含む二桁添字の読み順を検証する。
+pub fn advance_script_layout(
+    unit: f64,
+    rotation: u16,
+    reverse: bool,
+    gap: f64,
+    revised: bool,
+) -> Vec<u8> {
+    advance_script_fixture::advance_script_layout(unit, rotation, reverse, gap, revised)
 }

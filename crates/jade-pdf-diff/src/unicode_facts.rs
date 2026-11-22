@@ -507,7 +507,7 @@ pub(crate) fn read(
                     &observed_unicode,
                 );
                 facts.source_unicode_accounting_unavailable |= facts.symbol.requires_review;
-                if facts.symbol.verified {
+                if facts.symbol.inventory_verified {
                     facts.source_unicode_scalars_unmatched = 0;
                 }
                 Ok(facts)

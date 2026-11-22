@@ -1797,6 +1797,86 @@
           "scope": "Only the complete selected printed line on original page1, visually confirmed with Poppler and independently interpreted source advances. Not full-page prose, source encoding accuracy, other contexts or highlight geometry."
         }
       ]
+    },
+    {
+      "id": "nist-fips202-2015",
+      "url": "https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.202.pdf",
+      "sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+      "bytes": 1459683,
+      "pages": 37,
+      "reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7,
+        8,
+        9,
+        10,
+        11,
+        12,
+        13,
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21,
+        22,
+        23,
+        24,
+        25,
+        26,
+        27,
+        28,
+        29,
+        30,
+        31,
+        32,
+        33,
+        34,
+        35,
+        36,
+        37
+      ],
+      "citation": "National Institute of Standards and Technology (2015), SHA-3 Standard: Permutation-Based Hash and Extendable-Output Functions, FIPS202, https://doi.org/10.6028/NIST.FIPS.202. Republished courtesy of the National Institute of Standards and Technology.",
+      "gold": {
+        "page": 34,
+        "kind": "scalar_inventory",
+        "ranges": [
+          [
+            8804,
+            8804
+          ]
+        ],
+        "count_each": 5,
+        "scope": "Only the five printed ≤ operators on PDFpage34/printedpage26: input n≤8m; Algorithm10 steps1,2,and two in step3. Counted manually on original high-resolution image before any native extraction. No full prose, ordering, source encoding, highlight geometry or other-operator gold."
+      },
+      "source": "https://csrc.nist.gov/pubs/fips/202/final",
+      "retrieved": "2026-11-22",
+      "rights_source": "https://www.nist.gov/open/license",
+      "rights": "NIST non-SRD/technical publication terms with attribution; preserve original notices in ignored internal cache. No PDF/font binaries or external outlines added to Git.",
+      "confidentiality": "Public NIST standard. Published institutional names/addresses and bibliography references only; no private user document or confidential information found.",
+      "review_method": "All37 original pages rendered with Poppler scale-to1000 and viewed in full-page overview sheets; original page34 inspected separately at scale-to2000. NIST authorship and original notices retained; bibliography citations are preserved as part of the original standard.",
+      "category": "NIST mathematical specification / opaque Symbol components",
+      "text_fragments": [
+        "SHA-3"
+      ],
+      "source_inventory_gold": "source-inventory-fips202-2015.json",
+      "reading_order": [
+        {
+          "page": 35,
+          "anchors": [
+            "Thus, T = b00 b01 b02 b03 b04 b05 b06 b07 b10 b11 b12 b13 b14 b15 b16 b17 = 1100 0101 0111 0100, and",
+            "S = Trunc14(T) = 1100 0101 0111 01, as described in Steps 3 and 4."
+          ]
+        }
+      ],
+      "reading_order_gold_source": "Original page35 (printed27) Poppler rendering, independently inspected 2026-11-22. Only the two introductory math lines, with subscripts linearized after their base; NFC and whitespace removal for order. Does not validate spacing, the rest of the page or geometry."
     }
   ],
   "revision_pairs": [
@@ -2333,6 +2413,22 @@
       "forbidden_scalars": [
         61515
       ]
+    },
+    {
+      "id": "nist-fips202-2015",
+      "page": 14,
+      "kind": "scalar_inventory",
+      "ranges": [
+        [
+          8722,
+          8722
+        ]
+      ],
+      "count_each": 4,
+      "forbidden_scalars": [
+        61485
+      ],
+      "scope": "Only four printed minus signs on original PDFpage14/printedpage6: m−r,−11,−3.2,and−3. Independently counted from original high-resolution image and corroborated by Adobe Symbol code0x2D, original Identity CID16, ToUnicodeF02D and matching embedded Microsoft Symbol cmap. Other hyphens, opaque ceiling/bracket pieces, page prose/order/geometry are outside this gold."
     }
   ],
   "scalar_revision_gold": [

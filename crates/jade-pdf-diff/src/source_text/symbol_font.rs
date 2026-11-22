@@ -47,7 +47,7 @@ fn resolve<'a>(doc: &'a Document, mut value: &'a Object) -> Result<&'a Object> {
     anyhow::bail!("Symbol resource exceeds reference budget")
 }
 
-/// 元の通知付きAdobe表から、正準合成後も一意な非私用文字だけを採用する。
+/// 通知付きAdobe表から、一意な標準文字と、意味を投影せず保持する部品の所有資料を読む。
 fn mapping(encoding: Kind) -> &'static BTreeMap<u8, char> {
     if encoding == Kind::MtExtra {
         // Mozilla MathMLの一次資料に記載された、単独文字である二つの対応事実。
@@ -71,7 +71,12 @@ fn mapping(encoding: Kind) -> &'static BTreeMap<u8, char> {
             let value = chars
                 .next()
                 .filter(|c| !private(*c) && !c.is_whitespace() && !c.is_control());
-            let value = value.filter(|_| chars.next().is_none());
+            let value = if crate::legacy_context::symbol_component_source(code) == Some(scalar) {
+                // 確認済みの部品は文脈の所有だけを示す恒等対応とし、私用符号を保持する。
+                Some(char::from_u32(0xf000 + u32::from(code)).unwrap())
+            } else {
+                value.filter(|_| chars.next().is_none())
+            };
             entries
                 .entry(code)
                 .and_modify(|old| {
@@ -240,6 +245,13 @@ mod tests {
         assert_eq!(mapping(Kind::MtExtra).get(&0x6c), Some(&'ℓ'));
         assert_eq!(mapping(Kind::Symbol).get(&0x6c), Some(&'λ'));
         assert!(!mapping(Kind::MtExtra).contains_key(&0x31));
+        for &code in crate::appearance_fixture::symbol_component_codes() {
+            assert_eq!(
+                mapping(Kind::Symbol).get(&code),
+                Some(&char::from_u32(0xf000 + u32::from(code)).unwrap())
+            );
+            assert!(!mapping(Kind::MtExtra).contains_key(&code));
+        }
     }
 
     /// 自作PDFのフォント辞書だけを取得し、外部フォントをテストへ持ち込まない。

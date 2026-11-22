@@ -94,6 +94,27 @@ try {
         symbolGold.push({page:gold.page,inventory,compact_fragment_matches:compactFragmentMatches,passed});
         checks.push({operation:'visibleOperatorGold',passed,worker_idle:window.client.activeWorkers===0});
       }
+      const readingGold=[];
+      for(const gold of entry.reading_order??[]) {
+        const ir=await window.client.run('inspect',[bytes]);
+        const layer=await window.client.run('textLayer',[bytes],{page:gold.page});
+        const ordered=text=>{
+          const compact=text.normalize('NFC').replace(/\s/gu,'');
+          let offset=0;
+          for(const anchor of gold.anchors) {
+            const value=anchor.normalize('NFC').replace(/\s/gu,'');
+            const at=compact.indexOf(value,offset);
+            if(at<0)return false;
+            offset=at+value.length;
+          }
+          return true;
+        };
+        const check={page:gold.page,ir_matches:ordered(ir.pages[gold.page-1].blocks.map(b=>b.text).join('\n')),
+          layer_matches:ordered(layer.map(r=>r.text).join('\n'))};
+        const passed=check.ir_matches&&check.layer_matches;
+        readingGold.push({...check,passed});
+        checks.push({operation:'readingOrderGold',passed,worker_idle:window.client.activeWorkers===0});
+      }
       let semanticGold;
       const contextGold=[];
       for(const gold of entry.context_gold??[]) {
@@ -118,7 +139,7 @@ try {
       }
       return {id:entry.id,passed:checks.every(x=>x.passed&&x.worker_idle)
         &&(!semanticGold||semanticGold.accepted),
-        checks,...(contextGold.length?{context_gold:contextGold}:{}),...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
+        checks,...(readingGold.length?{reading_order_gold:readingGold}:{}),...(contextGold.length?{context_gold:contextGold}:{}),...(symbolGold.length?{symbol_operator_gold:symbolGold}:{}),...(semanticGold?{semantic_gold:semanticGold}:{})};
     },{...entry,symbol_operator_gold:(manifest.symbol_operator_gold??[]).filter(g=>g.id===entry.id)});
     documents.push(row);console.log((row.passed?'PASS ':'FAIL ')+entry.id+' '+row.checks.length+' operations');
   }

@@ -2,6 +2,27 @@
 #[path = "legacy_context_data.rs"]
 mod data;
 
+/// Adobe Symbolの通知付き表で名前が特定できる、方向を持たない組み立て部品の旧値。
+/// 文字への変換ではなく所有の照合にだけ使い、天井・床や括弧全体の意味を推測しない。
+/// 出典と非対象はresources/symbol-component-context.jsonに記録する。
+pub(crate) fn symbol_component_source(code: u8) -> Option<u32> {
+    match code {
+        0xe6..=0xef => Some(0xf8eb + u32::from(code - 0xe6)),
+        0xf4 => Some(0xf8f5),
+        0xf6..=0xfe => Some(0xf8f6 + u32::from(code - 0xf6)),
+        _ => None,
+    }
+}
+
+/// 字形ID・原文符号・個数まで所有が確認された場合に限って使える、部品の生私用符号。
+pub(crate) fn symbol_component_raw(raw: char) -> bool {
+    (raw as u32)
+        .checked_sub(0xf000)
+        .and_then(|code| u8::try_from(code).ok())
+        .and_then(symbol_component_source)
+        .is_some()
+}
+
 /// 文字配置がRTL候補として扱う区間も避け、方向を変えない文脈だけを許す。
 pub(crate) fn contains(c: char) -> bool {
     if crate::text::is_rtl(c) {

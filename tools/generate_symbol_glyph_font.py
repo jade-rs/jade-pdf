@@ -16,6 +16,11 @@ def generate(profile="symbol"):
     """Create a post-3 TrueType with only a Microsoft Symbol cmap."""
     names = ['.notdef', 'lessEqual', 'less', 'sigma', 'Delta', 'mu'] if profile == 'symbol' else ['.notdef', 'ellipsis', 'ell', 'bracepart']
     encoding = ({0xF0A3: 'lessEqual', 0xF03C: 'less', 0xF073: 'sigma', 0xF044: 'Delta', 0xF06D: 'mu'} if profile == 'symbol' else {0xF04B: 'ellipsis', 0xF06C: 'ell', 0xF031: 'bracepart'})
+    if profile == 'components':
+        codes = list(range(0xe6,0xf0)) + [0xf4] + list(range(0xf6,0xff))
+        names = ['.notdef','lessEqual','less','minus'] + [f'part{code:02X}' for code in codes] + ['unresolved']
+        encoding = {0xf0a3:'lessEqual',0xf03c:'less',0xf02d:'minus',0xf060:'unresolved',
+                    **{0xf000+code:f'part{code:02X}' for code in codes}}
     builder = FontBuilder(1000, isTTF=True)
     builder.setupGlyphOrder(names)
     glyphs = {}
@@ -30,7 +35,7 @@ def generate(profile="symbol"):
     builder.setupHorizontalMetrics({name: (500, 0) for name in names})
     builder.setupHorizontalHeader(ascent=700, descent=0)
     builder.setupCharacterMap(encoding)
-    family, ps = ('Symbol', 'SymbolMT') if profile == 'symbol' else ('MT Extra', 'MT-Extra')
+    family, ps = ('MT Extra', 'MT-Extra') if profile == 'mtextra' else ('Symbol', 'SymbolMT')
     builder.setupNameTable({'familyName': family, 'styleName': 'Regular',
                            'fullName': family, 'psName': ps,
                            'uniqueFontIdentifier': 'Jade independent rectangle test'})
@@ -53,7 +58,7 @@ def generate(profile="symbol"):
 if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--profile", choices=["symbol", "mtextra"], default="symbol")
+    parser.add_argument("--profile", choices=["symbol", "mtextra", "components"], default="symbol")
     data = generate(parser.parse_args().profile)
     print('sha256:', hashlib.sha256(data).hexdigest())
     text = data.hex().upper() + '>'

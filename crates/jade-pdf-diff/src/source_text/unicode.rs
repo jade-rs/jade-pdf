@@ -40,6 +40,7 @@ pub(crate) struct Facts {
 #[derive(Clone)]
 pub(crate) struct SymbolAlias {
     /// フォント間で意味が衝突した場合は不明のまま残す。
+    /// 元の私用符号と同じ値は、部品の所有だけが確認でき、文字の意味は未確定である。
     pub scalar: Option<char>,
     /// 字形IDまで照合できた原文コードの使用回数。
     pub count: usize,
@@ -460,7 +461,7 @@ enum Font {
         /// 有界の原文Unicode表を、フォント種別一覧から独立して保持する。
         mapping: Box<Cmap>,
         encoding: CodeEncoding,
-        /// 原文のCIDと一致するMicrosoft Symbolの私用符号と標準文字。
+        /// 原文CIDと一致するSymbolの標準文字対応、または部品を保持する恒等対応。
         symbol: BTreeMap<u32, (char, char)>,
         /// Symbolを宣言するフォントの未検証私用符号も診断へ残す。
         legacy_symbol: bool,

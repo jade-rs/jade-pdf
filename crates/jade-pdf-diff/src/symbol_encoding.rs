@@ -18,8 +18,8 @@ pub(crate) struct Corrections {
     pub fingerprint: u64,
     /// 確認できない旧Symbol符号を成功として扱わない。
     pub requires_review: bool,
-    /// 生のToUnicodeと復元後の標準文字集合の保存量を証明した。
-    pub verified: bool,
+    /// 検証済み置換と未確定のまま保持する部品の、多重集合の保存量を証明した。
+    pub inventory_verified: bool,
 }
 
 impl Default for Corrections {
@@ -29,7 +29,7 @@ impl Default for Corrections {
             positions: Vec::new(),
             fingerprint: unicode_facts::FINGERPRINT_START,
             requires_review: false,
-            verified: false,
+            inventory_verified: false,
         }
     }
 }
@@ -51,7 +51,9 @@ fn expected(source: &Facts) -> Option<BTreeMap<char, usize>> {
         return None;
     }
     for (&raw, alias) in &source.symbol_aliases {
-        if !crate::legacy_context::contains(alias.scalar?) {
+        let target = alias.scalar?;
+        let component = target == raw && crate::legacy_context::symbol_component_raw(raw);
+        if !component && !crate::legacy_context::contains(target) {
             return None;
         }
         if source.scalars.get(&raw) != Some(&alias.count) || alias.count == 0 {
@@ -102,8 +104,8 @@ pub(crate) fn read(
         return output;
     };
     if *observed == declared {
-        output.verified = true;
-        output.requires_review = false;
+        output.inventory_verified = true;
+        output.requires_review = has_opaque_components(source);
         return output;
     }
     if *observed != source.scalars {
@@ -157,7 +159,9 @@ pub(crate) fn read(
             }
             candidates.insert(cell);
             *counts.entry(scalar).or_default() += 1;
-            positions.push((index, alias.scalar.unwrap()));
+            if alias.scalar != Some(scalar) {
+                positions.push((index, alias.scalar.unwrap()));
+            }
         }
     }
     if source
@@ -173,9 +177,16 @@ pub(crate) fn read(
     }
     output.positions = positions;
     output.fingerprint = fingerprint;
-    output.verified = true;
-    output.requires_review = false;
+    output.inventory_verified = true;
+    output.requires_review = has_opaque_components(source);
     output
+}
+
+/// 恒等対応で保持した部品があれば、保存量の照合後も意味の要確認を残す。
+fn has_opaque_components(source: &Facts) -> bool {
+    source.symbol_aliases.iter().any(|(&raw, alias)| {
+        alias.scalar == Some(raw) && crate::legacy_context::symbol_component_raw(raw)
+    })
 }
 
 #[cfg(test)]
@@ -234,7 +245,54 @@ mod tests {
         assert!(expected(&s).is_none());
     }
 
+    /// 所有を確認した中立の部品は私用のまま保ち、同じページの確定した記号だけを復元する。
+    #[test]
+    fn owned_opaque_components_allow_known_aliases_without_claiming_their_meaning() {
+        let mut s = source(1);
+        s.scalars.insert('\u{f0e9}', 2);
+        s.symbol_aliases.insert(
+            '\u{f0e9}',
+            SymbolAlias {
+                scalar: Some('\u{f0e9}'),
+                count: 2,
+            },
+        );
+        assert_eq!(
+            expected(&s),
+            Some(BTreeMap::from([('≤', 1), ('\u{f0e9}', 2)]))
+        );
+        assert!(has_opaque_components(&s));
+        s.scalars.insert('\u{f0e9}', 3);
+        assert!(
+            expected(&s).is_none(),
+            "An unowned font or ActualText collision must not borrow the component proof"
+        );
+        s.scalars.insert('\u{f0e9}', 2);
+        s.scalars.insert('\u{e123}', 1);
+        s.symbol_aliases.insert(
+            '\u{e123}',
+            SymbolAlias {
+                scalar: Some('\u{e123}'),
+                count: 1,
+            },
+        );
+        assert!(
+            expected(&s).is_none(),
+            "Arbitrary PUA identity aliases are not trusted context"
+        );
+    }
+
     proptest! {
+        /// 部品の全使用が所有済みの場合だけ既知の記号を復元し、未知の追加使用を拒否する。
+        #[test]
+        fn opaque_context_requires_exact_source_multiplicity(known in 1usize..1024,owned in 1usize..1024,extra in 0usize..1024) {
+            let mut s=source(known);
+            s.scalars.insert('\u{f0e9}',owned+extra);
+            s.symbol_aliases.insert('\u{f0e9}',SymbolAlias{scalar:Some('\u{f0e9}'),count:owned});
+            prop_assert_eq!(expected(&s).is_some(),extra==0);
+            prop_assert!(has_opaque_components(&s));
+        }
+
         /// 数の重複を保ち、部分的な証明で未検証の私用文字を巻き込まない。
         #[test]
         fn projection_preserves_exact_multiplicity(count in 1usize..1024, unverified in 1usize..1024) {

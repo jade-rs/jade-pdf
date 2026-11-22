@@ -1,0 +1,33 @@
+{
+  "cases": 2,
+  "matched": 2,
+  "results": [
+    {
+      "page": 14,
+      "matches": true,
+      "nonwhitespace_scalars": 1468,
+      "source_owned_scalars": 0,
+      "before_sha256": "41ef64ccb2c5a684f2f35558519edd0efda3a5319d365729173acda8d8287da1",
+      "after_sha256": "d8ce8ed1b9464508e69d653d64be9be0b1ac81a30ac8032d01907a7feb392643",
+      "scope": "Four confirmed F02D->2212 scalars only; exact ordered cell/ownership records"
+    },
+    {
+      "page": 35,
+      "matches": true,
+      "nonwhitespace_scalars": 1415,
+      "source_owned_scalars": 0,
+      "before_sha256": "2054922865982c8a95363c3d84a679b7e3a6c379822790fd1dc5a1b8bee730b0",
+      "after_sha256": "f792075fa9108bd9fe07bae841bf23279a8bedd052b55c839435bc339214000b",
+      "scope": "Literal scalar/cell/ownership multiset; order is checked separately against original reading-order gold"
+    }
+  ],
+  "nonwhitespace_scalars": 2883,
+  "source_owned_scalars": 0,
+  "source_sha256": "1592607831ff0908cc590632ce371c6c95e94025bb1a0c8ae90a4d0ec1ed025e",
+  "binary_sha256": "1bcf3028db3188583a5a4c2637238ecf50ae85371c1cbb838bbc65f142b88524",
+  "baseline_sha256": "bd190b906b6dbd0a32e90a9028c058d777da9657c990ab4680d14fab259022d1",
+  "manifest_sha256": "50de8a65bcf8a906050f8781d5703eea30eabfe78a7d12de75b7be680982c5ab",
+  "impact_sha256": "6c546fafb4680a6087cb63dffc04fe0f9c37356191ce02f47c686cfbb2c1be28",
+  "audit_sha256": "29e43db97e2a249e883d4e7bbb0b6269ff75c1a8ea3f6715c2245c9959ddfdf1",
+  "scope": "Public scalar spans, run bounds/sizes, source-region ownership and diagnostics, limited to the exact two reviewed changed pages. Only four original minus aliases are normalized. Not glyph-ink truth, full-page semantic text or full diff precision/recall."
+}
