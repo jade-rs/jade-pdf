@@ -91,6 +91,46 @@ fn missing_metrics_use_original_geometry_without_invented_style_or_underline() {
     });
 }
 
+/// descriptorが無い場合も、元外形を整数へ早く丸めて小数の高さを失わない。
+#[test]
+fn fallback_line_and_cap_metrics_keep_original_fractional_outline_bounds() {
+    with_font(|mut font| {
+        use crate::type1_outline::charstring::Command;
+        font.header.info = header::Info::default();
+        font.glyphs[1].name = b"H".to_vec();
+        font.glyphs[1].outline.commands = vec![
+            Command::Move([0., -123.25]),
+            Command::Line([300., 700.25]),
+            Command::Line([600., -123.25]),
+            Command::Close,
+        ];
+        let actual = direct(&DecodeBudget::default(), &font, b"<< >>").unwrap();
+        assert_eq!(
+            (actual.ascent, actual.descent, actual.cap_height),
+            (700.25, -123.25, 700.25)
+        );
+    });
+}
+
+/// 元三次曲線の極値から高さを補い、制御点の箱や整数外接枠へ置き換えない。
+#[test]
+fn fallback_metrics_use_fractional_cubic_extrema() {
+    with_font(|mut font| {
+        use crate::type1_outline::charstring::Command;
+        font.header.info = header::Info::default();
+        font.glyphs[1].name = b"x".to_vec();
+        font.glyphs[1].outline.commands = vec![
+            Command::Move([0., 0.]),
+            Command::Curve([0., 1000.333, 1000., 1000.333, 1000., 0.]),
+            Command::Line([0., 0.]),
+            Command::Close,
+        ];
+        let actual = direct(&DecodeBudget::default(), &font, b"<< >>").unwrap();
+        assert!((actual.ascent - 750.24975).abs() < 1e-9);
+        assert_eq!(actual.ascent, actual.x_height);
+    });
+}
+
 /// 明示Mediumを500として保持し、escape復号後の既知weightだけを認識する。
 #[test]
 fn declared_weight_classes_are_retained_without_substring_guesses() {
