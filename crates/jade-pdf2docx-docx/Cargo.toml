@@ -10,6 +10,7 @@ jade-pdf2docx-ocr = { version = "0.1.0", path = "../jade-pdf2docx-ocr" }
 jade-pdf2docx-parser = { version = "0.1.0", path = "../jade-pdf2docx-parser" }
 scraper = "0.22"
 quick-xml = { version = "=0.41.0", default-features = false }
+ttf-parser = { version = "=0.25.1", default-features = false, features = ["std", "opentype-layout"] }
 zip = { version = "0.6", default-features = false, features = ["deflate"] }
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
