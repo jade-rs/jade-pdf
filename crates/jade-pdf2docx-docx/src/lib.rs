@@ -3372,15 +3372,17 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if cell.underlined && !text.trim().is_empty() {
                         run = run.underline("single");
                     }
-                    let mut paragraph = native_cell
-                        .and_then(native_table_text::single_line_paragraph)
-                        .unwrap_or_else(|| Paragraph::new().add_run(run));
+                    let native_paragraph =
+                        native_cell.and_then(native_table_text::single_line_paragraph);
+                    let has_native_paragraph = native_paragraph.is_some();
+                    let mut paragraph =
+                        native_paragraph.unwrap_or_else(|| Paragraph::new().add_run(run));
                     paragraph = match cell.alignment {
                         ParagraphAlignment::Left => paragraph,
                         ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
                         ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
                     };
-                    if parent.is_some() {
+                    if parent.is_some() && !has_native_paragraph {
                         paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
                     }
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);

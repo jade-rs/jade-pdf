@@ -139,13 +139,22 @@ fn legacy_runs(
 
 /// 単一行の文字列・既存の配置を変えず、表全体の共通fontではなく各runのstyleを使う。
 pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
-    (!cell.single_line_runs.is_empty()).then(|| {
+    if cell.single_line_runs.is_empty() {
+        return None;
+    }
+    let height = structured_line_max_font_size(cell.lines.first()?);
+    if pdf_points_to_twips(height)? > pdf_points_to_twips(cell.top - cell.bottom)? {
+        return None;
+    }
+    let spacing = native_line_pitch::spacing(height, 0, 0)?;
+    Some(
         cell.single_line_runs
             .iter()
             .fold(Paragraph::new(), |p, run| {
                 p.add_run(docx_run_from_structured_run(run))
             })
-    })
+            .line_spacing(spacing),
+    )
 }
 
 /// 原点を字面へ移動しないセル行では、共通本文builderがtrimした原文の端の空白を戻す。
