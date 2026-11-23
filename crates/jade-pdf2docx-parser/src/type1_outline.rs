@@ -1,6 +1,9 @@
 //! Type1の外形を、PostScriptを実行せず有限の型付き演算で読む。
+#[path = "type1_outline_assemble.rs"]
+mod assemble;
 #[path = "type1_outline_attributes.rs"]
 mod attributes;
+pub(crate) use assemble::{Input, Prepared, prepare};
 #[path = "type1_outline_bounds.rs"]
 mod bounds;
 #[path = "type1_outline_cff.rs"]
