@@ -93,4 +93,4 @@ native抽出でPdfiumが印刷された行末hyphenをU+0002へ置換した場�
 
 組み込み表を取得できず追加のglyph名対応もない場合、既存ToUnicodeを複製せず共有し、未確認codeのbit列だけを診断で保持する。通常出力には未検証のfallback文字が残る場合があり、本文復元の成功を意味しない。strictは描画した未確認codeを拒否する。
 
-bytes parserは、ToUnicodeの`bfchar`の空宛先と`bfrange`宛先配列の空要素を空文字列として保持する。元のbyte値へ戻したり、空要素を詰めて後続codeの文字をずらしたりしない。UTF-16のcode unitが不完全な宛先はmapping全体を無効にし、有効なprefixだけを本文へ取り込まない。
+bytes parserは、ToUnicodeの`bfchar`の空宛先と`bfrange`宛先配列の空要素を空文字列として保持する。元のbyte値へ戻したり、空要素を詰めて後続codeの文字をずらしたりしない。PDFの奇数桁hexの末尾を0で補完してからUTF-16を検証する（`<004>`は`@`）。補完後もcode unitが不完全な宛先（例：3byteの`<004100>`）はmapping全体を無効にし、有効なprefixだけを本文へ取り込まない。
