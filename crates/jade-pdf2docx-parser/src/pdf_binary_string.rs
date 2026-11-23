@@ -32,11 +32,29 @@ pub(crate) fn visit_string(value: &[u8], mut emit: impl FnMut(u8) -> Option<()>)
         }
         return Some(());
     }
-    if value.first() != Some(&b'(') {
+    if value.first() != Some(&b'(') || value.last() != Some(&b')') {
         return None;
     }
-    let mut cursor = 1;
-    let mut depth = 1usize;
+    visit_literal_body(&value[1..value.len() - 1], emit)
+}
+
+/// hex 1 桁を nibble に変換する。
+fn hex_nibble(byte: u8) -> Option<u8> {
+    match byte {
+        b'0'..=b'9' => Some(byte - b'0'),
+        b'a'..=b'f' => Some(byte - b'a' + 10),
+        b'A'..=b'F' => Some(byte - b'A' + 10),
+        _ => None,
+    }
+}
+
+/// 外側の括弧を除いたliteral本文を検証し、PostScriptと共通のescapeを展開する。
+pub(crate) fn visit_literal_body(
+    value: &[u8],
+    mut emit: impl FnMut(u8) -> Option<()>,
+) -> Option<()> {
+    let mut cursor = 0;
+    let mut depth = 0usize;
     while let Some(&byte) = value.get(cursor) {
         cursor += 1;
         match byte {
@@ -71,14 +89,11 @@ pub(crate) fn visit_string(value: &[u8], mut emit: impl FnMut(u8) -> Option<()>)
                 }
             }
             b'(' => {
-                depth += 1;
+                depth = depth.checked_add(1)?;
                 emit(byte)?;
             }
             b')' => {
-                depth -= 1;
-                if depth == 0 {
-                    return (cursor == value.len()).then_some(());
-                }
+                depth = depth.checked_sub(1)?;
                 emit(byte)?;
             }
             b'\r' => {
@@ -90,20 +105,5 @@ pub(crate) fn visit_string(value: &[u8], mut emit: impl FnMut(u8) -> Option<()>)
             _ => emit(byte)?,
         }
     }
-    None
-}
-
-/// hex 1 桁を nibble に変換する。
-fn hex_nibble(byte: u8) -> Option<u8> {
-    match byte {
-        b'0'..=b'9' => Some(byte - b'0'),
-        b'a'..=b'f' => Some(byte - b'a' + 10),
-        b'A'..=b'F' => Some(byte - b'A' + 10),
-        _ => None,
-    }
-}
-
-/// 外側の括弧を除いたliteral本文を検証し、PostScriptと共通のescapeを展開する。
-pub(crate) fn visit_literal_body(_body: &[u8], _emit: impl FnMut(u8) -> Option<()>) -> Option<()> {
-    None
+    (depth == 0).then_some(())
 }
