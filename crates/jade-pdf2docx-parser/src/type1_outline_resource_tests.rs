@@ -70,7 +70,7 @@ fn pdf_base_encodings_and_differences_are_distinct() {
         ("WinAnsiEncoding", 128, 3),
         ("WinAnsiEncoding", 129, 9),
         ("MacRomanEncoding", 128, 4),
-        ("MacExpertEncoding", 86, 5),
+        ("MacExpertEncoding", 87, 5),
         ("MacExpertEncoding", 49, 10),
     ] {
         let source = format!(
