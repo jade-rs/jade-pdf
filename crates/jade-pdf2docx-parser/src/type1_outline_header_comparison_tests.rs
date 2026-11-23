@@ -3,6 +3,20 @@ use super::*;
 use crate::type1_outline::header;
 use std::collections::BTreeMap;
 
+/// 独立Type1解析器がboolを0/1として保存した場合も、値の型を検査して比較する。
+fn reference_bool(value: &serde_json::Value) -> Option<bool> {
+    match value {
+        serde_json::Value::Null => None,
+        serde_json::Value::Bool(value) => Some(*value),
+        serde_json::Value::Number(value) => match value.as_i64() {
+            Some(0) => Some(false),
+            Some(1) => Some(true),
+            _ => panic!("independent reference bool must be 0 or 1"),
+        },
+        _ => panic!("independent reference bool has an invalid type"),
+    }
+}
+
 /// 固定した独立解析器による原本headerの値。
 #[derive(Deserialize)]
 pub(super) struct Metadata {
@@ -74,7 +88,7 @@ fn original_headers_match_independent_metadata_and_encoding() {
         }
         assert_eq!(
             actual.info.fixed,
-            expected.info_numbers["isFixedPitch"].as_bool()
+            reference_bool(&expected.info_numbers["isFixedPitch"])
         );
         assert_eq!(
             actual.info.fs_type.map(u64::from),
