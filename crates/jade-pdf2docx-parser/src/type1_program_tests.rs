@@ -125,6 +125,23 @@ fn cancellation_stops_before_table_allocation() {
     assert!(matches!(budget.check(), Err(ParseError::Cancelled)));
 }
 
+/// TeXが使用する既知のfont cache前処理は、後続の静的Encodingを隠さない。
+#[test]
+fn font_cache_preamble_does_not_hide_static_encoding() {
+    let preamble = "FontDirectory/Owned known{/Owned findfont dup/UniqueID known{dup /UniqueID get 1234567 eq exch/FontType get 1 eq and}{pop false}ifelse {save true}{false}ifelse}{false}ifelse\n";
+    let source = preamble.to_owned() + &header("/Encoding 256 array dup 65 /B put def");
+    let table = parse(&DecodeBudget::default(), source.as_bytes()).unwrap();
+    assert_eq!(table.slots[65], Some(b"B".as_slice()));
+}
+
+/// 前処理の条件分岐へ追加したEncoding変更を、既知のcache慣用句として通さない。
+#[test]
+fn font_cache_preamble_rejects_unrecognized_executed_code() {
+    let preamble = "FontDirectory/Owned known{/Owned findfont dup/UniqueID known{dup /UniqueID get 1234567 eq exch/FontType get 1 eq and}{pop false}ifelse {save true}{false /Encoding 256 array dup 65 /C put def}ifelse}{false}ifelse\n";
+    let source = preamble.to_owned() + &header("/Encoding 256 array dup 65 /B put def");
+    assert!(parse(&DecodeBudget::default(), source.as_bytes()).is_none());
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     /// どのbyte位置への代入でも、上書き後の名と隣の未指定slotを保つ。
