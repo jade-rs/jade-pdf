@@ -56,7 +56,7 @@ Inferred centred text lines within the body area retain their PDF centre through
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
 
-Tables inferred from PDF rules keep their source-coordinate row order, including descending values and content streams that paint the bottom row first. Complex cell boundaries and within-cell layout still require review.
+Tables inferred from PDF rules keep their source-coordinate row order and each grid row’s height, including descending values and content streams that paint the bottom row first. Cells whose modeled text agrees with the source retain individual run styles. Multiline cells use separate source-positioned paragraphs and explicit edge spaces when their paragraph boxes fit the source row height; single-line cells retain their existing text and alignment. Nested, unmatched, or overfull cells use the existing layout. Complex cell boundaries, font substitution, and rendered placement still require review; see the [cell-line validation](corpus/validation-native-cell-lines.json).
 
 Text paragraphs use an explicit line box based on the source font size, with the PDF's blank space applied separately. This prevents font-dependent automatic leading from accumulating between source lines. Font substitution can still shift the first baseline or change glyph widths.
 

@@ -67,3 +67,15 @@ def owned_overfull_cell(make_pdf):
             'BT /F1 10 Tf 182 680 Td (Control) Tj ET')
     return dict(id='native-overfull-cell', data=make_pdf(grid + ' ' + text),
                 body={}, overfull_cell=True)
+
+
+def owned_single_line_styles(make_pdf):
+    """6ptと14ptの単一行セルを含む所有表を作り、既定11ptへの退行を検出する。"""
+    grid = ' '.join(
+        [f'72 {y} m 272 {y} l S' for y in (600, 640)]
+        + [f'{x} 600 m {x} 640 l S' for x in (72, 172, 272)]
+    )
+    text = ('BT /F1 6 Tf 82 620 Td (Small) Tj ET '
+            'BT /F1 14 Tf 182 620 Td (Large) Tj ET')
+    return dict(id='native-single-line-styles', data=make_pdf(grid + ' ' + text),
+                body={}, single_line_styles=[12, 28])
