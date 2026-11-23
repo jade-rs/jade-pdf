@@ -2525,6 +2525,27 @@ fn extract_text_elements_with_matrices<'clip>(
                 && let Some(bounds) = bounds
             {
                 if merge && let Some(previous) = elements.last_mut() {
+                    let separator = page_matrix
+                        .and_then(|current| {
+                            let (last_begin, matrix, width) = last_draw?;
+                            (last_begin == begin)
+                                .then(|| crate::text_draws::gap(matrix, width, current))
+                                .flatten()
+                        })
+                        .is_some_and(|gap| {
+                            crate::text_word_gap::needs_separator(
+                                &previous.text,
+                                &text,
+                                gap,
+                                state.size,
+                            )
+                        });
+                    if separator
+                        && crate::text_result_storage::extend(budget, &mut previous.text, " ")
+                            .is_none()
+                    {
+                        return 0.;
+                    }
                     if crate::text_result_storage::extend(budget, &mut previous.text, &text)
                         .is_none()
                     {
