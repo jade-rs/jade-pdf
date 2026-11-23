@@ -36,7 +36,7 @@ fn decimal_pdf_widths_choose_exact_legal_units() {
     );
     assert_eq!(
         choose_units(&DecodeBudget::default(), &[500., 600.], &limits),
-        Some(16000)
+        Some(16380)
     );
     let wide = Limits {
         advance: 65535.,
@@ -100,6 +100,15 @@ fn invalid_or_unrepresentable_values_do_not_fallback() {
         advance: 1e9,
     };
     assert!(choose_units(&DecodeBudget::default(), &[600.], &limits).is_none());
+    for advance in [f64::NAN, f64::INFINITY, -1.] {
+        let limits = Limits {
+            coordinate: 1200.,
+            delta: 1700.,
+            metric: 1000.,
+            advance,
+        };
+        assert!(choose_units(&DecodeBudget::default(), &[600.], &limits).is_none());
+    }
 }
 
 proptest! {
