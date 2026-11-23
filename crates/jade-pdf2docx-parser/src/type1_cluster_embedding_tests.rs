@@ -89,6 +89,51 @@ pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec
     encode_objects(objects(content, second_width))
 }
 
+/// TJによる論理空白を、元fontのcode32へ割り当てず独立した位置として保つ。
+#[test]
+fn positioned_type1_keeps_tj_space_geometry() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-gap.pdf", &input).unwrap();
+    let text = &parsed.text_elements;
+    assert_eq!(
+        text.iter().map(|e| e.text.as_str()).collect::<Vec<_>>(),
+        ["f", " ", "f"]
+    );
+    assert_eq!(text[1].font_name, None);
+    assert!((text[1].bounds.x0 - 26.).abs() < 0.001);
+    assert!((text[1].bounds.x1 - 34.).abs() < 0.001);
+    assert!((text[2].bounds.x0 - 34.).abs() < 0.001);
+    assert_eq!(text[0].font_name, text[2].font_name);
+}
+
+/// 合字faceから通常faceへの切り替えでも、TJの単語境界を保持する。
+#[test]
+fn positioned_type1_keeps_space_across_face_changes() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(B) -400 (A)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-face-gap.pdf", &input).unwrap();
+    let text = &parsed.text_elements;
+    assert_eq!(
+        text.iter().map(|e| e.text.as_str()).collect::<Vec<_>>(),
+        ["ff", " ", "f"]
+    );
+    assert!((text[1].bounds.x0 - 30.).abs() < 0.001);
+    assert!((text[1].bounds.x1 - 38.).abs() < 0.001);
+    assert_ne!(text[0].font_name, text[2].font_name);
+}
+
+/// 小さな字間調整を論理空白へ変えず、同じface内の元glyph位置を残す。
+#[test]
+fn positioned_type1_preserves_glyph_origins_inside_one_face() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(AA) -50 (AA)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-kerning.pdf", &input).unwrap();
+    assert_eq!(parsed.text_elements.len(), 4);
+    for (element, x) in parsed.text_elements.iter().zip([20., 26., 33., 39.]) {
+        assert_eq!(element.text, "f");
+        assert!((element.bounds.x0 - x).abs() < 0.001, "{element:?}");
+        assert!((element.bounds.x1 - element.bounds.x0 - 6.).abs() < 0.001);
+    }
+}
+
 /// stream長と原本fontを保った、拡張可能な所有object列。
 fn objects(content: &[u8], second_width: Option<u16>) -> Vec<Vec<u8>> {
     let (font, first, second, third) = font_program();
