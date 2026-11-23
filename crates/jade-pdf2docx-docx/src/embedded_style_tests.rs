@@ -96,3 +96,41 @@ fn embedded_style_preserves_no_subsetting_permission() {
     let bytes = package(64, 0x100, "JadeT1-full");
     assert!(xml(&bytes, "word/fontTable.xml").contains("w:subsetted=\"false\""));
 }
+
+/// OS/2がないfaceではheadのstyleを使い、壊れたdirectoryを拒否する。
+#[test]
+fn embedded_style_reads_head_fallback_and_rejects_invalid_offsets() {
+    let mut bytes = metadata_font(0, 0);
+    bytes[28..32].copy_from_slice(b"name");
+    bytes[88..90].copy_from_slice(&3u16.to_be_bytes());
+    let face = embedded_face::Face::read(&bytes).unwrap();
+    assert!(face.bold && face.italic);
+    for offset in [0u32, 12, 43, 175, u32::MAX] {
+        let mut corrupt = bytes.clone();
+        corrupt[20..24].copy_from_slice(&offset.to_be_bytes());
+        assert!(embedded_face::Face::read(&corrupt).is_none());
+    }
+}
+
+proptest::proptest! {
+    /// 任意のstyle/rightsビットでも、既知の各属性だけを独立に伝える。
+    #[test]
+    fn embedded_style_flags_are_independent(selection in proptest::prelude::any::<u16>(), rights in proptest::prelude::any::<u16>()) {
+        let mut bytes = metadata_font(selection, rights);
+        bytes[98..100].copy_from_slice(&4u16.to_be_bytes());
+        let face = embedded_face::Face::read(&bytes).unwrap();
+        proptest::prop_assert_eq!(face.bold, selection & 32 != 0);
+        proptest::prop_assert_eq!(face.italic, selection & 513 != 0);
+        proptest::prop_assert_eq!(face.no_subsetting, rights & 256 != 0);
+    }
+
+    /// 切断・任意データのmetadata検査はpanicせず、借用範囲の外を読まない。
+    #[test]
+    fn embedded_style_arbitrary_metadata_is_bounded(bytes in proptest::collection::vec(proptest::prelude::any::<u8>(), 0..1024)) {
+        let _ = embedded_face::Face::read(&bytes);
+        let original = metadata_font(33, 256);
+        for end in 0..original.len() {
+            proptest::prop_assert!(embedded_face::Face::read(&original[..end]).is_none());
+        }
+    }
+}

@@ -188,6 +188,28 @@ fn reconciliation_does_not_reuse_generated_font_for_changed_unicode() {
 }
 
 proptest::proptest! {
+    /// 任意の一ページの件数増加は、他ページの本文・style・幾何を変えない。
+    #[test]
+    fn reconciliation_mismatch_has_page_local_effect(
+        lengths in proptest::collection::vec(1usize..12, 2..9),
+        affected in 0usize..64,
+    ) {
+        let affected = affected % lengths.len();
+        let pure: Vec<_> = lengths.iter().enumerate().map(|(page, &length)| {
+            let mut value = element(&"a ".repeat(length), page);
+            value.font_name = Some(format!("JadeT1-{page}"));
+            value
+        }).collect();
+        let mut native = pure.clone();
+        native[affected].text.push('x');
+        native[affected].font_name = None;
+        let mut expected = pure.clone();
+        expected[affected] = native[affected].clone();
+        let target = budget(128 * 1024);
+        proptest::prop_assert_eq!(reconcile_pdfium_characters(&target, &pure, &native, &Default::default()), Some(expected));
+        proptest::prop_assert!(target.check().is_ok());
+    }
+
     /// ページが交互でもUnicode増幅とpureの空白・幾何/styleを保持する。
     #[test]
     fn reconciliation_preserves_page_grouping_and_attributes(
