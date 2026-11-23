@@ -3,8 +3,51 @@ use crate::decode::DecodeBudget;
 
 /// 文字列・glyph programを借用し、件数・offset・総長を検査して格納する。
 pub(super) fn encode(budget: &DecodeBudget, objects: &[&[u8]]) -> Option<Vec<u8>> {
-    let _ = (budget, objects);
-    None
+    let count = u16::try_from(objects.len()).ok()?;
+    if count == 0 {
+        let mut bytes = budget.font_vector(2)?;
+        bytes.extend_from_slice(&[0, 0]);
+        return Some(bytes);
+    }
+    let mut total = 0_u32;
+    for object in objects {
+        if budget.is_stopped() {
+            return None;
+        }
+        total = total.checked_add(u32::try_from(object.len()).ok()?)?;
+    }
+    let last = total.checked_add(1)?;
+    let width = match last {
+        0..=255 => 1,
+        256..=65535 => 2,
+        65536..=16777215 => 3,
+        _ => 4,
+    };
+    let size = 3_usize
+        .checked_add((objects.len() + 1).checked_mul(width)?)?
+        .checked_add(total as usize)?;
+    if size > crate::parser::MAX_EMBEDDED_FONT_BYTES {
+        return None;
+    }
+    let mut bytes = budget.font_vector(size)?;
+    bytes.extend_from_slice(&count.to_be_bytes());
+    bytes.push(width as u8);
+    let mut offset = 1_u32;
+    for object in objects {
+        if budget.is_stopped() {
+            return None;
+        }
+        bytes.extend_from_slice(&offset.to_be_bytes()[4 - width..]);
+        offset = offset.checked_add(u32::try_from(object.len()).ok()?)?;
+    }
+    bytes.extend_from_slice(&offset.to_be_bytes()[4 - width..]);
+    for object in objects {
+        if budget.is_stopped() {
+            return None;
+        }
+        bytes.extend_from_slice(object);
+    }
+    (!budget.is_stopped()).then_some(bytes)
 }
 
 #[cfg(test)]
