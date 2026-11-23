@@ -39,11 +39,6 @@ fn real_embedded_fonts_recover_all_source_pages_without_tounicode() {
                     .collect::<String>()
             })
             .collect::<Vec<_>>();
-        fs::write(
-            directory.join(format!("{name}-actual-bytes-text.txt")),
-            actual.join("\u{c}"),
-        )
-        .unwrap();
         assert!(
             parsed.quality.issues.is_empty(),
             "{name}: {:?}",
