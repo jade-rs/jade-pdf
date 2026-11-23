@@ -13,6 +13,8 @@ mod cmap;
 mod crypt;
 #[path = "type1_outline_file.rs"]
 mod file;
+#[path = "type1_outline_gsub.rs"]
+mod gsub;
 #[path = "type1_outline_header.rs"]
 mod header;
 #[path = "type1_outline_opentype.rs"]
