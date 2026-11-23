@@ -68,7 +68,7 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
     };
     let space_name = crate::layout_space::family(embedded_fonts);
     let space_font = document_xml
-        .contains(space_name.as_str())
+        .contains(&format!(r#"w:ascii="{space_name}""#))
         .then(|| ParsedEmbeddedFont {
             bytes: crate::layout_space::font(&space_name),
             font_name: space_name,

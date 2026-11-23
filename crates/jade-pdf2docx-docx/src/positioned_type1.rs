@@ -191,6 +191,81 @@ mod tests {
         }
     }
 
+    /// 小さい負のTJはglyphを縮めず、次の原点への負字間として出す。
+    #[test]
+    fn negative_kerning_does_not_squash_glyph_shapes() {
+        let font = owned();
+        let runs = [
+            run("f", 20., 10., Some(&font.font_name)),
+            run("f", 29.5, 10., Some(&font.font_name)),
+        ];
+        let plan = placements(&runs, &[font]).unwrap();
+        assert_eq!(
+            plan[0],
+            Placement {
+                stretch: 100,
+                spacing: -10,
+                logical_space: false
+            }
+        );
+        assert_eq!(plan[1].stretch, 100);
+    }
+
+    /// 実際のstructured変換とZIP梱包を通り、論理spaceが内部fontを選んで埋め込まれる。
+    #[test]
+    fn structured_package_embeds_the_selected_owned_space_font() {
+        use std::io::{Cursor, Read};
+        let font = owned();
+        let runs = [
+            run("f", 20., 10., Some(&font.font_name)),
+            run(" ", 30., 3.25, None),
+            run("f", 33.25, 10., Some(&font.font_name)),
+        ];
+        let mut parsed = jade_pdf2docx_parser::parse_pdf_bytes(
+            "owned-positioned.pdf",
+            b"%PDF-1.4\n1 0 obj << /Type /Page /MediaBox [0 0 200 200] >> endobj\n",
+        )
+        .unwrap();
+        parsed.text_elements = runs
+            .into_iter()
+            .map(|r| ParsedTextElement {
+                page: 0,
+                baseline_y: Some(80.),
+                bounds: r.style.source_bounds.unwrap(),
+                font_size: 10.,
+                font_name: r.style.font_name,
+                fill_color: None,
+                text: r.text,
+            })
+            .collect();
+        parsed.embedded_fonts = vec![font];
+        let docx = build_structured_docx_from_parsed(&parsed, &None, &[]).unwrap();
+        let bytes = pack_docx_to_bytes(docx, &parsed.embedded_fonts).unwrap();
+        let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        let mut document = String::new();
+        archive
+            .by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut document)
+            .unwrap();
+        assert!(document.contains("JadeLayoutSpace-0"), "{document}");
+        assert!(document.contains(r#"<w:spacing w:val="45""#), "{document}");
+        let mut table = String::new();
+        archive
+            .by_name("word/fontTable.xml")
+            .unwrap()
+            .read_to_string(&mut table)
+            .unwrap();
+        assert!(table.contains("JadeLayoutSpace-0"), "{table}");
+        assert_eq!(
+            archive
+                .file_names()
+                .filter(|n| n.ends_with(".odttf"))
+                .count(),
+            2
+        );
+    }
+
     proptest! {
         /// 各glyphの丸め誤差が積み重ならず、すべての次原点が半twip以内に収まる。
         #[test]
