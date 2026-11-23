@@ -127,8 +127,11 @@ fn invalid_or_stopped_inputs_never_publish_partial_plans() {
     let mut input = mappings();
     input.pop();
     assert!(build(&DecodeBudget::default(), &original, input).is_none());
-    let stopped = DecodeBudget::default();
-    stopped.exceeded("owned stop", 0, 1);
+    let stopped = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: 0,
+        ..Default::default()
+    });
+    assert!(stopped.font_vector::<u8>(1).is_none());
     assert!(build(&stopped, &original, mappings()).is_none());
 }
 
