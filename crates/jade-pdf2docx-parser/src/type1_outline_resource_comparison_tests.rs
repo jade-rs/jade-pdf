@@ -39,18 +39,25 @@ struct ExpectedSlot {
 #[test]
 #[ignore = "reviewed original PDF and resource gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
 fn original_pdf_resources_match_all_independent_code_widths() {
-    compare(false);
+    compare(false, false);
 }
 
 /// 原本PDFのToUnicodeを実際に読み、文字列の正規化なしで全codeへ結び付ける。
 #[test]
 #[ignore = "reviewed original PDF and Unicode gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
 fn original_pdf_resources_match_all_independent_unicode_sequences() {
-    compare(true);
+    compare(true, false);
+}
+
+/// 全原本glyphと各codeの幅を残す計画を、原本PDFと未変更の独立goldへ照合する。
+#[test]
+#[ignore = "reviewed PDF/Unicode gold and new JADE_TYPE1_PLAN_REPORT required"]
+fn original_pdf_plans_preserve_every_code_width_and_sequence() {
+    compare(true, true);
 }
 
 /// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
-fn compare(check_unicode: bool) {
+fn compare(check_unicode: bool, check_plan: bool) {
     let gold_bytes = std::fs::read(std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap()).unwrap();
     assert!(gold_bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&gold_bytes).unwrap();
@@ -68,6 +75,7 @@ fn compare(check_unicode: bool) {
     let mut count = 0;
     let mut explicit = 0;
     let (mut mapped, mut unicode_explicit, mut multi) = (0, 0, 0);
+    let mut plans = Vec::new();
     for font in gold.fonts {
         let reference = font.pdf_resource.as_ref().unwrap();
         let &(generation, dictionary) = objects.get(&reference.object_number).unwrap();
@@ -140,6 +148,70 @@ fn compare(check_unicode: bool) {
                     multi += 1;
                 }
             }
+            if check_plan {
+                let plan = crate::type1_outline::plan::build(&budget, &decoded, unicode).unwrap();
+                for (gid, original) in decoded.glyphs.iter().enumerate() {
+                    assert_eq!(usize::from(plan.glyphs[gid].original), gid);
+                    assert!(plan.glyphs[gid].pdf_width.is_none());
+                    assert!(
+                        font.glyphs
+                            .iter()
+                            .any(|g| g.name.as_bytes() == original.name)
+                    );
+                }
+                let mut rows = Vec::new();
+                let mut unicode_glyphs = std::collections::BTreeMap::new();
+                let mut conflicts = Vec::new();
+                for (code, (actual, expected)) in
+                    plan.codes.iter().zip(&reference.slots).enumerate()
+                {
+                    assert_eq!(actual.mapping.scalars, expected.scalars);
+                    assert_eq!(actual.mapping.from_tounicode, expected.from_tounicode);
+                    assert_eq!(actual.mapping.source.width, expected.width);
+                    assert_eq!(
+                        actual.mapping.source.explicit_width,
+                        expected.explicit_width
+                    );
+                    let shape = actual.glyph.map(|gid| {
+                        let binding = &plan.glyphs[usize::from(gid)];
+                        let original = &decoded.glyphs[usize::from(binding.original)];
+                        assert_eq!(original.name, expected.name.as_bytes());
+                        let independent = font
+                            .glyphs
+                            .iter()
+                            .find(|g| g.name == expected.name)
+                            .unwrap();
+                        let width = binding.pdf_width.unwrap_or(independent.advance);
+                        assert!(
+                            (width - expected.width).abs() <= 1e-7,
+                            "{} code{code} {width} != {}",
+                            font.source_name,
+                            expected.width
+                        );
+                        (gid, binding.original, width)
+                    });
+                    assert_eq!(
+                        shape.is_some(),
+                        expected.present && expected.name != ".notdef"
+                    );
+                    if let (Some((gid, _, _)), Some(text)) = (shape, &actual.mapping.scalars)
+                        && !text.is_empty()
+                        && let Some(prior) = unicode_glyphs.insert(text.clone(), gid)
+                        && prior != gid
+                    {
+                        conflicts.push(serde_json::json!({"code":code,"scalars":text,"first_glyph":prior,"second_glyph":gid}));
+                    }
+                    rows.push(serde_json::json!({"code":code,"shape":shape,"name":expected.name,"scalars":actual.mapping.scalars,"from_tounicode":actual.mapping.from_tounicode}));
+                }
+                println!(
+                    "{}: {} original glyphs, {} planned glyphs; all256 code widths/sequences retained; {} Unicode/GID conflicts",
+                    font.source_name,
+                    decoded.glyphs.len(),
+                    plan.glyphs.len(),
+                    conflicts.len()
+                );
+                plans.push(serde_json::json!({"source":font.source_name,"original_glyphs":decoded.glyphs.len(),"planned_glyphs":plan.glyphs.len(),"unicode_glyph_conflicts":conflicts,"codes":rows}));
+            }
         }
         for (code, (actual, expected)) in slots.iter().zip(&reference.slots).enumerate() {
             let name = actual
@@ -182,4 +254,13 @@ fn compare(check_unicode: bool) {
         );
     }
     assert!(budget.check().is_ok());
+    if check_plan {
+        let path = std::env::var("JADE_TYPE1_PLAN_REPORT").unwrap();
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .unwrap();
+        serde_json::to_writer_pretty(&mut file, &serde_json::json!({"fonts":plans,"scope":"Original PDF component plans only; font embedding, GSUB, source-cluster routing and rendered appearance remain unqualified","production_ready":false})).unwrap();
+    }
 }
