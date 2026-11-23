@@ -10,7 +10,7 @@ pub(super) fn pack_docx_to_bytes(
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
     let mut package = docx.build();
-    crate::layout_space::preserve_advance(&mut package, embedded_fonts);
+    crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
@@ -67,12 +67,12 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
             .map_err(|err| ConvertError::Pack(err.to_string()))?;
         xml
     };
-    let space_name = crate::layout_space::family(embedded_fonts);
-    let space_font = document_xml
-        .contains(&format!(r#"w:ascii="{space_name}""#))
-        .then(|| ParsedEmbeddedFont {
-            bytes: crate::layout_space::font(&space_name),
-            font_name: space_name,
+    let space_font =
+        crate::layout_space::selected_family(document_xml.as_bytes())?.map(|space_name| {
+            ParsedEmbeddedFont {
+                bytes: crate::layout_space::font(&space_name),
+                font_name: space_name,
+            }
         });
     let used_fonts = embedded_fonts
         .iter()
@@ -291,7 +291,7 @@ pub(super) fn pack_docx_to_file(
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
     let mut package = docx.build();
-    crate::layout_space::preserve_advance(&mut package, embedded_fonts);
+    crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     package
         .pack(&mut output)

@@ -81,14 +81,13 @@ pub(super) fn placements(
 }
 
 /// 行全体の計測が成功してから、空白font選択と字間を一度だけ反映する。
-pub(super) fn prepare(line: &mut StructuredTextLine, fonts: &[ParsedEmbeddedFont]) {
+pub(super) fn prepare(line: &mut StructuredTextLine, fonts: &[ParsedEmbeddedFont], family: &str) {
     let Some(plan) = placements(&line.runs, fonts) else {
         return;
     };
-    let family = layout_space::family(fonts);
     for (run, placement) in line.runs.iter_mut().zip(plan) {
         if placement.logical_space {
-            run.style.font_name = Some(family.clone());
+            run.style.font_name = Some(family.to_owned());
             run.style.font_size = 1.;
             run.style.font_embedded = true;
             run.style.embedded_face = Some(embedded_face::Face::default());
@@ -240,8 +239,18 @@ mod tests {
             .collect();
         parsed.embedded_fonts = vec![font];
         parsed.text_elements.push(ParsedTextElement {
-            baseline_y:None,page:0,bounds:ParsedBounds {x0:20.,x1:70.,y0:40.,y1:50.},font_size:10.,
-            font_name:Some("JadeLayoutSpace-0".into()),fill_color:None,text:"reserved source font".into(),
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 20.,
+                x1: 70.,
+                y0: 40.,
+                y1: 50.,
+            },
+            font_size: 10.,
+            font_name: Some("JadeLayoutSpace-0".into()),
+            fill_color: None,
+            text: "reserved source font".into(),
         });
         let docx = build_structured_docx_from_parsed(&parsed, &None, &[]).unwrap();
         let bytes = pack_docx_to_bytes(docx, &parsed.embedded_fonts).unwrap();

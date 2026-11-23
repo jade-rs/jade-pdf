@@ -1606,6 +1606,7 @@ fn text_lines_by_page_from_pdf_text_elements(
     parsed: &ParsedDocument,
     positioned_tables: &[PositionedTable],
 ) -> Vec<StructuredTextPage> {
+    let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     let page_numbers = parsed
         .text_elements
         .iter()
@@ -1670,7 +1671,11 @@ fn text_lines_by_page_from_pdf_text_elements(
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
                                 .map(|mut line| {
-                                    mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts);
+                                    mark_embedded_fonts_in_line(
+                                        &mut line,
+                                        &parsed.embedded_fonts,
+                                        &space_family,
+                                    );
                                     line
                                 })
                         })
@@ -2006,6 +2011,7 @@ fn row_fragment_text(text: &str, index: usize, len: usize) -> &str {
 fn mark_embedded_fonts_in_line(
     line: &mut StructuredTextLine,
     embedded_fonts: &[ParsedEmbeddedFont],
+    space_family: &str,
 ) {
     for run in &mut line.runs {
         let font = run
@@ -2016,7 +2022,7 @@ fn mark_embedded_fonts_in_line(
         run.style.font_embedded = font.is_some();
         run.style.embedded_face = font.and_then(|font| embedded_face::Face::read(&font.bytes));
     }
-    positioned_type1::prepare(line, embedded_fonts);
+    positioned_type1::prepare(line, embedded_fonts, space_family);
 }
 
 /// structured run から DOCX run を作る。

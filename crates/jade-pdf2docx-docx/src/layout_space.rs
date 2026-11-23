@@ -1,13 +1,25 @@
 //! 論理空白専用の所有fontを用い、source fontの未確認codeへ空白を割り当てない。
-use jade_pdf2docx_parser::ParsedEmbeddedFont;
+use jade_pdf2docx_parser::{ParsedEmbeddedFont, ParsedTextElement};
+mod selection;
+pub(super) use selection::read as selected_family;
 mod writer;
 
 /// source familyと衝突しない、文書内だけで使う空白font名を選ぶ。
-pub(super) fn family(fonts: &[ParsedEmbeddedFont]) -> String {
-    (0..=fonts.len())
-        .map(|i| format!("JadeLayoutSpace-{i}"))
-        .find(|name| !fonts.iter().any(|f| f.font_name.eq_ignore_ascii_case(name)))
-        .expect("n source names cannot occupy n+1 distinct internal names")
+pub(super) fn family(fonts: &[ParsedEmbeddedFont], texts: &[ParsedTextElement]) -> String {
+    let used = fonts
+        .iter()
+        .map(|f| f.font_name.as_str())
+        .chain(texts.iter().filter_map(|t| t.font_name.as_deref()))
+        .filter_map(|name| {
+            let prefix = name.get(..16)?;
+            (name.len() < 63 && prefix.eq_ignore_ascii_case("JadeLayoutSpace-")).then_some(())?;
+            name.get(16..)?.parse::<usize>().ok()
+        })
+        .collect::<std::collections::BTreeSet<_>>();
+    let index = (0..=used.len())
+        .find(|i| !used.contains(i))
+        .expect("n occupied indices cannot cover n+1 candidates");
+    format!("JadeLayoutSpace-{index}")
 }
 
 /// U+0020だけを持つ固定幅の所有TrueType fontを生成する。
@@ -16,14 +28,9 @@ pub(super) fn font(family: &str) -> Vec<u8> {
 }
 
 /// 内部spaceを参照する文書だけ、確認済みadvanceを半emへ補正する互換flagを外す。
-pub(super) fn preserve_advance(package: &mut docx_rs::XMLDocx, fonts: &[ParsedEmbeddedFont]) {
-    let reference = format!(r#"w:ascii="{}""#, family(fonts));
-    if !package
-        .document
-        .windows(reference.len())
-        .any(|part| part == reference.as_bytes())
-    {
-        return;
+pub(super) fn preserve_advance(package: &mut docx_rs::XMLDocx) -> Result<(), crate::ConvertError> {
+    if selected_family(&package.document)?.is_none() {
+        return Ok(());
     }
     // docx-rsが生成したsettingsだけを対象にし、他の互換設定は保持する。
     let flag = b"<w:balanceSingleByteDoubleByteWidth />";
@@ -34,6 +41,7 @@ pub(super) fn preserve_advance(package: &mut docx_rs::XMLDocx, fonts: &[ParsedEm
     {
         package.settings.drain(offset..offset + flag.len());
     }
+    Ok(())
 }
 
 #[cfg(test)]
@@ -87,7 +95,7 @@ mod tests {
             )
             .build();
         let before = package.settings.clone();
-        preserve_advance(&mut package, &[]);
+        preserve_advance(&mut package).unwrap();
         assert_eq!(package.settings, before);
     }
 
@@ -96,7 +104,7 @@ mod tests {
         #[test]
         fn family_is_collision_free(count in 0usize..40) {
             let fonts = (0..count).map(|i| ParsedEmbeddedFont { font_name: format!("JadeLayoutSpace-{i}"), bytes: Vec::new() }).collect::<Vec<_>>();
-            let name = family(&fonts);
+            let name = family(&fonts,&[]);
             prop_assert!(!fonts.iter().any(|f| f.font_name == name));
             prop_assert!(name.len() < 63);
         }
