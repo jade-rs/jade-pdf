@@ -370,7 +370,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         &mut image_elements,
     );
     let mut embedded_fonts = extract_embedded_truetype_fonts(decode_budget, &bytes);
-    let mut outlines = decode_budget.with_type1_output(|cache| cache.take_fonts());
+    let mut outlines = decode_budget.with_type1_output(|cache| cache.take_fonts(&text_elements));
     if !outlines.is_empty() {
         let count = embedded_fonts.len().saturating_add(outlines.len());
         decode_budget.check_embedded_font_count(count);

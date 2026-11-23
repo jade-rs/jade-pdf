@@ -64,7 +64,6 @@ impl Cache {
             .filter(|f| !self.fonts.iter().any(|old| old.font_name == f.font_name))
             .count();
         let count = self.fonts.len().checked_add(extra)?;
-        budget.check_embedded_font_count(count)?;
         let mut families = budget.metadata_vector(prepared.fonts.len())?;
         for font in &prepared.fonts {
             families.push(crate::metadata_map::copy(budget, &font.font_name)?);
@@ -91,7 +90,15 @@ impl Cache {
     }
 
     /// 完成fontの所有権だけを出力へ移し、選択情報は残りの同文書走査に保つ。
-    pub(crate) fn take_fonts(&mut self) -> Vec<ParsedEmbeddedFont> {
+    pub(crate) fn take_fonts(
+        &mut self,
+        elements: &[crate::ParsedTextElement],
+    ) -> Vec<ParsedEmbeddedFont> {
+        self.fonts.retain(|font| {
+            elements
+                .iter()
+                .any(|e| e.font_name.as_deref() == Some(font.font_name.as_str()))
+        });
         std::mem::take(&mut self.fonts)
     }
 }
