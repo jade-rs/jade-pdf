@@ -25,9 +25,13 @@ pub(super) struct Glyph {
 
 /// 復号済みの一glyphを有限のstack・再帰・命令数で読む。
 pub(super) fn decode(budget: &DecodeBudget, bytes: &[u8], subrs: &[Vec<u8>]) -> Option<Glyph> {
-    let _ = (budget, bytes, subrs);
-    None
+    let mut state = interpreter::State::new(budget);
+    state.run(bytes, subrs, 0)?;
+    state.finish()
 }
+
+#[path = "type1_outline_interpreter.rs"]
+mod interpreter;
 
 #[cfg(test)]
 mod tests {
