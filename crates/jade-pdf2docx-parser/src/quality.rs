@@ -37,6 +37,11 @@ pub enum QualityIssue {
         /// 0始まりのページ番号。同じページに一度だけ記録する。
         page: usize,
     },
+    /// 現行の罫線IRでは再現できない曲線pathが描画され、外観の確認が必要。
+    UnsupportedCurvedPath {
+        /// 0始まりのページ番号。同じページに一度だけ記録する。
+        page: usize,
+    },
     /// MediaBoxを取得できず、ページ寸法・表示座標を確認できない。
     MissingPageGeometry {
         /// 0始まりの元ページ番号。後続の既知ページを詰めて番号変更しない。
@@ -113,7 +118,8 @@ pub(crate) fn refresh_ocr_diagnostics(
         | QualityIssue::UnsupportedFont { .. }
         | QualityIssue::UnsupportedXObject { .. }
         | QualityIssue::UnsupportedInlineImage { .. }
-        | QualityIssue::UnsupportedClippingPath { .. } => true,
+        | QualityIssue::UnsupportedClippingPath { .. }
+        | QualityIssue::UnsupportedCurvedPath { .. } => true,
     });
     Ok(())
 }
@@ -266,6 +272,11 @@ impl Display for QualityIssue {
             Self::UnsupportedClippingPath { page } => write!(
                 f,
                 "unsupported clipping path: page {} (unsupported_clipping_path; visibility requires review)",
+                page.saturating_add(1)
+            ),
+            Self::UnsupportedCurvedPath { page } => write!(
+                f,
+                "unrepresented curved path: page {} (unsupported_curved_path; appearance requires review)",
                 page.saturating_add(1)
             ),
             Self::UnsupportedInlineImage { page } => write!(

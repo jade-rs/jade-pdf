@@ -50,3 +50,10 @@ rendered-PNG API behavior, font or artwork fidelity, Microsoft Word rendering,
 or browser host memory and cancellation limits. The strict checks enforce
 rejection of detected quality loss; absence of a diagnostic does not prove full
 visual fidelity. PDF inputs and generated DOCX/WASM files are not stored in Git.
+
+Four owned curve controls retain existing editable text and inspect the exact
+per-page `unsupported_curved_path` diagnostic. Painted curves must reject strict
+export; cancelled paths remain accepted. A curve followed by a straight segment
+must not invent a table rule, while a separately drawn rule after a cancelled
+path remains present. These checks do not establish curve rendering or OCR
+recognition. All fourteen earlier input hashes are retained.
