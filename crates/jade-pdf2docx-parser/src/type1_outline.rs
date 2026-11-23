@@ -13,6 +13,8 @@ mod crypt;
 mod opentype;
 #[path = "type1_outline_private.rs"]
 mod private;
+#[path = "type1_outline_scale.rs"]
+mod scale;
 #[path = "type1_outline_sfnt.rs"]
 mod sfnt;
 #[path = "type1_outline_standard.rs"]
