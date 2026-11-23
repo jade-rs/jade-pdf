@@ -7,5 +7,7 @@
   "generated": "src/type1_standard_encoding.rs",
   "generated_sha256": "313bfa79337c287d7d26d4360b31e120755765672dcf8287fb7b65aa697d8731",
   "license": "licenses/fonttools.txt",
-  "license_sha256": "6787208f83f659ccbc2223b2fde952ffa6f7e8aca62f1a8a2bf5bc51bb1b2383"
+  "license_sha256": "6787208f83f659ccbc2223b2fde952ffa6f7e8aca62f1a8a2bf5bc51bb1b2383",
+  "input": "crates/jade-pdf2docx-parser/resources/fonttools-standard-encoding.py.txt",
+  "generator": "python3 tools/generate_type1_standard_encoding.py"
 }

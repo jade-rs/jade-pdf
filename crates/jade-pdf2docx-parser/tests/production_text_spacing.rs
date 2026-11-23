@@ -80,6 +80,20 @@ fn explicit_spaces_and_small_kerning_do_not_gain_extra_spaces() {
     }
 }
 
+/// CJKの位置調整には英語の単語区切りを加えず、元のUnicode文字列を保持する。
+#[test]
+fn cjk_tracking_keeps_original_word_boundaries() {
+    let mut objects = pages("/MediaBox [0 0 500 500] /Resources << /Font << /F 10 0 R >> >>");
+    objects[4] = stream("BT /F 10 Tf 10 10 Td [(A) -600 (B)] TJ ET");
+    objects[5] = stream("");
+    objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Custom /FirstChar 65 /LastChar 66 /Widths [1000 1000] /ToUnicode 11 0 R >>".into());
+    objects.push(stream("2 beginbfchar\n<41> <6F22>\n<42> <5B57>\nendbfchar"));
+    let parsed = parse_pdf_bytes("cjk-tracking.pdf", &pdf(&objects)).unwrap();
+    assert_eq!(parsed.text_elements[0].text, "漢字");
+    assert_eq!(parsed.text_elements[0].bounds.x0, 10.);
+    assert_eq!(parsed.text_elements[0].bounds.x1, 36.);
+}
+
 /// Tz は glyph と間隔/TJ 数値調整を倍率変更し、Tm の位置は変更しない。
 #[test]
 fn horizontal_scaling_applies_to_glyph_spacing_and_tj() {
