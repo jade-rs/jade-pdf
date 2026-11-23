@@ -118,8 +118,17 @@ impl ToUnicodeCMap {
     }
 
     /// 単byte codeの許可範囲内の明示文字列を、非BMP・複数文字も保持して借用する。
-    pub(crate) fn lookup_byte(&self, _code: u8) -> Option<&str> {
-        None
+    pub(crate) fn lookup_byte(&self, code: u8) -> Option<&str> {
+        let digits = b"0123456789ABCDEF";
+        let bytes = [
+            digits[usize::from(code >> 4)],
+            digits[usize::from(code & 15)],
+        ];
+        let key = std::str::from_utf8(&bytes).ok()?;
+        self.key_is_allowed(key)
+            .then(|| self.mappings.get(key))
+            .flatten()
+            .map(String::as_str)
     }
 
     /// 単一 BMP 文字の対応だけを font cmap 修復用に返す。
