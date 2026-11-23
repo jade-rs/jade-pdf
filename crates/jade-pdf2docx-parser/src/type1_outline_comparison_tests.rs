@@ -3,6 +3,8 @@ use super::*;
 use serde::Deserialize;
 #[path = "type1_outline_cff_export_tests.rs"]
 mod cff_export;
+#[path = "type1_outline_otf_export_tests.rs"]
+mod otf_export;
 #[path = "type1_outline_type2_export_tests.rs"]
 mod type2_export;
 
@@ -11,6 +13,9 @@ mod type2_export;
 struct Gold {
     /// 原本ごとのglyphとsubroutine。
     fonts: Vec<Font>,
+    /// 所有の端数glyphに対する、独立して宣言したmetric。
+    #[serde(default)]
+    owned_otf: Option<otf_export::Owned>,
 }
 /// 一つの原本fontから得た値。
 #[derive(Deserialize)]
@@ -32,6 +37,9 @@ struct Font {
     /// 独立に読んだ元のmetadataと、予約名を使わない派生font名。
     #[serde(default)]
     cff: Option<CffMetadata>,
+    /// 独立に読んだsource line metric・glyph bounds・Unicode対応。
+    #[serde(default)]
+    otf: Option<otf_export::Metadata>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
