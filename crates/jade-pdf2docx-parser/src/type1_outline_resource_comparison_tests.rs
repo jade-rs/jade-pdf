@@ -1,8 +1,22 @@
 //! 原本PDFの有効辞書・元FontFileから、全codeの対応と幅を独立goldへ照合する。
 use super::*;
 use crate::{metadata, parser, resource_resolver::ResourceResolver};
+#[path = "type1_outline_permission_comparison_tests.rs"]
+mod permission_comparison;
 #[path = "type1_outline_plan_comparison_tests.rs"]
 mod plan_comparison;
+
+/// 同じ原本readerで検査する、独立期待値の種類。
+enum Checks {
+    /// 元EncodingとWidths。
+    Widths,
+    /// 元ToUnicode列とglyph名からの補完。
+    Unicode,
+    /// 元glyphを失わないcode単位の出力計画。
+    Plan,
+    /// 元の埋め込み指定と表示全文。
+    Permission,
+}
 
 /// 独立解析器による、一つの原本PDF font resourceの期待値。
 #[derive(Deserialize)]
@@ -41,25 +55,34 @@ struct ExpectedSlot {
 #[test]
 #[ignore = "reviewed original PDF and resource gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
 fn original_pdf_resources_match_all_independent_code_widths() {
-    compare(false, false);
+    compare(Checks::Widths);
 }
 
 /// 原本PDFのToUnicodeを実際に読み、文字列の正規化なしで全codeへ結び付ける。
 #[test]
 #[ignore = "reviewed original PDF and Unicode gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
 fn original_pdf_resources_match_all_independent_unicode_sequences() {
-    compare(true, false);
+    compare(Checks::Unicode);
 }
 
 /// 全原本glyphと各codeの幅を残す計画を、原本PDFと未変更の独立goldへ照合する。
 #[test]
 #[ignore = "reviewed PDF/Unicode gold and new JADE_TYPE1_PLAN_REPORT required"]
 fn original_pdf_plans_preserve_every_code_width_and_sequence() {
-    compare(true, true);
+    compare(Checks::Plan);
+}
+
+/// 実FontFileの宣言と表示を、別のPS文字列decoderで作った未変更goldへ照合する。
+#[test]
+#[ignore = "reviewed PDF/Unicode/permission gold require JADE_SOURCE_PDF, JADE_TYPE1_OUTLINE_GOLD and JADE_TYPE1_PERMISSION_GOLD"]
+fn original_pdf_permissions_preserve_independent_flags_and_notices() {
+    compare(Checks::Permission);
 }
 
 /// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
-fn compare(check_unicode: bool, check_plan: bool) {
+fn compare(checks: Checks) {
+    let check_unicode = !matches!(checks, Checks::Widths);
+    let check_plan = matches!(checks, Checks::Plan);
     let gold_bytes = std::fs::read(std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap()).unwrap();
     assert!(gold_bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&gold_bytes).unwrap();
@@ -68,7 +91,9 @@ fn compare(check_unicode: bool, check_plan: bool) {
         .iter()
         .map(|b| format!("{b:02x}"))
         .collect::<String>();
-    assert_eq!(Some(hash), gold.source_pdf_sha256);
+    assert_eq!(Some(hash.as_str()), gold.source_pdf_sha256.as_deref());
+    let permissions =
+        matches!(checks, Checks::Permission).then(|| permission_comparison::Reference::load(&hash));
     let budget = DecodeBudget::default();
     let source = parser::parser_source_with_compressed_objects(&budget, &pdf);
     let objects = crate::object_index::build(&budget, &source).unwrap();
@@ -110,6 +135,15 @@ fn compare(check_unicode: bool, check_plan: bool) {
         let slots =
             crate::type1_outline::resource::read(&budget, &decoded, dictionary, &mut resolver)
                 .unwrap();
+        if let Some(permissions) = &permissions {
+            permissions.compare(
+                &budget,
+                reference.object_number,
+                &payload,
+                length1,
+                &decoded.header,
+            );
+        }
         assert_eq!(slots.len(), reference.slots.len());
         assert_eq!(slots.len(), 256);
         if check_unicode {
