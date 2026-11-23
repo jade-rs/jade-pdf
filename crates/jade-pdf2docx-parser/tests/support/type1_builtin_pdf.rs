@@ -24,7 +24,7 @@ pub fn objects(
 ) -> Vec<Vec<u8>> {
     let font_program = program(builtin);
     let mapping = if unicode { "/ToUnicode 8 0 R" } else { "" };
-    let objects = vec![
+    vec![
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R /F2 9 0 R >> >> /Contents 4 0 R >>".to_vec(),
@@ -34,8 +34,7 @@ pub fn objects(
         stream(&font_program, &format!("/Length1 {} /Length2 0 /Length3 0", font_program.len())),
         stream("begincmap\n1 begincodespacerange\n<00> <ff>\nendcodespacerange\n1 beginbfchar\n<41> <005a>\nendbfchar\nendcmap", ""),
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_vec(),
-    ];
-    objects
+    ]
 }
 
 /// PDF側Encoding・ToUnicodeと、描画するfontを独立に指定できる正式xref付きPDF。

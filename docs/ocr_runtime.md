@@ -86,3 +86,5 @@ macOSの実プロセステストで検証した。総RSSの強制制限、単一
 完全な描画用Type1の検証には、既存の公開fixtureからToUnicodeだけを外した一時入力を使う。`python3 tools/generate_type1_drawing_controls.py /tmp/jade-type1-controls-UNIQUE`（pypdfが必要）で未使用のディレクトリへ生成し、利用条件・全ページの描画不変性を確認してから `JADE_TYPE1_DRAWING_CONTROLS=/tmp/jade-type1-controls-UNIQUE cargo test -p jade-pdf2docx-parser --test external_type1_drawing -- --ignored` を実行する。元PDF・正解本文・FontFileは変更しない。Type1の既知のFontDirectory/UniqueID/FontType比較によるcache前処理は有限の字句列として認識し、PostScriptを実行しない。未知の実行式は確認不能のまま扱う。
 
 標準14書体以外のType1で組み込みfont programを取得できず、使用codeのToUnicodeもなければ確認不能としてstrictで拒否する。任意のEncodingのnull・未定義参照はPDF 32000-1:2008 §7.3.7/7.3.9/7.3.10に従い省略と同じ扱いにして、利用できる組み込み表を使う。標準14書体の非埋め込み経路は維持する。
+
+組み込み表を取得できず追加のglyph名対応もない場合、既存ToUnicodeを複製せず共有し、未確認codeのbit列だけを診断で保持する。通常出力には未検証のfallback文字が残る場合があり、本文復元の成功を意味しない。strictは描画した未確認codeを拒否する。
