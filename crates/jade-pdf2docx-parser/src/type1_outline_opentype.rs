@@ -50,6 +50,31 @@ pub(super) struct Info<'a> {
     pub(super) license_url: &'a str,
 }
 
+/// 派生family名と、その名をCFF・name tableの両方へ格納した実font。
+pub(super) struct Named {
+    /// DOCXのfont選択にも使う、元名から独立したASCII family名。
+    pub(super) family: String,
+    /// 同じfamily名と完全な元noticeを持つOTTO byte列。
+    pub(super) bytes: Vec<u8>,
+}
+
+/// 元resourceと実出力の全属性から名前を決め、同じ入力のままfontを生成する。
+pub(super) fn encode_derived(
+    budget: &DecodeBudget,
+    source: &super::identity::Source<'_>,
+    font: &cff::Font<'_>,
+    info: &Info<'_>,
+    rules: &[super::gsub::Rule<'_>],
+) -> Option<Named> {
+    let family = super::identity::derive(budget, source, font, info, rules)?;
+    let renamed = cff::Font {
+        name: family.as_bytes(),
+        ..*font
+    };
+    let bytes = encode_with_ligatures(budget, &renamed, info, rules)?;
+    Some(Named { family, bytes })
+}
+
 /// 各metricと許可属性を検査し、再現可能なOTTO fontを生成する。
 pub(super) fn encode(
     budget: &DecodeBudget,
