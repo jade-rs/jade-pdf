@@ -32,6 +32,7 @@ mod html_table;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
+mod native_table_rows;
 mod native_table_text;
 mod ocr_reconcile;
 mod output;
@@ -2770,6 +2771,8 @@ struct PositionedTable {
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
+    /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
+    row_heights_twips: Vec<f32>,
     /// 表セル。
     table: OcrTable,
     /// セル内テキストへ DOCX 下線を付けるか。
@@ -3420,6 +3423,11 @@ fn docx_table_from_model_with_row_height_and_nested(
             if parent.is_some() {
                 table_row = table_row.cant_split();
             }
+            let row_height_twips = parent
+                .filter(|table| table.nested_tables.is_empty())
+                .and_then(|table| table.row_heights_twips.get(row_index))
+                .copied()
+                .or(row_height_twips);
             if let Some(row_height_twips) = row_height_twips
                 && row_height_twips > 0.0
             {
@@ -3972,6 +3980,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         font_embedded: false,
         font_size: None,
         column_widths_twips: width_twips,
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
@@ -4400,6 +4409,10 @@ fn infer_positioned_table_from_graphics(
         font_embedded,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
         column_widths_twips: table_column_widths_twips(&xs),
+        row_heights_twips: native_table_rows::heights(
+            &ys,
+            thin_table_rule_height_adjustment(table_rule_stroke_width(&page_graphics, &xs, &ys)),
+        ),
         table,
         cell_underlines,
         cell_alignments,
@@ -5183,6 +5196,7 @@ fn infer_positioned_table_from_text_grid_page(
         font_embedded: false,
         font_size: None,
         column_widths_twips: Vec::new(),
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
