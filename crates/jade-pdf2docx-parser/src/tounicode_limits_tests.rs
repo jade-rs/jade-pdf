@@ -264,7 +264,7 @@ proptest! {
         assert_byte_limit(&denied, total - 1, total);
     }
 
-    /// 完全なUTF16は従来の結果へ一致し、code unitの不足時は有効prefixも採用しない。
+    /// 末尾nibbleをゼロ補完後の完全なUTF16を維持し、不完全ならprefixも採用しない。
     #[test]
     fn borrowed_utf16_matches_legacy_decoder(units in prop::collection::vec(any::<u16>(), 1..32), tail in 0u8..4) {
         let mut hex = units.iter().map(|unit| format!("{unit:04X}")).collect::<String>();
@@ -272,7 +272,11 @@ proptest! {
         let source = format!("1 beginbfchar\n<01> <{hex}>\nendbfchar");
         let state = byte_budget(1024);
         let cmap = parse_tounicode_cmap(&state, source.as_bytes());
-        let expected = if tail == 0 { decode_hex_utf16be(&hex) } else { None };
+        let expected = match tail {
+            0 => decode_hex_utf16be(&hex),
+            3 => decode_hex_utf16be(&format!("{hex}0")),
+            _ => None,
+        };
         prop_assert_eq!(cmap.mappings.get("01"), expected.as_ref());
         prop_assert!(state.check().is_ok());
     }
