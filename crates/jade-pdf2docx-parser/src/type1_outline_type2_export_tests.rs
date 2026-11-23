@@ -3,7 +3,7 @@ use super::*;
 use crate::type1_outline::type2;
 
 /// 所有の空文字・多数の端数線分・三次曲線を、外部検査用に生成する。
-fn owned_cases() -> Vec<(String, Glyph)> {
+pub(super) fn owned_cases() -> Vec<(String, Glyph)> {
     let mut cases = vec![
         (
             "empty-zero".to_string(),
@@ -71,7 +71,7 @@ fn owned_cases() -> Vec<(String, Glyph)> {
 }
 
 /// 元の座標と完成programを渡し、検査側が独立にwidthと全座標を復元できるようにする。
-fn record(source: &str, name: &str, glyph: &Glyph) -> serde_json::Value {
+pub(super) fn record(source: &str, name: &str, glyph: &Glyph) -> serde_json::Value {
     let program =
         type2::encode(&DecodeBudget::default(), glyph).expect("complete bounded Type2 program");
     let commands = glyph

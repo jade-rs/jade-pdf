@@ -1,6 +1,8 @@
 //! 確認済み外部資料の独立解析結果だけを、明示的な環境変数で比較する。
 use super::*;
 use serde::Deserialize;
+#[path = "type1_outline_cff_export_tests.rs"]
+mod cff_export;
 #[path = "type1_outline_type2_export_tests.rs"]
 mod type2_export;
 
@@ -27,10 +29,28 @@ struct Font {
     /// 元のeexec byte長。
     #[serde(default)]
     length2: usize,
+    /// 独立に読んだ元のmetadataと、予約名を使わない派生font名。
+    #[serde(default)]
+    cff: Option<CffMetadata>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
     glyphs: Vec<Reference>,
+}
+
+/// containerの検査へ渡す、一次資料を保持したmetadata。
+#[derive(Deserialize)]
+struct CffMetadata {
+    /// 派生fontのPostScript名。
+    name: String,
+    /// 元のnoticeと許諾を省略しないbyte列。
+    notice: Vec<u8>,
+    /// 元の外形範囲。
+    bbox: [i16; 4],
+    /// 元の傾斜角度。
+    italic_angle: f64,
+    /// 元の等幅情報。
+    is_fixed_pitch: bool,
 }
 /// 一glyphの元programと、独立した解析結果。
 #[derive(Deserialize)]
