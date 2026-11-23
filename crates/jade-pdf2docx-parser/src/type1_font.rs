@@ -51,8 +51,7 @@ pub(crate) fn read<'bytes>(
     let program = parser::form_stream_payload(budget, bytes, stream_number, offsets)?;
     let length = metadata::value(stream, b"Length1")
         .and_then(|v| resolver.resolve(v))
-        .and_then(|v| crate::syntax::integer(v.0))
-        .and_then(|n| usize::try_from(n).ok());
+        .and_then(|v| crate::syntax::integer(v.0));
     let cleartext = length.and_then(|length| program.get(..length));
     let table = cleartext.and_then(|program| crate::type1_program::parse(budget, program));
     let mut differences = [None; 256];
@@ -87,11 +86,7 @@ fn read_differences<'a>(raw: &'a [u8], slots: &mut [Option<&'a [u8]>; 256]) {
     let mut code = None;
     while let Some(token) = lexer.next() {
         match token {
-            Token::Word(word) => {
-                code = crate::syntax::integer(word)
-                    .and_then(|n| usize::try_from(n).ok())
-                    .filter(|n| *n < 256)
-            }
+            Token::Word(word) => code = crate::syntax::integer(word).filter(|n| *n < 256),
             Token::Name(name) => {
                 if let Some(index) = code {
                     slots[index] = Some(name);
