@@ -27,6 +27,7 @@ pub(crate) fn characters<'a>(
 /// segment本文と先頭文字の幾何/styleを、共有indexと予算付き保存でIRへ変換する。
 pub(crate) fn extract(
     budget: &DecodeBudget,
+    path: &std::path::Path,
     page_number: usize,
     page_text: &PdfPageText<'_>,
     characters: &PdfPageTextChars<'_>,
@@ -39,7 +40,7 @@ pub(crate) fn extract(
         let mut raw = segment.text();
         crate::pdfium_printed_hyphens::segment(
             budget,
-            std::path::Path::new("native text segment"),
+            path,
             &mut raw,
             characters,
             segment.bounds(),

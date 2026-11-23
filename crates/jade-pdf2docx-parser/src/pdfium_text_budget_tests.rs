@@ -21,16 +21,96 @@ fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
 /// ページobjectと文字indexを同じnative読み込みから検査する。
 fn with_native_page(content: &str, check: impl FnOnce(&PdfPage<'_>)) {
     let bytes = owned_text_pdf(content);
+    with_native_bytes(&bytes, check);
+}
+
+/// 所有の正式なPDFを同じSDK lifecycleで検査し、assertionのpanicをdrop後に伝える。
+fn with_native_bytes(bytes: &[u8], check: impl FnOnce(&PdfPage<'_>)) {
     // assertionのunwind中にnativeをdropすると、依存先の共有Mutexをpoisonする。
     let outcome = {
         let native = pdfium_auto::bind_pdfium_silent().unwrap();
-        let document = native.load_pdf_from_byte_slice(&bytes, None).unwrap();
+        let document = native.load_pdf_from_byte_slice(bytes, None).unwrap();
         let page = document.pages().get(0).unwrap();
         std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| check(&page)))
     };
     if let Err(error) = outcome {
         std::panic::resume_unwind(error);
     }
+}
+
+/// 印刷hyphenの復元は新たなmetadataを要求せず、preview・通常・可視抽出で一致する。
+#[test]
+fn printed_hyphens_preserve_storage_and_all_native_text_paths() {
+    with_page(
+        "BT /F 12 Tf 20 160 Td (well-) Tj 0 -20 Td (known) Tj ET",
+        |text| {
+            let chars = characters(&budget(65536), text).unwrap();
+            assert!(
+                chars
+                    .iter()
+                    .any(|ch| ch.unicode_value() == 2 && ch.is_hyphen().unwrap())
+            );
+            let path = std::path::Path::new("owned-printed-hyphen.pdf");
+            let mut preview = text.all();
+            assert!(preview.contains('\u{2}'));
+            let pointer = preview.as_ptr();
+            let capacity = preview.capacity();
+            crate::pdfium_printed_hyphens::page(&budget(0), path, &mut preview, &chars).unwrap();
+            assert!(preview.contains("well-"));
+            assert!(!preview.contains('\u{2}'));
+            assert_eq!((preview.as_ptr(), preview.capacity()), (pointer, capacity));
+            let normal = run(&budget(65536), 0, text).unwrap();
+            assert!(normal.iter().any(|element| element.text.contains("well-")));
+            let tags = crate::pdfium_font_tags::Tagged::default();
+            let (visible_preview, visible) =
+                crate::pdfium_visible_text::extract(&budget(65536), path, 0, &chars, &tags, &[])
+                    .unwrap();
+            assert!(visible_preview.contains("well-"));
+            assert!(visible.iter().any(|element| element.text == "-"));
+            let stopped = budget(0);
+            stopped.charge_metadata_workspace_bytes(1);
+            let mut unchanged = text.all();
+            let before = unchanged.clone();
+            assert!(
+                crate::pdfium_printed_hyphens::page(&stopped, path, &mut unchanged, &chars)
+                    .is_err()
+            );
+            assert_eq!(unchanged, before);
+        },
+    );
+}
+
+/// 同じU+0002でもSDKが印刷hyphenと判定していないToUnicode文字は書き換えない。
+#[test]
+fn literal_control_code_is_not_guessed_as_a_hyphen() {
+    let source = pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
+        stream("BT /F 12 Tf 20 160 Td (A) Tj ET"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 6 0 R >>".into(),
+        stream("1 beginbfchar\n<41> <0002>\nendbfchar"),
+    ]);
+    with_native_bytes(&source, |page| {
+        let text = page.text().unwrap();
+        let chars = characters(&budget(65536), &text).unwrap();
+        assert!(
+            chars
+                .iter()
+                .any(|ch| ch.unicode_value() == 2 && !ch.is_hyphen().unwrap())
+        );
+        let mut raw = text.all();
+        assert!(raw.contains('\u{2}'));
+        let before = raw.clone();
+        crate::pdfium_printed_hyphens::page(
+            &budget(0),
+            std::path::Path::new("owned-control.pdf"),
+            &mut raw,
+            &chars,
+        )
+        .unwrap();
+        assert_eq!(raw, before);
+    });
 }
 
 /// sourceの空白とSDKの報告を区別するため、同じowned入力を両経路へ渡す。
@@ -219,7 +299,13 @@ fn run(
     text: &PdfPageText<'_>,
 ) -> Result<Vec<ParsedTextElement>, ParseError> {
     let chars = characters(budget, text)?;
-    super::extract(budget, page, text, &chars)
+    super::extract(
+        budget,
+        std::path::Path::new("owned.pdf"),
+        page,
+        text,
+        &chars,
+    )
 }
 
 /// 公開結果から保存に必要な容量の境界を探す。
@@ -261,7 +347,13 @@ fn ordinary_segments_reserve_storage_and_discard_partial_output() {
             assert!(required > text.len() as u64 * std::mem::size_of::<i32>() as u64);
             let shared = characters(&budget(65536), text).unwrap();
             assert!(matches!(
-                super::extract(&budget(0), 7, text, &shared),
+                super::extract(
+                    &budget(0),
+                    std::path::Path::new("owned.pdf"),
+                    7,
+                    text,
+                    &shared
+                ),
                 Err(ParseError::ResourceLimit {
                     resource: "metadata workspace bytes",
                     ..
