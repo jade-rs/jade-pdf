@@ -15,6 +15,8 @@ pub(super) struct Entry<'a> {
 
 /// 許諾確認済みfontの出力用情報。元のPDF font名とは分離する。
 pub(super) struct Font<'a> {
+    /// OpenTypeのem当たり単位数。FontMatrixにも同じ値を適用する。
+    pub(super) units_per_em: u16,
     /// reserved nameを使わずに呼出元で決めたPostScript名。
     pub(super) name: &'a [u8],
     /// 元の著作権と許諾情報を省略せずに渡す。

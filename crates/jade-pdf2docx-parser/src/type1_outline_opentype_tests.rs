@@ -9,20 +9,40 @@ use proptest::prelude::*;
 
 /// 高さ700・幅600の所有三角形を、二glyphのfontへまとめる。
 fn fixture(budget: &DecodeBudget, flags: u16, bold: bool, italic: bool) -> Option<Vec<u8>> {
+    fixture_units(budget, flags, bold, italic, 1000)
+}
+
+/// 単位数を変えても、所有三角形の物理サイズを変えずに作る。
+fn fixture_units(
+    budget: &DecodeBudget,
+    flags: u16,
+    bold: bool,
+    italic: bool,
+    units: u16,
+) -> Option<Vec<u8>> {
+    let scale = f64::from(units) / 1000.;
     let glyph = Glyph {
-        advance: 600.,
+        advance: 600. * scale,
         commands: vec![
             Command::Move([0., 0.]),
-            Command::Line([300., 700.]),
-            Command::Line([600., 0.]),
+            Command::Line([300. * scale, 700. * scale]),
+            Command::Line([600. * scale, 0.]),
             Command::Close,
         ],
     };
     let program = type2::encode(&DecodeBudget::default(), &glyph).unwrap();
+    let empty = type2::encode(
+        &DecodeBudget::default(),
+        &Glyph {
+            advance: 600. * scale,
+            commands: vec![],
+        },
+    )
+    .unwrap();
     let glyphs = [
         cff::Entry {
             name: b".notdef",
-            program: &[28, 130, 88, 14],
+            program: &empty,
         },
         cff::Entry {
             name: b"A",
@@ -30,23 +50,24 @@ fn fixture(budget: &DecodeBudget, flags: u16, bold: bool, italic: bool) -> Optio
         },
     ];
     let font = cff::Font {
+        units_per_em: units,
         name: b"JadeOwnedOTF",
         notice: b"Jade owned original notice",
-        bbox: [0, 0, 600, 700],
+        bbox: [0, 0, (600. * scale) as i16, (700. * scale) as i16],
         italic_angle: if italic { -12.5 } else { 0. },
         is_fixed_pitch: false,
         glyphs: &glyphs,
     };
     let metrics = [
         Metric {
-            advance: 600,
+            advance: (600. * scale) as u16,
             left: 0,
             bounds: None,
         },
         Metric {
-            advance: 600,
+            advance: (600. * scale) as u16,
             left: 0,
-            bounds: Some([0, 0, 600, 700]),
+            bounds: Some([0, 0, (600. * scale) as i16, (700. * scale) as i16]),
         },
     ];
     let mappings = [cmap::Mapping {
@@ -56,21 +77,37 @@ fn fixture(budget: &DecodeBudget, flags: u16, bold: bool, italic: bool) -> Optio
     let info = Info {
         metrics: &metrics,
         mappings: &mappings,
-        ascent: 700,
-        descent: -200,
+        ascent: (700. * scale) as i16,
+        descent: (-200. * scale) as i16,
         line_gap: 0,
         weight: if bold { 700 } else { 400 },
         bold,
         italic,
         embedding_flags: flags,
-        underline_position: -100,
-        underline_thickness: 50,
-        x_height: 450,
-        cap_height: 700,
+        underline_position: (-100. * scale) as i16,
+        underline_thickness: (50. * scale) as i16,
+        x_height: (450. * scale) as i16,
+        cap_height: (700. * scale) as i16,
         license: "Jade owned permission; original notice retained",
         license_url: "https://example.invalid/owned",
     };
     encode(budget, &font, &info)
+}
+
+/// headとCFF matrixを同時に変え、文字幅・外形・補助metricの物理比率を維持する。
+#[test]
+fn finer_units_preserve_the_physical_font_dimensions() {
+    let font = fixture_units(&DecodeBudget::default(), 0, false, false, 10000).unwrap();
+    assert_eq!(u16_at(table(&font, b"head"), 18), 10000);
+    assert!(
+        table(&font, b"CFF ")
+            .windows(2)
+            .any(|bytes| bytes == [12, 7])
+    );
+    assert_eq!(u16_at(table(&font, b"hmtx"), 0), 6000);
+    assert_eq!(u16_at(table(&font, b"hhea"), 4), 7000);
+    assert_eq!(u16_at(table(&font, b"OS/2"), 10), 6500);
+    assert_eq!(u16_at(table(&font, b"post"), 10), 500);
 }
 
 /// tableをdirectoryから独立に検索して借用する。

@@ -79,6 +79,7 @@ fn export(
         });
     }
     let font = cff::Font {
+        units_per_em: metadata.units_per_em,
         name: metadata.name.as_bytes(),
         notice: &metadata.notice,
         bbox: metadata.bbox,

@@ -26,6 +26,7 @@ fn export(
     let bytes = cff::encode(
         &budget,
         &cff::Font {
+            units_per_em: metadata.units_per_em,
             name: metadata.name.as_bytes(),
             notice: &metadata.notice,
             bbox: metadata.bbox,
@@ -81,6 +82,7 @@ fn export_cff_containers_for_independent_reader() {
     )];
     glyphs.extend(super::type2_export::owned_cases());
     let metadata = CffMetadata {
+        units_per_em: 1000,
         name: "JadeOwnedFractions".to_string(),
         notice: b"Jade owned qualification outlines; reproducible in memory".to_vec(),
         bbox: [0, 0, 1000, 1000],

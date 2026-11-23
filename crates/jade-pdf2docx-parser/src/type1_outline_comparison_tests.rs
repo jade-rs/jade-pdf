@@ -49,6 +49,9 @@ struct Font {
 /// containerの検査へ渡す、一次資料を保持したmetadata。
 #[derive(Deserialize)]
 struct CffMetadata {
+    /// 既存fixtureは1000。小数幅の検証では明示的に細かい単位数を使う。
+    #[serde(default = "default_units")]
+    units_per_em: u16,
     /// 派生fontのPostScript名。
     name: String,
     /// 元のnoticeと許諾を省略しないbyte列。
@@ -59,6 +62,11 @@ struct CffMetadata {
     italic_angle: f64,
     /// 元の等幅情報。
     is_fixed_pitch: bool,
+}
+
+/// 既存の独立goldを変更せず、従来の座標単位として読む。
+fn default_units() -> u16 {
+    1000
 }
 /// 一glyphの元programと、独立した解析結果。
 #[derive(Deserialize)]

@@ -6,6 +6,7 @@ use proptest::prelude::*;
 /// 検証用の所有metadataを、借用glyph配列と組み合わせる。
 fn font<'a>(glyphs: &'a [Entry<'a>]) -> Font<'a> {
     Font {
+        units_per_em: 1000,
         name: b"JadeOwnedCFF",
         notice: b"Copyright Jade owned; permission retained",
         bbox: [0, 0, 600, 700],
@@ -101,6 +102,20 @@ fn invalid_cff_identity_or_metadata_is_rejected() {
     owned.italic_angle = 0.;
     owned.bbox = [100, 0, 0, 700];
     assert!(encode(&DecodeBudget::default(), &owned).is_none());
+}
+
+/// 規格外の単位数を、既定の1000へ黙って置き換えない。
+#[test]
+fn invalid_em_units_are_not_silently_defaulted() {
+    let glyphs = [Entry {
+        name: b".notdef",
+        program: &[14],
+    }];
+    for units in [0, 15, 16385, 65535] {
+        let mut source = font(&glyphs);
+        source.units_per_em = units;
+        assert!(encode(&DecodeBudget::default(), &source).is_none());
+    }
 }
 
 /// 実際に必要だった累積保存量の境界と、停止後の再試行を検査する。
