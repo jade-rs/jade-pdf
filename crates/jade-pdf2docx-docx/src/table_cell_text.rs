@@ -5,6 +5,7 @@
 //! それ以外の行末は `\n`（セル内の段落区切り）として残す。
 
 use jade_pdf2docx_parser::ParsedBounds;
+use std::collections::BTreeSet;
 
 /// セルへ割り当てた 1 つの文字断片。
 #[derive(Debug, Clone, PartialEq)]
@@ -106,6 +107,7 @@ pub(crate) fn compose_cell(
         .filter(|fragment| !fragment.text.trim().is_empty())
         .collect::<Vec<_>>();
     let lines = group_sorted_lines(&mut sorted);
+    let columns = aligned_number_columns(&lines);
     let padding = lines
         .iter()
         .map(|line| line.left - cell_left)
@@ -117,7 +119,7 @@ pub(crate) fn compose_cell(
     let mut previous: Option<&CellLine<'_>> = None;
     let mut previous_text = String::new();
     for line in &lines {
-        let (text, stops) = line_text(line);
+        let (text, stops) = line_text(line, &columns);
         if text.is_empty() {
             continue;
         }
@@ -277,21 +279,106 @@ fn line_size(line: &CellLine<'_>) -> f32 {
         .fold(1.0, f32::max)
 }
 
-/// 1 行の断片を間隔に応じて連結する。
-fn line_text(line: &CellLine<'_>) -> (String, Vec<CellTabStop>) {
+/// 数字と小数点・桁区切りのように、間隔によらず続けて書く断片の組か。
+fn attaches(previous: &str, next: &str) -> bool {
+    let (previous, next) = (previous.trim(), next.trim());
+    let digit_end = previous
+        .chars()
+        .last()
+        .is_some_and(|ch| ch.is_ascii_digit());
+    let digit_start = next.chars().next().is_some_and(|ch| ch.is_ascii_digit());
+    (digit_end && matches!(next, "." | ",")) || (matches!(previous, "." | ",") && digit_start)
+}
+
+/// 行の語（語間より狭い間隔の断片をまとめたもの）の（先頭の断片の番号, 左端, 右端, 本文）。
+fn line_words(line: &CellLine<'_>) -> Vec<(usize, f32, f32, String)> {
+    let mut words: Vec<(usize, f32, f32, String)> = Vec::new();
+    let mut previous: Option<&CellFragment> = None;
+    for (index, fragment) in line.fragments.iter().enumerate() {
+        let new_word = previous.is_none_or(|previous| {
+            fragment.bounds.x0 - previous.bounds.x1
+                > WORD_GAP_EM * previous.size().min(fragment.size())
+                && !attaches(&previous.text, &fragment.text)
+        });
+        match words.last_mut() {
+            Some(word) if !new_word => {
+                word.2 = word.2.max(fragment.bounds.x1);
+                word.3.push_str(fragment.text.trim());
+            }
+            _ => words.push((
+                index,
+                fragment.bounds.x0,
+                fragment.bounds.x1,
+                fragment.text.trim().to_string(),
+            )),
+        }
+        previous = Some(fragment);
+    }
+    words
+}
+
+/// 3 行以上で右端がそろう数値の語の列（右端の x 座標）。2 列以上あるときだけ返す。
+///
+/// セルの中に罫線のない小さな表（等級ごとの係数の行列など）があると、数値の列の間隔が
+/// タブにする幅より狭く、空白でつながって列が崩れる。右端のそろった数値の列を見つけ、
+/// その前の語間をタブ（右揃え）にする。
+fn aligned_number_columns(lines: &[CellLine<'_>]) -> Vec<f32> {
+    const ALIGN_PT: f32 = 1.5;
+    let mut columns: Vec<(f32, BTreeSet<usize>)> = Vec::new();
+    for (line_index, line) in lines.iter().enumerate() {
+        for (position, (_, _, right, body)) in line_words(line).into_iter().enumerate() {
+            if position == 0 || !is_mostly_numeric(&body) {
+                continue;
+            }
+            match columns
+                .iter_mut()
+                .find(|(x, _)| (*x - right).abs() <= ALIGN_PT)
+            {
+                Some((_, rows)) => {
+                    rows.insert(line_index);
+                }
+                None => columns.push((right, BTreeSet::from([line_index]))),
+            }
+        }
+    }
+    let mut aligned = columns
+        .into_iter()
+        .filter(|(_, rows)| rows.len() >= 3)
+        .map(|(x, _)| x)
+        .collect::<Vec<_>>();
+    if aligned.len() < 2 {
+        return Vec::new();
+    }
+    aligned.sort_by(f32::total_cmp);
+    aligned
+}
+
+/// 1 行の断片を間隔に応じて連結する。`columns` は右端のそろった数値の列の右端。
+fn line_text(line: &CellLine<'_>, columns: &[f32]) -> (String, Vec<CellTabStop>) {
     let mut text = String::new();
     let mut previous: Option<&CellFragment> = None;
     let mut pending_space = false;
+    // 数値の列に右端がそろう語の先頭の断片の番号。
+    let column_starts = line_words(line)
+        .into_iter()
+        .skip(1)
+        .filter(|(_, _, right, body)| {
+            is_mostly_numeric(body) && columns.iter().any(|x| (x - right).abs() <= 1.5)
+        })
+        .map(|(index, ..)| index)
+        .collect::<BTreeSet<_>>();
     // タブの後の語の（左端, 右端, 本文）。
     let mut segments: Vec<(f32, f32, String)> = Vec::new();
-    for fragment in &line.fragments {
+    for (index, fragment) in line.fragments.iter().enumerate() {
         let body = fragment.text.trim();
         if let Some(previous) = previous {
             let gap = fragment.bounds.x0 - previous.bounds.x1;
             let size = previous.size().min(fragment.size());
             let wide_gap = gap > WORD_GAP_EM * size;
             let explicit = pending_space || fragment.text.starts_with(char::is_whitespace);
-            if gap > TAB_GAP_EM * size {
+            if attaches(&previous.text, &fragment.text) {
+                // 小数点・桁区切りは前後の数字に続けて書く。
+            } else if gap > TAB_GAP_EM * size || (wide_gap && column_starts.contains(&index)) {
                 text.push('\t');
                 segments.push((fragment.bounds.x0, fragment.bounds.x1, String::new()));
             } else if ((wide_gap || explicit)
@@ -688,6 +775,32 @@ mod tests {
             font_size: 10.0,
         });
         assert_eq!(compose_cell_text(&fragments, 0.0, 95.0), "項目 1");
+    }
+
+    /// 右端のそろった数値の列は、語間が狭くても右揃えのタブで区切る。
+    #[test]
+    fn aligned_number_columns_become_tabs() {
+        let mut fragments = Vec::new();
+        for (index, y) in [100.0, 88.0, 76.0].into_iter().enumerate() {
+            fragments.extend(chars(&format!("r{index}"), 0.0, y, 6.0, 8.0));
+            fragments.extend(chars("1.25", 30.0, y, 4.0, 8.0));
+            fragments.extend(chars("0.50", 56.0, y, 4.0, 8.0));
+        }
+        let composed = compose_cell(&fragments, 0.0, 95.0);
+        assert_eq!(
+            composed.text,
+            "r0\t1.25\t0.50\nr1\t1.25\t0.50\nr2\t1.25\t0.50"
+        );
+        assert!(composed.tab_stops[0].iter().all(|stop| stop.right));
+    }
+
+    /// 離れて置かれた小数点も、前後の数字に続けて書く。
+    #[test]
+    fn decimal_point_joins_its_digits() {
+        let mut fragments = chars("-1", 0.0, 100.0, 4.0, 8.0);
+        fragments.extend(chars(".", 11.0, 100.0, 1.0, 8.0));
+        fragments.extend(chars("2530", 15.0, 100.0, 4.0, 8.0));
+        assert_eq!(compose_cell_text(&fragments, 0.0, 95.0), "-1.2530");
     }
 
     /// 欧文の折り返しでは語間の空白を補う。
