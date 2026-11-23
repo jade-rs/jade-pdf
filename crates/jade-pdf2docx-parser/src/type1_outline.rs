@@ -17,6 +17,8 @@ mod file;
 mod header;
 #[path = "type1_outline_opentype.rs"]
 mod opentype;
+#[path = "type1_outline_plan.rs"]
+mod plan;
 #[path = "type1_outline_private.rs"]
 mod private;
 #[path = "type1_outline_ps_string.rs"]
