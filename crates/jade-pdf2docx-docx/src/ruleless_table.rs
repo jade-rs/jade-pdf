@@ -137,12 +137,13 @@ fn page_lines<'a>(
     // 段の区切り線をまたいで行をまとめない。
     // 罫線で囲んだ枠の内と外も別の区画にする（枠外の見出しなどを表に混ぜない）。
     let edges = column_bands::column_band_edges(parsed, page, covered);
+    let partial = column_bands::partial_band_rules(parsed, page, covered);
     let frames = column_bands::ruled_frames(parsed, page);
     let band = |text: &ParsedTextElement| {
         let bounds = normalized_bounds(text.bounds);
         let (x, y) = ((bounds.x0 + bounds.x1) / 2.0, (bounds.y0 + bounds.y1) / 2.0);
         (
-            column_bands::band_of(x, &edges),
+            column_bands::band_of(x, &edges) + column_bands::partial_band_of(x, y, &partial),
             column_bands::frame_of(x, y, &frames),
         )
     };
@@ -218,18 +219,32 @@ fn table_from_lines(
     let mut xs = vec![left - pad];
     xs.extend(boundaries.iter().copied());
     xs.push(right + pad);
-    let cols = xs.len() - 1;
     let rows = lines.len();
     // 各列がほとんどの行で使われ、各行が 2 列以上を使い、セルが短いこと。
-    let mut fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
-    for (row, line) in lines.iter().enumerate() {
-        for word in line.words() {
-            let center = (word.bounds.x0 + word.bounds.x1) / 2.0;
-            let col = xs
-                .windows(2)
-                .position(|pair| center >= pair[0] && center < pair[1])?;
-            fragments[row][col].push(word);
+    let mut fragments;
+    loop {
+        let cols = xs.len() - 1;
+        fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
+        for (row, line) in lines.iter().enumerate() {
+            for word in line.words() {
+                let center = (word.bounds.x0 + word.bounds.x1) / 2.0;
+                let col = xs
+                    .windows(2)
+                    .position(|pair| center >= pair[0] && center < pair[1])?;
+                fragments[row][col].push(word);
+            }
         }
+        // 金額の左に置いた負の数の印（△）だけの列は、右の金額の列の一部とする。
+        match sign_column(&fragments) {
+            Some(col) => {
+                xs.remove(col + 1);
+            }
+            None => break,
+        }
+    }
+    let cols = xs.len() - 1;
+    if cols < 2 {
+        return None;
     }
     let filled = |row: usize, col: usize| !fragments[row][col].is_empty();
     // 6 割以上の行が 2 列以上を使い、どの列も 2 行以上かつ 2 割以上の行で使われること。
@@ -392,6 +407,37 @@ fn enclosing_frame(parsed: &ParsedDocument, page: usize, bounds: ParsedBounds) -
         bounds.y0,
         bounds.y1,
     )
+}
+
+/// 金額の前に付ける符号だけの字か（負の数の印 △・▲、正負の符号）。
+fn is_sign(text: &str) -> bool {
+    matches!(text, "△" | "▲" | "－" | "-" | "−" | "＋" | "+")
+}
+
+/// 符号だけが入り、その行の右の列が数値の列を探す（右の列と合わせて 1 つの金額の列にする）。
+///
+/// 財務表では負の金額の印「△」を金額の列の左端にそろえて組むので、字間から列を分けると
+/// 印だけの列ができる（lawrenceanum の kanpo-pdf が △ を右の数に付けるのと同じ考え）。
+fn sign_column(fragments: &[Vec<Vec<table_cell_text::CellFragment>>]) -> Option<usize> {
+    let cols = fragments.first()?.len();
+    let text = |row: usize, col: usize| {
+        fragments[row][col]
+            .iter()
+            .map(|fragment| fragment.text.trim())
+            .collect::<String>()
+    };
+    (0..cols.saturating_sub(1)).find(|&col| {
+        let mut used = 0;
+        let all_signs = (0..fragments.len()).all(|row| {
+            let sign = text(row, col);
+            if sign.is_empty() {
+                return true;
+            }
+            used += 1;
+            is_sign(&sign) && is_numeric_cell(&text(row, col + 1))
+        });
+        all_signs && used > 0
+    })
 }
 
 /// 文字の半分以上が数字のセルか判定する。

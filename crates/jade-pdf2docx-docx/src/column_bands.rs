@@ -77,6 +77,75 @@ pub(super) fn column_band_edges(
         .collect()
 }
 
+/// ページの一部の高さだけを縦に区切る罫線（上半分だけ 2 段組のページなど）の最小の長さ
+/// （ページの高さに対する割合）。
+const MIN_PARTIAL_RULE_HEIGHT_RATIO: f32 = 0.3;
+
+/// ページの一部の高さだけで段を区切る縦罫線（x と、区切る y の範囲）を返す。
+///
+/// [`column_band_edges`] はページのほぼ全高にわたる区切りだけを扱う。下半分に全幅の表を置き、
+/// 上半分だけを縦罫線で 2 段に分けるページでは、上半分の左右の段の行や表を混ぜないよう、
+/// 罫線の y の範囲の中だけで段を分ける。表の中の罫線や、両側に本文の無い罫線（枠の辺）は除く。
+pub(super) fn partial_band_rules(
+    parsed: &ParsedDocument,
+    page: usize,
+    tables: &[PositionedTable],
+) -> Vec<ParsedBounds> {
+    let Some(parsed_page) = parsed
+        .pages
+        .iter()
+        .find(|candidate| candidate.page_number == page)
+    else {
+        return Vec::new();
+    };
+    let (width, height) = parsed_page_display_size_points(parsed_page);
+    parsed
+        .graphics
+        .iter()
+        .filter(|graphic| graphic.page == page)
+        .map(|graphic| normalized_bounds(graphic.bounds))
+        .filter(is_vertical_line)
+        .filter(|bounds| bounds.y1 - bounds.y0 >= MIN_PARTIAL_RULE_HEIGHT_RATIO * height)
+        .filter(|bounds| {
+            bounds.x0 > EDGE_MARGIN_RATIO * width && bounds.x0 < (1.0 - EDGE_MARGIN_RATIO) * width
+        })
+        .filter(|bounds| {
+            !tables.iter().any(|table| {
+                let area = normalized_bounds(table.bounds);
+                table.page == page
+                    && bounds.x0 > area.x0 - 2.0
+                    && bounds.x0 < area.x1 + 2.0
+                    && bounds.y0 < area.y1
+                    && bounds.y1 > area.y0
+            })
+        })
+        .filter(|rule| {
+            let (mut left, mut right) = (0usize, 0usize);
+            for text in parsed.text_elements.iter().filter(|text| text.page == page) {
+                let bounds = normalized_bounds(text.bounds);
+                let y = (bounds.y0 + bounds.y1) / 2.0;
+                if y < rule.y0 || y > rule.y1 {
+                    continue;
+                }
+                if bounds.x1 <= rule.x0 {
+                    left += 1;
+                } else if bounds.x0 >= rule.x0 {
+                    right += 1;
+                }
+            }
+            left >= MIN_TEXTS_PER_SIDE && right >= MIN_TEXTS_PER_SIDE
+        })
+        .collect()
+}
+
+/// 点が、一部の高さの区切り罫線のうち何本の右にあるか（その y を区切る罫線だけを数える）。
+pub(super) fn partial_band_of(x: f32, y: f32, rules: &[ParsedBounds]) -> usize {
+    rules
+        .iter()
+        .filter(|rule| y >= rule.y0 && y <= rule.y1 && x > rule.x0)
+        .count()
+}
+
 /// x 座標が属する段の番号を返す。
 pub(super) fn band_of(x: f32, edges: &[f32]) -> usize {
     edges.iter().filter(|edge| x > **edge).count()

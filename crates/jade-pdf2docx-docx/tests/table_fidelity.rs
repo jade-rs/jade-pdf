@@ -405,3 +405,88 @@ fn first_table_row_keeps_with_the_next_row() {
         "later rows must not keep with the next row: {xml}"
     );
 }
+
+/// 金額の列の左端にそろえた負の数の印（ここでは `-`）は、落とさず、印だけの列にもせず金額のセルに入れる。
+#[test]
+fn sign_column_joins_the_amount_column() {
+    let row = |y: i32, label: &str, sign: &str, value: &str| {
+        let sign = if sign.is_empty() {
+            String::new()
+        } else {
+            format!("BT /F1 10 Tf 1 0 0 1 120 {y} Tm ({sign}) Tj ET ")
+        };
+        format!(
+            "BT /F1 10 Tf 1 0 0 1 20 {y} Tm ({label}) Tj ET {sign}BT /F1 10 Tf 1 0 0 1 180 {y} Tm ({value}) Tj ET"
+        )
+    };
+    let content = [
+        row(160, "Deposits", "-", "2,900,000"),
+        row(146, "Refunds", "", "2,900,000"),
+        row(132, "Securities", "-", "2,000,000"),
+        row(118, "Interest", "", "21,527"),
+    ]
+    .join(" ");
+    let xml = convert("table_fidelity_sign_column", &content);
+    assert_eq!(xml.matches("<w:tbl>").count(), 1, "{xml}");
+    let first_row = &xml[xml.find("<w:tr>").unwrap()..xml.find("</w:tr>").unwrap()];
+    assert_eq!(
+        first_row.matches("<w:tc>").count(),
+        2,
+        "the sign must not get a column of its own: {xml}"
+    );
+    assert_eq!(
+        xml.matches(">-").count() + xml.matches("> -").count(),
+        2,
+        "every sign must be kept: {xml}"
+    );
+}
+
+/// 上半分の表と上下対称の位置にある本文は、表の中とみなして落とさない。
+#[test]
+fn text_mirrored_below_an_upper_table_is_kept() {
+    let rules = "0.5 w 20 180 m 220 180 l S 20 150 m 220 150 l S 20 120 m 220 120 l S \
+         20 120 m 20 180 l S 120 120 m 120 180 l S 220 120 m 220 180 l S";
+    let content = format!(
+        "{rules} BT /F1 10 Tf 1 0 0 1 25 166 Tm (Head) Tj ET BT /F1 10 Tf 1 0 0 1 125 166 Tm (Value) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 25 136 Tm (alpha) Tj ET BT /F1 10 Tf 1 0 0 1 125 136 Tm (beta) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 30 47 Tm (Mirrored body text) Tj ET"
+    );
+    let xml = convert("table_fidelity_mirrored_text", &content);
+    assert!(
+        xml.contains("Mirrored body text"),
+        "body text must not be dropped as part of the table: {xml}"
+    );
+}
+
+/// 上半分だけを縦罫線で 2 段に分けたページでは、同じ高さの左右の段の字を同じ行・表にしない。
+#[test]
+fn partial_height_column_rule_separates_columns() {
+    let mut parts = vec!["0.5 w 150 100 m 150 195 l S".to_string()];
+    for (index, y) in [180, 168, 156, 144, 132, 120].into_iter().enumerate() {
+        parts.push(format!(
+            "BT /F1 10 Tf 1 0 0 1 20 {y} Tm (L{index}) Tj ET BT /F1 10 Tf 1 0 0 1 100 {y} Tm ({index}11) Tj ET \
+             BT /F1 10 Tf 1 0 0 1 160 {y} Tm (R{index}) Tj ET BT /F1 10 Tf 1 0 0 1 250 {y} Tm ({index}22) Tj ET"
+        ));
+    }
+    parts.push("BT /F1 10 Tf 1 0 0 1 20 40 Tm (Footer line across the page) Tj ET".to_string());
+    let xml = convert("table_fidelity_partial_column_rule", &parts.join(" "));
+    for index in 0..6 {
+        let left = xml.find(&format!(">L{index}")).expect("left text");
+        // 同じ段落にも、同じ表の行にも入れない。
+        let paragraph_end = left + xml[left..].find("</w:p>").expect("paragraph end");
+        let row_end = xml[left..].find("</w:tr>").map(|end| left + end);
+        let row_start = xml[..left].rfind("<w:tr>");
+        let end = match (row_start, row_end) {
+            (Some(start), Some(end)) if !xml[start..left].contains("</w:tr>") => end,
+            _ => paragraph_end,
+        };
+        let start = match row_start {
+            Some(start) if end != paragraph_end => start,
+            _ => left,
+        };
+        assert!(
+            !xml[start..end].contains(&format!("R{index}")),
+            "left and right columns must stay apart: {xml}"
+        );
+    }
+}

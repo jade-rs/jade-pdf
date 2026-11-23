@@ -61,6 +61,7 @@ pub use output_path::resolve_output_parent;
 mod column_bands;
 mod raw_cid_glyphs;
 mod ruleless_table;
+mod stacked_rules;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
 mod table_cell_text;
@@ -2097,8 +2098,14 @@ fn text_lines_by_page_from_pdf_text_elements(
                 .collect::<Vec<_>>();
             // 縦罫線で段を区切るページは、段をまたいで行をつながない。
             let band_edges = column_bands::column_band_edges(parsed, page, positioned_tables);
+            let partial_rules = column_bands::partial_band_rules(parsed, page, positioned_tables);
             let text_band = |text: &ParsedTextElement| {
-                column_bands::band_of((text.bounds.x0 + text.bounds.x1) / 2.0, &band_edges)
+                let x = (text.bounds.x0 + text.bounds.x1) / 2.0;
+                let y = (text.bounds.y0 + text.bounds.y1) / 2.0;
+                (
+                    column_bands::band_of(x, &band_edges),
+                    column_bands::partial_band_of(x, y, &partial_rules),
+                )
             };
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
@@ -2198,10 +2205,25 @@ fn text_element_is_in_table(
     if text_center_is_in_table_bounds(center_x, center_y, table) {
         return true;
     }
+    // 上端原点の y で置いた文字片の救済は、表のセルにその文字列があるときだけ使う
+    // （回転したページなどで、上下を反転した位置が別の表に重なる本文を落とさない）。
     table_accepts_top_origin_text_y(parsed, table)
         && page_height(parsed, text.page)
             .map(|height| text_center_is_in_table_bounds(center_x, height - center_y, table))
             .unwrap_or(false)
+        && table_cells_contain_text(table, &text.text)
+}
+
+/// 表のいずれかのセルが、文字片の文字列（前後の空白を除く）を含むか判定する。
+fn table_cells_contain_text(table: &PositionedTable, text: &str) -> bool {
+    let text = text.trim();
+    !text.is_empty()
+        && table
+            .table
+            .rows
+            .iter()
+            .flatten()
+            .any(|cell| cell.contains(text))
 }
 
 /// text center が推定表の矩形内に入るか判定する。
@@ -4699,12 +4721,15 @@ fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
 ) -> Vec<PositionedTable> {
-    let page_graphics = parsed
-        .graphics
-        .iter()
-        .filter(|graphic| graphic.page == page)
-        .cloned()
-        .collect::<Vec<_>>();
+    // 上下の枠・表が共有する外側の縦罫線は、表ごとに切り分けてから連結成分を求める。
+    let page_graphics = stacked_rules::split_shared_vertical_rules(
+        &parsed
+            .graphics
+            .iter()
+            .filter(|graphic| graphic.page == page)
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
     let loose_component_candidates =
         positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 2.0);
     let strict_component_candidates =
@@ -6494,12 +6519,32 @@ fn infer_positioned_table_from_text_grid_page(
         return None;
     }
     let bounds = text_grid_cells_bounds(&row_cells)?;
+    // 段を区切る縦罫線をまたぐ字の並びは、左右の段の行が同じ高さに並んだだけなので表にしない。
+    let area = normalized_bounds(bounds);
+    let crosses_column_rule = column_bands::partial_band_rules(parsed, page, &[])
+        .iter()
+        .any(|rule| {
+            rule.x0 > area.x0 + 2.0
+                && rule.x0 < area.x1 - 2.0
+                && rule.y0 < area.y1
+                && rule.y1 > area.y0
+        })
+        || column_bands::column_band_edges(parsed, page, &[])
+            .iter()
+            .any(|edge| *edge > area.x0 + 2.0 && *edge < area.x1 - 2.0);
+    if crosses_column_rule {
+        return None;
+    }
 
     let mut table_rows = Vec::new();
     for cells in row_cells {
         let mut row = vec![String::new(); anchors.len()];
         for cell in cells {
-            if let Some(index) = nearest_column_anchor(cell.x0, &anchors) {
+            // どの列の近くにもない字（金額の前の印「－」「△」など、使う行の少ない列の字）も
+            // 落とさず、いちばん近い列に入れる。
+            if let Some(index) = nearest_column_anchor(cell.x0, &anchors)
+                .or_else(|| closest_column_anchor(cell.x0, &anchors))
+            {
                 if !row[index].is_empty() {
                     row[index].push(' ');
                 }
@@ -6641,6 +6686,15 @@ fn nearest_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
         .iter()
         .enumerate()
         .filter(|(_, anchor)| (x - **anchor).abs() <= 28.0)
+        .min_by(|(_, a), (_, b)| (x - **a).abs().total_cmp(&(x - **b).abs()))
+        .map(|(index, _)| index)
+}
+
+/// cell の x 座標に、距離を問わず最も近い列 index を返す。
+fn closest_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
+    anchors
+        .iter()
+        .enumerate()
         .min_by(|(_, a), (_, b)| (x - **a).abs().total_cmp(&(x - **b).abs()))
         .map(|(index, _)| index)
 }
