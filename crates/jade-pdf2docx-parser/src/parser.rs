@@ -3009,8 +3009,8 @@ fn cmap_payload_for_object_number<'a>(
     }
 }
 
-/// FontFile2 の保存・展開配列を確保前に累積予算で検査する。
-fn embedded_font_payload(
+/// FontFile/FontFile2の保存・展開配列を確保前に累積予算で検査する。
+pub(crate) fn embedded_font_payload(
     budget: &DecodeBudget,
     bytes: &[u8],
     object_number: u32,

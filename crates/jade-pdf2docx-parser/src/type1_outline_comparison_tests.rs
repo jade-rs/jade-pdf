@@ -7,12 +7,17 @@ mod cff_export;
 mod header_comparison;
 #[path = "type1_outline_otf_export_tests.rs"]
 mod otf_export;
+#[path = "type1_outline_resource_comparison_tests.rs"]
+mod resource_comparison;
 #[path = "type1_outline_type2_export_tests.rs"]
 mod type2_export;
 
 /// 独立gold全体。
 #[derive(Deserialize)]
 struct Gold {
+    /// 原本PDFも直接読む検査で、別ファイルへの差替えを防ぐhash。
+    #[serde(default)]
+    source_pdf_sha256: Option<String>,
     /// 原本ごとのglyphとsubroutine。
     fonts: Vec<Font>,
     /// 所有の端数glyphに対する、独立して宣言したmetric。
@@ -48,6 +53,9 @@ struct Font {
     /// 元FontFileから独立して読んだcleartext辞書。
     #[serde(default)]
     header: Option<header_comparison::Metadata>,
+    /// 元PDF辞書と元Encodingから独立して得たcode単位の期待値。
+    #[serde(default)]
+    pdf_resource: Option<resource_comparison::Metadata>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
