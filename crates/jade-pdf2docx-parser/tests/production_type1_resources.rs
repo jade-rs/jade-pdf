@@ -107,18 +107,15 @@ fn stale_font_references_cannot_bypass_strict_encoding_checks() {
             .replace(before, after)
             .into_bytes();
         objects.push(b"<< /Differences [65 /C] >>".to_vec());
-        assert!(
-            parse_pdf_bytes_with_options(
-                "stale-type1.pdf",
-                &serialize(&objects),
-                &ParseOptions {
-                    strict: true,
-                    ..Default::default()
-                }
-            )
-            .is_err(),
-            "{after}"
+        let result = parse_pdf_bytes_with_options(
+            "stale-type1.pdf",
+            &serialize(&objects),
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            },
         );
+        assert!(result.is_err(), "{after}: {result:?}");
     }
 }
 
