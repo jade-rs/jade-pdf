@@ -64,9 +64,9 @@ pub(super) fn read<'bytes>(
     if ascent.is_none() || descent.is_none() {
         let (mut top, mut bottom) = (0_f64, 0_f64);
         for glyph in &font.glyphs {
-            if let Some(bounds) = bounds::measure(budget, &glyph.outline)?.bounds {
-                top = top.max(f64::from(bounds[3]));
-                bottom = bottom.min(f64::from(bounds[1]));
+            if let Some(bounds) = bounds::source(budget, &glyph.outline)? {
+                top = top.max(bounds[3]);
+                bottom = bottom.min(bounds[1]);
             }
         }
         ascent = ascent.or(Some(top));
@@ -82,8 +82,14 @@ pub(super) fn read<'bytes>(
         fixed: info.fixed.unwrap_or(flags & 1 != 0),
         underline_position: info.underline_position.unwrap_or(0.),
         underline_thickness: info.underline_thickness.unwrap_or(0.),
-        x_height: x_height.unwrap_or(glyph_top(budget, font, b"x")?),
-        cap_height: cap_height.unwrap_or(glyph_top(budget, font, b"H")?),
+        x_height: match x_height {
+            Some(value) => value,
+            None => glyph_top(budget, font, b"x")?,
+        },
+        cap_height: match cap_height {
+            Some(value) => value,
+            None => glyph_top(budget, font, b"H")?,
+        },
     };
     if budget.is_stopped() || !attributes.valid() {
         None
@@ -161,11 +167,7 @@ fn numeric<'bytes>(
 /// 実在する確認済みglyphの高さだけを補完し、欠落glyphから値を作らない。
 fn glyph_top(budget: &DecodeBudget, font: &Font<'_>, name: &[u8]) -> Option<f64> {
     match font.glyphs.iter().find(|g| g.name == name) {
-        Some(g) => Some(
-            bounds::measure(budget, &g.outline)?
-                .bounds
-                .map_or(0., |b| f64::from(b[3]).max(0.)),
-        ),
+        Some(g) => Some(bounds::source(budget, &g.outline)?.map_or(0., |b| b[3].max(0.))),
         None => Some(0.),
     }
 }

@@ -14,6 +14,43 @@ pub(super) fn measure(budget: &DecodeBudget, glyph: &Glyph) -> Option<Metric> {
     {
         return None;
     }
+    let bounds = extent(budget, glyph, point_after)?;
+    let left = bounds.map_or(0., |b| (b[0] + 0.5).floor()) as i16;
+    let bounds = bounds.map(|b| {
+        [
+            b[0].floor() as i16,
+            b[1].floor() as i16,
+            b[2].ceil() as i16,
+            b[3].ceil() as i16,
+        ]
+    });
+    Some(Metric {
+        advance: (glyph.advance + 0.5).floor() as u16,
+        left,
+        bounds,
+    })
+}
+
+/// 元metricを補うため、出力用量子化や整数外接枠へ丸める前の実極値を返す。
+pub(super) fn source(budget: &DecodeBudget, glyph: &Glyph) -> Option<Option<[f64; 4]>> {
+    extent(budget, glyph, |point, _| {
+        // 最小em16でも格納不能な制御点は受け入れず、極値演算の範囲も有限に保つ。
+        point
+            .iter()
+            .all(|v| v.is_finite() && v.abs() <= 32767. * 1000. / 16.)
+            .then_some(point)
+    })
+}
+
+/// 元座標と保存座標で同じ三次極値の評価を共有し、丸めの時点だけを分ける。
+fn extent(
+    budget: &DecodeBudget,
+    glyph: &Glyph,
+    mut point: impl FnMut([f64; 2], [f64; 2]) -> Option<[f64; 2]>,
+) -> Option<Option<[f64; 4]>> {
+    if budget.is_stopped() || glyph.commands.len() > 100_000 {
+        return None;
+    }
     let mut current = [0.; 2];
     let mut open = false;
     let mut bounds = None;
@@ -22,20 +59,20 @@ pub(super) fn measure(budget: &DecodeBudget, glyph: &Glyph) -> Option<Metric> {
             return None;
         }
         match command {
-            Command::Move(point) if !open => {
-                current = point_after(*point, current)?;
+            Command::Move(position) if !open => {
+                current = point(*position, current)?;
                 open = true;
             }
-            Command::Line(point) if open => {
-                let next = point_after(*point, current)?;
+            Command::Line(position) if open => {
+                let next = point(*position, current)?;
                 include(&mut bounds, current);
                 include(&mut bounds, next);
                 current = next;
             }
             Command::Curve(points) if open => {
-                let a = point_after([points[0], points[1]], current)?;
-                let b = point_after([points[2], points[3]], a)?;
-                let end = point_after([points[4], points[5]], b)?;
+                let a = point([points[0], points[1]], current)?;
+                let b = point([points[2], points[3]], a)?;
+                let end = point([points[4], points[5]], b)?;
                 include(&mut bounds, current);
                 include(&mut bounds, end);
                 for axis in 0..2 {
@@ -60,20 +97,7 @@ pub(super) fn measure(budget: &DecodeBudget, glyph: &Glyph) -> Option<Metric> {
     if open || budget.is_stopped() {
         return None;
     }
-    let left = bounds.map_or(0., |b| (b[0] + 0.5).floor()) as i16;
-    let bounds = bounds.map(|b| {
-        [
-            b[0].floor() as i16,
-            b[1].floor() as i16,
-            b[2].ceil() as i16,
-            b[3].ceil() as i16,
-        ]
-    });
-    Some(Metric {
-        advance: (glyph.advance + 0.5).floor() as u16,
-        left,
-        bounds,
-    })
+    Some(bounds)
 }
 
 /// 保存時と同じ16.16へ丸め、連続する点の差分も符号付き表現へ収める。
