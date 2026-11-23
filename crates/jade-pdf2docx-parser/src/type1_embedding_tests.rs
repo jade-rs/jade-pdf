@@ -124,4 +124,9 @@ fn owned_type1_preserves_drawable_font_for_docx() {
         parsed.embedded_fonts[0].bytes.get(..4),
         Some(b"OTTO".as_slice())
     );
+    assert_eq!(
+        parsed.text_elements[0].font_name.as_deref(),
+        Some(parsed.embedded_fonts[0].font_name.as_str()),
+        "the actual text run must select its portable font"
+    );
 }

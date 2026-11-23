@@ -81,19 +81,32 @@ fn stream(bytes: &[u8], attributes: &str) -> Vec<u8> {
 
 /// 上の行はcode B一個、下の行はcode A二個で、両方の原文Unicodeをffとする。
 fn pdf() -> Vec<u8> {
+    pdf_with_content(b"BT /F1 20 Tf 20 80 Td (B) Tj 0 -40 Td (AA) Tj ET", None)
+}
+
+/// 同じ原本programを使い、描画命令と別resourceの幅だけを変更する所有PDF。
+pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec<u8> {
     let (font, first, second, third) = font_program();
-    let content = b"BT /F1 20 Tf 20 80 Td (B) Tj 0 -40 Td (AA) Tj ET";
     let cmap=b"begincmap\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n2 beginbfchar\n<41> <0066>\n<42> <00660066>\nendbfchar\nendcmap";
-    let objects=[
+    let resources = if second_width.is_some() {
+        "/F1 5 0 R /F2 9 0 R"
+    } else {
+        "/F1 5 0 R"
+    };
+    let mut objects=[
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
-        b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".to_vec(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Resources << /Font << {resources} >> >> /Contents 4 0 R >>").into_bytes(),
         stream(content,""),
         b"<< /Type /Font /Subtype /Type1 /BaseFont /JadeOwnedClusters /FirstChar 65 /LastChar 66 /Widths [300 500] /FontDescriptor 6 0 R /ToUnicode 8 0 R >>".to_vec(),
         b"<< /Type /FontDescriptor /FontName /JadeOwnedClusters /Flags 32 /FontBBox [0 0 500 700] /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>".to_vec(),
-        stream(&font,&format!("/Length1 {first} /Length2 {second} /Length3 {third}")),stream(cmap,"")];
+        stream(&font,&format!("/Length1 {first} /Length2 {second} /Length3 {third}")),stream(cmap,"")].to_vec();
+    if let Some(width) = second_width {
+        objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /JadeOwnedClusters /FirstChar 65 /LastChar 66 /Widths [{width} 500] /FontDescriptor 6 0 R /ToUnicode 8 0 R >>").into_bytes());
+    }
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
+    let count = objects.len() + 1;
     for (i, obj) in objects.iter().enumerate() {
         offsets.push(bytes.len());
         bytes.extend_from_slice(format!("{} 0 obj\n", i + 1).as_bytes());
@@ -101,14 +114,118 @@ fn pdf() -> Vec<u8> {
         bytes.extend_from_slice(b"\nendobj\n");
     }
     let xref = bytes.len();
-    bytes.extend_from_slice(b"xref\n0 9\n0000000000 65535 f \n");
+    bytes.extend_from_slice(format!("xref\n0 {count}\n0000000000 65535 f \n").as_bytes());
     for offset in offsets {
         bytes.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
     }
     bytes.extend_from_slice(
-        format!("trailer << /Size 9 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
+        format!("trailer << /Size {count} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
     );
     bytes
+}
+
+/// 一つのTj内の合字・通常二字・合字を、escapeやhexでも元の位置へ振り分ける。
+#[test]
+fn mixed_source_clusters_in_one_operand_keep_distinct_routes_and_positions() {
+    for operand in ["(BAAB)", "<42 4141 42>", "(\\102\\101A\\102)"] {
+        let content = format!("BT /F1 20 Tf 20 80 Td {operand} Tj ET");
+        let parsed = crate::parse_pdf_bytes(
+            "owned-mixed-clusters.pdf",
+            &pdf_with_content(content.as_bytes(), None),
+        )
+        .unwrap();
+        assert_eq!(parsed.text_elements.len(), 3, "{operand}");
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|e| e.text.as_str())
+                .collect::<Vec<_>>(),
+            ["ff", "ff", "ff"]
+        );
+        assert_eq!(
+            parsed.text_elements[0].font_name,
+            parsed.text_elements[2].font_name
+        );
+        assert_ne!(
+            parsed.text_elements[0].font_name,
+            parsed.text_elements[1].font_name
+        );
+        for (e, (x, width)) in parsed
+            .text_elements
+            .iter()
+            .zip([(20., 10.), (30., 12.), (42., 10.)])
+        {
+            assert!(
+                (e.bounds.x0 - x).abs() < 0.001
+                    && (e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001,
+                "{e:?}"
+            );
+            assert!(
+                parsed
+                    .embedded_fonts
+                    .iter()
+                    .any(|f| Some(&f.font_name) == e.font_name.as_ref())
+            );
+        }
+    }
+}
+
+/// TJの移動とTcはUnicode文字数でなく元glyph数へ適用し、分割後も次の原点を保つ。
+#[test]
+fn source_cluster_routing_preserves_TJ_and_original_glyph_character_spacing() {
+    for (content, positions, widths) in [
+        (
+            "BT /F1 20 Tf 20 80 Td [(B) -100 (AA) 50 (B)] TJ ET",
+            [20., 32., 43.],
+            [10., 12., 10.],
+        ),
+        (
+            "BT /F1 20 Tf 1 Tc 20 80 Td (BAAB) Tj ET",
+            [20., 31., 45.],
+            [10., 13., 10.],
+        ),
+    ] {
+        let parsed = crate::parse_pdf_bytes(
+            "owned-spaced-clusters.pdf",
+            &pdf_with_content(content.as_bytes(), None),
+        )
+        .unwrap();
+        assert_eq!(parsed.text_elements.len(), 3);
+        for (i, e) in parsed.text_elements.iter().enumerate() {
+            assert!((e.bounds.x0 - positions[i]).abs() < 0.001);
+            assert!(
+                (e.bounds.x1 - e.bounds.x0 - widths[i]).abs() < 0.001,
+                "{e:?}"
+            );
+        }
+    }
+}
+
+/// 同名・同じFontFile/Descriptorでも、別Font辞書のWidthsを混同しない。
+#[test]
+fn shared_fontfile_and_base_name_do_not_merge_different_resource_widths() {
+    let content = b"BT /F1 20 Tf 20 80 Td (AA) Tj /F2 20 Tf 0 -40 Td (AA) Tj ET";
+    let parsed = crate::parse_pdf_bytes(
+        "owned-shared-fontfile.pdf",
+        &pdf_with_content(content, Some(450)),
+    )
+    .unwrap();
+    assert_eq!(parsed.text_elements.len(), 2);
+    assert_ne!(
+        parsed.text_elements[0].font_name,
+        parsed.text_elements[1].font_name
+    );
+    for (e, width) in parsed.text_elements.iter().zip([12., 18.]) {
+        assert_eq!(e.text, "ff");
+        assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001);
+        assert!(
+            parsed
+                .embedded_fonts
+                .iter()
+                .any(|f| Some(&f.font_name) == e.font_name.as_ref())
+        );
+    }
 }
 
 /// 現在のIRのfont選択はfamily名なので、一つの合字と二つのfへ同じrequired GSUBを当てない。
