@@ -192,6 +192,44 @@ fn standard_font_with_optional_descriptor_remains_supported() {
     }
 }
 
+/// font programがなくても完成ToUnicodeを共有し、未知code検査でentry予算を膨らませない。
+#[test]
+fn missing_program_preserves_existing_tounicode_budget_and_coverage() {
+    for text in ["A", "AB"] {
+        let mut objects = objects("256 array dup 65 /G41 put", "", true, "F1", text);
+        objects[4] =
+            b"<< /Type /Font /Subtype /Type1 /BaseFont /OwnedBuiltin /ToUnicode 8 0 R >>".to_vec();
+        let result = parse_pdf_bytes_with_options(
+            "missing-program-unicode.pdf",
+            &serialize(&objects),
+            &ParseOptions {
+                strict: true,
+                limits: ParseLimits {
+                    max_total_tounicode_entries: 1,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        if text == "A" {
+            let parsed = result.unwrap();
+            assert_eq!(
+                parsed
+                    .text_elements
+                    .iter()
+                    .map(|element| element.text.as_str())
+                    .collect::<String>(),
+                "Z"
+            );
+        } else {
+            assert!(
+                matches!(result, Err(ParseError::QualityRejected { .. })),
+                "{result:?}"
+            );
+        }
+    }
+}
+
 /// Form内の同じresource名を、ページの別fontの組み込み表に取り違えない。
 #[test]
 fn form_local_font_overrides_the_same_page_resource_name() {
