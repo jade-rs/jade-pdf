@@ -41,6 +41,45 @@ fn spacing_advances_origin_without_trailing_bounds() {
     }
 }
 
+/// TJの語間に相当する正方向の空きは、glyph座標や後続原点を変えず空白へ復元する。
+#[test]
+fn tj_word_gaps_preserve_word_boundaries_and_glyph_positions() {
+    for in_form in [false, true] {
+        let parsed = parse(
+            "BT /F 10 Tf 10 10 Td [(Alpha) -600 (Beta)] TJ /F 20 Tf (C) Tj ET",
+            in_form,
+            false,
+        );
+        assert_eq!(parsed.text_elements[0].text, "Alpha Beta");
+        assert_eq!(parsed.text_elements[0].bounds.x0, 10.);
+        assert_eq!(parsed.text_elements[0].bounds.x1, 70.);
+        assert_eq!(parsed.text_elements[1].bounds.x0, 70.);
+    }
+}
+
+/// 明示的な空白と小さなkerningから、余分な単語境界を作らない。
+#[test]
+fn explicit_spaces_and_small_kerning_do_not_gain_extra_spaces() {
+    for (operand, expected) in [
+        ("[(Alpha ) -600 (Beta)]", "Alpha Beta"),
+        ("[(A) -50 (B)]", "AB"),
+    ] {
+        let parsed = parse(
+            &format!("BT /F 10 Tf 10 10 Td {operand} TJ ET"),
+            false,
+            false,
+        );
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|element| element.text.as_str())
+                .collect::<String>(),
+            expected
+        );
+    }
+}
+
 /// Tz は glyph と間隔/TJ 数値調整を倍率変更し、Tm の位置は変更しない。
 #[test]
 fn horizontal_scaling_applies_to_glyph_spacing_and_tj() {
