@@ -1,6 +1,8 @@
 //! 確認済み外部資料の独立解析結果だけを、明示的な環境変数で比較する。
 use super::*;
 use serde::Deserialize;
+#[path = "type1_outline_type2_export_tests.rs"]
+mod type2_export;
 
 /// 独立gold全体。
 #[derive(Deserialize)]
@@ -81,7 +83,7 @@ fn compare(standard: bool, original: bool) {
     let mut total_accepted = 0;
     for font in gold.fonts {
         if original {
-            compare_original(&font);
+            drop(compare_original(&font));
         }
         let verified = standard.then(|| {
             let (verified, end) =
@@ -184,7 +186,7 @@ fn assert_geometry(actual: &Glyph, expected: &Reference, context: &str) {
 }
 
 /// 独立復号値をproduct入力として使わず、元のstreamから同じglyphとsubroutineを得る。
-fn compare_original(font: &Font) {
+fn compare_original(font: &Font) -> Vec<(String, Glyph)> {
     use crate::type1_outline::{crypt, private};
     let budget = DecodeBudget::default();
     let decrypted = crypt::decrypt(
@@ -204,6 +206,7 @@ fn compare_original(font: &Font) {
         assert_eq!(&bytes, expected);
         subrs.push(bytes);
     }
+    let mut glyphs = Vec::new();
     for expected in &font.glyphs {
         let actual = parsed
             .glyphs
@@ -226,6 +229,8 @@ fn compare_original(font: &Font) {
             expected,
             &format!("original {} {}", font.source_name, expected.name),
         );
+        glyphs.push((expected.name.clone(), glyph));
     }
     assert!(budget.check().is_ok());
+    glyphs
 }
