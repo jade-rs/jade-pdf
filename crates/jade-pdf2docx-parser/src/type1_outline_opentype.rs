@@ -105,6 +105,20 @@ pub(super) fn encode(
     super::sfnt::pack(budget, &tables)
 }
 
+/// 原本cluster専用の合字規則を含むfontを作る。通常runへの適用判断は呼出元で行う。
+pub(super) fn encode_with_ligatures(
+    budget: &DecodeBudget,
+    font: &cff::Font<'_>,
+    info: &Info<'_>,
+    _rules: &[super::gsub::Rule<'_>],
+) -> Option<Vec<u8>> {
+    encode(budget, font, info)
+}
+
 #[cfg(test)]
 #[path = "type1_outline_opentype_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "type1_outline_opentype_ligature_tests.rs"]
+mod ligature_tests;
