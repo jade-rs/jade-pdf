@@ -292,6 +292,22 @@ mod tests {
         );
     }
 
+    /// headerだけが元fontと内部spaceを選んでも、必要な二fontと互換設定を梱包する。
+    #[test]
+    fn header_only_positioned_text_keeps_its_font_assets() {
+        use std::io::{Cursor,Read};
+        let source=owned();
+        let header=Header::new().add_paragraph(Paragraph::new()
+            .add_run(text_run("f").fonts(run_fonts(&source.font_name)).size(20))
+            .add_run(text_run(" ").fonts(run_fonts("JadeLayoutSpace-0")).size(2).stretch(100).character_spacing(45)));
+        let docx=Docx::new().header(header).add_paragraph(Paragraph::new().add_run(text_run("body")));
+        let bytes=pack_docx_to_bytes(docx,&[source]).unwrap();
+        let mut archive=zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        assert_eq!(archive.file_names().filter(|n| n.ends_with(".odttf")).count(),2);
+        let mut settings=String::new();archive.by_name("word/settings.xml").unwrap().read_to_string(&mut settings).unwrap();
+        assert!(!settings.contains("balanceSingleByteDoubleByteWidth"));
+    }
+
     proptest! {
         /// 各glyphの丸め誤差が積み重ならず、すべての次原点が半twip以内に収まる。
         #[test]
