@@ -1,0 +1,26 @@
+{
+  "commit": "4036a9ca80a62f64f9de4f7321a9a045ad0ecfd6",
+  "generator": "python3 tools/generate_glyph_names.py",
+  "inputs": [
+    {
+      "table": "AGL",
+      "input": "crates/jade-pdf-diff/resources/adobe-glyphlist.txt",
+      "url": "https://raw.githubusercontent.com/adobe-type-tools/agl-aglfn/4036a9ca80a62f64f9de4f7321a9a045ad0ecfd6/glyphlist.txt",
+      "sha256": "a3b2f61ced9f3644cc0d4ecde5c59df34ca286c689d9484a43a710a81c466789",
+      "bytes": 78060,
+      "entries": 4281
+    },
+    {
+      "table": "ZAPF",
+      "input": "crates/jade-pdf2docx-parser/resources/zapfdingbats.txt",
+      "url": "https://raw.githubusercontent.com/adobe-type-tools/agl-aglfn/4036a9ca80a62f64f9de4f7321a9a045ad0ecfd6/zapfdingbats.txt",
+      "sha256": "f6394e3cb8a447e84a1dad75d4baaf2aa7f45dc104faf369f4720e1a774ef2dc",
+      "bytes": 3879,
+      "entries": 201
+    }
+  ],
+  "generated": "crates/jade-pdf2docx-parser/src/glyph_names_data.rs",
+  "generated_sha256": "698c7ab93144f6038b9014db41a698e08797225b5b62b7223bec38fef7e50551",
+  "license": "crates/jade-pdf2docx-parser/licenses/adobe-glyph-list.txt",
+  "license_sha256": "854ddb82daa931fbeb892782ad9de93bd55c86436bf4cad5d57c40a24e4907ed"
+}
