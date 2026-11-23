@@ -118,6 +118,38 @@ fn literal_control_code_is_not_guessed_as_a_hyphen() {
     });
 }
 
+/// 同じページ内に二種類のU+0002があっても、印刷hyphenの位置だけを復元する。
+#[test]
+fn mixed_printed_hyphen_and_literal_control_keep_distinct_identity() {
+    let source = pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
+        stream("BT /F 12 Tf 20 160 Td (A well-) Tj 0 -20 Td (known) Tj ET"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 6 0 R >>".into(),
+        stream("1 beginbfchar\n<41> <0002>\nendbfchar"),
+    ]);
+    with_native_bytes(&source, |page| {
+        let text = page.text().unwrap();
+        let chars = characters(&budget(65536), &text).unwrap();
+        let mut raw = text.all();
+        assert_eq!(raw.chars().filter(|ch| *ch == '\u{2}').count(), 2);
+        assert!(raw.starts_with('\u{2}'));
+        let storage = (raw.as_ptr(), raw.capacity());
+        crate::pdfium_printed_hyphens::page(
+            &budget(0),
+            std::path::Path::new("owned-mixed-hyphen.pdf"),
+            &mut raw,
+            &chars,
+        )
+        .unwrap();
+        assert_eq!(raw.chars().filter(|ch| *ch == '\u{2}').count(), 1);
+        assert!(raw.starts_with('\u{2}'));
+        assert!(raw.contains("well-"));
+        assert_eq!((raw.as_ptr(), raw.capacity()), storage);
+    });
+}
+
 /// sourceの空白とSDKの報告を区別するため、同じowned入力を両経路へ渡す。
 fn owned_text_pdf(content: &str) -> Vec<u8> {
     pdf(&[
