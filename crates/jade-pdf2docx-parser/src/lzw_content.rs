@@ -133,16 +133,16 @@ impl<'a> Decoder<'a> {
                 }
                 self.pending.insert(0, first);
             }
-            if let Some(previous) = self.previous {
-                if self.next < CAPACITY {
-                    self.table[self.next] = Entry {
-                        prefix: previous,
-                        suffix: first,
-                    };
-                    self.next += 1;
-                    if self.width < 12 && self.next + self.early == 1usize << self.width {
-                        self.width += 1;
-                    }
+            if let Some(previous) = self.previous
+                && self.next < CAPACITY
+            {
+                self.table[self.next] = Entry {
+                    prefix: previous,
+                    suffix: first,
+                };
+                self.next += 1;
+                if self.width < 12 && self.next + self.early == 1usize << self.width {
+                    self.width += 1;
                 }
             }
             self.previous = Some(code);
@@ -196,10 +196,10 @@ pub(crate) fn early_change(dictionary: &[u8]) -> Option<u8> {
         return Some(1);
     }
     metadata::dictionary_iter(parameters).next()?;
-    if let Some(predictor) = metadata::value(parameters, b"Predictor") {
-        if integer(predictor)? != 1 {
-            return None;
-        }
+    if let Some(predictor) = metadata::value(parameters, b"Predictor")
+        && integer(predictor)? != 1
+    {
+        return None;
     }
     let early = match metadata::value(parameters, b"EarlyChange") {
         Some(value) => integer(value)?,
