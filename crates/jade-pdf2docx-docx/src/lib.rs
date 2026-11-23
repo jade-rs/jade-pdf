@@ -2781,7 +2781,7 @@ struct PositionedTable {
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
-    /// 原本と文字照合できた複数行セルの位置・行・run style。
+    /// 原本と文字照合できたセルの位置・行・run style。
     native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,

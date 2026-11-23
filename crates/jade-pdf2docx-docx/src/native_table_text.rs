@@ -137,7 +137,7 @@ fn legacy_runs(
     if text == expected { runs } else { Vec::new() }
 }
 
-/// 単一行の文字列・既存の配置を変えず、表全体の共通fontではなく各runのstyleを使う。
+/// 単一行の文字列と配置を保ち、各runのstyleと原本emの行boxを使う。
 pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     if cell.single_line_runs.is_empty() {
         return None;
