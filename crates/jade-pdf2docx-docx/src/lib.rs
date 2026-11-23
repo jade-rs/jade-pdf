@@ -27,6 +27,8 @@ pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 #[cfg(test)]
 mod conversion_cancellation_tests;
 mod conversion_control;
+#[cfg(test)]
+mod embedded_style_tests;
 
 mod html_table;
 mod native_baseline;
