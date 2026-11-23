@@ -113,4 +113,4 @@ The bytes parser preserves empty `bfchar` destinations and empty elements in `bf
 
 When the built-in program is unavailable, the existing ToUnicode map stays shared and unmapped codes remain explicitly unverified in the quality report; normal best-effort output may still contain fallback text. Strict mode rejects any painted unverified code.
 
-The production DOCX WASM build helper bundles and verifies the Adobe Glyph List and fontTools notices. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include both parser notices.
+The production DOCX WASM build helper bundles and verifies the Adobe Glyph List, fontTools, and [ReportLab notices](crates/jade-pdf2docx-parser/licenses/reportlab.txt). ReportLab contributes static PDF encoding glyph names and is not a runtime dependency. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include all three parser notices.
