@@ -192,6 +192,8 @@ pub(super) fn append_with_fills(
     let mut rectangles = Vec::new();
     // 直前の配列に正の数があったか（`[3 2] 0 d` の dash array の判定に使う）。
     let mut array_has_positive = false;
+    // 曲線を直線近似しない。途中の線分だけから罫線を推測することも避ける。
+    let mut curved = false;
     while let Some(token) = lexer.next() {
         match token {
             Token::Open(_) => {
@@ -265,6 +267,10 @@ pub(super) fn append_with_fills(
                     push(budget, &mut rectangles, rect)?;
                 }
             }
+            b"c" | b"v" | b"y" => {
+                curved = true;
+                point = None;
+            }
             b"cm" if count == 6 => {
                 state.matrix = concat_matrix(state.matrix, operands);
             }
@@ -291,13 +297,13 @@ pub(super) fn append_with_fills(
                 if matches!(word, b"s" | b"b" | b"b*") {
                     close_subpath(budget, &mut segments, &mut point, start)?;
                 }
-                if matches!(word, b"B" | b"B*" | b"b" | b"b*") {
+                if !curved && matches!(word, b"B" | b"B*" | b"b" | b"b*") {
                     for rect in &rectangles {
                         emit_fill(budget, fills, page, *rect, state.fill)?;
                     }
                 }
                 for segment in segments.drain(..) {
-                    if is_axis_aligned(segment) {
+                    if !curved && is_axis_aligned(segment) {
                         emit(
                             budget,
                             output,
@@ -309,6 +315,9 @@ pub(super) fn append_with_fills(
                     }
                 }
                 // 矩形の枠線（セル枠を矩形で描く表など）は 4 辺の罫線として出す。
+                if curved {
+                    rectangles.clear();
+                }
                 for [x, y, w, h] in rectangles.drain(..) {
                     for edge in rectangle_edges(x, y, w, h) {
                         emit(budget, output, page, edge, state.width, state.dashed)?;
@@ -316,26 +325,32 @@ pub(super) fn append_with_fills(
                 }
                 point = None;
                 start = None;
+                curved = false;
             }
             b"f" | b"f*" | b"F" => {
                 for [x, y, w, h] in rectangles.drain(..) {
+                    if curved {
+                        continue;
+                    }
                     if let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
                         emit(budget, output, page, bounds, width, false)?;
                     } else {
                         emit_fill(budget, fills, page, [x, y, w, h], state.fill)?;
                     }
                 }
-                if let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
+                if !curved && let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
                     emit(budget, output, page, bounds, width, false)?;
                 }
                 segments.clear();
                 point = None;
+                curved = false;
             }
             b"n" => {
                 segments.clear();
                 rectangles.clear();
                 point = None;
                 start = None;
+                curved = false;
             }
             // 未対応のinline画像のbinary本文を命令として解釈しない。
             b"BI" => break,

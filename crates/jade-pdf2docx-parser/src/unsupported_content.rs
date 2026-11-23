@@ -22,6 +22,10 @@ struct ContentState<'a> {
     depth: usize,
     /// inline image 本文の誤認を避けるため、このページの走査を終了したか。
     stopped: bool,
+    /// 現在の未消費pathに、罫線IRでは再現しない曲線が含まれるか。
+    curved_path: bool,
+    /// このページの曲線描画を既に報告したか。診断を描画回数分に増やさない。
+    curved_path_reported: bool,
 }
 
 #[cfg(test)]
@@ -108,6 +112,30 @@ fn scan(
                     break;
                 }
                 Token::Name(raw) => state.previous_name = Some(raw),
+                Token::Word(b"c" | b"v" | b"y") => {
+                    state.curved_path = true;
+                    state.previous_name = None;
+                }
+                Token::Word(b"S" | b"s" | b"f" | b"F" | b"f*" | b"B" | b"B*" | b"b" | b"b*") => {
+                    if state.curved_path && !state.curved_path_reported {
+                        if try_push(
+                            budget,
+                            &mut report.issues,
+                            QualityIssue::UnsupportedCurvedPath { page },
+                        )
+                        .is_none()
+                        {
+                            return;
+                        }
+                        state.curved_path_reported = true;
+                    }
+                    state.curved_path = false;
+                    state.previous_name = None;
+                }
+                Token::Word(b"n") => {
+                    state.curved_path = false;
+                    state.previous_name = None;
+                }
                 Token::Word(b"Do") => {
                     if let Some(name) = state.previous_name.take()
                         && let Some(number) = references.get(page, name)

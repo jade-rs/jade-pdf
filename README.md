@@ -6,6 +6,8 @@ The project is under active development. Conversion coverage and layout fidelity
 
 Native conversion now recovers unreadable TrueType display names from verified embedded font metadata and retains subsets with nonprinting control glyphs. The reviewed Japanese form renders its text again, but pagination remains incorrect; see the [font and rendering evidence](corpus/validation-native-fonts.json).
 
+Single-entry Device color-space arrays also retain decoded image colors. The [pixel validation](corpus/validation-singleton-colorspace.json) checks the original RGB samples independently; table layout and image placement remain separate limitations.
+
 ## Features
 
 - **PDF comparison:** align pages and text blocks, inspect extracted document structure, and render pages with Pdfium.
@@ -36,6 +38,8 @@ Whole-page OCR preserves supplied line rectangles as page-anchored text frames a
 
 Strict mode rejects detected quality loss instead of publishing the output. OCR is opt-in and requires the `ocr-onnx` feature, external model files, and `pdftoppm`; see the [OCR setup guide](docs/ocr_runtime.md).
 
+Painted curved paths in page content produce a per-page `unsupported_curved_path` diagnostic. The line-based layout model does not reproduce these shapes, which can include outlined lettering. Strict conversion rejects this detected loss; the diagnostic does not recognize the missing text or trigger OCR. Curves are also excluded from table-rule inference. Absence of this diagnostic does not establish support for arbitrary vector artwork; see the [curved-path evidence](corpus/validation-curved-path-loss.json).
+
 ### Compare PDFs
 
 ```sh
@@ -52,6 +56,8 @@ Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite or
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
+
+Tables inferred from PDF rules keep their source-coordinate row order, including descending values and content streams that paint the bottom row first. Complex cell boundaries and within-cell layout still require review.
 
 Text paragraphs use an explicit line box based on the source font size, with the PDF's blank space applied separately. This prevents font-dependent automatic leading from accumulating between source lines. Font substitution can still shift the first baseline or change glyph widths.
 

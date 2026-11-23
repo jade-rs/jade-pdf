@@ -123,6 +123,7 @@ fn quality_json(report: &jade_pdf2docx_parser::QualityReport) -> String {
                 json_string(reason.code()),
             ),
             jade_pdf2docx_parser::QualityIssue::UnsupportedClippingPath { page } => format!("{{\"kind\":\"unsupported_clipping_path\",\"page\":{page}}}"),
+            jade_pdf2docx_parser::QualityIssue::UnsupportedCurvedPath { page } => format!("{{\"kind\":\"unsupported_curved_path\",\"page\":{page}}}"),
             jade_pdf2docx_parser::QualityIssue::UnsupportedInlineImage { page } => format!(
                 "{{\"kind\":\"unsupported_inline_image\",\"page\":{page}}}"
             ),

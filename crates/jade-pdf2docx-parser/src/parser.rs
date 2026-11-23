@@ -2227,11 +2227,17 @@ fn image_attribute<'a>(
     key: &[u8],
 ) -> Option<ObjectBytes<'a>> {
     let value = crate::metadata::value(dictionary, key)?;
-    if let Some(number) = decode_budget.reference(pdf_bytes, value) {
+    let value = if let Some(number) = decode_budget.reference(pdf_bytes, value) {
         object_body_for_number(decode_budget, pdf_bytes, number)
     } else {
         Some(ObjectBytes::Borrowed(value))
+    }?;
+    if key == b"ColorSpace"
+        && let Some(range) = crate::image_color_space::device_singleton(&value)
+    {
+        return value.slice(range);
     }
+    Some(value)
 }
 
 /// 単一 filter の DecodeParms を直接・間接・単一配列から解決する。

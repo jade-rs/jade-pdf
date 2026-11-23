@@ -1,0 +1,610 @@
+{
+  "generated_utc": "2026-11-23T03:43:27.747047+00:00",
+  "qualification_revision": "ef67f5666a56cf03809ab2392df6604640bba948",
+  "qualified_crates_tree": "266d1bb4db481fc415aadf26144e34dfd773cd19",
+  "parent_PR": 22,
+  "parent_head": "2ede67bb697a44985fc00cc17574351759fa4f47",
+  "scope": "Report unrepresented curved paths in active page content before strict publication, and prevent fictitious table rules inferred across those paths.",
+  "implementation": "Track c/v/y until a path-paint operator or n consumes the path. Use one bounded diagnostic per page and existing reserved metadata output slots; exclude curve-containing paths from the straight-rule IR. No added dependencies.",
+  "genuine_red_green": {
+    "red": {
+      "revision": "fd97fcad75fbd672ef5dc7dda411b7c002c46243",
+      "crates_tree": "0ca3d9137618d72d5879fa992e20d0452be93d7d",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "jade-pdf2docx-parser",
+        "--test",
+        "production_curved_paths",
+        "--locked",
+        "--offline",
+        "--target-dir",
+        "corpus/wasm-runtime/curved-path-qualification/default-target",
+        "--",
+        "--test-threads=1"
+      ],
+      "started_utc": "2026-11-23T03:16:19.504754+00:00",
+      "same_conditions_as_initial_run": true,
+      "saved_seed_committed_before_run": true,
+      "exit": 101,
+      "behavioral_red": true,
+      "test_results": [
+        "test result: FAILED. 1 passed; 4 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.03s"
+      ],
+      "log_sha256": "439087f1a703f1f36724c73019450c1ef5a0675a96de255d7df3d6dae2453e9b"
+    },
+    "green": {
+      "revision": "ac7251e75ecb54c2e95a47b79d7b28e3e682a6b9",
+      "crates_tree": "67fa10b05ed7df95e38f1d190b1673232a3a7bf2",
+      "command": [
+        "cargo",
+        "test",
+        "-p",
+        "jade-pdf2docx-parser",
+        "--test",
+        "production_curved_paths",
+        "--locked",
+        "--offline",
+        "--target-dir",
+        "corpus/wasm-runtime/curved-path-qualification/default-target",
+        "--",
+        "--test-threads=1"
+      ],
+      "started_utc": "2026-11-23T03:17:28.009817+00:00",
+      "exit": 0,
+      "test_results": [
+        "test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.16s"
+      ],
+      "log_sha256": "ccc6f9714d99dc0c3a2844456c39dfc7e917d303f63f41ff67f92322a4c12af0"
+    },
+    "PBT_cases": 32,
+    "saved_seed": "d67959df84af84163ffbc914d9b000fc716c1e5f3247c3a0c0a7eb069a993364",
+    "minimal_counterexample": "repeats=1",
+    "controls": "Existing editable text, cancelled paths, literal/operator contexts, all three curve operators and nine paint operators; no fictitious straight rule.",
+    "earlier_run_sequencing_gap_retained_in": "corpus/wasm-runtime/curved-path-qualification/red-commit-sequencing-note.json"
+  },
+  "converter_default": {
+    "source_revision": "eca17a841ff74c882676413c6a2bf6b8d7bc4668",
+    "crates_tree": "266d1bb4db481fc415aadf26144e34dfd773cd19",
+    "started_utc": "2026-11-23T03:19:38.237107+00:00",
+    "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "rows": [
+      {
+        "name": "curve-budget",
+        "command": [
+          "cargo",
+          "test",
+          "-p",
+          "jade-pdf2docx-parser",
+          "--lib",
+          "curved_paint_output_requires_capacity",
+          "--locked",
+          "--offline",
+          "--",
+          "--test-threads=1"
+        ],
+        "exit": 0,
+        "groups": 1,
+        "passed": 1,
+        "failed": 0,
+        "ignored": 0,
+        "log_sha256": "c287adca5066fc6b765815c0e16e70d1e968bf978b72ebfaacc62d8f0512766e"
+      },
+      {
+        "name": "converter-default",
+        "command": [
+          "sh",
+          "scripts/check_rust_features.sh",
+          "default"
+        ],
+        "exit": 0,
+        "groups": 117,
+        "passed": 1957,
+        "failed": 0,
+        "ignored": 4,
+        "log_sha256": "c4005e639d1b4714b698fd2c395630102d1804fc4c3c5c6edae93917c1c82eda"
+      }
+    ],
+    "finished_utc": "2026-11-23T03:29:35.164267+00:00"
+  },
+  "converter_OCR_ONNX": {
+    "source_revision": "ef67f5666a56cf03809ab2392df6604640bba948",
+    "crates_tree": "266d1bb4db481fc415aadf26144e34dfd773cd19",
+    "command": [
+      "sh",
+      "scripts/check_rust_features.sh",
+      "ocr-onnx"
+    ],
+    "CARGO_NET_OFFLINE": "false",
+    "SDK_sha256": "c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869",
+    "RUST_TEST_THREADS": 1,
+    "started_utc": "2026-11-23T03:32:15.951368+00:00",
+    "exit": 0,
+    "groups": 117,
+    "passed": 2013,
+    "failed": 0,
+    "ignored": 4,
+    "log_sha256": "84b45d9464f796424d6e178e19aff6db03e9503bb0e3170c2d7179357e328cbe",
+    "finished_utc": "2026-11-23T03:39:31.305967+00:00"
+  },
+  "Python_tests": 144,
+  "Python_tools": 86,
+  "Python_version": "3.12.14",
+  "formatting_exit": 0,
+  "production_WASM": {
+    "parent": {
+      "exit": 1,
+      "passed": 32,
+      "cases": 36,
+      "existing14inputhashes_retained": true,
+      "WASM_sha256": "56337bf0bfa47cd9ca975320fd6505f50ee9bc962e48f80c8294a581c7eae05e",
+      "failures": [
+        {
+          "id": "curve-painted",
+          "mode": "default",
+          "passed": false,
+          "failure": "[]",
+          "checks": []
+        },
+        {
+          "id": "curve-painted",
+          "mode": "strict",
+          "passed": false,
+          "failure": "[]",
+          "checks": []
+        },
+        {
+          "id": "curve-rule",
+          "mode": "default",
+          "passed": false,
+          "failure": "[]",
+          "checks": []
+        },
+        {
+          "id": "curve-rule",
+          "mode": "strict",
+          "passed": false,
+          "failure": "[]",
+          "checks": []
+        }
+      ],
+      "scope": "Counterfactual parent production bindings; native byte-parser TDD was declared before fix."
+    },
+    "after": {
+      "recorded_utc": "2026-11-23T03:37:36.950208+00:00",
+      "rows": [
+        {
+          "engine": "chromium",
+          "exit": 0,
+          "passed": 36,
+          "cases": 36,
+          "WASM_sha256": "ef62d669e4440d997425ce9ae23f856e0e71dd242767cce92ffdf8e9da73623b",
+          "all18_source_input_hashes_identical": true,
+          "failures": []
+        },
+        {
+          "engine": "webkit",
+          "exit": 0,
+          "passed": 36,
+          "cases": 36,
+          "WASM_sha256": "ef62d669e4440d997425ce9ae23f856e0e71dd242767cce92ffdf8e9da73623b",
+          "all18_source_input_hashes_identical": true,
+          "failures": []
+        }
+      ],
+      "before_passed": 32,
+      "before_cases": 36,
+      "production_ready": false
+    },
+    "all14_legacy_input_hashes_retained": true,
+    "all18_before_after_input_hashes_identical": true,
+    "inspection_contract": "Exact unsupported_curved_path kind/page; strict rejects painted curves, cancelled controls remain accepted, existing editable text retained, graphics counts reject fictitious rules.",
+    "no_full_visual_or_OCR_claim": true
+  },
+  "frozen_native_CLI": {
+    "source_revision": "ef67f5666a56cf03809ab2392df6604640bba948",
+    "crates_tree": "266d1bb4db481fc415aadf26144e34dfd773cd19",
+    "command": [
+      "cargo",
+      "build",
+      "--bin",
+      "jade-pdf2docx",
+      "--locked",
+      "--offline",
+      "--target-dir",
+      "corpus/wasm-runtime/curved-path-qualification/default-target",
+      "--message-format=json"
+    ],
+    "exit": 0,
+    "frozen": "corpus/wasm-runtime/curved-path-qualification/qualified-curved-path-default-docx",
+    "copied_on_compiler_artifact": true,
+    "finished_utc": "2026-11-23T03:33:27.755384+00:00",
+    "sha256": "3e68583636c68541944d589bb7a1dff69a08e5d00ef0704eb2634bd45a15ef5c",
+    "readonly_regular_copy": true
+  },
+  "verified_ORT_runtime": {
+    "verified_utc": "2026-11-23T00:44:00.317221+00:00",
+    "crate": "ort-sys2.0.0-rc.13",
+    "distribution": "ms@1.28.0/aarch64-apple-darwin+coreml",
+    "archive_url": "https://cdn.pyke.io/0/pyke:ort-rs/ms@1.28.0/aarch64-apple-darwin+coreml.tar.lzma2",
+    "archive_sha256": "6934874e2e953576d9c1db47ff1af39c62c4f4220dbe6f988e131f72879674c7",
+    "pinned_dist_table_sha256": "c706a8bf67367fbec3ad7851d9b119f8830fbabe53696e20f4740131f7f59e78",
+    "cached_directory": "/Users/bokuweb/Library/Caches/ort.pyke.io/dfbin/aarch64-apple-darwin/6934874e2e953576d9c1db47ff1af39c62c4f4220dbe6f988e131f72879674c7",
+    "members": [
+      {
+        "name": "libonnxruntime.a",
+        "bytes": 80425592,
+        "sha256": "d68759bf6c644dd5c6cb4e735699fba89e431b49ca588f73c11ee1c48ba838b3",
+        "cached_bytes_currently_exact": true
+      }
+    ],
+    "failure_reason": "Initial explicit CARGO_NET_OFFLINE=true caused ort-sys should_skip() to return before consulting its already populated native cache. Rust dependencies themselves were available.",
+    "retry_environment": "CARGO_NET_OFFLINE=false; same locked Cargo source, same features and original timeouts; ort-sys can select and use its independently verified existing cached distribution. No product changes.",
+    "inference_accuracy_claimed": false,
+    "reverified_utc": "2026-11-23T03:32:15.893471+00:00",
+    "archive_path": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/ORT-aarch64-coreml.tar.lzma2"
+  },
+  "public_source": {
+    "recorded_before_new_native_conversion_utc": "2026-11-23T03:23:53.107144+00:00",
+    "original_review_worktree": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout",
+    "all4sourcepages_previously_individually_reviewed": true,
+    "source_rights_and_privacy_review_sha256": "84e6777c8fa96caa83009e36397387068097ecc8a3767cd1ab7de5c287dbe42a",
+    "source_and_gold_sha256": {
+      "source.pdf": "72fdab8fc55908ec89f95ce9231a563611e37ecf0605e5716fcd15f4a7ddfa23",
+      "source-review-before-conversion.json": "84e6777c8fa96caa83009e36397387068097ecc8a3767cd1ab7de5c287dbe42a",
+      "source-text-geometry-before-conversion.json": "49ba3ef035b8617262eecd52b90838cab4612479112060df6a133c5a0602a2be",
+      "independent-outlined-text-gold.json": "86d1a94012bb6417e2eb18866e7ccd96fea860cee782c80433fa9b85eeb055bc"
+    },
+    "source_url": "https://www.mhlw.go.jp/new-info/kobetu/roudou/gyousei/kantoku/dl/040325-4.pdf",
+    "rights_url": "https://www.mhlw.go.jp/chosakuken/index.html",
+    "attribution": "Source: Ministry of Health, Labour and Welfare. Modified jade-pdf conversion experiments are not official originals.",
+    "source_gold_saved_before_first_historical_conversion": true,
+    "manual_outlined_gold_saved_after_first_historical_conversion_but_before_this_fix": true,
+    "registered_corpus_count_unchanged": 90,
+    "before_CLI_sha256": "d5b5c86466b02158f36c32cba59a33612fa969ca56978510bb163033c9a578d1",
+    "expectations": [
+      "Parent strict succeeds but original outlined phrases stay0/4. Preserve this failure.",
+      "New strict must reject unrepresented curved content, create no absent output and preserve an existing owned output byte-for-byte.",
+      "Default conversion may change because false table rules are removed; compare encoded text inventory, fonts/media and render/review every generated page before accepting.",
+      "No outlined recognition improvement is expected or claimed. Original manual phrase gold remains primary."
+    ],
+    "production_ready": false
+  },
+  "public_native": {
+    "recorded_utc": "2026-11-23T03:34:43.480833+00:00",
+    "source_sha256": "72fdab8fc55908ec89f95ce9231a563611e37ecf0605e5716fcd15f4a7ddfa23",
+    "rows": [
+      {
+        "id": "parent-strict",
+        "command": [
+          "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/qualified-table-coordinate-order-default-docx",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-native/parent-strict.docx",
+          "--strict"
+        ],
+        "CLI_sha256": "d5b5c86466b02158f36c32cba59a33612fa969ca56978510bb163033c9a578d1",
+        "exit": 0,
+        "output_exists": true,
+        "log_sha256": "29657af4e5210743c0e27bb4a88b1d4c36dee6c9c8680d7a951dc3ad03996c4c",
+        "DOCX_sha256": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+        "curved_loss_message": false
+      },
+      {
+        "id": "after-default",
+        "command": [
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/qualified-curved-path-default-docx",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-native/after-default.docx"
+        ],
+        "CLI_sha256": "3e68583636c68541944d589bb7a1dff69a08e5d00ef0704eb2634bd45a15ef5c",
+        "exit": 0,
+        "output_exists": true,
+        "log_sha256": "80d33a8521f5e82af58100032c20e1702bd096a07502885c204436f44479fed9",
+        "DOCX_sha256": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+        "curved_loss_message": true
+      },
+      {
+        "id": "after-strict-absent",
+        "command": [
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/qualified-curved-path-default-docx",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-native/after-strict-absent.docx",
+          "--strict"
+        ],
+        "CLI_sha256": "3e68583636c68541944d589bb7a1dff69a08e5d00ef0704eb2634bd45a15ef5c",
+        "exit": 1,
+        "output_exists": false,
+        "log_sha256": "920f2d93fcbc4d4c9ba488313f3248b10fc61999caed2dcd9a25767962de6ae3",
+        "curved_loss_message": true
+      },
+      {
+        "id": "after-strict-existing",
+        "command": [
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/qualified-curved-path-default-docx",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf",
+          "/Users/bokuweb/.codex/worktrees/pdf-curved-path-loss/jade-pdf/corpus/wasm-runtime/curved-path-qualification/public-native/after-strict-existing.docx",
+          "--strict"
+        ],
+        "CLI_sha256": "3e68583636c68541944d589bb7a1dff69a08e5d00ef0704eb2634bd45a15ef5c",
+        "exit": 1,
+        "output_exists": true,
+        "log_sha256": "920f2d93fcbc4d4c9ba488313f3248b10fc61999caed2dcd9a25767962de6ae3",
+        "DOCX_sha256": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+        "existing_DOCX_before_sha256": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+        "existing_output_unchanged": true,
+        "curved_loss_message": true
+      }
+    ],
+    "before_nonspace": 4668,
+    "after_nonspace": 4668,
+    "removed": {},
+    "added": {},
+    "font_payloads_unchanged": true,
+    "media_payloads_unchanged": true,
+    "original_outlined_phrases": [
+      {
+        "expected": "Opening and closing time:",
+        "before": false,
+        "after": false
+      },
+      {
+        "expected": "Presence of overtime work",
+        "before": false,
+        "after": false
+      },
+      {
+        "expected": "Annual paid leave:",
+        "before": false,
+        "after": false
+      },
+      {
+        "expected": "Substitute days off",
+        "before": false,
+        "after": false
+      }
+    ],
+    "all_page_render_review_pending": false,
+    "production_ready": false,
+    "all5_current_PNGs_identical_to_individually_reviewed_parent": true,
+    "remaining_blank_page": 2,
+    "outlined_recognition_gold_unchanged": "0/4"
+  },
+  "public_render": {
+    "same_entire_DOCX_bytes_as_prior_reviewed_parent": true,
+    "pages": [
+      {
+        "page": 1,
+        "previously_reviewed": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout/render-standalone-after/page-1.png",
+        "current": "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-1.png",
+        "before_sha256": "24b7c54ec2c1e62529204fe84b6fe05f022c236d91777af42b2f9b75f3899530",
+        "after_sha256": "24b7c54ec2c1e62529204fe84b6fe05f022c236d91777af42b2f9b75f3899530",
+        "pixels_identical_PNG_bytes": true
+      },
+      {
+        "page": 2,
+        "previously_reviewed": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout/render-standalone-after/page-2.png",
+        "current": "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-2.png",
+        "before_sha256": "241203765533c54d446e4e1bcebb132c54422d47fcb53cd3c4350de2f06bb37f",
+        "after_sha256": "241203765533c54d446e4e1bcebb132c54422d47fcb53cd3c4350de2f06bb37f",
+        "pixels_identical_PNG_bytes": true
+      },
+      {
+        "page": 3,
+        "previously_reviewed": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout/render-standalone-after/page-3.png",
+        "current": "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-3.png",
+        "before_sha256": "bfe5a4994659bbdf808c52d2a53cdcf32d6550b35c6dd90e6730bc2bbdb4a788",
+        "after_sha256": "bfe5a4994659bbdf808c52d2a53cdcf32d6550b35c6dd90e6730bc2bbdb4a788",
+        "pixels_identical_PNG_bytes": true
+      },
+      {
+        "page": 4,
+        "previously_reviewed": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout/render-standalone-after/page-4.png",
+        "current": "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-4.png",
+        "before_sha256": "8ff970cad4b119f7639edde545c2b3adf2753cd659715b27f1ca1bb3af520051",
+        "after_sha256": "8ff970cad4b119f7639edde545c2b3adf2753cd659715b27f1ca1bb3af520051",
+        "pixels_identical_PNG_bytes": true
+      },
+      {
+        "page": 5,
+        "previously_reviewed": "/Users/bokuweb/.codex/worktrees/pdf-table-coordinate-order/jade-pdf/corpus/wasm-runtime/table-coordinate-order-qualification/english-holdout/render-standalone-after/page-5.png",
+        "current": "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-5.png",
+        "before_sha256": "b903526cc67dafb4816b010828837a692ac341ff06cfede25130b3bc72b27f77",
+        "after_sha256": "b903526cc67dafb4816b010828837a692ac341ff06cfede25130b3bc72b27f77",
+        "pixels_identical_PNG_bytes": true
+      }
+    ],
+    "all5_reviewed_PNGs_identical": true,
+    "current_render_exit": 0,
+    "production_ready": false
+  },
+  "Japanese_native_control": {
+    "exit": 0,
+    "source_sha256_after": "88df9163252527ae0a57f37b1f463ed6ace526b36700727d7ad2a437eea18f87",
+    "parent_DOCX_sha256": "f0606ff4735deb2ee0f10381922c8ebc4fc370d32f4dd245173b3cb6802e9f2b",
+    "after_DOCX_sha256": "f0606ff4735deb2ee0f10381922c8ebc4fc370d32f4dd245173b3cb6802e9f2b",
+    "entire_DOCX_bytes_unchanged": true,
+    "curved_path_message": true,
+    "new_visual_improvement_claimed": false,
+    "production_ready": false
+  },
+  "limitations": [
+    "Original manually reviewed outlined-text gold remains0/4; diagnostics do not recognize characters.",
+    "The four-page English source still renders as five pages with blank page2; all five current PNGs equal the previously individually reviewed images.",
+    "The diagnostic identifies curve paint operators in active page content; it is not a general vector-artwork recognizer or a proof of visual visibility/completeness. Other existing Form/clipping diagnostics retain their separate meaning.",
+    "Actual Microsoft Word rendering is unverified. OCR/ONNX tests establish feature integration, not neural recognition accuracy."
+  ],
+  "fixture_policy": "Only the existing three fixture PDFs are tracked. External public PDFs, source reviews, models/runtimes and generated outputs remain ignored; registered corpus count stays90.",
+  "component_scope_verified": true,
+  "production_ready": false,
+  "sha256": {
+    "corpus/wasm-runtime/curved-path-qualification/default-CI-start.json": "5534f6a9d436031c6823910536211137ea5acad5f53b4e9b830938e768bbbc9e",
+    "corpus/wasm-runtime/curved-path-qualification/public-render-identity.json": "852c01e032d5b88b4e0d56b85a28dd83afe7d65fc321b2a258e7d3114089ed7c",
+    "corpus/wasm-runtime/curved-path-qualification/curve-budget.log": "c287adca5066fc6b765815c0e16e70d1e968bf978b72ebfaacc62d8f0512766e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium.log": "5b5f6511409103693be348a5daf5bd4542922ecdd97af87ebb908d1fffa532c8",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-results.json": "52ee5c5edb0fda37373d4a5770f6a90917a5d0dead4311ae6a6e4e9c8ff45a8b",
+    "corpus/wasm-runtime/curved-path-qualification/evidence-before-OCR.json": "1bf7ba79fc580991634b003707c0d3b688d2ebaa326fc886b945393a1b2a1850",
+    "corpus/wasm-runtime/curved-path-qualification/red-commit-sequencing-note.json": "32ded27483d4fa00eb24c8844807ebf5f9c602d065bb6a018bb2577230172b29",
+    "corpus/wasm-runtime/curved-path-qualification/public-expectations-before-new-conversion.json": "fc234272ce49c6ae0e7ead4c4ad7e8bcf91bf2b29445eab5dd1028312aad9e33",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-results.json": "d56edf34c5dd1f4a60bef170131a57b0b303e8b19e23a67e178f56bfbca2a8f1",
+    "corpus/wasm-runtime/curved-path-qualification/OCR-start.json": "e93aa0ffdf864d562ad2e7ecd92eaafb3981a29956f9fb4f0f45cc1df5153725",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit.log": "9035acc787cf7191f0c8d69ebce862de57879e624e7487c2c33d76ca4f2735d2",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium.log": "3dcc0ac5744a2aebb1fc3470df2fab2a6d4a658ee579fa2a3b35b7e31c4fe85e",
+    "corpus/wasm-runtime/curved-path-qualification/red.log": "f025898eb6fb35850591a8ed0fdb3f93fac3ca334fbbee67d3303aaf43f6096b",
+    "corpus/wasm-runtime/curved-path-qualification/red-results.json": "9bd7900f314b2f5516661c359a7cda15d5d82c02578f5fb9220e33afdc603ea3",
+    "corpus/wasm-runtime/curved-path-qualification/CLI-frozen.json": "389463c6f7c362fa47ceb91e2e7bb3e11e62a6ec4df29c29dcfe6b77722beefb",
+    "corpus/wasm-runtime/curved-path-qualification/red-exact-commit-results.json": "2e1cd7b3e612c046cb82c69f78597b0e0c264a76b1f629c40866a9f6176ebb07",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-build.log": "2bbf19ef3bf046f736232755fbac1ee33d13c6acde29e1476a21a4efe41cc4b4",
+    "corpus/wasm-runtime/curved-path-qualification/green.log": "ccc6f9714d99dc0c3a2844456c39dfc7e917d303f63f41ff67f92322a4c12af0",
+    "corpus/wasm-runtime/curved-path-qualification/OCR-CI.log": "84b45d9464f796424d6e178e19aff6db03e9503bb0e3170c2d7179357e328cbe",
+    "corpus/wasm-runtime/curved-path-qualification/converter-default.log": "c4005e639d1b4714b698fd2c395630102d1804fc4c3c5c6edae93917c1c82eda",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-build-results.json": "dd542350820366bf5f97603c612c77c7f5a6dd79db18a5ca1df5f0305f1d555f",
+    "corpus/wasm-runtime/curved-path-qualification/default-CI-results.json": "7609fbb2c3509420bd41e0682485c2788947f51c05bba10c3fde6c89f77831f3",
+    "corpus/wasm-runtime/curved-path-qualification/OCR-results.json": "a6c82fc2295f0e82f6f63582d13dfdf95b9f3d57a8a09519e2d581ce63d02f89",
+    "corpus/wasm-runtime/curved-path-qualification/python-tools.log": "25df396dc6d2e8732e7e5d64d6e1fddf32b9810f7833dc3258207a1555bf0d05",
+    "corpus/wasm-runtime/curved-path-qualification/python-tests.log": "dc964cd11eeaca826a0e982f792bb085b2c67649dcdb1940dfcddb442faad7e6",
+    "corpus/wasm-runtime/curved-path-qualification/verified-ORT-runtime.json": "7f92de4fa22075a66efe06c0e5410a090cea953537886557369479c489f70dcc",
+    "corpus/wasm-runtime/curved-path-qualification/red-start.json": "f7f6ede5e2c6c26bb10fb6d1f6adde9c9c43ff9801fa7266378cad1c5a097c51",
+    "corpus/wasm-runtime/curved-path-qualification/green-start.json": "2eec37106150fb240e865b11274409fadacc076ac923e216adce0e789811617a",
+    "corpus/wasm-runtime/curved-path-qualification/green-results.json": "35c7e0929c63df4637e626f48f343f69c5c6b2ff5ebc9f9a14fd2090f9142ab7",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-build-start.json": "9847d9f7c63af351d9d21738361f0b6480c5edafe61c177797aa70e3adcb02ed",
+    "corpus/wasm-runtime/curved-path-qualification/Japanese-control-results.json": "73049f02ac2d967a404f3e58be5bf30d170970d54fe52c9f0d2650c80ed6a314",
+    "corpus/wasm-runtime/curved-path-qualification/red-exact-commit.log": "439087f1a703f1f36724c73019450c1ef5a0675a96de255d7df3d6dae2453e9b",
+    "corpus/wasm-runtime/curved-path-qualification/qualified-curved-path-default-docx": "3e68583636c68541944d589bb7a1dff69a08e5d00ef0704eb2634bd45a15ef5c",
+    "corpus/wasm-runtime/curved-path-qualification/CLI-build.log": "e1fcd36e0567e0ef24cdd020d4da1c7c99bfc63b9056d851eda4eda89f9725af",
+    "corpus/wasm-runtime/curved-path-qualification/red-exact-commit-start.json": "f78e8944a8e903e3c9814c509be21f6c19f365115e0c488e0f95c50d509f3e58",
+    "corpus/wasm-runtime/curved-path-qualification/python-results.json": "83370454261dc303a9de4039e30cf633d0cde7edc2eff7f9b48b185fa20841b8",
+    "corpus/wasm-runtime/curved-path-qualification/public-native-results.json": "8e5a988b986d5974d3eaeab11f5079b9d16f128d887ddce4267eae81ecfcc261",
+    "corpus/wasm-runtime/curved-path-qualification/Japanese-control-before-conversion.json": "ba7aae3def5deb3e28479f2d0379896d80f821687eef7b5da0291407719bb203",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/legacy-cid-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/geometry-report.json": "ba9e2b16ecde31fd485144b76de70f3506a54c27191470bcbd06c50f787f7849",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-painted-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/line-pitch-default.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/legacy-simple-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/centre-control-default.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-descending-values-default.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/plain-strict.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/legacy-simple-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/legacy-cid-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-reverse-paint-strict.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-overhang-strict.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/browser-raw.json": "bd37f0477045e56d9388ac34ae32d3386a46addf74acf9c8fb46cfad80d86ef8",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/body-overhang-strict.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-cancelled-then-rule-default.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-reverse-paint-default.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/graphic-left-strict.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-rule-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/word-limit-default.docx": "420d4048a7a500699818043ef4de02f317c92859ad833b63b1edf30b2be3b7e2",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/line-pitch-strict.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-cancelled-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/singleton-rgb-default.docx": "da4d541e1577d55d7b7393640a8dd58115917f388090066ddbd0d46287363cf1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-descending-values-strict.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-cancelled-strict.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/graphic-left-default.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/curve-cancelled-then-rule-strict.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/table-overhang-default.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/centre-control-strict.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/plain-default.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-chromium/body-overhang-default.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/Japanese-after.log": "555dd385bf1138ade10e438ccf10b290afa7338636e6e3d21bb79f80b5dba13d",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/after-strict-existing.log": "920f2d93fcbc4d4c9ba488313f3248b10fc61999caed2dcd9a25767962de6ae3",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default.log": "5a61d2cd177ae440c0bd241d538b258df7e58e2b13aeb1f0aa07ea4ac7f43480",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/parent-strict.docx": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/after-default.log": "80d33a8521f5e82af58100032c20e1702bd096a07502885c204436f44479fed9",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/parent-strict.log": "29657af4e5210743c0e27bb4a88b1d4c36dee6c9c8680d7a951dc3ad03996c4c",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/after-strict-existing.docx": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/after-default.docx": "c06d7fca9cc64753b97a750b94c8ad4004df376e723ce250637d1b256a65dbbc",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/after-strict-absent.log": "920f2d93fcbc4d4c9ba488313f3248b10fc61999caed2dcd9a25767962de6ae3",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/Japanese-after.docx": "f0606ff4735deb2ee0f10381922c8ebc4fc370d32f4dd245173b3cb6802e9f2b",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-1.png": "24b7c54ec2c1e62529204fe84b6fe05f022c236d91777af42b2f9b75f3899530",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-3.png": "bfe5a4994659bbdf808c52d2a53cdcf32d6550b35c6dd90e6730bc2bbdb4a788",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-2.png": "241203765533c54d446e4e1bcebb132c54422d47fcb53cd3c4350de2f06bb37f",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-5.png": "b903526cc67dafb4816b010828837a692ac341ff06cfede25130b3bc72b27f77",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/after-default.pdf": "1c86cfe5fb1a760aa7902624698f80b88c6000a421bbfde477eab136a2a6da47",
+    "corpus/wasm-runtime/curved-path-qualification/public-native/render-after-default/page-4.png": "8ff970cad4b119f7639edde545c2b3adf2753cd659715b27f1ca1bb3af520051",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-probe/jade_pdf2docx_wasm.js": "867f948966a8884d782e137c87cbe16db6190106cdba9358314a5f9f5fbabbbe",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-probe/jade_pdf2docx_wasm_bg.wasm": "ef62d669e4440d997425ce9ae23f856e0e71dd242767cce92ffdf8e9da73623b",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-probe/jade_pdf2docx_wasm.d.ts": "6ab6d0b303eeb61a6320779245942f3b14a52d82f088a6409b009b386898d5fe",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-probe/jade_pdf2docx_wasm_bg.wasm.d.ts": "3c219a3c9867963a2f6c742bfb4006603ea76e5d04780d23f18e9816e97439c4",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-probe/build.json": "9aa9edce4748683c6fd2b980fd24607b8a730e0cbf22e41289d8e8d78d2292b7",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-rule-strict.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/legacy-cid-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/geometry-report.json": "a3f877d7e980130327b92d46ec7a44b4ea784628c6019ea7cb28135cc02693de",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-painted-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/line-pitch-default.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/legacy-simple-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/centre-control-default.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-descending-values-default.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/plain-strict.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/legacy-simple-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/legacy-cid-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-reverse-paint-strict.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-overhang-strict.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/browser-raw.json": "6d02ce9f05bd322166b826ce0ac2c6c9dedb67a10d921f53ab95fd45a120d956",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/body-overhang-strict.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-cancelled-then-rule-default.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-reverse-paint-default.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/graphic-left-strict.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-rule-default.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/word-limit-default.docx": "420d4048a7a500699818043ef4de02f317c92859ad833b63b1edf30b2be3b7e2",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/line-pitch-strict.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-cancelled-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/singleton-rgb-default.docx": "da4d541e1577d55d7b7393640a8dd58115917f388090066ddbd0d46287363cf1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-descending-values-strict.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-cancelled-strict.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-painted-strict.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/graphic-left-default.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/curve-cancelled-then-rule-strict.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/table-overhang-default.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/centre-control-strict.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/plain-default.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-parent-chromium/body-overhang-default.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/legacy-cid-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/geometry-report.json": "4156bea2f329f3fce7a3581572b3afb9b1a1ab449dbf20087f1b9662b126a634",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-painted-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/line-pitch-default.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/legacy-simple-strict.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/centre-control-default.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-descending-values-default.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/plain-strict.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/legacy-simple-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/legacy-cid-default.docx": "80b4714596a1a1d74fb48e63cf87095259cdf2097eda383c164a5ccb81ed481e",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-reverse-paint-strict.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-overhang-strict.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/browser-raw.json": "e54d6067e8f478ebc66ffa911642bb5d1937d9640a8f0ef5f0b2dee30352bcd9",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/body-overhang-strict.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-cancelled-then-rule-default.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-reverse-paint-default.docx": "7df7241f46a24c78a651efd7f8a66ffb676f84289971af88acb67ff3997a73be",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/graphic-left-strict.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-rule-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/word-limit-default.docx": "420d4048a7a500699818043ef4de02f317c92859ad833b63b1edf30b2be3b7e2",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/line-pitch-strict.docx": "1e9f6f542e7da875033bc7976d9d76ce506e044cbe189b03424179185f1a3e01",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-cancelled-default.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/singleton-rgb-default.docx": "da4d541e1577d55d7b7393640a8dd58115917f388090066ddbd0d46287363cf1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-descending-values-strict.docx": "492ede609b0374a2d91ea61df101d2a741474e7b6ce8e019fb3d94ca8bc5a288",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-cancelled-strict.docx": "369cc430c7f00de259d0ea30d6387f2b7b9acd0281d951df12f41061b59ae7a1",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/graphic-left-default.docx": "0b75816ab6e5b19d6396a04f167237f2dcf464d2bfde4191c24b9f5acd546f05",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/curve-cancelled-then-rule-strict.docx": "53d062be1771a852e2abec47b0a6a418b5e486de8bb41d0ed1daf56d9c3d4ffd",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/table-overhang-default.docx": "e155efefa1cf92f0961852ce6c020b275f2a570e8046011edcbd85a8767ffd38",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/centre-control-strict.docx": "d8d8e3a65d369675e330e4663cb23cb9cb6f709d1ae0ab230028302820cd4695",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/plain-default.docx": "f7bdfb3742c82b0f4d844e01663b3c201a5cb4674ebd6883f1cacf5890e065a3",
+    "corpus/wasm-runtime/curved-path-qualification/WASM-after-webkit/body-overhang-default.docx": "b072cc8b2965db8e73498afdb6b3f9ff9ab98a1e953232458851f51f7c0a1ca6",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-review-before-conversion.json": "84e6777c8fa96caa83009e36397387068097ecc8a3767cd1ab7de5c287dbe42a",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/independent-outlined-text-gold.json": "86d1a94012bb6417e2eb18866e7ccd96fea860cee782c80433fa9b85eeb055bc",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/standalone-render-review.json": "fb685719240862344aa605a748d0e52046ef8d0a8bfb0c1a3b1ed1914f58f414",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/standalone-native-results.json": "c6262b9123a490a2095336f6001b5b317f9af868f64027b6aa7bbd35366b15a4",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-text-geometry-before-conversion.json": "49ba3ef035b8617262eecd52b90838cab4612479112060df6a133c5a0602a2be",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf": "72fdab8fc55908ec89f95ce9231a563611e37ecf0605e5716fcd15f4a7ddfa23",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-provenance-before-review.json": "976b88f1e47723acb86b2514886934a0499a885e24ff191d9b7f4a49296c6b5a",
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-qualification-before-conversion.json": "1612703b1250b8787413c70610727d80ca4d74a604a5941955b81b1622c32af9",
+    "corpus/wasm-runtime/curved-path-qualification/integrate-merged-parent.json": "034836e4a81615d3992106bc0d5ab6e5963e9f94c5825110a93e43fa455452e8",
+    "corpus/wasm-runtime/curved-path-qualification/integrate-merged-parent.log": "566137f2e2e7a31aa5339d94a8d75a16232bd96ad387bd2709d734e56e82a91c"
+  },
+  "publication": {
+    "merged_parent_main": "91329f807e4f6eb0e47e744dd6825308ca2b9124",
+    "integration_revision": "5c53c77dcc462e25ed6444a95bb1a56585aa9d79",
+    "preintegration_qualified_revision": "77d13c0ff1707314748cc0ec7b19acd6603ed2dc",
+    "entire_qualified_tree_retained": true,
+    "original_execution_revisions_retained": true
+  }
+}

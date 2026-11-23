@@ -86,3 +86,12 @@ fn xobject_output_requires_capacity() {
 fn inline_output_requires_capacity() {
     assert_rejected("BI", 4 * std::mem::size_of::<(usize, ContentState)>());
 }
+
+/// 曲線の診断も、既存状態とは別に出力slotの全容量を確保してから公開する。
+#[test]
+fn curved_paint_output_requires_capacity() {
+    assert_rejected(
+        "10 10 m 20 40 40 40 60 10 c f",
+        4 * std::mem::size_of::<(usize, ContentState)>(),
+    );
+}

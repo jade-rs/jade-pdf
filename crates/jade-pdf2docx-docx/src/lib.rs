@@ -5680,6 +5680,7 @@ fn infer_positioned_table_from_graphics(
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
+    // 行は既に正規PDF座標の上から下へ割り当て済みであり、paint順や数値で反転しない。
     let docx_table = if text_augmented_columns {
         None
     } else {
