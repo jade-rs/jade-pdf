@@ -140,7 +140,11 @@ pub(crate) fn extract(
         if excluded.get(character.index()).copied().unwrap_or(false) || hidden(&character, tags) {
             continue;
         }
-        let value = character.unicode_value();
+        let value = if crate::pdfium_printed_hyphens::is_printed(budget, path, &character)? {
+            u32::from('-')
+        } else {
+            character.unicode_value()
+        };
         let ch = if let Some(ch) = char::from_u32(value) {
             ch
         } else if (0xd800..=0xdbff).contains(&value)
