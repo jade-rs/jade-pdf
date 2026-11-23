@@ -4,6 +4,7 @@ use crate::{
     decode::DecodeBudget,
     type1_program::{Base, Encoding},
 };
+use std::borrow::Cow;
 
 #[path = "type1_standard_encoding.rs"]
 mod standard;
@@ -35,7 +36,11 @@ pub(crate) fn build(
             .key_is_allowed(key)
             .then(|| original.mappings.get(key))
             .flatten();
-        let name = differences[code].or_else(|| {
+        let difference = match differences[code] {
+            Some(raw) => Some(difference_name(budget, raw)?),
+            None => None,
+        };
+        let name = difference.as_deref().or_else(|| {
             encoding.and_then(|table| {
                 table.slots[code].or_else(|| match table.base {
                     Base::Standard => Some(standard::STANDARD[code]),
@@ -93,4 +98,28 @@ pub(crate) fn build(
         cmap: data.finish(budget),
         unknown,
     })
+}
+
+/// PDF側の名前だけを予算内でescape復号し、不正名は未知slotとして残す。
+fn difference_name<'a>(budget: &DecodeBudget, raw: &'a [u8]) -> Option<Cow<'a, [u8]>> {
+    budget.charge_tounicode_input_bytes(raw.len() as u64)?;
+    for byte in crate::metadata_names::name_bytes(raw) {
+        if budget.is_stopped() {
+            return None;
+        }
+        if byte.is_none() {
+            return Some(Cow::Borrowed(b""));
+        }
+    }
+    if !raw.contains(&b'#') {
+        return Some(Cow::Borrowed(raw));
+    }
+    let mut bytes = budget.metadata_vector(raw.len())?;
+    for byte in crate::metadata_names::name_bytes(raw) {
+        if budget.is_stopped() {
+            return None;
+        }
+        bytes.push(byte?);
+    }
+    Some(Cow::Owned(bytes))
 }
