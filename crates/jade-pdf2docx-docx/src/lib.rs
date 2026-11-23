@@ -60,6 +60,7 @@ mod output_path;
 pub use output_path::resolve_output_parent;
 mod column_bands;
 mod raw_cid_glyphs;
+mod rule_glyphs;
 mod ruleless_table;
 mod stacked_rules;
 #[cfg(not(target_arch = "wasm32"))]
@@ -335,6 +336,7 @@ fn convert_pdf_file_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
@@ -453,6 +455,7 @@ fn convert_pdf_bytes_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
@@ -5062,14 +5065,15 @@ fn positioned_table_with_cell_underlines(
     let x_edges = float_edges_to_i32(&xs);
     let y_edges = float_edges_to_i32(&ys);
     let underline_graphics = graphics_without_row_rules(graphics, &ys);
+    // セルの字の幅のうち下線の付いた字の幅（下線付き, 全体）。セルの一部の字（ラベルの右の
+    // 数値など）だけに引いた下線で、セル全体に下線を付けない。
+    let mut widths = vec![vec![(0.0f32, 0.0f32); col_count]; row_count];
     for text in parsed
         .text_elements
         .iter()
         .filter(|text| text.page == table.page && !text.text.trim().is_empty())
     {
-        if !parsed_text_has_underline(text, &underline_graphics) {
-            continue;
-        }
+        let underlined = parsed_text_has_underline(text, &underline_graphics);
         let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
         let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
         let Some(col) = column_index_for_x(center_x, &x_edges) else {
@@ -5079,11 +5083,24 @@ fn positioned_table_with_cell_underlines(
             continue;
         };
         let row = row_count.saturating_sub(1 + row_from_bottom);
-        if let Some(cell) = cell_underlines
-            .get_mut(row)
-            .and_then(|row| row.get_mut(col))
-        {
-            *cell = true;
+        if let Some(width) = widths.get_mut(row).and_then(|row| row.get_mut(col)) {
+            let text_width = (text.bounds.x1 - text.bounds.x0).abs();
+            width.1 += text_width;
+            if underlined {
+                width.0 += text_width;
+            }
+        }
+    }
+    for (row, row_widths) in widths.iter().enumerate() {
+        for (col, (underlined, total)) in row_widths.iter().enumerate() {
+            if *total > 0.0
+                && *underlined >= 0.8 * total
+                && let Some(cell) = cell_underlines
+                    .get_mut(row)
+                    .and_then(|row| row.get_mut(col))
+            {
+                *cell = true;
+            }
         }
     }
     table.cell_underlines = cell_underlines;
