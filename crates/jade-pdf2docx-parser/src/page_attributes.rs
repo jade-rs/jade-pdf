@@ -96,6 +96,7 @@ impl<'a> Inherited<'a> {
         path: &Path,
         objects: &Objects<'a>,
         number: u32,
+        node: &'a [u8],
         limits: &ParseLimits,
         budget: &DecodeBudget,
     ) -> Result<Page, ParseError> {
