@@ -15,10 +15,10 @@ mod crypt;
 mod header;
 #[path = "type1_outline_opentype.rs"]
 mod opentype;
-#[path = "type1_outline_ps_string.rs"]
-mod ps_string;
 #[path = "type1_outline_private.rs"]
 mod private;
+#[path = "type1_outline_ps_string.rs"]
+mod ps_string;
 #[path = "type1_outline_scale.rs"]
 mod scale;
 #[path = "type1_outline_sfnt.rs"]
