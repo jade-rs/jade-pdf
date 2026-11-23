@@ -95,6 +95,8 @@ pub(crate) struct DecodeBudget {
     legacy_geometry: RefCell<Option<Vec<crate::legacy_page_geometry_validation::Geometry>>>,
     /// 検査済みの元文書に限る完成 CMap の共有索引。
     cmaps: RefCell<crate::tounicode_cache::CMapCache>,
+    /// 有効世代の埋め込みType1表を抽出と診断で共有する。
+    type1: RefCell<crate::resource_cache::Cache<(u16, crate::text::Type1Mapping)>>,
 }
 
 impl Default for DecodeBudget {
@@ -150,6 +152,7 @@ impl DecodeBudget {
             pages: RefCell::new(None),
             legacy_geometry: RefCell::new(None),
             cmaps: RefCell::new(Default::default()),
+            type1: RefCell::new(Default::default()),
         }
     }
 
@@ -197,6 +200,7 @@ impl DecodeBudget {
         *self.pages.borrow_mut() = None;
         *self.legacy_geometry.borrow_mut() = None;
         *self.cmaps.borrow_mut() = Default::default();
+        *self.type1.borrow_mut() = Default::default();
         let Some(mut index) = crate::stream_index::StreamIndex::new(self, bytes, streams) else {
             return;
         };
@@ -207,6 +211,31 @@ impl DecodeBudget {
             return;
         }
         *self.streams.borrow_mut() = Some(index);
+    }
+
+    /// 同じ有効object世代の完成表を、payloadの再確保なしで借用する。
+    pub(crate) fn cached_type1(
+        &self,
+        number: u32,
+        generation: u16,
+    ) -> Option<crate::text::Type1Mapping> {
+        self.type1
+            .borrow()
+            .get(&number)
+            .filter(|entry| entry.0 == generation)
+            .map(|entry| entry.1.clone())
+    }
+
+    /// 完成表だけを共有cacheへ保存し、追加容量を先に検査する。
+    pub(crate) fn save_type1(
+        &self,
+        number: u32,
+        generation: u16,
+        mapping: crate::text::Type1Mapping,
+    ) -> Option<()> {
+        self.type1
+            .borrow_mut()
+            .insert(self, number, (generation, mapping))
     }
 
     /// 検査済みの元入力から、停止していない解析にだけ完成 stream map を返す。

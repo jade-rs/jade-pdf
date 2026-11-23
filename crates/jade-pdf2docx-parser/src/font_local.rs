@@ -123,10 +123,21 @@ pub(super) fn build(
         {
             crate::metadata_map::save(decode_budget, &mut page_resources.encodings, name, encoding);
         }
-        if let Some(tounicode_object) = super::font_cmaps::reference(objects, dictionary.as_bytes())
-            && let Some(cmap) =
-                font_cmap_for_object_number(decode_budget, bytes, tounicode_object, stream_offsets)
-            && !cmap.is_empty()
+        let mut resolver = crate::resource_resolver::ResourceResolver::new(objects, decode_budget);
+        if let Some(cmap) = crate::type1_font::read(
+            decode_budget,
+            bytes,
+            dictionary.as_bytes(),
+            None,
+            &mut resolver,
+            stream_offsets,
+        )
+        .map(|mapping| mapping.cmap)
+        .or_else(|| {
+            super::font_cmaps::reference(objects, dictionary.as_bytes()).and_then(|number| {
+                font_cmap_for_object_number(decode_budget, bytes, number, stream_offsets)
+            })
+        }) && !cmap.is_empty()
         {
             crate::metadata_map::save(decode_budget, &mut page_resources.cmaps, name, cmap);
         }

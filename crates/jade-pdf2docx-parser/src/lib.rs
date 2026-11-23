@@ -90,6 +90,7 @@ mod text_geometry;
 mod text_rendering;
 mod text_result_storage;
 mod tounicode_cache;
+mod type1_font;
 mod type1_program;
 mod unsupported_content;
 mod xobject_refs;

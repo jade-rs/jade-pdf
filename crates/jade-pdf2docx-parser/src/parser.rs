@@ -175,7 +175,7 @@ use font_definitions::{
     Definition as PageFontResourceDefinition, extract as font_resource_definitions_from_dictionary,
 };
 use font_names::read as font_object_names;
-use stream_offsets::StreamOffsets;
+pub(crate) use stream_offsets::StreamOffsets;
 
 #[path = "legacy_font_resources.rs"]
 mod legacy_font_resources;
@@ -2937,7 +2937,7 @@ pub(crate) fn form_stream_payload(
 }
 
 /// Font の Filter 方針を検査して、検査済み stream の完成 map を共有する。
-fn font_cmap_for_object_number(
+pub(crate) fn font_cmap_for_object_number(
     budget: &DecodeBudget,
     bytes: &[u8],
     number: u32,

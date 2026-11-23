@@ -1,0 +1,96 @@
+//! 単byteのType1 glyph対応を既存CMapへ合成し、未知slotを別に保存する。
+use super::{ToUnicodeCMap, ToUnicodeCMapData};
+use crate::{
+    decode::DecodeBudget,
+    type1_program::{Base, Encoding},
+};
+
+#[path = "type1_standard_encoding.rs"]
+mod standard;
+
+/// 完成Unicode表と、ToUnicodeでも確認できない256個のcode。
+#[derive(Clone)]
+pub(crate) struct Mapping {
+    /// 元ToUnicodeを優先した共有表。
+    pub(crate) cmap: ToUnicodeCMap,
+    /// 描画時にだけ品質欠落とするbit列。
+    pub(crate) unknown: [u64; 4],
+}
+
+/// 作者のglyph名をUnicodeへ変換し、元codeからのASCII推測を防ぐ。
+pub(crate) fn build(
+    budget: &DecodeBudget,
+    encoding: Option<&Encoding<'_>>,
+    differences: &[Option<&[u8]>; 256],
+    original: &ToUnicodeCMap,
+) -> Option<Mapping> {
+    let mut data = ToUnicodeCMapData::default();
+    let mut unknown = [0; 4];
+    for code in 0..256 {
+        budget.charge_tounicode_entries(1)?;
+        let digits = b"0123456789ABCDEF";
+        let key_bytes = [digits[code >> 4], digits[code & 15]];
+        let key = std::str::from_utf8(&key_bytes).ok()?;
+        let original_value = original
+            .key_is_allowed(key)
+            .then(|| original.mappings.get(key))
+            .flatten();
+        let name = differences[code].or_else(|| {
+            encoding.and_then(|table| {
+                table.slots[code].or_else(|| match table.base {
+                    Base::Standard => Some(standard::STANDARD[code]),
+                    // Latin1の表を未検証のbyte→Unicode推測で代用しない。
+                    Base::Custom | Base::Latin1 => None,
+                })
+            })
+        });
+        let mut length = 0usize;
+        let complete = if original_value.is_some() {
+            true
+        } else if let Some(name) = name {
+            crate::glyph_names::visit(budget, name, false, |scalar| {
+                length = length.checked_add(scalar.len_utf8())?;
+                Some(())
+            })?
+        } else {
+            false
+        };
+        let payload = original_value.map_or_else(
+            || {
+                if length == 0 {
+                    '\u{fffd}'.len_utf8()
+                } else {
+                    length
+                }
+            },
+            String::len,
+        );
+        budget.charge_tounicode_bytes((2 + payload) as u64)?;
+        data.reserve_mapping(budget)?;
+        let mut stored_key = budget.try_string_capacity(2)?;
+        stored_key.push_str(key);
+        let mut value = budget.try_string_capacity(payload)?;
+        if let Some(original_value) = original_value {
+            value.push_str(original_value);
+        } else {
+            if let Some(name) = name {
+                crate::glyph_names::visit(budget, name, false, |scalar| {
+                    value.push(scalar);
+                    Some(())
+                })?;
+            }
+            if value.is_empty() {
+                value.push('\u{fffd}');
+            }
+        }
+        if !complete {
+            unknown[code / 64] |= 1u64 << (code % 64);
+        }
+        data.insert_mapping(stored_key, value);
+    }
+    data.insert_code_space_range(budget, "00", "FF")?;
+    Some(Mapping {
+        cmap: data.finish(budget),
+        unknown,
+    })
+}

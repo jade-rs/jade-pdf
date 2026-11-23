@@ -80,3 +80,5 @@ macOSの実プロセステストで検証した。総RSSの強制制限、単一
 成功時に本文と `OcrPageTimings`（全体・モデル読込・認識API内・その他処理、読込/認識回数）を返す。
 認識API内の時間にはテンソル準備・推論・復号が含まれる。通常APIは計測しない。
 手元の画像で初回とセッション再利用を比較する場合は `crates/jade-pdf2docx-ocr/examples/ocr_benchmark.rs` を利用できる。過去のfixture専用取得・配布・評価ツールと保存済み評価値は削除した。現在の公開PDF E2EはOCR精度を測定しない。
+
+埋め込みType1 FontFileでPDF側BaseEncodingがない場合、対応済みの静的な組み込みEncodingとDifferencesを適用する。ToUnicodeはcodeごとに優先する。実際に描画したglyph名が確認不能なら `UnsupportedFontReason::Encoding` / `unverified_encoding` を報告し、strictは拒否する。未使用の未知slotだけでは拒否しない。動的PostScriptやISOLatin1基底表は未検証で、独自glyph名のOCR復元を意味しない。

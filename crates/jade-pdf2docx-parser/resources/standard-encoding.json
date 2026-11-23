@@ -1,0 +1,11 @@
+{
+  "url": "https://raw.githubusercontent.com/fonttools/fonttools/f3f799e1b6c090096d7dc9a6ca22f26dd25a4c81/Lib/fontTools/encodings/StandardEncoding.py",
+  "source_sha256": "128dc0184f0513fa7e215618b95d3decaa2e4ac17752b5e84513745f2bd86ebb",
+  "source_bytes": 3581,
+  "entries": 256,
+  "derivation": "ast.literal_eval of StandardEncoding assignment; never execute source",
+  "generated": "src/type1_standard_encoding.rs",
+  "generated_sha256": "313bfa79337c287d7d26d4360b31e120755765672dcf8287fb7b65aa697d8731",
+  "license": "licenses/fonttools.txt",
+  "license_sha256": "6787208f83f659ccbc2223b2fde952ffa6f7e8aca62f1a8a2bf5bc51bb1b2383"
+}
