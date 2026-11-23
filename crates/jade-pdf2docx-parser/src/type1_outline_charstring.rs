@@ -38,6 +38,10 @@ mod interpreter;
 mod comparison_tests;
 
 #[cfg(test)]
+#[path = "type1_outline_boundary_tests.rs"]
+mod boundary_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{ParseError, ParseLimits};
