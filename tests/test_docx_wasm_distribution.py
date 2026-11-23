@@ -25,6 +25,7 @@ class DocxWasmDistributionTest(unittest.TestCase):
         for source, target in [
             ('adobe-glyph-list.txt', 'LICENSE-adobe-glyph-list.txt'),
             ('fonttools.txt', 'LICENSE-fonttools.txt'),
+            ('open-font-license-1.1.txt', 'LICENSE-open-font-license-1.1.txt'),
         ]:
             (self.probe / target).write_bytes(
                 (ROOT / 'crates/jade-pdf2docx-parser/licenses' / source).read_bytes())
@@ -38,6 +39,14 @@ class DocxWasmDistributionTest(unittest.TestCase):
 
     def test_missing_reportlab_notice_is_rejected(self):
         with self.assertRaisesRegex(AssertionError, 'LICENSE-reportlab.txt'):
+            self.module.check(self.probe)
+
+    def test_missing_open_font_license_is_rejected(self):
+        notice = (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes()
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(notice)
+        (self.probe / 'LICENSE-open-font-license-1.1.txt').unlink()
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'LICENSE-open-font-license-1.1.txt'):
             self.module.check(self.probe)
 
     def test_complete_reportlab_notice_is_checked(self):
