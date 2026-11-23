@@ -1,6 +1,8 @@
 //! 原本PDFの有効辞書・元FontFileから、全codeの対応と幅を独立goldへ照合する。
 use super::*;
 use crate::{metadata, parser, resource_resolver::ResourceResolver};
+#[path = "type1_outline_plan_comparison_tests.rs"]
+mod plan_comparison;
 
 /// 独立解析器による、一つの原本PDF font resourceの期待値。
 #[derive(Deserialize)]
@@ -149,68 +151,7 @@ fn compare(check_unicode: bool, check_plan: bool) {
                 }
             }
             if check_plan {
-                let plan = crate::type1_outline::plan::build(&budget, &decoded, unicode).unwrap();
-                for (gid, original) in decoded.glyphs.iter().enumerate() {
-                    assert_eq!(usize::from(plan.glyphs[gid].original), gid);
-                    assert!(plan.glyphs[gid].pdf_width.is_none());
-                    assert!(
-                        font.glyphs
-                            .iter()
-                            .any(|g| g.name.as_bytes() == original.name)
-                    );
-                }
-                let mut rows = Vec::new();
-                let mut unicode_glyphs = std::collections::BTreeMap::new();
-                let mut conflicts = Vec::new();
-                for (code, (actual, expected)) in
-                    plan.codes.iter().zip(&reference.slots).enumerate()
-                {
-                    assert_eq!(actual.mapping.scalars, expected.scalars);
-                    assert_eq!(actual.mapping.from_tounicode, expected.from_tounicode);
-                    assert_eq!(actual.mapping.source.width, expected.width);
-                    assert_eq!(
-                        actual.mapping.source.explicit_width,
-                        expected.explicit_width
-                    );
-                    let shape = actual.glyph.map(|gid| {
-                        let binding = &plan.glyphs[usize::from(gid)];
-                        let original = &decoded.glyphs[usize::from(binding.original)];
-                        assert_eq!(original.name, expected.name.as_bytes());
-                        let independent = font
-                            .glyphs
-                            .iter()
-                            .find(|g| g.name == expected.name)
-                            .unwrap();
-                        let width = binding.pdf_width.unwrap_or(independent.advance);
-                        assert!(
-                            (width - expected.width).abs() <= 1e-7,
-                            "{} code{code} {width} != {}",
-                            font.source_name,
-                            expected.width
-                        );
-                        (gid, binding.original, width)
-                    });
-                    assert_eq!(
-                        shape.is_some(),
-                        expected.present && expected.name != ".notdef"
-                    );
-                    if let (Some((gid, _, _)), Some(text)) = (shape, &actual.mapping.scalars)
-                        && !text.is_empty()
-                        && let Some(prior) = unicode_glyphs.insert(text.clone(), gid)
-                        && prior != gid
-                    {
-                        conflicts.push(serde_json::json!({"code":code,"scalars":text,"first_glyph":prior,"second_glyph":gid}));
-                    }
-                    rows.push(serde_json::json!({"code":code,"shape":shape,"name":expected.name,"scalars":actual.mapping.scalars,"from_tounicode":actual.mapping.from_tounicode}));
-                }
-                println!(
-                    "{}: {} original glyphs, {} planned glyphs; all256 code widths/sequences retained; {} Unicode/GID conflicts",
-                    font.source_name,
-                    decoded.glyphs.len(),
-                    plan.glyphs.len(),
-                    conflicts.len()
-                );
-                plans.push(serde_json::json!({"source":font.source_name,"original_glyphs":decoded.glyphs.len(),"planned_glyphs":plan.glyphs.len(),"unicode_glyph_conflicts":conflicts,"codes":rows}));
+                plans.push(plan_comparison::compare(&budget, &decoded, &font, unicode));
             }
         }
         for (code, (actual, expected)) in slots.iter().zip(&reference.slots).enumerate() {
