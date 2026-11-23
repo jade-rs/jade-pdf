@@ -3,6 +3,8 @@ use super::*;
 use serde::Deserialize;
 #[path = "type1_outline_cff_export_tests.rs"]
 mod cff_export;
+#[path = "type1_outline_header_comparison_tests.rs"]
+mod header_comparison;
 #[path = "type1_outline_otf_export_tests.rs"]
 mod otf_export;
 #[path = "type1_outline_type2_export_tests.rs"]
@@ -43,6 +45,9 @@ struct Font {
     /// 元PDF幅を使う、独立して宣言した単位変換の検査条件。
     #[serde(default)]
     pdf_scale: Option<otf_export::ScaleProfile>,
+    /// 元FontFileから独立して読んだcleartext辞書。
+    #[serde(default)]
+    header: Option<header_comparison::Metadata>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
