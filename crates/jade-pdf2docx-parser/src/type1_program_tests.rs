@@ -55,6 +55,16 @@ fn fake_definitions_do_not_replace_the_top_level_table() {
     assert_eq!(table.slots[65], Some(b"A".as_slice()));
 }
 
+/// 後から宣言した未実行procedure内の偽表は、実際の表を上書きしない。
+#[test]
+fn later_unexecuted_procedure_cannot_replace_encoding() {
+    let source = header(
+        "/Encoding 256 array dup 65 /A put def /Later {/Encoding 256 array dup 65 /BAD put def} bind def",
+    );
+    let table = parse(&DecodeBudget::default(), source.as_bytes()).unwrap();
+    assert_eq!(table.slots[65], Some(b"A".as_slice()));
+}
+
 /// 複数の定義は最後を採用し、eexec以後のbyteはmetadataとして走査しない。
 #[test]
 fn last_definition_and_encrypted_boundary_are_respected() {
