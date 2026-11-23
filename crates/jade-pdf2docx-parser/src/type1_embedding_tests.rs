@@ -130,3 +130,57 @@ fn owned_type1_preserves_drawable_font_for_docx() {
         "the actual text run must select its portable font"
     );
 }
+
+/// 全ページを事前確認済みの原本を本体入口へ通し、実font選択と本文を保存する。
+#[test]
+#[ignore = "reviewed JADE_SOURCE_PDF and new JADE_TYPE1_PARSED_EXPORT_DIR required"]
+fn export_reviewed_original_from_actual_parser() {
+    let source = std::path::PathBuf::from(std::env::var_os("JADE_SOURCE_PDF").unwrap());
+    let bytes = std::fs::read(&source).unwrap();
+    let hash = hmac_sha256::Hash::hash(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    assert_eq!(
+        hash,
+        "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b"
+    );
+    let parsed = crate::parse_pdf_bytes(&source, &bytes).unwrap();
+    let directory =
+        std::path::PathBuf::from(std::env::var_os("JADE_TYPE1_PARSED_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&directory).unwrap();
+    let mut fonts = Vec::new();
+    for (index, font) in parsed.embedded_fonts.iter().enumerate() {
+        let name = format!("font{index}.otf");
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(&name))
+            .unwrap();
+        std::io::Write::write_all(&mut file, &font.bytes).unwrap();
+        let hash = hmac_sha256::Hash::hash(&font.bytes)
+            .iter()
+            .map(|b| format!("{b:02x}"))
+            .collect::<String>();
+        fonts.push(serde_json::json!({"file":name,"family":font.font_name,"sha256":hash}));
+    }
+    let elements=parsed.text_elements.iter().map(|e|serde_json::json!({"page":e.page,"text":e.text,"font_name":e.font_name,"font_size":e.font_size,"bounds":[e.bounds.x0,e.bounds.y0,e.bounds.x1,e.bounds.y1],"baseline_y":e.baseline_y})).collect::<Vec<_>>();
+    let issues = parsed
+        .quality
+        .issues
+        .iter()
+        .map(|i| format!("{i:?}"))
+        .collect::<Vec<_>>();
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("actual-parser-output.json"))
+        .unwrap();
+    serde_json::to_writer_pretty(file,&serde_json::json!({"source_pdf_sha256":hash,"page_count":parsed.page_count,"fonts":fonts,"text_elements":elements,"text_preview":parsed.text_preview,"quality_issues":issues,"scope":"Actual parser default entry point; DOCX packaging, native reconciliation and rendered layout remain unqualified","production_ready":false})).unwrap();
+    println!(
+        "actual parser: {} pages, {} text elements, {} generated fonts",
+        parsed.page_count,
+        parsed.text_elements.len(),
+        parsed.embedded_fonts.len()
+    );
+}
