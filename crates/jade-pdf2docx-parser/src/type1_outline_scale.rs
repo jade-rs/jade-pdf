@@ -16,7 +16,12 @@ pub(super) struct Limits {
 
 /// 実際のPDF幅の最大量子化誤差を最小化し、同等なら細かい単位を選ぶ。
 pub(super) fn choose_units(budget: &DecodeBudget, widths: &[f64], limits: &Limits) -> Option<u16> {
-    if widths.len() > 256 || budget.is_stopped() {
+    if widths.len() > 256
+        || [limits.coordinate, limits.delta, limits.metric, limits.advance]
+            .iter()
+            .any(|value| !value.is_finite() || *value < 0.)
+        || budget.is_stopped()
+    {
         return None;
     }
     let mut advance = limits.advance;
