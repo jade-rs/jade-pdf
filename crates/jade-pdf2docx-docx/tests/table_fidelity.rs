@@ -380,3 +380,28 @@ fn text_beside_side_by_side_tables_is_kept() {
         "text above the left table must remain: {xml}"
     );
 }
+
+/// 先頭行の段落は次の行と同じページに置き、2 行目以降には付けない。
+#[test]
+fn first_table_row_keeps_with_the_next_row() {
+    let content = format!(
+        "{TWO_BY_TWO_RULES} BT /F1 10 Tf 1 0 0 1 25 146 Tm (Head) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 25 126 Tm (alpha) Tj ET BT /F1 10 Tf 1 0 0 1 125 126 Tm (x) Tj ET"
+    );
+    let xml = convert("table_fidelity_keep_next", &content);
+    let head = xml.find(">Head<").expect("Head");
+    let alpha = xml.find(">alpha<").expect("alpha");
+    let paragraph_start = xml[..head]
+        .rfind("<w:p>")
+        .or_else(|| xml[..head].rfind("<w:p "))
+        .expect("paragraph");
+    assert!(
+        xml[paragraph_start..head].contains("<w:keepNext"),
+        "the first row must keep with the next row: {xml}"
+    );
+    let alpha_start = xml[..alpha].rfind("<w:p").expect("paragraph");
+    assert!(
+        !xml[alpha_start..alpha].contains("<w:keepNext"),
+        "later rows must not keep with the next row: {xml}"
+    );
+}

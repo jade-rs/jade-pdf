@@ -11,7 +11,8 @@ use docx_rs::{
     PageMargin, PageOrientationType, PageSize, Paragraph, ParagraphChild, Pic, Run, RunFonts,
     Section, SectionProperty, SectionType, Shading, ShdType, Tab, TabValueType, Table,
     TableAlignmentType, TableCell, TableCellBorder, TableCellBorderPosition, TableCellBorders,
-    TableCellMargins, TableLayoutType, TableRow, VAlignType, VMergeType, WidthType,
+    TableCellContent, TableCellMargins, TableLayoutType, TableRow, VAlignType, VMergeType,
+    WidthType,
 };
 use jade_pdf2docx_parser::{
     ParseLimits, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
@@ -58,11 +59,13 @@ mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output_path::resolve_output_parent;
 mod column_bands;
+mod raw_cid_glyphs;
 mod ruleless_table;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
 mod table_cell_text;
 mod table_grid;
+mod vertical_forms;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
 
@@ -772,12 +775,28 @@ const DYNAFONT_PRIVATE_USE_GLYPHS: &[(char, &str)] = &[
     ('\u{EA75}', ","),
     ('\u{E9E5}', "（ア）"),
     ('\u{E9E6}', "（イ）"),
+    ('\u{E9E7}', "（ウ）"),
+    ('\u{E9E8}', "（エ）"),
+    ('\u{E9E9}', "（オ）"),
+    ('\u{E9EA}', "（カ）"),
+    ('\u{E9EB}', "（キ）"),
+    ('\u{E9F5}', "（チ）"),
+    ('\u{E712}', "□"),
+    ('\u{E61C}', "－"),
+    ('\u{E68C}', "㎠"),
+    ('\u{E467}', "辻"),
+    ('\u{E469}', "鄭"),
 ];
 
 /// 連番で並ぶ DynaFont の項目記号（先頭の私用領域の符号位置, 対応する Unicode の先頭, 個数）。
 ///
 /// ⑴⑵⑶⑷ と ①② を目視で確認し、Unicode の連番と同じ順に並ぶことから範囲で対応させる。
 const DYNAFONT_PRIVATE_USE_RUNS: &[(u32, u32, u32)] = &[(0xE7B2, 0x2474, 20), (0xE7D1, 0x2460, 20)];
+
+/// 括弧付きのローマ数字（先頭の私用領域の符号位置, ローマ数字の先頭, 個数）。kanpo-parser が
+/// 原本の字形で確かめた（Ⅰ）〜（Ⅸ）・（ⅰ）〜（ⅹ）の範囲。
+const DYNAFONT_PARENTHESIZED_ROMAN_RUNS: &[(u32, u32, u32)] =
+    &[(0xE82F, 0x2160, 9), (0xE839, 0x2170, 10)];
 
 /// DynaFont の私用領域の字に対応する文字列を返す。
 fn dynafont_private_use_glyph(ch: char) -> Option<String> {
@@ -788,6 +807,12 @@ fn dynafont_private_use_glyph(ch: char) -> Option<String> {
         return Some((*value).to_string());
     }
     let code = ch as u32;
+    if let Some((start, roman, _)) = DYNAFONT_PARENTHESIZED_ROMAN_RUNS
+        .iter()
+        .find(|(start, _, count)| (*start..*start + *count).contains(&code))
+    {
+        return char::from_u32(roman + code - start).map(|numeral| format!("（{numeral}）"));
+    }
     DYNAFONT_PRIVATE_USE_RUNS
         .iter()
         .find(|(start, _, count)| (*start..*start + *count).contains(&code))
@@ -795,10 +820,28 @@ fn dynafont_private_use_glyph(ch: char) -> Option<String> {
         .map(String::from)
 }
 
-/// 既知のフォントの私用領域の字を Unicode の字へ置き換え、罫線用フォントの私用領域の字は除く。
+/// 縦書き用の約物を横組みの字へ戻し、既知のフォントの私用領域の字・Unicode の対応が無い字を
+/// Unicode の字へ置き換え、罫線用フォントの字は除く。
 fn map_known_private_use_glyphs(parsed: &mut ParsedDocument) {
     let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
     parsed.text_elements.retain_mut(|text| {
+        if let Some(normalized) = vertical_forms::normalize(&text.text) {
+            text.text = normalized;
+        }
+        if text
+            .text
+            .chars()
+            .any(|ch| raw_cid_glyphs::raw_cid(ch).is_some())
+        {
+            let rule_font = text
+                .font_name
+                .as_deref()
+                .is_some_and(|font| font.contains("Line"));
+            text.text = raw_cid_glyphs::restore(&text.text, rule_font);
+            if text.text.trim().is_empty() {
+                return false;
+            }
+        }
         let Some(font) = text.font_name.as_deref() else {
             return true;
         };
@@ -4006,6 +4049,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                     table_cell
                 })
                 .collect::<Vec<_>>();
+            // 見出し行がページ末に取り残されないよう、先頭行を次の行と同じページに置く。
+            let mut cells = cells;
+            if row_index == 0 && model.rows.len() > 1 {
+                keep_cells_with_next_row(&mut cells);
+            }
             let mut table_row = TableRow::new(cells);
             if parent.is_some() {
                 table_row = table_row.cant_split();
@@ -4025,6 +4073,23 @@ fn docx_table_from_model_with_row_height_and_nested(
         })
         .collect::<Vec<_>>();
     Table::without_borders(rows)
+}
+
+/// 各セルの最後の段落に keepNext を付け、行を次の行と同じページに置く。
+///
+/// 行そのものを分割不可にしたり繰り返し見出しにしたりはせず、長い行がページをまたげるようにする
+/// （lawrenceanum の kanpo-docx と同じ）。
+fn keep_cells_with_next_row(cells: &mut [TableCell]) {
+    for cell in cells {
+        if let Some(TableCellContent::Paragraph(paragraph)) = cell
+            .children
+            .iter_mut()
+            .rev()
+            .find(|content| matches!(content, TableCellContent::Paragraph(_)))
+        {
+            **paragraph = std::mem::take(&mut **paragraph).keep_next(true);
+        }
+    }
 }
 
 /// セル本文の 1 段落分を、表の font・下線・配置を適用して作る。

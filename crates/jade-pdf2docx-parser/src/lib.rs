@@ -66,6 +66,8 @@ mod pdfium_clip_overlap;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_font_tags;
 #[cfg(not(target_arch = "wasm32"))]
+mod pdfium_raw_cid;
+#[cfg(not(target_arch = "wasm32"))]
 mod pdfium_text;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_visible_text;
@@ -96,6 +98,8 @@ pub use model::{
     ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedFillElement,
     ParsedGraphicElement, ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
 };
+/// ToUnicode の無い Identity 符号化の CID フォントの字を移す私用面の先頭（U+F0000 + CID）。
+pub const RAW_CID_BASE: u32 = 0xF0000;
 pub use parser::{
     parse_pdf, parse_pdf_bytes, parse_pdf_bytes_with_limits, parse_pdf_bytes_with_options,
     parse_pdf_with_limits, parse_pdf_with_options, png_is_blank_white,

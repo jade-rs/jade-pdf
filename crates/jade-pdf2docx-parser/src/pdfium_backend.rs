@@ -152,6 +152,15 @@ pub(crate) fn parse_pdf(
         decode_budget.check()?;
     }
 
+    // Unicode の対応が無く Pdfium が文字コードをそのまま返した字は、文字矩形と同じユーザー空間の
+    // うちに私用面へ移す。
+    crate::pdfium_raw_cid::tag(
+        decode_budget,
+        pdfium.bindings(),
+        native_bytes,
+        &mut text_elements,
+    )?;
+    decode_budget.check()?;
     // Pdfiumの文字矩形は回転前のユーザー空間なので、pure Rust抽出の罫線・画像と同じ
     // CropBox原点・表示回転の座標へ揃えてから合成する。
     crate::parser::normalize_text_elements_to_display(decode_budget, bytes, &mut text_elements);
