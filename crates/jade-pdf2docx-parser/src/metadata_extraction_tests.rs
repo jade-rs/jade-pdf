@@ -31,6 +31,7 @@ fn pages(numbers: &[u32]) -> Vec<Page> {
             crop_box: None,
             rotation: 0,
             resources: None,
+            contents: Vec::new(),
         })
         .collect()
 }
