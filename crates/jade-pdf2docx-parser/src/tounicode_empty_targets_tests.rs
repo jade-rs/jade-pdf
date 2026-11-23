@@ -51,6 +51,20 @@ fn malformed_utf16_and_empty_source_codes_are_not_partial_mappings() {
     assert!(budget.check().is_ok());
 }
 
+/// 奇数桁hexを末尾ゼロでbyte化してから、UTF16全体の完全性を検証する。
+#[test]
+fn odd_hex_destinations_are_padded_before_utf16_validation() {
+    let budget = DecodeBudget::default();
+    let cmap = parse_tounicode_body(
+        &budget,
+        b"3 beginbfchar\n<41> <004>\n<42> <D83DDE0>\n<43> <0041FFF>\nendbfchar",
+    );
+    assert_eq!(
+        operand::decode_bytes(&budget, b"ABC", true, &cmap, None).as_deref(),
+        Some("@😀A\u{fff0}")
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     /// 任意の空/Unicode宛先列を途中で詰めず、非BMPを含む原文どおりに復号する。
@@ -72,6 +86,23 @@ proptest! {
         let expected=values.into_iter().flatten().collect::<String>();
         let actual=operand::decode_bytes(&budget,&codes,true,&cmap,None);
         prop_assert_eq!(actual,Some(expected));
+        prop_assert!(budget.check().is_ok());
+    }
+
+    /// 任意の完全なprefixに続くゼロ終端文字は、最終nibbleの省略で変化しない。
+    #[test]
+    fn odd_hex_padding_preserves_complete_unicode_sequences(
+        prefix in prop::collection::vec(any::<char>().prop_filter("BOM is not text", |c| *c != '\u{feff}'), 0..16),
+        last in 0u16..0xd80,
+    ) {
+        let mut expected = prefix.into_iter().collect::<String>();
+        expected.push(char::from_u32(u32::from(last) * 16).unwrap());
+        let mut hex = expected.encode_utf16().map(|unit| format!("{unit:04X}")).collect::<String>();
+        prop_assert_eq!(hex.pop(), Some('0'));
+        let source = format!("1 beginbfchar\n<01> <{hex}>\nendbfchar");
+        let budget = DecodeBudget::default();
+        let cmap = parse_tounicode_body(&budget, source.as_bytes());
+        prop_assert_eq!(operand::decode_bytes(&budget, &[1], true, &cmap, None), Some(expected));
         prop_assert!(budget.check().is_ok());
     }
 }
