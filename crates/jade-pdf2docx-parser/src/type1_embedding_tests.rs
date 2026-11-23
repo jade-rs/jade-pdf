@@ -109,12 +109,21 @@ fn owned_pdf() -> Vec<u8> {
 fn owned_type1_preserves_drawable_font_for_docx() {
     let parsed = parse_pdf_bytes("owned-type1-outline.pdf", &owned_pdf()).unwrap();
     assert_eq!(parsed.page_count, 1);
-    assert_eq!(parsed.text_elements[0].text, "AA");
-    assert_eq!(parsed.text_elements[0].font_size, 20.0);
+    assert_eq!(parsed.text_elements.len(), 2);
     assert_eq!(
-        parsed.text_elements[0].bounds.x1 - parsed.text_elements[0].bounds.x0,
-        24.0
+        parsed
+            .text_elements
+            .iter()
+            .map(|e| e.text.as_str())
+            .collect::<String>(),
+        "AA"
     );
+    for (e, x) in parsed.text_elements.iter().zip([20., 32.]) {
+        assert_eq!(e.text, "A");
+        assert_eq!(e.font_size, 20.0);
+        assert_eq!(e.bounds.x0, x);
+        assert_eq!(e.bounds.x1 - e.bounds.x0, 12.0);
+    }
     assert_eq!(
         parsed.embedded_fonts.len(),
         1,
