@@ -105,6 +105,48 @@ fn explicit_prefix_and_dictionary_identity_are_not_inferred() {
     }
 }
 
+/// TeX形式の入れ子と既知hintは許し、値の演算・上書き・過大配列を拒否する。
+#[test]
+fn known_literal_hints_and_nested_dictionary_are_bounded() {
+    let source = String::from_utf8(private(b"abc", b"def", b" ")).unwrap();
+    let known = "/MinFeature{16 16}ND /password 5839 def /BlueValues[-10 0 700 710]ND /OtherBlues[]ND /StdHW[30]ND /StdVW[70]ND /StemSnapH[25 30]ND /BlueScale .04379 def /BlueShift 7 def /BlueFuzz 1 def /ForceBold false def";
+    let changed = source.replace("/lenIV 4 def", known);
+    assert!(parse(&DecodeBudget::default(), changed.as_bytes()).is_some());
+    let nested = changed
+        .replace(
+            "ND end readonly put dup /CharStrings",
+            "ND 2 index /CharStrings",
+        )
+        .replace(
+            "end readonly put dup /FontName",
+            "end end readonly put put dup /FontName",
+        );
+    assert_eq!(
+        parse(&DecodeBudget::default(), nested.as_bytes())
+            .unwrap()
+            .glyphs[0]
+            .bytes,
+        b"abc"
+    );
+    for invalid in [
+        "/BlueValues[1 2 add]ND".to_string(),
+        "/BlueValues[1 {2} 3]ND".to_string(),
+        "/BlueScale NaN def".to_string(),
+        "/BlueScale 1e500 def".to_string(),
+        "/ForceBold 1 def".to_string(),
+        "/MinFeature{16 16 run}ND".to_string(),
+        "/BlueValues[]ND /BlueValues[]ND".to_string(),
+        "/RD{run}executeonly def".to_string(),
+        format!("/BlueValues[{}]ND", "1 ".repeat(33)),
+    ] {
+        let changed = source.replace("/lenIV 4 def", &invalid);
+        assert!(
+            parse(&DecodeBudget::default(), changed.as_bytes()).is_none(),
+            "{invalid}"
+        );
+    }
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// binary中の字句に依存せず、宣言長ちょうどの二つのprogramを保持する。
@@ -114,5 +156,14 @@ proptest! {
         let parsed = parse(&DecodeBudget::default(), &bytes).unwrap();
         prop_assert_eq!(parsed.glyphs[0].bytes,glyph.as_slice());
         prop_assert_eq!(parsed.subrs[0],Some(subr.as_slice()));
+    }
+
+    /// 配列値を計算・描画へ転用せず、固定の個数上限だけを一貫して適用する。
+    #[test]
+    fn hint_literal_count_has_a_fixed_boundary(values in proptest::collection::vec(-32000_i32..32000,0..36)) {
+        let source=String::from_utf8(private(b"abc",b"def",b" ")).unwrap();
+        let hint=format!("/BlueValues[{}]ND",values.iter().map(i32::to_string).collect::<Vec<_>>().join(" "));
+        let changed=source.replace("/lenIV 4 def",&hint);
+        prop_assert_eq!(parse(&DecodeBudget::default(),changed.as_bytes()).is_some(),values.len()<=32);
     }
 }

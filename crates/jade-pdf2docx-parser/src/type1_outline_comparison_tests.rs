@@ -135,25 +135,7 @@ fn compare(standard: bool, original: bool) {
                 continue;
             };
             let context = format!("{} {}", font.source_name, glyph.name);
-            assert!((actual.advance - glyph.advance).abs() < 1e-7, "{context}");
-            assert_eq!(actual.commands.len(), glyph.commands.len(), "{context}");
-            for (actual, expected) in actual.commands.iter().zip(&glyph.commands) {
-                let (op, points): (&str, &[f64]) = match actual {
-                    Command::Move(p) => ("Move", p),
-                    Command::Line(p) => ("Line", p),
-                    Command::Curve(p) => ("Curve", p),
-                    Command::Close => ("Close", &[]),
-                };
-                assert_eq!(op, expected.op, "{context}");
-                assert_eq!(points.len(), expected.points.len(), "{context}");
-                for (a, b) in points.iter().zip(&expected.points) {
-                    assert!(
-                        (a - b).abs() < 1e-7,
-                        "{context}: {actual:?} vs {:?}",
-                        expected.points
-                    );
-                }
-            }
+            assert_geometry(&actual, &glyph, &context);
             accepted += 1;
         }
         println!(
@@ -175,6 +157,32 @@ fn compare(standard: bool, original: bool) {
     );
 }
 
+/// 幅・輪郭命令・全制御点を、それぞれ独立goldと照合する。
+fn assert_geometry(actual: &Glyph, expected: &Reference, context: &str) {
+    assert!(
+        (actual.advance - expected.advance).abs() < 1e-7,
+        "{context}"
+    );
+    assert_eq!(actual.commands.len(), expected.commands.len(), "{context}");
+    for (actual, expected) in actual.commands.iter().zip(&expected.commands) {
+        let (op, points): (&str, &[f64]) = match actual {
+            Command::Move(p) => ("Move", p),
+            Command::Line(p) => ("Line", p),
+            Command::Curve(p) => ("Curve", p),
+            Command::Close => ("Close", &[]),
+        };
+        assert_eq!(op, expected.op, "{context}");
+        assert_eq!(points.len(), expected.points.len(), "{context}");
+        for (a, b) in points.iter().zip(&expected.points) {
+            assert!(
+                (a - b).abs() < 1e-7,
+                "{context}: {actual:?} vs {:?}",
+                expected.points
+            );
+        }
+    }
+}
+
 /// 独立復号値をproduct入力として使わず、元のstreamから同じglyphとsubroutineを得る。
 fn compare_original(font: &Font) {
     use crate::type1_outline::{crypt, private};
@@ -190,9 +198,11 @@ fn compare_original(font: &Font) {
         private::parse(&budget, &decrypted).expect("original static Type1 Private dictionary");
     assert_eq!(parsed.glyphs.len(), font.glyphs.len());
     assert_eq!(parsed.subrs.len(), font.subrs.len());
+    let mut subrs = budget.font_vector(parsed.subrs.len()).unwrap();
     for (actual, expected) in parsed.subrs.iter().zip(&font.subrs) {
         let bytes = crypt::decrypt(&budget, actual.unwrap(), 4330, parsed.prefix.unwrap()).unwrap();
         assert_eq!(&bytes, expected);
+        subrs.push(bytes);
     }
     for expected in &font.glyphs {
         let actual = parsed
@@ -205,6 +215,16 @@ fn compare_original(font: &Font) {
             bytes, expected.program,
             "{} {}",
             font.source_name, expected.name
+        );
+        let glyph = match parsed.standard {
+            Some(verified) => decode_verified(&budget, &bytes, &subrs, verified),
+            None => decode(&budget, &bytes, &subrs),
+        }
+        .expect("original Rust-decrypted glyph must have drawable geometry");
+        assert_geometry(
+            &glyph,
+            expected,
+            &format!("original {} {}", font.source_name, expected.name),
         );
     }
     assert!(budget.check().is_ok());
