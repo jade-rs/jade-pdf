@@ -1,6 +1,8 @@
 //! 原本PDFの有効辞書・元FontFileから、全codeの対応と幅を独立goldへ照合する。
 use super::*;
 use crate::{metadata, parser, resource_resolver::ResourceResolver};
+#[path = "type1_outline_attributes_comparison_tests.rs"]
+mod attributes_comparison;
 #[path = "type1_outline_permission_comparison_tests.rs"]
 mod permission_comparison;
 #[path = "type1_outline_plan_comparison_tests.rs"]
@@ -18,6 +20,8 @@ enum Checks {
     Routes,
     /// 元の埋め込み指定と表示全文。
     Permission,
+    /// 元FontInfoとdescriptorの未丸め属性。
+    Attributes,
 }
 
 /// 独立解析器による、一つの原本PDF font resourceの期待値。
@@ -88,6 +92,13 @@ fn original_pdf_permissions_preserve_independent_flags_and_notices() {
     compare(Checks::Permission);
 }
 
+/// 実descriptorとFontInfoを、原本から別解析器で作った属性期待値へ照合する。
+#[test]
+#[ignore = "reviewed PDF/Unicode/attribute gold require JADE_SOURCE_PDF, JADE_TYPE1_OUTLINE_GOLD and JADE_TYPE1_ATTRIBUTES_GOLD"]
+fn original_pdf_attributes_preserve_independent_style_and_metrics() {
+    compare(Checks::Attributes);
+}
+
 /// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
 fn compare(checks: Checks) {
     let check_unicode = !matches!(checks, Checks::Widths);
@@ -103,6 +114,9 @@ fn compare(checks: Checks) {
     assert_eq!(Some(hash.as_str()), gold.source_pdf_sha256.as_deref());
     let permissions =
         matches!(checks, Checks::Permission).then(|| permission_comparison::Reference::load(&hash));
+    let attributes =
+        matches!(checks, Checks::Attributes).then(|| attributes_comparison::Reference::load(&hash));
+    let mut attribute_rows = Vec::new();
     let budget = DecodeBudget::default();
     let source = parser::parser_source_with_compressed_objects(&budget, &pdf);
     let objects = crate::object_index::build(&budget, &source).unwrap();
@@ -141,6 +155,17 @@ fn compare(checks: Checks) {
         assert_eq!(payload, font.fontfile);
         let decoded =
             crate::type1_outline::file::read(&budget, &payload, length1, length2).unwrap();
+        if let Some(reference_attributes) = &attributes {
+            attribute_rows.push(reference_attributes.compare(
+                &budget,
+                reference.object_number,
+                generation,
+                &payload,
+                &decoded,
+                descriptor,
+                &mut resolver,
+            ));
+        }
         let slots =
             crate::type1_outline::resource::read(&budget, &decoded, dictionary, &mut resolver)
                 .unwrap();
@@ -244,6 +269,15 @@ fn compare(checks: Checks) {
         );
     }
     assert!(budget.check().is_ok());
+    if attributes.is_some() {
+        let path = std::env::var("JADE_TYPE1_ATTRIBUTES_REPORT").unwrap();
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(path)
+            .unwrap();
+        serde_json::to_writer_pretty(file,&serde_json::json!({"fonts":attribute_rows,"scope":"Original PDF metadata component only; actual text-run routing, DOCX embedding and renderer appearance remain unqualified","production_ready":false})).unwrap();
+    }
     if check_plan {
         let path = std::env::var("JADE_TYPE1_PLAN_REPORT").unwrap();
         let mut file = std::fs::OpenOptions::new()
