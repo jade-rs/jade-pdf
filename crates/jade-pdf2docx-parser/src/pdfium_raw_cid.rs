@@ -103,10 +103,7 @@ fn collect(
 /// 字（対応表で戻す）・BMP の外の字も移さない。
 fn is_taggable(ch: char) -> bool {
     let code = ch as u32;
-    code > 0xFF
-        && !ch.is_whitespace()
-        && !('\u{E000}'..='\u{F8FF}').contains(&ch)
-        && code <= 0xFFFD
+    code > 0xFF && !ch.is_whitespace() && !('\u{E000}'..='\u{F8FF}').contains(&ch) && code <= 0xFFFD
 }
 
 /// 要素の矩形の中に、同じ字で Unicode の対応が無い字があれば、その字を私用面へ移す。
