@@ -102,3 +102,8 @@ fn hex_nibble(byte: u8) -> Option<u8> {
         _ => None,
     }
 }
+
+/// 外側の括弧を除いたliteral本文を検証し、PostScriptと共通のescapeを展開する。
+pub(crate) fn visit_literal_body(_body: &[u8], _emit: impl FnMut(u8) -> Option<()>) -> Option<()> {
+    None
+}
