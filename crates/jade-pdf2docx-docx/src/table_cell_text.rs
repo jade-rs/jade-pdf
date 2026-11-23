@@ -406,7 +406,8 @@ pub(crate) fn split_at_wide_spaces(fragment: &CellFragment) -> Vec<CellFragment>
 /// 列境界をまたぐ 1 つのテキスト要素を、境界ごとの断片へ分ける。
 ///
 /// 文字ごとの位置は分からないため、全角を 1、半角を 0.55 とした字幅の比で推定する。
-/// 境界の近く（3 em 以内）に空白があればそこで分け、なければ推定位置で分ける。
+/// 空白があれば境界に最も近い空白で分け（推定がずれても語の途中で切らない）、
+/// 空白がなければ推定位置で分ける。
 pub(crate) fn split_across_boundaries(
     fragment: &CellFragment,
     boundaries: &[f32],
@@ -475,7 +476,6 @@ pub(crate) fn split_across_boundaries(
                     ((edges[index] + edges[index + 1]) / 2.0 - boundary).abs(),
                 )
             })
-            .filter(|(_, distance)| *distance <= 3.0 * em)
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(index, _)| index);
         let cut = space.unwrap_or_else(|| {

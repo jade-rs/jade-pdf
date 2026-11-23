@@ -33,6 +33,18 @@ pub(crate) fn extract(
 ) -> Result<Vec<ParsedTextElement>, ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
     let mut elements = Vec::new();
+    // segment を分ける際に使う、ページの全文字の矩形の中心（文字の index 順）。
+    let centers = characters
+        .iter()
+        .map(|character| {
+            character.loose_bounds().ok().map(|bounds| {
+                (
+                    (bounds.left().value + bounds.right().value) / 2.0,
+                    (bounds.bottom().value + bounds.top().value) / 2.0,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
     for segment in page_text.segments().iter() {
         crate::metadata_workspace::ensure_active(budget)?;
         // API内部の一時Stringは現APIで確保前の正確な容量取得ができない。
@@ -43,7 +55,7 @@ pub(crate) fn extract(
             continue;
         }
         // 表の列のように大きく離れた文字は、同じ行の segment でも別の要素へ分ける。
-        if let Some(pieces) = split_at_wide_gaps(&segment) {
+        if let Some(pieces) = split_at_wide_gaps(&segment, characters, &centers) {
             for piece in pieces {
                 let text = copy(budget, Some(piece.text.trim()))?.unwrap_or_default();
                 if text.is_empty() {
@@ -136,12 +148,30 @@ const SEGMENT_SPLIT_GAP_EM: f32 = 1.0;
 /// segment の文字を取り出し、1 em を超えて離れた位置で分ける。
 ///
 /// 分ける必要がない場合や文字を取得できない場合は `None` を返し、segment 全体を 1 要素にする。
-fn split_at_wide_gaps(segment: &PdfPageTextSegment<'_>) -> Option<Vec<SegmentPiece>> {
+fn split_at_wide_gaps(
+    segment: &PdfPageTextSegment<'_>,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
     let rect = segment.bounds();
     let horizontal = rect.width().value >= rect.height().value;
-    let characters = segment.chars().ok()?;
+    // `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から
+    // 中心が segment の矩形に入る文字をテキスト順に拾う。
+    let (left, bottom, right, top) = (
+        rect.left().value - 0.5,
+        rect.bottom().value - 0.5,
+        rect.right().value + 0.5,
+        rect.top().value + 0.5,
+    );
     let mut infos = Vec::new();
-    for character in characters.iter() {
+    for (index, center) in centers.iter().enumerate() {
+        let Some((center_x, center_y)) = *center else {
+            continue;
+        };
+        if center_x < left || center_x > right || center_y < bottom || center_y > top {
+            continue;
+        }
+        let character = characters.get(index).ok()?;
         let bounds = character.loose_bounds().ok()?;
         let name = character.font_name();
         infos.push(CharInfo {
@@ -174,16 +204,32 @@ fn split_at_wide_gaps(segment: &PdfPageTextSegment<'_>) -> Option<Vec<SegmentPie
 ///
 /// 空白文字は直前の要素へ含め、要素の矩形には加えない。
 fn group_chars_at_wide_gaps(chars: &[CharInfo], horizontal: bool) -> Vec<SegmentPiece> {
+    // 字送りの向き（正なら座標が増える向き）を、空白以外の最初と最後の文字から決める。
+    let ink = chars
+        .iter()
+        .filter(|info| !info.text.trim().is_empty())
+        .collect::<Vec<_>>();
+    let center = |bounds: &ParsedBounds| {
+        if horizontal {
+            (bounds.x0 + bounds.x1) / 2.0
+        } else {
+            (bounds.y0 + bounds.y1) / 2.0
+        }
+    };
+    let forward = match (ink.first(), ink.last()) {
+        (Some(first), Some(last)) => center(&last.bounds) >= center(&first.bounds),
+        _ => true,
+    };
     let mut pieces: Vec<SegmentPiece> = Vec::new();
     let mut previous: Option<ParsedBounds> = None;
     for info in chars {
         let blank = info.text.trim().is_empty();
-        let gap = previous.map(|previous| {
-            if horizontal {
-                (info.bounds.x0 - previous.x1).max(previous.x0 - info.bounds.x1)
-            } else {
-                (info.bounds.y0 - previous.y1).max(previous.y0 - info.bounds.y1)
-            }
+        // 字送りの向きに進んだ空きだけを数える（重ね打ちや戻りは分けない）。
+        let gap = previous.map(|previous| match (horizontal, forward) {
+            (true, true) => info.bounds.x0 - previous.x1,
+            (true, false) => previous.x0 - info.bounds.x1,
+            (false, true) => info.bounds.y0 - previous.y1,
+            (false, false) => previous.y0 - info.bounds.y1,
         });
         let wide = gap
             .is_some_and(|gap| info.font_size > 0.0 && gap > SEGMENT_SPLIT_GAP_EM * info.font_size);

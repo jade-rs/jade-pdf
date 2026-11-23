@@ -337,8 +337,9 @@ fn table_from_lines(
         cell_vertical_alignments: Vec::new(),
         docx_table: Some(DocxTableModel { rows: model_rows }),
         nested_tables: Vec::new(),
-        row_heights_pt: Vec::new(),
-        row_line_counts: Vec::new(),
+        // 行の高さは PDF の行の間隔を下限にし、代替フォントの行の高さに合わせて伸ばせるようにする。
+        row_heights_pt: ys.windows(2).map(|pair| pair[0] - pair[1]).collect(),
+        row_line_counts: vec![2; rows],
         cell_padding_pt: Some(pad),
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),

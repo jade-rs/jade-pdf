@@ -4066,10 +4066,19 @@ fn table_cell_paragraph(
         .map(|table| table_cell_horizontal_margins(table).0)
         .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
     let tab_count = text.matches('\t').count();
+    // タブ位置はセルの内容幅（左右の余白を除いた幅）より 1pt 内側に収める。
+    // 内容幅を超えた右揃えタブは、Word や LibreOffice で値の末尾が切れる。
+    let right_margin = parent
+        .map(|table| table_cell_horizontal_margins(table).1)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    let content_limit = cell
+        .width_twips
+        .and_then(|width| width.checked_sub(left_margin + right_margin + 20));
     if tab_count > 0 && tab_stops.len() == tab_count {
         for (offset, right) in tab_stops {
             let Some(position) = pdf_points_to_twips(*offset)
                 .and_then(|twips| twips.checked_sub(left_margin))
+                .map(|position| content_limit.map_or(position, |limit| position.min(limit)))
                 .filter(|position| *position > 0)
             else {
                 continue;
@@ -4476,7 +4485,8 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         nested_tables: members,
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
-        cell_padding_pt: None,
+        // 外側の表のセル余白で子表の幅が縮まないよう、余白は 0 にする。
+        cell_padding_pt: Some(0.0),
         cell_font_sizes: Vec::new(),
         cell_tab_stops: Vec::new(),
         cell_fragments: Vec::new(),
@@ -6341,6 +6351,13 @@ fn borderless_text_table(mut table: PositionedTable) -> PositionedTable {
         }
     }
     table.docx_table = Some(model);
+    // 文字の並びから作った行は、代替フォントの行の高さで文字が切れないよう伸ばせるようにする。
+    let rows = table.table.row_count();
+    if rows > 0 && table.row_heights_pt.len() != rows {
+        let height = (table.bounds.y1 - table.bounds.y0).abs() / rows as f32;
+        table.row_heights_pt = vec![height; rows];
+    }
+    table.row_line_counts = vec![2; rows];
     table
 }
 
