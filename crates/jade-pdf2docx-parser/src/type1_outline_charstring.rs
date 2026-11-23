@@ -34,6 +34,10 @@ pub(super) fn decode(budget: &DecodeBudget, bytes: &[u8], subrs: &[Vec<u8>]) -> 
 mod interpreter;
 
 #[cfg(test)]
+#[path = "type1_outline_comparison_tests.rs"]
+mod comparison_tests;
+
+#[cfg(test)]
 mod tests {
     use super::*;
     use crate::{ParseError, ParseLimits};
