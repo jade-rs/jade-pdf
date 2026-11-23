@@ -1,4 +1,4 @@
-//! Contents の借用走査・初出順・保存容量・累積境界を検証する。
+//! Contentsの借用走査・全実行順・保存容量・累積境界を検証する。
 use super::*;
 use crate::{ParseError, ParseLimits};
 use proptest::prelude::*;
@@ -11,7 +11,7 @@ fn budget(limit: u64) -> DecodeBudget {
     })
 }
 
-/// 作業・結果配列の累積超過が公開用の失敗状態へ保持されることを確認する。
+/// 結果配列の容量超過が公開用の失敗状態へ保持されることを確認する。
 fn assert_limit(budget: &DecodeBudget, limit: u64, expected: u64) {
     assert!(matches!(budget.check(), Err(ParseError::ResourceLimit {
         resource: "metadata workspace bytes", limit: found, actual
@@ -29,12 +29,11 @@ fn lexical_reference_boundaries_and_nested_values() {
     );
 }
 
-/// 重複が多くても作業配列の全件分を確保前に予約する。
+/// 同じstreamでも、全実行回数分の参照を確保前に予約する。
 #[test]
 fn duplicate_references_charge_full_working_capacity() {
     let source = b"<< /Type /Page /Contents [7 0 R 7 0 R 7 0 R] >>";
-    let requested =
-        (std::mem::size_of::<&[u8]>() + 3 * std::mem::size_of::<OrderedReference>()) as u64;
+    let requested = (std::mem::size_of::<&[u8]>() + 3 * std::mem::size_of::<(usize, u32)>()) as u64;
     let limit = requested - 1;
     let budget = budget(limit);
     assert!(page_references(&budget, source).is_empty());
@@ -43,30 +42,26 @@ fn duplicate_references_charge_full_working_capacity() {
     assert!(budget.check().is_ok(), "失敗を消費した後も停止を保持する");
 }
 
-/// 作業配列が収まっても、重複除去後の保存配列に足りなければ停止する。
+/// 初出だけへ縮めず、全参照の保存容量がちょうど上限なら成功する。
 #[test]
 fn final_reference_capacity_is_reserved_separately() {
     let source = b"<< /Type /Page /Contents [7 0 R 7 0 R 4 0 R] >>";
-    let requested = (std::mem::size_of::<&[u8]>()
-        + 3 * std::mem::size_of::<OrderedReference>()
-        + 2 * std::mem::size_of::<(usize, u32)>()) as u64;
+    let requested = (std::mem::size_of::<&[u8]>() + 3 * std::mem::size_of::<(usize, u32)>()) as u64;
     let limit = requested - 1;
     let limited = budget(limit);
     assert!(page_references(&limited, source).is_empty());
     assert_limit(&limited, limit, requested);
     let exact = budget(requested);
-    assert_eq!(page_references(&exact, source), [(0, 7), (0, 4)]);
+    assert_eq!(page_references(&exact, source), [(0, 7), (0, 7), (0, 4)]);
     assert!(exact.check().is_ok());
 }
 
-/// 同じ stream を別ページで保持し、初出順・再抽出の累積境界を守る。
+/// 同じstreamを同一・別ページで保持し、実行順と再抽出の累積境界を守る。
 #[test]
 fn source_order_and_repeated_extraction_are_cumulative() {
     let source = b"<< /Type /Page /Contents [7 0 R 4 0 R 7 0 R 6 0 R] >> << /Type /Page /Contents [4 0 R 7 0 R 4 0 R] >>";
-    let one = (2 * std::mem::size_of::<&[u8]>()
-        + 7 * std::mem::size_of::<OrderedReference>()
-        + 5 * std::mem::size_of::<(usize, u32)>()) as u64;
-    let expected = [(0, 7), (0, 4), (0, 6), (1, 4), (1, 7)];
+    let one = (2 * std::mem::size_of::<&[u8]>() + 7 * std::mem::size_of::<(usize, u32)>()) as u64;
+    let expected = [(0, 7), (0, 4), (0, 7), (0, 6), (1, 4), (1, 7), (1, 4)];
     for limit in [one * 2 - 1, one * 2] {
         let budget = budget(limit);
         assert_eq!(page_references(&budget, source), expected);
@@ -104,10 +99,8 @@ fn content_stream_output_requires_additional_metadata_capacity() {
     let metadata_len =
         b"<< /Type /Page /Contents 4 0 R >>\n4 0 obj\n<< /Length 3 >>\nstream\nendstream\nendobj"
             .len();
-    let limit = (metadata_len
-        + std::mem::size_of::<&[u8]>()
-        + std::mem::size_of::<OrderedReference>()
-        + std::mem::size_of::<(usize, u32)>()) as u64;
+    let limit =
+        (metadata_len + std::mem::size_of::<&[u8]>() + std::mem::size_of::<(usize, u32)>()) as u64;
     let budget = budget(limit);
     assert!(crate::parser::extract_page_content_streams_with_page(&budget, source).is_empty());
     assert_limit(
@@ -126,7 +119,6 @@ fn content_stream_output_is_cumulative_and_inclusive() {
             .len();
     let one = (metadata_len
         + std::mem::size_of::<&[u8]>()
-        + std::mem::size_of::<OrderedReference>()
         + std::mem::size_of::<(usize, u32)>()
         + std::mem::size_of::<(usize, Vec<u8>)>()) as u64;
     for limit in [one * 2 - 1, one * 2] {
@@ -148,7 +140,7 @@ fn content_stream_output_is_cumulative_and_inclusive() {
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
-    /// 独立した初出順モデルと、コメントを含むページ別参照・正確な容量を比較する。
+    /// 独立した全実行順モデルと、コメントを含むページ別参照・正確な容量を比較する。
     #[test]
     fn selected_references_match_first_occurrence_model(
         pages in prop::collection::vec(prop::collection::vec(1u16..30, 0..24), 0..12)
@@ -158,19 +150,15 @@ proptest! {
         let mut count = 0;
         for (page, references) in pages.iter().enumerate() {
             source.push_str("<< /Type /Page /Contents [ % 999 0 R\n");
-            let mut seen = std::collections::BTreeSet::new();
             for number in references {
                 source.push_str(&format!("{number} % number\n 0 R "));
                 count += 1;
-                if seen.insert(*number) {
-                    expected.push((page, u32::from(*number)));
-                }
+                expected.push((page, u32::from(*number)));
             }
             source.push_str("] >>\n");
         }
         let capacity = (pages.len() * std::mem::size_of::<&[u8]>()
-            + count * std::mem::size_of::<OrderedReference>()
-            + expected.len() * std::mem::size_of::<(usize, u32)>()) as u64;
+            + count * std::mem::size_of::<(usize, u32)>()) as u64;
         let exact = budget(capacity);
         prop_assert_eq!(page_references(&exact, source.as_bytes()), expected);
         prop_assert!(exact.check().is_ok());

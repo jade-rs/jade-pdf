@@ -57,3 +57,13 @@ export; cancelled paths remain accepted. A curve followed by a straight segment
 must not invent a table rule, while a separately drawn rule after a cancelled
 path remains present. These checks do not establish curve rendering or OCR
 recognition. All fourteen earlier input hashes are retained.
+
+Five owned LZW controls exercise the production browser exports: direct content,
+explicit EarlyChange 0, an indirect Contents array with repeated streams and
+cross-stream text state, malformed data, and an unsupported predictor. Valid
+controls check editable text and source x coordinates in both default and strict
+exports; inspection and both conversion modes must reject the invalid controls.
+These controls do not establish filter-chain, indirect parameter, or predictor
+support. Literal controls reset the dictionary per byte; native codec tests
+separately cover 9–12-bit transitions and full-table resets for both EarlyChange
+values.

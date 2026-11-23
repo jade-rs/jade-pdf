@@ -34,6 +34,7 @@ mod legacy_page_resources;
 mod legacy_stream;
 mod limits;
 mod lossy_chunks;
+mod lzw_content;
 mod metadata;
 #[cfg(test)]
 mod metadata_extraction_tests;
@@ -53,6 +54,7 @@ mod object_index;
 #[path = "../tests/support/page_attribute_pdf.rs"]
 mod page_attribute_fixture;
 mod page_attributes;
+mod page_contents;
 mod page_geometry_diagnostics;
 mod page_resources;
 mod page_tree;

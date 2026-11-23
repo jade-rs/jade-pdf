@@ -277,6 +277,30 @@ impl DecodeBudget {
         self.pages.borrow().is_some()
     }
 
+    /// 検証済みContentsを描画回数分だけ保存し、結果配列の確保も累積予約する。
+    pub(crate) fn page_content_references(&self) -> Option<Vec<(usize, u32)>> {
+        let pages = self.pages.borrow();
+        let pages = pages.as_ref()?;
+        let Some(count) = pages
+            .iter()
+            .try_fold(0usize, |total, page| total.checked_add(page.contents.len()))
+        else {
+            self.exceeded(
+                "metadata workspace bytes",
+                self.metadata_workspace_limit,
+                u64::MAX,
+            );
+            return Some(Vec::new());
+        };
+        let Some(mut references) = self.metadata_vector(count) else {
+            return Some(Vec::new());
+        };
+        for (page, entry) in pages.iter().enumerate() {
+            references.extend(entry.contents.iter().map(|number| (page, *number)));
+        }
+        Some(references)
+    }
+
     /// 合成 metadata を所属順に借用し、出力配列を確保前に累積予約する。
     pub(crate) fn page_dictionaries<'a>(&self, source: &'a [u8]) -> Vec<&'a [u8]> {
         if self.is_stopped() {
@@ -478,6 +502,14 @@ impl DecodeBudget {
             *self.failure.borrow_mut() = Some(ParseError::Cancelled);
         }
         self.stopped.get()
+    }
+
+    /// 復号不能・未対応の本文を最初の失敗として保持し、空白の成功を防ぐ。
+    pub(crate) fn reject_content(&self, kind: std::io::ErrorKind, reason: &'static str) {
+        if !self.is_stopped() {
+            self.stopped.set(true);
+            *self.failure.borrow_mut() = Some(ParseError::Io(std::io::Error::new(kind, reason)));
+        }
     }
 
     /// ToUnicode のループ開始前に処理数を累積で予約する。
@@ -824,6 +856,15 @@ impl DecodeBudget {
 /// 予算に保存するため、呼び出し側が None を捨てても解析成功にはならない。
 pub(crate) fn decode_zlib(data: &[u8], decode_budget: &DecodeBudget) -> Option<Vec<u8>> {
     decode_zlib_buffer(data, decode_budget, false)
+}
+
+/// LZWの作業配列と展開本文を、Flateと同じ確保・単一/累積展開上限で検査する。
+pub(crate) fn decode_lzw(data: &[u8], budget: &DecodeBudget, early: u8) -> Option<Vec<u8>> {
+    decode_buffer(
+        crate::lzw_content::Decoder::new(data, early, budget)?,
+        budget,
+        false,
+    )
 }
 
 /// Font 展開配列の全ての再確保を保存予算にも数える。
