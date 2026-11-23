@@ -76,7 +76,11 @@ pub(crate) fn read<'bytes>(
         .and_then(|v| v.1)
         .and_then(|n| parser::font_cmap_for_object_number(budget, bytes, n, offsets))
         .unwrap_or_default();
-    let mapping = crate::text::type1_mapping(budget, table.as_ref(), &differences, &original)?;
+    let mapping = if table.is_none() && differences.iter().all(Option::is_none) {
+        Type1Mapping::unverified(budget, &original)?
+    } else {
+        crate::text::type1_mapping(budget, table.as_ref(), &differences, &original)?
+    };
     if let Some(number) = number {
         budget.save_type1(number, generation, mapping.clone())?;
     }

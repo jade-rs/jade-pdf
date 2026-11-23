@@ -18,6 +18,28 @@ pub(crate) struct Mapping {
     pub(crate) unknown: [u64; 4],
 }
 
+impl Mapping {
+    /// 追加のglyph対応がない場合は元CMapを共有し、使用codeの確認不能状態だけを作る。
+    pub(crate) fn unverified(budget: &DecodeBudget, original: &ToUnicodeCMap) -> Option<Self> {
+        let mut unknown = [u64::MAX; 4];
+        let digits = b"0123456789ABCDEF";
+        for code in 0..256 {
+            if budget.is_stopped() {
+                return None;
+            }
+            let key_bytes = [digits[code >> 4], digits[code & 15]];
+            let key = std::str::from_utf8(&key_bytes).ok()?;
+            if original.key_is_allowed(key) && original.mappings.get(key).is_some() {
+                unknown[code / 64] &= !(1u64 << (code % 64));
+            }
+        }
+        Some(Self {
+            cmap: original.clone(),
+            unknown,
+        })
+    }
+}
+
 /// 作者のglyph名をUnicodeへ変換し、元codeからのASCII推測を防ぐ。
 pub(crate) fn build(
     budget: &DecodeBudget,
