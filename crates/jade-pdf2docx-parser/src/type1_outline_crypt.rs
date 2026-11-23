@@ -5,11 +5,24 @@ use crate::decode::DecodeBudget;
 pub(super) fn decrypt(
     budget: &DecodeBudget,
     bytes: &[u8],
-    seed: u16,
+    mut seed: u16,
     skip: usize,
 ) -> Option<Vec<u8>> {
-    let _ = (budget, bytes, seed, skip);
-    None
+    let mut output = budget.font_vector(bytes.len().checked_sub(skip)?)?;
+    for (index, &cipher) in bytes.iter().enumerate() {
+        if index.is_multiple_of(1024) && budget.is_stopped() {
+            return None;
+        }
+        let plain = cipher ^ (seed >> 8) as u8;
+        seed = u16::from(cipher)
+            .wrapping_add(seed)
+            .wrapping_mul(52845)
+            .wrapping_add(22719);
+        if index >= skip {
+            output.push(plain);
+        }
+    }
+    (!budget.is_stopped()).then_some(output)
 }
 
 #[cfg(test)]
