@@ -2582,7 +2582,12 @@ fn extract_text_elements_with_matrices<'clip>(
                 })
                 .is_some_and(|gap| {
                     elements.last().is_some_and(|previous| {
-                        crate::text_word_gap::needs_separator(&previous.text, &text, gap, state.size)
+                        crate::text_word_gap::needs_separator(
+                            &previous.text,
+                            &text,
+                            gap,
+                            state.size,
+                        )
                     })
                 });
             if derived.is_some() && last_derived && separator {
@@ -2598,7 +2603,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
-                            baseline_y: None,
+                            baseline_y: page_matrix.and_then(type1_positions::baseline),
                             page,
                             bounds: gap,
                             font_size,
@@ -2645,7 +2650,8 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: None,
+                        baseline_y: derived
+                            .and_then(|_| page_matrix.and_then(type1_positions::baseline)),
                         page,
                         bounds,
                         font_size,

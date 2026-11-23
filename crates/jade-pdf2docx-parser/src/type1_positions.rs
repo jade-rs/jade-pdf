@@ -1,17 +1,23 @@
 //! 確認済みの正立文字の間隔を、source fontを割り当てない論理空白へ戻す。
 use crate::ParsedBounds;
 
+/// 正立した派生glyphの描画行列だけから、確認済みのbaselineを返す。
+pub(super) fn baseline(matrix: [f32; 6]) -> Option<f32> {
+    (matrix.iter().all(|v| v.is_finite())
+        && matrix[0] > 0.
+        && matrix[3] > 0.
+        && matrix[1] == 0.
+        && matrix[2] == 0.)
+        .then_some(matrix[5])
+}
+
 /// 同じ正立baselineで正の距離を持つ二矩形だけから、空白のページ座標を求める。
 pub(super) fn gap(
     previous: ParsedBounds,
     next: ParsedBounds,
     matrix: [f32; 6],
 ) -> Option<ParsedBounds> {
-    if !matrix.iter().all(|v| v.is_finite())
-        || matrix[0] <= 0.
-        || matrix[3] <= 0.
-        || matrix[1] != 0.
-        || matrix[2] != 0.
+    if baseline(matrix).is_none()
         || ![
             previous.x1,
             previous.y0,
@@ -64,6 +70,7 @@ mod tests {
             prop_assert_eq!(result.x1, right.x0);
             for matrix in [[-1.,0.,0.,1.,0.,0.], [1.,0.1,0.,1.,0.,0.], [1.,0.,0.1,1.,0.,0.], [1.,0.,0.,-1.,0.,0.], [1.,0.,0.,1.,f32::NAN,0.]] {
                 prop_assert!(gap(left, right, matrix).is_none());
+                prop_assert!(baseline(matrix).is_none());
             }
             prop_assert!(gap(right, left, identity).is_none());
         }
