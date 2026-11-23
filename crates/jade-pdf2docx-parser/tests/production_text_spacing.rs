@@ -164,6 +164,33 @@ fn negative_spacing_and_scaling_keep_all_glyph_extents() {
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 同じCourier語間を文字またはTJ移動で表しても、回転・水平倍率・Tc下の文字列と外接範囲は一致する。
+    #[test]
+    fn word_gap_matches_literal_space_geometry(
+        left in 1usize..9,
+        right in 1usize..9,
+        spacing in 0i32..4,
+        scale in 25i32..151,
+        rotation in 0usize..4,
+        in_form in any::<bool>(),
+    ) {
+        let matrix = ["1 0 0 1", "0 1 -1 0", "-1 0 0 -1", "0 -1 1 0"][rotation];
+        let prefix = format!("BT /F 10 Tf {spacing} Tc {scale} Tz {matrix} 200 200 Tm ");
+        let suffix = " /F 20 Tf (Z) Tj ET";
+        let a = "A".repeat(left);
+        let b = "B".repeat(right);
+        let literal = parse(&format!("{prefix}({a} {b}) Tj{suffix}"), in_form, false);
+        let adjustment = -(600 + 100 * spacing);
+        let positioned = parse(&format!("{prefix}[({a}) {adjustment} ({b})] TJ{suffix}"), in_form, false);
+        prop_assert_eq!(literal.text_elements.len(), positioned.text_elements.len());
+        for (a, b) in literal.text_elements.iter().zip(&positioned.text_elements) {
+            prop_assert_eq!(&a.text, &b.text);
+            for (x, y) in [(a.bounds.x0, b.bounds.x0), (a.bounds.x1, b.bounds.x1), (a.bounds.y0, b.bounds.y0), (a.bounds.y1, b.bounds.y1)] {
+                prop_assert!((x-y).abs() < 0.001);
+            }
+        }
+    }
+
     /// Tj/TJ の分割は間隔を含めた glyph の位置と後続原点を変えない。
     #[test]
     fn splitting_show_preserves_spacing(count in 1usize..20, spacing in -3i32..8, scale in 25i32..151) {
