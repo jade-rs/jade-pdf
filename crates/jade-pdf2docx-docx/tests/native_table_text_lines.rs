@@ -16,6 +16,11 @@ fn source_with_padding(gap: u32, second_size: u32, prefix: &str, suffix: &str) -
         "1 w 72 600 m 272 600 l S 72 700 m 272 700 l S 72 600 m 72 700 l S 172 600 m 172 700 l S 272 600 m 272 700 l S BT /F1 10 Tf 82 680 Td ({prefix}Alpha{suffix}) Tj ET BT /F1 {second_size} Tf 92 {} Td (Beta) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
         680 - gap,
     );
+    owned_pdf_content(&content)
+}
+
+/// 描画命令列から、正式xrefと一つのHelvetica resourceを持つ所有PDFを作る。
+fn owned_pdf_content(content: &str) -> Vec<u8> {
     let objects = [
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
@@ -48,15 +53,21 @@ fn first_cell(gap: u32, second_size: u32) -> String {
 /// 指定した所有原本の最初の表セルXMLを、製品byte API経由で読む。
 fn first_cell_from_source(source: &[u8]) -> String {
     let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-cell-lines.pdf", source).unwrap();
+    let xml = document_xml(bytes);
+    let start = xml.find("<w:tc>").unwrap();
+    let end = start + xml[start..].find("</w:tc>").unwrap();
+    xml[start..end].to_string()
+}
+
+/// 製品DOCXの本文XMLを、閉じたarchiveから読む。
+fn document_xml(bytes: Vec<u8>) -> String {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
     zip.by_name("word/document.xml")
         .unwrap()
         .read_to_string(&mut xml)
         .unwrap();
-    let start = xml.find("<w:tc>").unwrap();
-    let end = start + xml[start..].find("</w:tc>").unwrap();
-    xml[start..end].to_string()
+    xml
 }
 
 /// 段落ごとの本文・行box・前余白・font sizeを、属性順に依存せず読む。
@@ -144,5 +155,90 @@ proptest! {
         let suffix = " ".repeat(trailing);
         let p = paragraphs(&first_cell_from_source(&source_with_padding(24, 10, &prefix, &suffix)));
         prop_assert_eq!(&p[0].0, &format!("{prefix}Alpha{suffix}"));
+    }
+}
+
+/// 原本の二つの行高を平均せず、上から下の対応を維持する所有PDFを作る。
+fn unequal_row_source(top: u32, bottom: u32) -> Vec<u8> {
+    let high = 600 + bottom + top;
+    let middle = 600 + bottom;
+    let mut content = format!(
+        "1 w 72 600 m 272 600 l S 72 {middle} m 272 {middle} l S 72 {high} m 272 {high} l S 72 600 m 72 {high} l S 172 600 m 172 {high} l S 272 600 m 272 {high} l S"
+    );
+    for (label, y) in [("Top", high - 12), ("Bottom", middle - 12)] {
+        content.push_str(&format!(" BT /F1 10 Tf 82 {y} Td ({label}) Tj ET BT /F1 10 Tf 82 {} Td (Second) Tj ET BT /F1 10 Tf 182 {y} Td (Control) Tj ET", y - 16));
+    }
+    owned_pdf_content(&content)
+}
+
+/// 製品byte APIの実際の行高属性を、XML属性順に依存せず読む。
+fn row_heights(source: &[u8]) -> Vec<u32> {
+    let bytes = convert_minimum_pdf_bytes_to_docx_bytes("unequal-cell-rows.pdf", source).unwrap();
+    let xml = document_xml(bytes);
+    let mut reader = Reader::from_str(&xml);
+    let mut heights = Vec::new();
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(tag) if tag.name().as_ref() == b"w:trHeight" => {
+                for attr in tag.attributes() {
+                    let attr = attr.unwrap();
+                    if attr.key.as_ref() == b"w:val" {
+                        heights.push(std::str::from_utf8(&attr.value).unwrap().parse().unwrap());
+                    }
+                }
+            }
+            Event::Eof => return heights,
+            _ => {}
+        }
+    }
+}
+
+/// 行高が40ptと100ptの原本を、各70ptへ潰すと複数行の後半が切れる。
+#[test]
+fn unequal_source_row_heights_are_not_averaged() {
+    assert_eq!(row_heights(&unequal_row_source(40, 100)), [800, 2000]);
+}
+
+/// 字面座標と行端空白が両方あるnative本文では、空白幅を二重に加算しない。
+#[test]
+fn native_ink_bounds_with_edge_spaces_keep_legacy_cell_fallback() {
+    use jade_pdf2docx_docx::{MinimumPdfToDocxRequest, convert_minimum_pdf_to_docx};
+    let temp = tempfile::tempdir().unwrap();
+    let input = temp.path().join("padded-native-cell.pdf");
+    let output = temp.path().join("padded-native-cell.docx");
+    std::fs::write(&input, source_with_padding(24, 14, "    ", "  ")).unwrap();
+    let parsed = jade_pdf2docx_parser::parse_pdf(&input).unwrap();
+    assert!(
+        parsed
+            .text_elements
+            .iter()
+            .any(|t| t.baseline_y.is_some() && t.text.starts_with("    Alpha"))
+    );
+    convert_minimum_pdf_to_docx(&MinimumPdfToDocxRequest {
+        input_pdf_path: input,
+        output_docx_path: output.clone(),
+        ocr_text_lines: None,
+        ocr_table: None,
+        clean_output: true,
+    })
+    .unwrap();
+    let xml = document_xml(std::fs::read(output).unwrap());
+    let start = xml.find("<w:tc>").unwrap();
+    let end = start + xml[start..].find("</w:tc>").unwrap();
+    let p = paragraphs(&xml[start..end]);
+    assert_eq!(
+        p.len(),
+        1,
+        "ambiguous ink-origin geometry must retain legacy cell layout"
+    );
+    assert_eq!(p[0].0, "Alpha Beta");
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(16))]
+    /// 独立に変えた各行高は、総高や本文の値にかかわらず対応する行へ残る。
+    #[test]
+    fn each_source_row_height_survives(top in 32u32..96, bottom in 100u32..180) {
+        prop_assert_eq!(row_heights(&unequal_row_source(top, bottom)), [top * 20, bottom * 20]);
     }
 }
