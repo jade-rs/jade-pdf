@@ -16,6 +16,15 @@ struct Font {
     /// 元のPrivateから独立復号したOtherSubrsの完全な配列定義。
     #[serde(default)]
     other_subrs: Vec<u8>,
+    /// 元PDFのstreamから展開した、未変更のFontFile。
+    #[serde(default)]
+    fontfile: Vec<u8>,
+    /// 元のcleartext byte長。
+    #[serde(default)]
+    length1: usize,
+    /// 元のeexec byte長。
+    #[serde(default)]
+    length2: usize,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
@@ -46,24 +55,34 @@ struct ReferenceCommand {
 #[test]
 #[ignore = "rights-reviewed external fontTools gold requires JADE_TYPE1_OUTLINE_GOLD"]
 fn external_charstrings_match_independent_geometry() {
-    compare(false);
+    compare(false, false);
 }
 
 /// 標準定義を照合できれば、未対応157文字も含めて全glyphの元外形に一致する。
 #[test]
 #[ignore = "rights-reviewed external fontTools gold with OtherSubrs requires JADE_TYPE1_OUTLINE_GOLD"]
 fn external_verified_standard_subrs_match_all_geometry() {
-    compare(true);
+    compare(true, false);
+}
+
+/// 元FontFileからRust自身で二層復号し、独立glyph goldと同じ文字辞書を得る。
+#[test]
+#[ignore = "rights-reviewed original FontFile gold requires JADE_TYPE1_OUTLINE_GOLD"]
+fn external_original_fontfile_reaches_every_source_charstring() {
+    compare(true, true);
 }
 
 /// 同一goldの幅と制御点を、厳密モードまたは標準定義承認モードで比較する。
-fn compare(standard: bool) {
+fn compare(standard: bool, original: bool) {
     let path = std::env::var("JADE_TYPE1_OUTLINE_GOLD").expect("explicit reviewed gold path");
     let bytes = std::fs::read(path).unwrap();
     assert!(bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&bytes).unwrap();
     let mut total_accepted = 0;
     for font in gold.fonts {
+        if original {
+            compare_original(&font);
+        }
         let verified = standard.then(|| {
             let (verified, end) =
                 crate::type1_outline::standard::verify(&DecodeBudget::default(), &font.other_subrs)
@@ -154,4 +173,39 @@ fn compare(standard: bool) {
         total_accepted > 0,
         "a comparison of zero accepted glyphs is insufficient"
     );
+}
+
+/// 独立復号値をproduct入力として使わず、元のstreamから同じglyphとsubroutineを得る。
+fn compare_original(font: &Font) {
+    use crate::type1_outline::{crypt, private};
+    let budget = DecodeBudget::default();
+    let decrypted = crypt::decrypt(
+        &budget,
+        &font.fontfile[font.length1..font.length1 + font.length2],
+        55665,
+        4,
+    )
+    .unwrap();
+    let parsed =
+        private::parse(&budget, &decrypted).expect("original static Type1 Private dictionary");
+    assert_eq!(parsed.glyphs.len(), font.glyphs.len());
+    assert_eq!(parsed.subrs.len(), font.subrs.len());
+    for (actual, expected) in parsed.subrs.iter().zip(&font.subrs) {
+        let bytes = crypt::decrypt(&budget, actual.unwrap(), 4330, parsed.prefix.unwrap()).unwrap();
+        assert_eq!(&bytes, expected);
+    }
+    for expected in &font.glyphs {
+        let actual = parsed
+            .glyphs
+            .iter()
+            .find(|g| g.name == expected.name.as_bytes())
+            .unwrap();
+        let bytes = crypt::decrypt(&budget, actual.bytes, 4330, parsed.prefix.unwrap()).unwrap();
+        assert_eq!(
+            bytes, expected.program,
+            "{} {}",
+            font.source_name, expected.name
+        );
+    }
+    assert!(budget.check().is_ok());
 }
