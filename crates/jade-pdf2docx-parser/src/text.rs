@@ -42,6 +42,10 @@ mod preview_candidate_budget_tests;
 #[path = "text_operand.rs"]
 mod operand;
 
+#[cfg(test)]
+#[path = "tounicode_empty_targets_tests.rs"]
+mod empty_tounicode_tests;
+
 #[path = "tounicode_input.rs"]
 mod cmap_input;
 

@@ -48,6 +48,9 @@ pub(super) fn parse_tounicode_cmap_from_bytes(
         let (Some(first), Some(second)) = (hexes.next(), hexes.next()) else {
             continue;
         };
+        if first.is_empty() {
+            continue;
+        }
         if in_codespace_range {
             if budget.charge_tounicode_entries(1).is_none() {
                 break;
@@ -178,12 +181,13 @@ impl MappingKey<'_> {
     }
 }
 
-/// 検証済み ASCII hex を一時配列なしで UTF-16 復号し、先頭 BOM を除く。
+/// 完全なUTF16となるASCII hexを借用復号し、奇数桁の末尾ゼロと先頭BOMを扱う。
 fn utf16_chars(hex: &str) -> impl Iterator<Item = Result<char, std::char::DecodeUtf16Error>> + '_ {
-    let units = hex.as_bytes().chunks_exact(4).map(|digits| {
-        digits.iter().fold(0u16, |value, digit| {
+    let units = hex.as_bytes().chunks(4).map(|digits| {
+        let unit = digits.iter().fold(0u16, |value, digit| {
             (value << 4) | (*digit as char).to_digit(16).unwrap_or(0) as u16
-        })
+        });
+        unit << (4 * (4 - digits.len()))
     });
     char::decode_utf16(units)
         .enumerate()
@@ -203,6 +207,9 @@ fn insert_utf16_mapping(
     key: MappingKey<'_>,
     hex: &str,
 ) -> Option<()> {
+    if !hex.len().div_ceil(2).is_multiple_of(2) {
+        return Some(());
+    }
     let Some(length) =
         utf16_chars(hex).try_fold(0usize, |length, ch| Some(length + ch.ok()?.len_utf8()))
     else {
@@ -238,7 +245,7 @@ impl<'a> HexTokens<'a> {
 impl<'a> Iterator for HexTokens<'a> {
     type Item = &'a str;
 
-    /// 有効な hex を借用し、不正 token は従来と同じく読み飛ばす。
+    /// 空の宛先も保持し、不正hexだけを読み飛ばす。空のsource codeは呼出側で拒否する。
     fn next(&mut self) -> Option<Self::Item> {
         let bytes = self.line.as_bytes();
         while self.cursor < bytes.len() {
@@ -255,7 +262,7 @@ impl<'a> Iterator for HexTokens<'a> {
             let end = start + length;
             self.cursor = end + 1;
             let hex = &self.line[start..end];
-            if !hex.is_empty() && hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            if hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
                 return Some(hex);
             }
         }

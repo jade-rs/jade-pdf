@@ -109,6 +109,8 @@ Within a `TJ` array, a forward gap of at least 0.2 em between word-spaced charac
 
 Native conversion preserves physically printed line-end hyphens. Pdfium's control-code representation is restored only for characters that its hyphen API verifies; literal control codes keep their identity. Public PDF tests compare original word boundaries and punctuation without deleting source hyphens.
 
+The bytes parser preserves empty `bfchar` destinations and empty elements in `bfrange` destination arrays. These entries produce empty text and keep later character mappings aligned. Incomplete UTF-16 destinations are rejected as whole mappings.
+
 When the built-in program is unavailable, the existing ToUnicode map stays shared and unmapped codes remain explicitly unverified in the quality report; normal best-effort output may still contain fallback text. Strict mode rejects any painted unverified code.
 
 The production DOCX WASM build helper bundles and verifies the Adobe Glyph List and fontTools notices. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include both parser notices.
