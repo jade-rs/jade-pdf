@@ -168,6 +168,43 @@ fn permission_and_storage_failures_do_not_produce_a_font() {
     ));
 }
 
+/// 大きい正の右余白は個別に切り捨てず、集計した最小値だけをFWORDで検査する。
+#[test]
+fn wide_glyph_does_not_overflow_a_representable_minimum_sidebearing() {
+    let metrics = [
+        Metric {
+            advance: 65535,
+            left: 0,
+            bounds: Some([0, 0, 1, 1]),
+        },
+        Metric {
+            advance: 600,
+            left: 0,
+            bounds: Some([0, 0, 600, 700]),
+        },
+    ];
+    let info = Info {
+        metrics: &metrics,
+        mappings: &[],
+        ascent: 700,
+        descent: -200,
+        line_gap: 0,
+        weight: 400,
+        bold: false,
+        italic: false,
+        embedding_flags: 0,
+        underline_position: -100,
+        underline_thickness: 50,
+        x_height: 450,
+        cap_height: 700,
+        license: "owned",
+        license_url: "",
+    };
+    let summary = tables::summarize(&info).unwrap();
+    assert_eq!(summary.max_advance, 65535);
+    assert_eq!(summary.min_right, 0);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 許可bitと四つの書体属性を、head・OS/2・nameへ一貫して保存する。
