@@ -94,11 +94,11 @@ fn cjk_tracking_keeps_original_word_boundaries() {
     assert_eq!(parsed.text_elements[0].bounds.x1, 36.);
 }
 
-/// 別のtext objectの隣接描画は従来どおり結合し、TJ用の推論を適用しない。
+/// 別のTj命令の隣接描画は従来どおり結合し、TJ配列内の推論を適用しない。
 #[test]
-fn separate_text_objects_do_not_gain_inferred_tj_spaces() {
+fn separate_show_operators_do_not_gain_inferred_tj_spaces() {
     let parsed = parse(
-        "BT /F 10 Tf 20 150 Td (Top) Tj ET BT /F 10 Tf 42 150 Td (Line) Tj ET",
+        "BT /F 10 Tf 20 150 Td (Top) Tj 1 0 0 1 42 150 Tm (Line) Tj ET",
         false,
         false,
     );
