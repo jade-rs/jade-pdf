@@ -137,6 +137,7 @@ mod tests {
             page: 0,
             bounds: ParsedBounds { x0, y0, x1, y1 },
             stroke_width: 0.5,
+            dashed: false,
         }
     }
 

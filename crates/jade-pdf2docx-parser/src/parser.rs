@@ -4014,6 +4014,7 @@ startxref\n\
                     y1: 80.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -4024,6 +4025,7 @@ startxref\n\
                     y1: 150.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -4034,6 +4036,7 @@ startxref\n\
                     y1: 100.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
         ]);
 

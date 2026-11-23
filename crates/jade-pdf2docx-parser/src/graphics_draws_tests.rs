@@ -76,3 +76,25 @@ fn filled_rectangles_keep_their_color() {
     assert_eq!(fills[0].color, "D9D9D9");
     assert_eq!(output.len(), 1, "thin red rectangle stays a rule");
 }
+
+/// 正の dash array で描いた線は破線、空の dash array に戻した線と `q`/`Q` で戻した線は実線になる。
+#[test]
+fn dash_pattern_marks_rules_as_dashed() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let mut output = Vec::new();
+    append(
+        &budget,
+        0,
+        b"q [3.96 1.92] 0 d 0 0 m 100 0 l S Q 0 10 m 100 10 l S [3] 0 d 0 20 m 100 20 l S [] 0 d 0 30 m 100 30 l S",
+        &mut output,
+    )
+    .expect("append");
+    let dashed = output
+        .iter()
+        .map(|graphic| (graphic.bounds.y0.round() as i32, graphic.dashed))
+        .collect::<Vec<_>>();
+    assert_eq!(
+        dashed,
+        vec![(0, true), (10, false), (20, true), (30, false)]
+    );
+}

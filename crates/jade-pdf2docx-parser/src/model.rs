@@ -76,6 +76,8 @@ pub struct ParsedGraphicElement {
     pub bounds: ParsedBounds,
     /// stroke 幅。filled rectangle 由来の場合は推定幅。
     pub stroke_width: f32,
+    /// 破線（`d` 演算子の dash array が空でない）で描いた線か。
+    pub dashed: bool,
 }
 
 /// PDF content stream から抽出したテキスト要素を表す。

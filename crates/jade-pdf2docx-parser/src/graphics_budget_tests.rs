@@ -103,6 +103,7 @@ fn graphics_merge_handles_extreme_endpoints() {
             y1: 0.0,
         },
         stroke_width: 1.0,
+        dashed: false,
     };
     assert_eq!(
         merge_axis_aligned_segments(vec![line.clone(), line]).len(),
@@ -196,6 +197,7 @@ proptest! {
             page: 2,
             bounds: ParsedBounds { x0: start as f32, y0: 3.0, x1: (start + length) as f32, y1: 3.0 },
             stroke_width: f32::from(width),
+            dashed: false,
         }).collect();
         let mut reversed = lines.clone(); reversed.reverse();
         let merged = merge_axis_aligned_segments(lines);

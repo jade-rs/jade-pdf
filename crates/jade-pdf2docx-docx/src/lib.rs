@@ -3346,6 +3346,8 @@ struct DocxCellBorders {
     right: bool,
     /// DOCX の border size（1/8pt 単位）。
     size_eighths_pt: usize,
+    /// 破線で描く辺（上・左・下・右の順）。
+    dashed: [bool; 4],
 }
 
 impl DocxCellBorders {
@@ -3362,6 +3364,7 @@ impl DocxCellBorders {
             bottom: true,
             right: true,
             size_eighths_pt,
+            dashed: [false; 4],
         }
     }
 }
@@ -4352,26 +4355,31 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
 /// セル罫線フラグを DOCX の `w:tcBorders` へ変換する。
 fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
     let mut out = TableCellBorders::with_empty();
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Top,
-        borders.top,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Left,
-        borders.left,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Bottom,
-        borders.bottom,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Right,
-        borders.right,
-        borders.size_eighths_pt,
-    ));
+    for (position, present, dashed) in [
+        (TableCellBorderPosition::Top, borders.top, borders.dashed[0]),
+        (
+            TableCellBorderPosition::Left,
+            borders.left,
+            borders.dashed[1],
+        ),
+        (
+            TableCellBorderPosition::Bottom,
+            borders.bottom,
+            borders.dashed[2],
+        ),
+        (
+            TableCellBorderPosition::Right,
+            borders.right,
+            borders.dashed[3],
+        ),
+    ] {
+        let border = table_cell_border_with_size(position, present, borders.size_eighths_pt);
+        out = out.set(if present && dashed {
+            border.border_type(BorderType::Dashed)
+        } else {
+            border
+        });
+    }
     out
 }
 
@@ -4543,6 +4551,7 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         bottom: false,
         right: false,
         size_eighths_pt: 0,
+        dashed: [false; 4],
     };
     let row = (0..cols)
         .map(|_| DocxTableCellModel {
@@ -4939,6 +4948,7 @@ fn add_clipped_component_edges(
                     y1: child_bounds.y1,
                 },
                 stroke_width,
+                dashed: false,
             });
         }
     }
@@ -4956,6 +4966,7 @@ fn add_clipped_component_edges(
                     y1: y,
                 },
                 stroke_width,
+                dashed: false,
             });
         }
     }
@@ -6124,6 +6135,10 @@ fn docx_table_model_from_grid(
         return None;
     }
     let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (dashed_graphics, solid_graphics): (Vec<_>, Vec<_>) =
+        graphics.iter().cloned().partition(|graphic| graphic.dashed);
+    let (dashed_horizontal, dashed_vertical) = grid_rules_from_graphics(&dashed_graphics);
+    let (solid_horizontal, solid_vertical) = grid_rules_from_graphics(&solid_graphics);
     let xs = xs.iter().map(|x| *x as f32).collect::<Vec<_>>();
     let ys = ys.iter().map(|y| *y as f32).collect::<Vec<_>>();
     let has_text = cells
@@ -6220,6 +6235,32 @@ fn docx_table_model_from_grid(
                     bottom: table_grid::is_ruled(&horizontal, bottom_of(row), left, right),
                     right: table_grid::is_ruled(&vertical, right, bottom_of(row), top_of(row)),
                     size_eighths_pt: border_size,
+                    // 辺が破線だけで描かれていれば破線にする（実線と重なる辺は実線）。
+                    dashed: [
+                        table_grid::is_ruled(&dashed_horizontal, top_of(row), left, right)
+                            && !table_grid::is_ruled(&solid_horizontal, top_of(row), left, right),
+                        table_grid::is_ruled(&dashed_vertical, left, bottom_of(row), top_of(row))
+                            && !table_grid::is_ruled(
+                                &solid_vertical,
+                                left,
+                                bottom_of(row),
+                                top_of(row),
+                            ),
+                        table_grid::is_ruled(&dashed_horizontal, bottom_of(row), left, right)
+                            && !table_grid::is_ruled(
+                                &solid_horizontal,
+                                bottom_of(row),
+                                left,
+                                right,
+                            ),
+                        table_grid::is_ruled(&dashed_vertical, right, bottom_of(row), top_of(row))
+                            && !table_grid::is_ruled(
+                                &solid_vertical,
+                                right,
+                                bottom_of(row),
+                                top_of(row),
+                            ),
+                    ],
                 }),
             });
             col += span;
@@ -6231,7 +6272,11 @@ fn docx_table_model_from_grid(
             !(borders.top && borders.left && borders.bottom && borders.right)
         })
     });
-    (has_span || has_missing_rule).then_some(DocxTableModel { rows })
+    let has_dashed_rule = rows.iter().flatten().any(|cell| {
+        cell.borders
+            .is_some_and(|borders| borders.dashed.iter().any(|dashed| *dashed))
+    });
+    (has_span || has_missing_rule || has_dashed_rule).then_some(DocxTableModel { rows })
 }
 
 /// ページ graphics を水平・垂直の罫線区間へ分ける。
@@ -6433,6 +6478,7 @@ fn borderless_text_table(mut table: PositionedTable) -> PositionedTable {
             bottom: false,
             right: false,
             size_eighths_pt: 0,
+            dashed: [false; 4],
         });
         let body = cell.text.trim();
         let digits = body.chars().filter(|ch| ch.is_ascii_digit()).count();

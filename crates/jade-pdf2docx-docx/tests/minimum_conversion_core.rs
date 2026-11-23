@@ -2566,6 +2566,7 @@ fn inferred_table_exposes_spans_from_missing_graphic_rules() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
@@ -2619,6 +2620,7 @@ fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
@@ -2673,6 +2675,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                     y1: 48.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -2683,6 +2686,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                     y1: 100.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
@@ -2819,6 +2823,7 @@ fn inferred_table_exposes_rowspans_from_missing_horizontal_rules() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             horizontal(100.0),
             vertical(0.0),
@@ -3719,6 +3724,7 @@ fn horizontal(y: f32) -> ParsedGraphicElement {
             y1: y,
         },
         stroke_width: 0.5,
+        dashed: false,
     }
 }
 
@@ -3732,6 +3738,7 @@ fn vertical(x: f32) -> ParsedGraphicElement {
             y1: 100.0,
         },
         stroke_width: 0.5,
+        dashed: false,
     }
 }
 

@@ -15,6 +15,8 @@ struct State {
     width: f32,
     /// 現在の塗り色（RGB）。
     fill: [u8; 3],
+    /// 破線で描くか（`d` 演算子の dash array に正の値がある）。
+    dashed: bool,
 }
 
 impl Default for State {
@@ -24,6 +26,7 @@ impl Default for State {
             matrix: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             width: 1.0,
             fill: [0, 0, 0],
+            dashed: false,
         }
     }
 }
@@ -50,6 +53,7 @@ fn emit(
     page: usize,
     bounds: ParsedBounds,
     width: f32,
+    dashed: bool,
 ) -> Option<()> {
     if [bounds.x0, bounds.y0, bounds.x1, bounds.y1, width]
         .iter()
@@ -62,6 +66,7 @@ fn emit(
                 page,
                 bounds,
                 stroke_width: width,
+                dashed,
             },
         )?;
     }
@@ -185,9 +190,14 @@ pub(super) fn append_with_fills(
     let mut start = None;
     let mut segments = Vec::new();
     let mut rectangles = Vec::new();
+    // 直前の配列に正の数があったか（`[3 2] 0 d` の dash array の判定に使う）。
+    let mut array_has_positive = false;
     while let Some(token) = lexer.next() {
         match token {
             Token::Open(_) => {
+                if depth == 0 {
+                    array_has_positive = false;
+                }
                 depth = depth.saturating_add(1);
                 count = 0;
                 continue;
@@ -195,6 +205,12 @@ pub(super) fn append_with_fills(
             Token::Close(_) => {
                 depth = depth.saturating_sub(1);
                 count = 0;
+                continue;
+            }
+            Token::Word(word) if depth > 0 => {
+                if crate::page_attributes::number_value(word).is_some_and(|value| value > 0.0) {
+                    array_has_positive = true;
+                }
                 continue;
             }
             _ if depth > 0 => continue,
@@ -261,6 +277,9 @@ pub(super) fn append_with_fills(
             b"w" if count > 0 => {
                 state.width = args[count - 1];
             }
+            b"d" => {
+                state.dashed = array_has_positive;
+            }
             // 塗り色。色空間名は見ず、成分の数でグレー・RGB・CMYK を判別する。
             b"g" | b"rg" | b"k" | b"sc" | b"scn" => {
                 if let Some(color) = fill_color(word, args) {
@@ -285,13 +304,14 @@ pub(super) fn append_with_fills(
                             page,
                             normalized_bounds(segment),
                             state.width,
+                            state.dashed,
                         )?;
                     }
                 }
                 // 矩形の枠線（セル枠を矩形で描く表など）は 4 辺の罫線として出す。
                 for [x, y, w, h] in rectangles.drain(..) {
                     for edge in rectangle_edges(x, y, w, h) {
-                        emit(budget, output, page, edge, state.width)?;
+                        emit(budget, output, page, edge, state.width, state.dashed)?;
                     }
                 }
                 point = None;
@@ -300,13 +320,13 @@ pub(super) fn append_with_fills(
             b"f" | b"f*" | b"F" => {
                 for [x, y, w, h] in rectangles.drain(..) {
                     if let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
-                        emit(budget, output, page, bounds, width)?;
+                        emit(budget, output, page, bounds, width, false)?;
                     } else {
                         emit_fill(budget, fills, page, [x, y, w, h], state.fill)?;
                     }
                 }
                 if let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
-                    emit(budget, output, page, bounds, width)?;
+                    emit(budget, output, page, bounds, width, false)?;
                 }
                 segments.clear();
                 point = None;

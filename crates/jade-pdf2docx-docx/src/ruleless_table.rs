@@ -320,6 +320,7 @@ fn table_from_lines(
                         bottom: frame && row + 1 == rows,
                         right: frame && col + 1 == cols,
                         size_eighths_pt: 4,
+                        dashed: [false; 4],
                     }),
                 })
                 .collect::<Vec<_>>()

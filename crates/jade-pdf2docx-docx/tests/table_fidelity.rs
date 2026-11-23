@@ -490,3 +490,22 @@ fn partial_height_column_rule_separates_columns() {
         );
     }
 }
+
+/// 破線で描いた罫線は、DOCX でも破線のセル罫線にする（実線の辺は実線のまま）。
+#[test]
+fn dashed_rules_become_dashed_cell_borders() {
+    let content = "0.5 w 20 160 m 220 160 l S 20 100 m 220 100 l S \
+         20 100 m 20 160 l S 120 100 m 120 160 l S 220 100 m 220 160 l S \
+         [2 2] 0 d 20 130 m 220 130 l S [] 0 d \
+         BT /F1 10 Tf 1 0 0 1 25 146 Tm (Head) Tj ET BT /F1 10 Tf 1 0 0 1 125 146 Tm (Value) Tj ET \
+         BT /F1 10 Tf 1 0 0 1 25 116 Tm (alpha) Tj ET BT /F1 10 Tf 1 0 0 1 125 116 Tm (beta) Tj ET";
+    let xml = convert("table_fidelity_dashed_rules", content);
+    assert!(
+        xml.contains(r#"<w:bottom w:val="dashed""#),
+        "the dashed middle rule must stay dashed: {xml}"
+    );
+    assert!(
+        xml.contains(r#"<w:top w:val="single""#),
+        "solid rules must stay solid: {xml}"
+    );
+}
