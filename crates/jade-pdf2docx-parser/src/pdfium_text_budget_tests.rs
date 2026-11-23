@@ -59,6 +59,11 @@ fn printed_hyphens_preserve_storage_and_all_native_text_paths() {
             assert!(preview.contains("well-"));
             assert!(!preview.contains('\u{2}'));
             assert_eq!((preview.as_ptr(), preview.capacity()), (pointer, capacity));
+            let mut unmatched = text.all();
+            unmatched.push('\u{2}');
+            let before = unmatched.clone();
+            crate::pdfium_printed_hyphens::page(&budget(0), path, &mut unmatched, &chars).unwrap();
+            assert_eq!(unmatched, before);
             let normal = run(&budget(65536), 0, text).unwrap();
             assert!(normal.iter().any(|element| element.text.contains("well-")));
             let tags = crate::pdfium_font_tags::Tagged::default();
@@ -405,6 +410,28 @@ fn visible_extraction_preserves_consumed_stop_on_empty_page() {
 
 proptest::proptest! {
     #![proptest_config(proptest::test_runner::Config::with_cases(16))]
+    /// 文字原点とsizeを変えても印刷hyphenだけを復元し、SDKの矩形・style・String容量を変えない。
+    #[test]
+    fn printed_hyphen_restoration_keeps_geometry_and_capacity(x in 5u16..40, y in 80u16..170, size in 6u16..18) {
+        let content = format!("BT /F {size} Tf {x} {y} Td (well-) Tj 0 -{} Td (known) Tj ET", size * 2);
+        with_page(&content, |text| {
+            let reference = native_segment_reference(text);
+            let actual = run(&budget(65536), 7, text).unwrap();
+            assert_eq!(actual.len(), reference.len());
+            assert!(actual.iter().any(|element| element.text.contains("well-")));
+            for (a, b) in actual.iter().zip(reference) {
+                assert_eq!((a.bounds, a.baseline_y, a.font_size, &a.font_name, &a.fill_color), (b.bounds, b.baseline_y, b.font_size, &b.font_name, &b.fill_color));
+            }
+            let chars = characters(&budget(65536), text).unwrap();
+            let mut preview = text.all();
+            let storage = (preview.as_ptr(), preview.capacity());
+            crate::pdfium_printed_hyphens::page(&budget(0), std::path::Path::new("owned-transformed-hyphen.pdf"), &mut preview, &chars).unwrap();
+            assert!(preview.contains("well-"));
+            assert!(!preview.contains('\u{2}'));
+            assert_eq!((preview.as_ptr(), preview.capacity()), storage);
+        });
+    }
+
     /// 座標・文字サイズ・重なり・色が異なっても旧segmentの幾何/styleを保持する。
     #[test]
     fn ordinary_segments_match_native_segment_semantics(
