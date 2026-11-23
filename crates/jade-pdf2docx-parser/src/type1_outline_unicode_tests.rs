@@ -134,6 +134,23 @@ fn byte_lookup_respects_code_space_and_key_width() {
     assert!(!result[65].from_tounicode);
 }
 
+/// 空のbfrange宛先を飛ばして後続codeをずらさず、不完全なUTF16を部分採用しない。
+#[test]
+fn empty_range_targets_do_not_shift_following_unicode() {
+    let original = parse_tounicode_body(
+        &DecodeBudget::default(),
+        b"1 beginbfrange\n<41> <43> [<0041> <> <0043>]\nendbfrange",
+    );
+    assert_eq!(original.lookup_byte(65), Some("A"));
+    assert_eq!(original.lookup_byte(66), Some(""));
+    assert_eq!(original.lookup_byte(67), Some("C"));
+    let malformed = parse_tounicode_body(
+        &DecodeBudget::default(),
+        b"2 beginbfchar\n<> <0041>\n<44> <004100>\nendbfchar",
+    );
+    assert!(malformed.is_empty());
+}
+
 /// 保存先を正確に累積予約し、停止や壊れたGIDでは部分結果を公開しない。
 #[test]
 fn output_budget_and_invalid_bindings_are_atomic() {
