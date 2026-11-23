@@ -29,6 +29,7 @@ mod conversion_cancellation_tests;
 mod conversion_control;
 mod embedded_face;
 mod layout_space;
+mod glyph_metrics;
 #[cfg(test)]
 mod embedded_style_tests;
 
