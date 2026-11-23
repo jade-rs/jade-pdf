@@ -1,5 +1,6 @@
 //! 期待metadataを供給せず、所有FontFileと元PDF辞書だけから実fontを生成する。
-use super::*;
+use super::{DecodeBudget, ResourceResolver, ToUnicodeCMap};
+use crate::type1_outline::{Input, Prepared, prepare};
 use crate::{ParseLimits, page_attributes::Objects, text::parse_tounicode_body};
 
 /// 所有PDFの実descriptorを再現し、共通予算で一resource全体を生成する。

@@ -60,7 +60,7 @@ pub(super) fn code(value: &[u8]) -> Option<usize> {
 }
 
 /// 正常な単一のPDF nameを、escapeを展開せず借用する。
-pub(super) fn name(value: &[u8]) -> Option<&[u8]> {
+pub(in crate::type1_outline) fn name(value: &[u8]) -> Option<&[u8]> {
     let mut lexer = Lexer {
         bytes: value,
         cursor: 0,
