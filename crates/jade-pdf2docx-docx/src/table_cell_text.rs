@@ -54,6 +54,8 @@ const SAME_LINE_OVERLAP: f32 = 0.5;
 const WORD_GAP_EM: f32 = 0.2;
 /// 行内でこの em 数を超えて離れた断片の間はタブ（`\t`）で区切る。
 const TAB_GAP_EM: f32 = 1.5;
+/// PDF の空白の字を和文の隣でも空白として残す最小の字間（em）。
+const EXPLICIT_SPACE_GAP_EM: f32 = 0.3;
 /// 折り返し判定で、次行の先頭語が収まったはずかを比べる際の許容幅（em）。
 const WRAP_TOLERANCE_EM: f32 = 0.3;
 
@@ -292,8 +294,11 @@ fn line_text(line: &CellLine<'_>) -> (String, Vec<CellTabStop>) {
             if gap > TAB_GAP_EM * size {
                 text.push('\t');
                 segments.push((fragment.bounds.x0, fragment.bounds.x1, String::new()));
-            } else if (wide_gap || explicit)
-                && needs_word_space(text.chars().last(), body.chars().next())
+            } else if ((wide_gap || explicit)
+                && needs_word_space(text.chars().last(), body.chars().next()))
+                // PDF に空白の字があり実際に字間もあいていれば、和文の隣でも空白を残す
+                // （「項目 1」のような和文と数字の間の空白）。
+                || (explicit && gap > EXPLICIT_SPACE_GAP_EM * size)
             {
                 text.push(' ');
                 if let Some(segment) = segments.last_mut() {
@@ -657,6 +662,32 @@ mod tests {
             compose_cell_text(&fragments, 0.0, 200.0),
             "line one\nline two"
         );
+    }
+
+    /// PDF に空白の字があり字間もあいていれば、和文と数字の間でも空白を残す。
+    #[test]
+    fn keeps_explicit_space_between_kanji_and_digits() {
+        let mut fragments = vec![CellFragment {
+            bounds: ParsedBounds {
+                x0: 0.0,
+                y0: 100.0,
+                x1: 20.0,
+                y1: 110.0,
+            },
+            text: "項目 ".to_string(),
+            font_size: 10.0,
+        }];
+        fragments.push(CellFragment {
+            bounds: ParsedBounds {
+                x0: 25.0,
+                y0: 100.0,
+                x1: 31.0,
+                y1: 110.0,
+            },
+            text: "1".to_string(),
+            font_size: 10.0,
+        });
+        assert_eq!(compose_cell_text(&fragments, 0.0, 95.0), "項目 1");
     }
 
     /// 欧文の折り返しでは語間の空白を補う。
