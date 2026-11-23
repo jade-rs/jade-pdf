@@ -15,6 +15,27 @@ pub(super) fn font(family: &str) -> Vec<u8> {
     writer::encode(family)
 }
 
+/// 内部spaceを参照する文書だけ、確認済みadvanceを半emへ補正する互換flagを外す。
+pub(super) fn preserve_advance(package: &mut docx_rs::XMLDocx, fonts: &[ParsedEmbeddedFont]) {
+    let reference = format!(r#"w:ascii="{}""#, family(fonts));
+    if !package
+        .document
+        .windows(reference.len())
+        .any(|part| part == reference.as_bytes())
+    {
+        return;
+    }
+    // docx-rsが生成したsettingsだけを対象にし、他の互換設定は保持する。
+    let flag = b"<w:balanceSingleByteDoubleByteWidth />";
+    if let Some(offset) = package
+        .settings
+        .windows(flag.len())
+        .position(|part| part == flag)
+    {
+        package.settings.drain(offset..offset + flag.len());
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,6 +75,20 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(names, ["JadeLayoutSpace-0", "JadeLayoutSpace-0"]);
         assert_eq!(bytes, font("JadeLayoutSpace-0"));
+    }
+
+    /// 非対象の文書では、本文に内部名が書かれていてもsettingsを変更しない。
+    #[test]
+    fn ordinary_documents_keep_their_compatibility_settings() {
+        let mut package = docx_rs::Docx::new()
+            .add_paragraph(
+                docx_rs::Paragraph::new()
+                    .add_run(docx_rs::Run::new().add_text("JadeLayoutSpace-0")),
+            )
+            .build();
+        let before = package.settings.clone();
+        preserve_advance(&mut package, &[]);
+        assert_eq!(package.settings, before);
     }
 
     proptest! {

@@ -258,8 +258,15 @@ mod tests {
             .unwrap();
         assert!(table.contains("JadeLayoutSpace-0"), "{table}");
         let mut settings = String::new();
-        archive.by_name("word/settings.xml").unwrap().read_to_string(&mut settings).unwrap();
-        assert!(!settings.contains("balanceSingleByteDoubleByteWidth"),"{settings}");
+        archive
+            .by_name("word/settings.xml")
+            .unwrap()
+            .read_to_string(&mut settings)
+            .unwrap();
+        assert!(
+            !settings.contains("balanceSingleByteDoubleByteWidth"),
+            "{settings}"
+        );
         assert!(settings.contains("useFELayout"));
         assert_eq!(
             archive
