@@ -6,6 +6,18 @@ PDF の Type1 `/FontFile` に含まれる対応済みの静的描画プログラ
 
 変換した family 名は `JadeT1-` で始まる SHA-256 由来の識別名です。元 program、幅、文字対応、属性、権利表示、実際の glyph 出力を識別に含め、元の予約 family 名を再利用しません。PDF の名前の部分文字列から bold/italic を推定せず、生成 SFNT の属性を DOCX run と埋め込み slot に反映します。
 
+## 元glyphと空白の位置
+
+生成faceを選んだ文字は、同じfontでも元PDFのcodeごとに `ParsedTextElement` を分けます。一つの元合字に対応する `ff` は一要素、二つの元 `f` は二要素です。呼び出し側は、一要素が単語や行全体を表すと仮定せず、要素の順序・矩形・本文を扱ってください。正立した描画行列からbaselineを確認できた要素では、pure/bytes/WASMでも `baseline_y` を設定します。未対応の回転・反転からbaselineを推測しません。
+
+`TJ`から復元した論理空白は、両端の正立glyphと同じbaseline・em高を確認できたとき、`font_name: None` の独立した矩形として保持します。元fontのcode32や未知glyphへU+0020を割り当てる処理ではありません。
+
+DOCXでは、行全体について一つの元glyphのadvanceをcmap/hmtxまたは対応済みrequired rligから確認できたときだけ、整数percentの文字幅とtwip単位の字間を指定します。各次原点から字間を計算し、数値計画上の丸め誤差の累積を抑えます。小さい負のkerningは字形の圧縮で代用しません。複雑なshaping、未知字形、未確認位置を含む行には、この補正を部分適用しません。
+
+論理空白にはU+0020だけを持つ所有TrueType fontを文書内に生成し、1ptで選択します。source familyとの衝突を避け、元programを改変しません。この内部fontを使うDOCXでは、明示した空白幅を半emへ変更する `balanceSingleByteDoubleByteWidth` 互換設定を外します。他の互換設定は保持します。内部fontのname tableには本リポジトリの著作権・ライセンス本文を保持します。
+
+half-pointのfont size、整数percent、描画器側の丸めには制約があります。数値計画のproperty testは、Microsoft WordやLibreOfficeで全原点が同じ精度になることを保証しません。初行baseline、混在font、ページ送りも引き続き実描画で検証する必要があります。
+
 ## 権利と制限
 
 変換前に元 program の FSType と確認可能なライセンス表示を検査します。対応する OFL 1.1 表示の場合は元の著作権・notice と標準ライセンス本文を保持します。埋め込みが許されない場合や権利根拠を確認できない場合は、この変換経路では font を生成しません。no-subsetting 属性を保持し、元 program 内の全 glyph を出力へ残します。これは元の Type1 暗号文や hint 命令を同一 byte のまま保存することを意味しません。
@@ -20,8 +32,10 @@ PDF の Type1 `/FontFile` に含まれる対応済みの静的描画プログラ
 
 公開資料の回帰検証には [GNU Hello manual](https://www.gnu.org/software/hello/manual/hello.pdf) を使用しました。原本 SHA-256 は `3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b`、17ページです。原本の GFDL 1.3+ 表示と埋め込み Computer Modern font の OFL 表示を確認し、変換前に全ページを確認しています。原本と出力は Git に追加していません。この資料は改善に用いた既知の回帰資料であり、未見の holdout ではありません。
 
-11個の元 font から15 face を生成し、独立した fontTools/HarfBuzz 検査で339個の確認済み source code を機能の有効・無効の両方で照合しました。678件の照合は font shaping の検査数であり、PDF 件数ではありません。純 Rust の実解析では861要素のうち859要素が生成 face を参照します。native の実解析では843要素のうち794要素が生成 face を参照し、一ページの文字数不一致は他ページの選択を失わせません。
+PR #29の検証では11個の元 font から15 face を生成し、独立した fontTools/HarfBuzz 検査で339個の確認済み source code を機能の有効・無効の両方で照合しました。678件の照合は font shaping の検査数であり、PDF 件数ではありません。当時の純 Rust の実解析では861要素のうち859要素、nativeでは843要素のうち794要素が生成 face を参照しました。これらはglyphごとの要素分割を導入する前の件数です。一ページの文字数不一致は他ページの選択を失わせません。
 
 実際の native CLI 出力には15 face が入り、同梱 LibreOffice で描画した PDF にも生成 family が現れました。しかし、17ページの原本が26ページに増え、索引の配置も崩れています。Unicode 未確認の `circlecopyrt`、native の一ページの文字数差、空白 glyph の代替、折り返しとページ送りは未解決です。Microsoft Word での描画は未検証です。font の描画・幅・Unicode の部品検査が通っても、文書全体の本番品質を保証しません。
 
 SFNT 属性は [OpenType OS/2](https://learn.microsoft.com/en-us/typography/opentype/spec/os2) と [head](https://learn.microsoft.com/en-us/typography/opentype/spec/head)、DOCX の face slot は [Microsoft の font 実装注記](https://learn.microsoft.com/en-us/openspecs/office_standards/ms-oi29500/09b83e15-30de-481d-8ddf-777107d4122e) を参照しています。
+
+空白の互換補正は [MicrosoftのbalanceSingleByteDoubleByteWidth仕様](https://learn.microsoft.com/en-us/dotnet/api/documentformat.openxml.wordprocessing.balancesinglebytedoublebytewidth?view=openxml-3.0.1) を参照しています。advance読み取りに使うpure Rustの `ttf-parser = 0.25.1` の[MIT notice](../crates/jade-pdf2docx-docx/licenses/ttf-parser-0.25.1.txt)を、native/WASMの再配布にも含めてください。
