@@ -6,7 +6,7 @@ use crate::{
 
 /// 借用tokenと、実行しないprocedureの開始・終了。
 #[derive(Clone, Copy)]
-pub(super) enum Item<'a> {
+pub(crate) enum Item<'a> {
     /// PDFと共通のname・word・array・文字列。
     Pdf(Token<'a>),
     /// trueはprocedureの開始、falseは終了。
@@ -15,16 +15,16 @@ pub(super) enum Item<'a> {
 
 /// 再確保せず、cleartext内のtokenを一つずつ返す。
 #[derive(Clone)]
-pub(super) struct Lexer<'a> {
+pub(crate) struct Lexer<'a> {
     /// 解析元のcleartext。
-    pub(super) bytes: &'a [u8],
+    pub(crate) bytes: &'a [u8],
     /// 次の未消費byte位置。
-    pub(super) cursor: usize,
+    pub(crate) cursor: usize,
 }
 
 impl<'a> Lexer<'a> {
     /// 文字列・comment中のbraceは無視し、隣接したprocedure delimiterも分離する。
-    pub(super) fn next(&mut self, budget: &DecodeBudget) -> Option<Item<'a>> {
+    pub(crate) fn next(&mut self, budget: &DecodeBudget) -> Option<Item<'a>> {
         if budget.is_stopped() {
             return None;
         }
