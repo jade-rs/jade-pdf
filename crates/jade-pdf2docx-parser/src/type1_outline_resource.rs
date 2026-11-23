@@ -4,7 +4,7 @@ use crate::{decode::DecodeBudget, resource_resolver::ResourceResolver};
 #[path = "type1_outline_resource_encoding.rs"]
 mod encoding;
 #[path = "type1_outline_resource_values.rs"]
-mod values;
+pub(super) mod values;
 
 /// 一つのPDF文字codeに対応する元glyphと、PDFが宣言した幅。
 #[derive(Clone, Copy)]
