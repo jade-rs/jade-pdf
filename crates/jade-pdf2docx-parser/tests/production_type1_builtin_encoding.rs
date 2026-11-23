@@ -320,3 +320,102 @@ proptest! {
         prop_assert!(parsed.quality.issues.is_empty());
     }
 }
+
+/// PDFのDifferences名のescapeを先に復号し、AGLのsuffix規則へ渡す。
+#[test]
+fn escaped_pdf_difference_name_keeps_its_glyph_semantics() {
+    let bytes = pdf(
+        "256 array dup 65 /C put",
+        "/Encoding << /Differences [65 /B#2Esalt] >>",
+        false,
+        "F1",
+        "A",
+    );
+    let parsed = parse_pdf_bytes_with_options(
+        "escaped-difference.pdf",
+        &bytes,
+        &ParseOptions {
+            strict: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>(),
+        "B"
+    );
+    assert!(parsed.quality.issues.is_empty());
+}
+
+/// PostScript内の#はPDF name escapeではなく、不明名を勝手に復号しない。
+#[test]
+fn postscript_glyph_names_do_not_use_pdf_name_escaping() {
+    let bytes = pdf("256 array dup 65 /B#2Esalt put", "", false, "F1", "A");
+    assert!(matches!(
+        parse_pdf_bytes_with_options(
+            "literal-postscript-name.pdf",
+            &bytes,
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            }
+        ),
+        Err(ParseError::QualityRejected { .. })
+    ));
+}
+
+/// StandardEncodingのquote・ligatureを、ASCIIやLatin1の同一codeに取り違えない。
+#[test]
+fn standard_encoding_keeps_curly_quotes_and_ligature() {
+    let bytes = pdf("StandardEncoding", "", false, "F1", r"\047\140\256");
+    let parsed = parse_pdf_bytes_with_options(
+        "standard-quotes.pdf",
+        &bytes,
+        &ParseOptions {
+            strict: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>(),
+        "\u{2019}\u{2018}\u{fb01}"
+    );
+}
+
+/// 部分ToUnicodeの既知codeを保ち、別codeは組み込みglyph名で補完する。
+#[test]
+fn partial_tounicode_preserves_known_builtin_fallback() {
+    let bytes = pdf(
+        "256 array dup 65 /B put dup 66 /C put",
+        "",
+        true,
+        "F1",
+        "AB",
+    );
+    let parsed = parse_pdf_bytes_with_options(
+        "partial-known-builtin.pdf",
+        &bytes,
+        &ParseOptions {
+            strict: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>(),
+        "ZC"
+    );
+}
