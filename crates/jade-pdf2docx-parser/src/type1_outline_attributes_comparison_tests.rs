@@ -42,13 +42,13 @@ impl Reference {
     pub(super) fn compare<'bytes>(
         &self,
         budget: &DecodeBudget,
-        number: u32,
-        generation: u16,
+        object: (u32, u16),
         payload: &[u8],
         font: &Font<'_>,
         descriptor: &'bytes [u8],
         resolver: &mut ResourceResolver<'_, 'bytes>,
     ) -> serde_json::Value {
+        let (number, generation) = object;
         let expected = self
             .fonts
             .iter()

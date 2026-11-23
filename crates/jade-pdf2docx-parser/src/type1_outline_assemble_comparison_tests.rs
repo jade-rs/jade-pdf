@@ -9,27 +9,13 @@ use crate::{
 pub(super) fn export<'bytes>(
     budget: &DecodeBudget,
     number: u32,
-    payload: &[u8],
-    length1: usize,
-    length2: usize,
+    input: Input<'_>,
     dictionary: &'bytes [u8],
     descriptor: &'bytes [u8],
     resolver: &mut ResourceResolver<'_, 'bytes>,
-    cmap: &crate::text::ToUnicodeCMap,
 ) -> serde_json::Value {
-    let prepared = type1_outline::prepare(
-        budget,
-        Input {
-            program: payload,
-            length1,
-            length2,
-            cmap,
-        },
-        dictionary,
-        descriptor,
-        resolver,
-    )
-    .unwrap();
+    let program_sha256 = sha256(input.program);
+    let prepared = type1_outline::prepare(budget, input, dictionary, descriptor, resolver).unwrap();
     let directory =
         std::path::PathBuf::from(std::env::var_os("JADE_TYPE1_ASSEMBLED_EXPORT_DIR").unwrap());
     let mut fonts = Vec::new();
@@ -50,7 +36,7 @@ pub(super) fn export<'bytes>(
         "font object {number}: {} actual source-derived faces",
         fonts.len()
     );
-    serde_json::json!({"object_number":number,"program_sha256":sha256(payload),"fonts":fonts,"code_routes":routes})
+    serde_json::json!({"object_number":number,"program_sha256":program_sha256,"fonts":fonts,"code_routes":routes})
 }
 
 /// 保存した実byte列を、外部readerへ渡す前に固定する。

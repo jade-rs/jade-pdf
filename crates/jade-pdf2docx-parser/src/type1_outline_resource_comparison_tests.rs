@@ -173,8 +173,7 @@ fn compare(checks: Checks) {
         if let Some(reference_attributes) = &attributes {
             attribute_rows.push(reference_attributes.compare(
                 &budget,
-                reference.object_number,
-                generation,
+                (reference.object_number, generation),
                 &payload,
                 &decoded,
                 descriptor,
@@ -211,13 +210,15 @@ fn compare(checks: Checks) {
                 assembled.push(assemble_comparison::export(
                     &budget,
                     reference.object_number,
-                    &payload,
-                    length1,
-                    length2,
+                    crate::type1_outline::Input {
+                        program: &payload,
+                        length1,
+                        length2,
+                        cmap: &original,
+                    },
                     dictionary,
                     descriptor,
                     &mut resolver,
-                    &original,
                 ));
             }
             for (code, (actual, expected)) in unicode.iter().zip(&reference.slots).enumerate() {
