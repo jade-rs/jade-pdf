@@ -5,6 +5,8 @@ mod charstring;
 mod crypt;
 #[path = "type1_outline_private.rs"]
 mod private;
+#[path = "type1_outline_standard.rs"]
+mod standard;
 
 #[cfg(test)]
 mod tests {

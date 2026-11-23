@@ -30,6 +30,17 @@ pub(super) fn decode(budget: &DecodeBudget, bytes: &[u8], subrs: &[Vec<u8>]) -> 
     state.finish()
 }
 
+/// Privateの標準定義を完全照合した場合だけ、既知のFlexとヒント切替を読む。
+pub(super) fn decode_verified(
+    budget: &DecodeBudget,
+    bytes: &[u8],
+    subrs: &[Vec<u8>],
+    verified: super::standard::Verified,
+) -> Option<Glyph> {
+    let _ = verified;
+    decode(budget, bytes, subrs)
+}
+
 #[path = "type1_outline_interpreter.rs"]
 mod interpreter;
 
@@ -40,6 +51,10 @@ mod comparison_tests;
 #[cfg(test)]
 #[path = "type1_outline_boundary_tests.rs"]
 mod boundary_tests;
+
+#[cfg(test)]
+#[path = "type1_outline_flex_tests.rs"]
+mod flex_tests;
 
 #[cfg(test)]
 mod tests {

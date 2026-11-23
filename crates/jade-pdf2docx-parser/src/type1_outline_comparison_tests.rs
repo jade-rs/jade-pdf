@@ -13,6 +13,9 @@ struct Gold {
 struct Font {
     /// 失敗時に識別する原本名。
     source_name: String,
+    /// 元のPrivateから独立復号したOtherSubrsの完全な配列定義。
+    #[serde(default)]
+    other_subrs: Vec<u8>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
@@ -43,15 +46,43 @@ struct ReferenceCommand {
 #[test]
 #[ignore = "rights-reviewed external fontTools gold requires JADE_TYPE1_OUTLINE_GOLD"]
 fn external_charstrings_match_independent_geometry() {
+    compare(false);
+}
+
+/// 標準定義を照合できれば、未対応157文字も含めて全glyphの元外形に一致する。
+#[test]
+#[ignore = "rights-reviewed external fontTools gold with OtherSubrs requires JADE_TYPE1_OUTLINE_GOLD"]
+fn external_verified_standard_subrs_match_all_geometry() {
+    compare(true);
+}
+
+/// 同一goldの幅と制御点を、厳密モードまたは標準定義承認モードで比較する。
+fn compare(standard: bool) {
     let path = std::env::var("JADE_TYPE1_OUTLINE_GOLD").expect("explicit reviewed gold path");
     let bytes = std::fs::read(path).unwrap();
     assert!(bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&bytes).unwrap();
     let mut total_accepted = 0;
     for font in gold.fonts {
+        let verified = standard.then(|| {
+            let (verified, end) =
+                crate::type1_outline::standard::verify(&DecodeBudget::default(), &font.other_subrs)
+                    .expect("complete standard OtherSubrs definition");
+            assert_eq!(end, font.other_subrs.len());
+            verified
+        });
         let (mut accepted, mut rejected) = (0, 0);
         for glyph in font.glyphs {
-            let Some(actual) = decode(&DecodeBudget::default(), &glyph.program, &font.subrs) else {
+            let result = match verified {
+                Some(verified) => decode_verified(
+                    &DecodeBudget::default(),
+                    &glyph.program,
+                    &font.subrs,
+                    verified,
+                ),
+                None => decode(&DecodeBudget::default(), &glyph.program, &font.subrs),
+            };
+            let Some(actual) = result else {
                 rejected += 1;
                 continue;
             };
@@ -82,6 +113,13 @@ fn external_charstrings_match_independent_geometry() {
             font.source_name
         );
         total_accepted += accepted;
+        if standard {
+            assert_eq!(
+                rejected, 0,
+                "{} must preserve every original glyph",
+                font.source_name
+            );
+        }
     }
     assert!(
         total_accepted > 0,
