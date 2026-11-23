@@ -34,9 +34,14 @@ fn pdf(content: &[u8], lzw: bool, extra: &str) -> Vec<u8> {
         content.to_vec()
     };
     let filter = if lzw { "/Filter /LZWDecode" } else { "" };
+    pdf_payload(&data, filter, extra)
+}
+
+/// 任意の圧縮payloadをそのまま載せ、破損時の製品入口も検証する。
+fn pdf_payload(data: &[u8], filter: &str, extra: &str) -> Vec<u8> {
     let mut stream =
         format!("<< /Length {} {filter} {extra} >>\nstream\n", data.len()).into_bytes();
-    stream.extend_from_slice(&data);
+    stream.extend_from_slice(data);
     stream.extend_from_slice(b"\nendstream");
     let objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
@@ -135,6 +140,49 @@ fn decoded_lzw_stream_limit_is_inclusive() {
             ..
         })
     ));
+}
+
+/// 復号不能なLZW本文を、空白の成功や一部文字だけの成功として公開しない。
+#[test]
+fn corrupt_lzw_is_an_error_at_the_public_entrypoint() {
+    let complete = literal_lzw(b"BT /F1 12 Tf 72 700 Td (PARTIAL MUST NOT ESCAPE) Tj ET");
+    for bytes in [&[0x80][..], &complete[..complete.len() - 1]] {
+        for strict in [false, true] {
+            let result = parse_pdf_bytes_with_options(
+                "corrupt-LZW.pdf",
+                &pdf_payload(bytes, "/Filter /LZWDecode", ""),
+                &ParseOptions {
+                    strict,
+                    ..Default::default()
+                },
+            );
+            assert!(
+                matches!(result, Err(ParseError::Io(ref error)) if error.kind() == std::io::ErrorKind::InvalidData),
+                "{result:?}"
+            );
+        }
+    }
+}
+
+/// 未対応parameterも既定値として読み飛ばさず、明示的な非対応エラーにする。
+#[test]
+fn unsupported_lzw_parameters_are_not_blank_success() {
+    for extra in [
+        "/DecodeParms << /Predictor 12 >>",
+        "/DecodeParms << /EarlyChange 2 >>",
+        "/DecodeParms [null]",
+        "/DecodeParms 6 0 R",
+    ] {
+        let result = parse_pdf_bytes_with_options(
+            "unsupported-LZW.pdf",
+            &pdf(b"BT /F1 12 Tf 72 700 Td (NOT DEFAULT) Tj ET", true, extra),
+            &ParseOptions::default(),
+        );
+        assert!(
+            matches!(result, Err(ParseError::Io(ref error)) if error.kind() == std::io::ErrorKind::Unsupported),
+            "{extra}: {result:?}"
+        );
+    }
 }
 
 proptest! {
