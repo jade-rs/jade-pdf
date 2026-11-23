@@ -1,9 +1,7 @@
 //! Adobe標準OtherSubrsの完全な字句指紋だけを承認し、PostScriptを実行しない。
 use crate::decode::DecodeBudget;
 use crate::syntax::Token;
-#[path = "type1_program_lexer.rs"]
-mod lex;
-use lex::{Item, Lexer};
+use crate::type1_program::lex::{Item, Lexer};
 
 /// 完全な定義を確認した証拠。呼出番号だけでは作らない。
 #[derive(Clone, Copy)]

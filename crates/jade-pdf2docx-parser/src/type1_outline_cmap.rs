@@ -139,13 +139,12 @@ struct Group {
 
 /// 既に予約した範囲配列へ追加し、同じdeltaで連続する対応だけを併合する。
 fn append(groups: &mut Vec<Group>, mapping: Mapping) -> Option<()> {
-    if let Some(last) = groups.last_mut() {
-        if last.end.checked_add(1) == Some(mapping.scalar)
-            && last.glyph.checked_add(last.end - last.start + 1) == Some(u32::from(mapping.glyph))
-        {
-            last.end = mapping.scalar;
-            return Some(());
-        }
+    if let Some(last) = groups.last_mut()
+        && last.end.checked_add(1) == Some(mapping.scalar)
+        && last.glyph.checked_add(last.end - last.start + 1) == Some(u32::from(mapping.glyph))
+    {
+        last.end = mapping.scalar;
+        return Some(());
     }
     if groups.len() == groups.capacity() {
         return None;

@@ -70,7 +70,7 @@ fn owned_pdf() -> Vec<u8> {
     .into_bytes();
     stream.extend_from_slice(&font);
     stream.extend_from_slice(b"\nendstream");
-    let objects = vec![
+    let objects = [
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".to_vec(),

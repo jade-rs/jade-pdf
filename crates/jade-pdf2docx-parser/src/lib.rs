@@ -101,6 +101,7 @@ mod type1_embedding_tests;
 mod type1_font;
 mod type1_outline;
 mod type1_program;
+mod type1_standard_encoding;
 mod unsupported_content;
 mod xobject_refs;
 mod xref;

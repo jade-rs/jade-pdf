@@ -3,8 +3,7 @@ use super::{DecodeBudget, Font, ResourceResolver, values};
 use crate::{metadata, type1_program::Base};
 #[path = "type1_outline_pdf_encodings.rs"]
 mod predefined;
-#[path = "type1_standard_encoding.rs"]
-mod standard;
+use crate::type1_standard_encoding as standard;
 
 /// 既知のPDF encoding名を、OS側の文字コード表へ置き換えずに選ぶ。
 fn predefined(name: &[u8]) -> Option<&'static [&'static [u8]; 256]> {

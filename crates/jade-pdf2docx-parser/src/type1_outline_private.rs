@@ -1,8 +1,7 @@
 //! 復号済みPrivate辞書の静的なglyph/subroutine格納だけを読む。
 use crate::decode::DecodeBudget;
 use crate::syntax::{Token, integer, whitespace};
-#[path = "type1_program_lexer.rs"]
-mod lex;
+use crate::type1_program::lex;
 use lex::{Item, Lexer};
 #[path = "type1_outline_private_hints.rs"]
 mod hints;
