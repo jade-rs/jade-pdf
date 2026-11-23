@@ -28,10 +28,11 @@ pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 mod conversion_cancellation_tests;
 mod conversion_control;
 mod embedded_face;
-mod layout_space;
-mod glyph_metrics;
 #[cfg(test)]
 mod embedded_style_tests;
+mod glyph_metrics;
+mod layout_space;
+mod positioned_type1;
 
 mod html_table;
 mod native_baseline;
@@ -1974,6 +1975,15 @@ fn structured_text_runs_from_row(
                 embedded_face: None,
                 fill_color: text.fill_color.clone(),
                 underlined: parsed_text_has_underline(text, page_graphics),
+                source_bounds: text
+                    .baseline_y
+                    .filter(|y| {
+                        y.is_finite()
+                            && *y == text.bounds.y0
+                            && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() < 0.001
+                    })
+                    .map(|_| text.bounds),
+                placement: None,
             },
         });
         right = right.max(text.bounds.x1);
@@ -2676,6 +2686,10 @@ struct StructuredTextStyle {
     fill_color: Option<String>,
     /// PDF の短い水平線から推定した下線。
     underlined: bool,
+    /// 正立baselineとem高が確認できた、未加工のsource glyph矩形。
+    source_bounds: Option<ParsedBounds>,
+    /// 検証済みglyph advanceに基づくDOCXの字間と幅指定。
+    placement: Option<positioned_type1::Placement>,
 }
 
 impl Default for StructuredTextStyle {
@@ -2687,6 +2701,8 @@ impl Default for StructuredTextStyle {
             embedded_face: None,
             fill_color: None,
             underlined: false,
+            source_bounds: None,
+            placement: None,
         }
     }
 }
