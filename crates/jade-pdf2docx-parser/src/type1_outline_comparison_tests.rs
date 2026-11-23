@@ -69,6 +69,35 @@ fn compare(standard: bool) {
                 crate::type1_outline::standard::verify(&DecodeBudget::default(), &font.other_subrs)
                     .expect("complete standard OtherSubrs definition");
             assert_eq!(end, font.other_subrs.len());
+            let mut trivia = b"% irrelevant prefix\n ".to_vec();
+            for &byte in &font.other_subrs {
+                trivia.push(byte);
+                if byte == b'\n' {
+                    trivia.extend_from_slice(b"% benign comment\n");
+                }
+            }
+            trivia.extend_from_slice(b" /not-part-of-array");
+            let (spaced, boundary) =
+                crate::type1_outline::standard::verify(&DecodeBudget::default(), &trivia).unwrap();
+            assert_eq!(spaced.allows_flex(), verified.allows_flex());
+            assert_eq!(&trivia[boundary..], b" /not-part-of-array");
+            let position = font
+                .other_subrs
+                .iter()
+                .position(u8::is_ascii_alphabetic)
+                .unwrap();
+            let mut changed = font.other_subrs.clone();
+            changed[position] ^= 32;
+            assert!(
+                crate::type1_outline::standard::verify(&DecodeBudget::default(), &changed)
+                    .is_none()
+            );
+            let empty = DecodeBudget::new(&crate::ParseLimits {
+                max_total_embedded_font_bytes: 0,
+                max_total_allocation_bytes: 0,
+                ..Default::default()
+            });
+            assert!(crate::type1_outline::standard::verify(&empty, &font.other_subrs).is_some());
             verified
         });
         let (mut accepted, mut rejected) = (0, 0);

@@ -71,6 +71,128 @@ fn verified_flex_preserves_curves_and_restores_currentpoint() {
     );
 }
 
+/// 不完全なpop・点確定・終点・未承認Flexは、成功glyphにしない。
+#[test]
+fn malformed_flex_and_unmatched_postscript_results_are_rejected() {
+    let (bytes, subrs) = program(10, 20);
+    assert!(
+        decode_verified(
+            &DecodeBudget::default(),
+            &bytes,
+            &subrs,
+            Verified::hints_only_for_owned_test()
+        )
+        .is_none()
+    );
+    for replacement in [
+        vec![142, 139, 12, 16, 12, 17, 12, 33, 11],
+        vec![142, 139, 12, 16, 12, 17, 12, 17, 12, 17, 12, 33, 11],
+        vec![142, 139, 12, 16, 12, 17, 139, 12, 17, 12, 33, 11],
+        vec![142, 139, 12, 16, 12, 17, 12, 17, 11],
+    ] {
+        let mut changed = subrs.clone();
+        changed[0] = replacement;
+        assert!(
+            decode_verified(
+                &DecodeBudget::default(),
+                &bytes,
+                &changed,
+                Verified::for_owned_test()
+            )
+            .is_none()
+        );
+    }
+    let mut incomplete = bytes.clone();
+    let last = incomplete
+        .windows(3)
+        .rposition(|part| part == [21, 141, 10])
+        .unwrap();
+    incomplete.drain(last + 1..last + 3);
+    assert!(
+        decode_verified(
+            &DecodeBudget::default(),
+            &incomplete,
+            &subrs,
+            Verified::for_owned_test()
+        )
+        .is_none()
+    );
+    let mut mismatched = bytes.clone();
+    let end = mismatched
+        .windows(5)
+        .position(|part| part == [255, 0, 0, 0, 110])
+        .unwrap();
+    mismatched[end + 4] = 111;
+    assert!(
+        decode_verified(
+            &DecodeBudget::default(),
+            &mismatched,
+            &subrs,
+            Verified::for_owned_test()
+        )
+        .is_none()
+    );
+    let mut nested = subrs.clone();
+    nested[2] = vec![139, 140, 12, 16, 11];
+    assert!(
+        decode_verified(
+            &DecodeBudget::default(),
+            &bytes,
+            &nested,
+            Verified::for_owned_test()
+        )
+        .is_none()
+    );
+    for program in [
+        vec![139, 248, 236, 13, 139, 139, 12, 33, 14],
+        vec![139, 248, 236, 13, 12, 17, 14],
+        vec![139, 248, 236, 13, 139, 148, 12, 16, 14],
+    ] {
+        assert!(
+            decode_verified(
+                &DecodeBudget::default(),
+                &program,
+                &subrs,
+                Verified::for_owned_test()
+            )
+            .is_none()
+        );
+    }
+}
+
+/// ヒント専用定義はヒント切替だけを許し、輪郭の現在点を変えない。
+#[test]
+fn hints_only_profile_and_cancelled_flex_keep_strict_boundaries() {
+    let (_, subrs) = program(10, 20);
+    let hints = [
+        139, 248, 236, 13, 139, 139, 21, 143, 140, 142, 12, 16, 12, 17, 10, 239, 139, 5, 14,
+    ];
+    assert_eq!(
+        decode_verified(
+            &DecodeBudget::default(),
+            &hints,
+            &subrs,
+            Verified::hints_only_for_owned_test()
+        ),
+        Some(Glyph {
+            advance: 600.,
+            commands: vec![
+                Command::Move([0., 0.]),
+                Command::Line([100., 0.]),
+                Command::Close
+            ]
+        })
+    );
+    let token = crate::ParseCancellation::new();
+    let budget = DecodeBudget::with_cancellation(&crate::ParseLimits::default(), Some(&token));
+    let (bytes, subrs) = program(10, 20);
+    let mut state = interpreter::State::with_standard(&budget, Verified::for_owned_test());
+    state.run(&bytes, &subrs, 0).unwrap();
+    token.cancel();
+    assert!(state.finish().is_none());
+    assert!(matches!(budget.check(), Err(crate::ParseError::Cancelled)));
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 平行移動した曲線でも、Flex後の現在点とadvanceを保つ。
@@ -81,5 +203,15 @@ proptest! {
         prop_assert_eq!(glyph.advance,600.);
         prop_assert_eq!(&glyph.commands[1],&Command::Curve([f64::from(x+20),f64::from(y+10),f64::from(x+40),f64::from(y+5),f64::from(x+50),f64::from(y)]));
         prop_assert_eq!(&glyph.commands[3],&Command::Line([f64::from(x+100),f64::from(y+30)]));
+    }
+
+    /// 標準承認値を持っていても、任意byte列がpanicや無限実行を起こさない。
+    #[test]
+    fn arbitrary_verified_program_is_still_bounded(bytes in proptest::collection::vec(any::<u8>(),0..1024)) {
+        let (_,subrs)=program(0,0);
+        if let Some(glyph)=decode_verified(&DecodeBudget::default(),&bytes,&subrs,Verified::for_owned_test()) {
+            prop_assert!((0. ..=65535.).contains(&glyph.advance));
+            prop_assert!(glyph.commands.len()<=bytes.len().saturating_mul(4));
+        }
     }
 }

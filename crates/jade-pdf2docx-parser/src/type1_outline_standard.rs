@@ -22,6 +22,12 @@ impl Verified {
     pub(super) fn for_owned_test() -> Self {
         Self { flex: true }
     }
+
+    /// 所有テストで、Flexのない承認定義とFlex付き定義を区別する。
+    #[cfg(test)]
+    pub(super) fn hints_only_for_owned_test() -> Self {
+        Self { flex: false }
+    }
 }
 
 /// 配列全体を字句単位で照合し、末尾位置と承認値を返す。
