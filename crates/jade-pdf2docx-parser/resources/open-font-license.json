@@ -1,0 +1,11 @@
+{
+  "generated_utc": "2026-11-23T18:36:27.601342+00:00",
+  "source_url": "https://openfontlicense.org/documents/OFL.txt",
+  "transport": "Complete87 displayed lines through web.run; direct urllib request returned403. Text reconstructed with LF line endings; hashes describe this canonical text, not raw HTTP bytes.",
+  "canonical_source_text_sha256": "f0b77f4cbca7ec7d9db1db4a25130273a5faea49d6b288338ad0a24876765e55",
+  "body_bytes": 4059,
+  "body_sha256": "587431907214cab6df3e74f425e04cbddb8d4c1e44588081fdce9b8fc4a994ba",
+  "unchanged_words_from_previously_reviewed_OFL_body": true,
+  "purpose": "Exact standard OFL1.1 body for fonts with an explicit declaration; original per-font copyright and RFN are preserved separately. Generic placeholder copyright header is excluded.",
+  "product_font_data_or_runtime_dependency": false
+}

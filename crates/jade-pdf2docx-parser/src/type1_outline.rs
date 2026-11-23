@@ -19,6 +19,8 @@ mod gsub;
 mod header;
 #[path = "type1_outline_opentype.rs"]
 mod opentype;
+#[path = "type1_outline_permission.rs"]
+mod permission;
 #[path = "type1_outline_plan.rs"]
 mod plan;
 #[path = "type1_outline_private.rs"]
