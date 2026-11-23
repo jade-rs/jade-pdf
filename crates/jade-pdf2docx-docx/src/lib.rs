@@ -32,6 +32,7 @@ mod html_table;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
+mod native_table_text;
 mod ocr_reconcile;
 mod output;
 mod package;
@@ -2777,6 +2778,8 @@ struct PositionedTable {
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
+    /// 原本と文字照合できた複数行セルの位置・行・run style。
+    native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
 }
@@ -3332,7 +3335,8 @@ fn docx_table_from_model_with_row_height_and_nested(
             let mut grid_col = 0usize;
             let cells = row
                 .iter()
-                .map(|cell| {
+                .enumerate()
+                .map(|(cell_index, cell)| {
                     let nested_tables = parent
                         .map(|parent| {
                             nested_tables_for_cell(parent, row_index, grid_col, cell.grid_span)
@@ -3372,6 +3376,15 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(VAlignType::Center);
+                    }
+                    if !has_nested_tables
+                        && let Some(native) = parent
+                            .and_then(|table| table.native_cells.get(row_index))
+                            .and_then(|row| row.get(cell_index))
+                            .and_then(Option::as_ref)
+                            .and_then(native_table_text::table_cell)
+                    {
+                        table_cell = native;
                     }
                     for nested_table in nested_tables {
                         table_cell = table_cell.add_table(docx_table_from_structured_table(
@@ -3963,6 +3976,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
     }
 }
@@ -4281,6 +4295,7 @@ fn infer_positioned_table_from_graphics(
     let rows = ys.len() - 1;
     let cols = xs.len() - 1;
     let mut cells = vec![vec![String::new(); cols]; rows];
+    let mut cell_source_texts = vec![vec![Vec::new(); cols]; rows];
     let mut cell_underlines = vec![vec![false; cols]; rows];
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
@@ -4301,6 +4316,10 @@ fn infer_positioned_table_from_graphics(
             continue;
         };
         append_cell_fragment(&mut cells[row][col], text.text.trim());
+        // 上原点の互換補正が必要な本文は原本座標の復元に混ぜず、従来出力へ戻す。
+        if row_index_for_y(center_y, &ys) == Some(row) {
+            cell_source_texts[row][col].push(text.clone());
+        }
         cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
         let bounds = normalized_bounds(text.bounds);
         cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
@@ -4352,6 +4371,15 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
+    let native_cells = native_table_text::cells(
+        parsed,
+        &xs,
+        &ys,
+        &cell_source_texts,
+        &docx_table
+            .clone()
+            .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+    );
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
     let font_embedded = font_name.as_deref().is_some_and(|font_name| {
         parsed
@@ -4376,6 +4404,7 @@ fn infer_positioned_table_from_graphics(
         cell_underlines,
         cell_alignments,
         docx_table,
+        native_cells,
         nested_tables: Vec::new(),
     })
 }
@@ -5158,6 +5187,7 @@ fn infer_positioned_table_from_text_grid_page(
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
     })
 }
