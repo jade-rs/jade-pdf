@@ -58,7 +58,10 @@ def main():
          if 'rows' in case:checks.append(assert_owned_table_rows(doc,case['rows']))
          if case.get('cell_lines'):checks.append(assert_cell_lines(doc))
          if 'single_line_styles' in case:
-          cells=doc.findall('.//w:tbl/w:tr/w:tc',n);actual=[[int(s.attrib[W+'val']) for s in c.findall('.//w:sz',n)] for c in cells];assert actual==[[s] for s in case['single_line_styles']],actual;assert all(c.find('w:tcPr/w:vAlign',n).attrib[W+'val']=='center' for c in cells);checks.append(dict(source_single_line_sizes=actual,legacy_vertical_alignment='center'))
+          cells=doc.findall('.//w:tbl/w:tr/w:tc',n);actual=[[int(s.attrib[W+'val']) for s in c.findall('.//w:sz',n)] for c in cells];assert actual==[[s] for s in case['single_line_styles']],actual;assert all(c.find('w:tcPr/w:vAlign',n).attrib[W+'val']=='center' for c in cells)
+          for cell,source_size in zip(cells,case['single_line_styles']):
+           spacing=cell.find('w:p/w:pPr/w:spacing',n);assert spacing is not None;assert spacing.attrib.get(W+'lineRule')=='exact',spacing.attrib;assert int(spacing.attrib[W+'line'])==source_size*10,spacing.attrib
+          checks.append(dict(source_single_line_sizes=actual,source_line_boxes_twips=[s*10 for s in case['single_line_styles']],legacy_vertical_alignment='center'))
          if case.get('overfull_cell'):
           cell=doc.find('.//w:tbl/w:tr/w:tc',n);paragraphs=cell.findall('w:p',n);actual=[''.join(t.text or '' for t in p.findall('.//w:t',n)) for p in paragraphs];assert actual==['Alpha Beta'],actual;checks.append('overfull source line boxes retain legacy editable cell text')
          if 'row_heights' in case:
