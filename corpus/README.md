@@ -1,3 +1,11 @@
+# Device色空間の画像画素検証
+
+[単一要素のDevice色空間](validation-singleton-colorspace.json)では、`/ColorSpace [/DeviceRGB]` が白い代替画像へ変わる失敗を、修正前の製品byte APIとWASMで再現した。既知のDevice名だけを一要素配列から選び、既存の共有byte範囲を使うため追加の割当や依存はない。未知の名前、入れ子、複数要素は推測しない。名前形式の対照、RGB/Gray、間接配列、任意RGB二画素のPBTを検証した。
+
+登録済み厚労省PDFの20画像について、原本Flate streamのRGB画素をpypdfで独立に復号し、変換前後のPNG画素と照合した。一致は1/20から20/20へ改善し、画像置換の警告20件は解消した。先行出力の白い代替画像と偶然一致していた原本1件も、改善前の一致に数える。全文5,035文字、592画像配置、埋め込みfontのbyte列は同一で、画像relationship ID以外のOOXMLも一致する。OCR未検証の診断は保ち、表配置や画像配置の忠実度の達成とはしない。
+
+製品WASMは修正前23/24件、修正後Chromium/WebKit各24/24件。画像のRGB画素を独立に展開して検証し、strictで未検証画像を拒否する経路も保つ。画像を段落として積み上げる既存のページ割り、表の行高と描画順、実際のWord、OCRの未解決goldが残り、本番品質とはしていない。
+
 # 日本語Font表示と本文行間の検証
 
 [Font表示と描画の検証](validation-native-fonts.json)では、登録済み厚労省PDFの非UTF-8 Font名を、同じFont/Descriptor/File参照と埋め込みsfntの一致するPostScript名から復元した。名前だけの修正では日本語は表示されず、原本の空のU+0000 glyphを可視文字欠損と誤認してsubset全体を除外していたことを確認した。空白・Unicode制御文字と描画対象文字を区別し、同じ原本・SDK・変換オプションで日本語の表示回復を観察した。埋め込み2fontの復号後byteは原本と一致し、既存の埋め込み権限・サイズ・割当予算を保つ。OOXML全文5,035文字のhashも維持した。

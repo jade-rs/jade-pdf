@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile,subprocess,hashlib,json,zipfile,xml.etree.ElementTree as E,sys,argparse
 import os
 from owned_font_names import legacy_font_pdf
+from owned_image_colors import singleton_rgb_pdf, owned_rgb_pixels
 ROOT=Path(__file__).resolve().parents[2]
 TOOLS=Path(__file__).resolve().parent
 
@@ -18,6 +19,7 @@ def main():
     cases=[dict(id='plain',data=pdf(anchor),body={'Anchor':72}),dict(id='body-overhang',data=pdf(anchor+' '+heading+' '+offset),body={'Anchor':72,'Offset body':84}),dict(id='graphic-left',data=pdf(anchor+' 30 700 m 40 700 l S'),body={'Anchor':72}),dict(id='table-overhang',data=pdf(anchor+' '+heading+' '+grid),body={},table=100),dict(id='centre-control',data=pdf(anchor+' BT /F1 10 Tf 93.5 650 Td ('+'x'*85+') Tj ET'),body={'Anchor':72},centre=306),dict(id='word-limit',data=pdf(anchor,2000,1000),body={'Anchor':72*1584/2000},page=(31680,15840),resized=True),dict(id='empty',data=b'',error='header')]
     pitch=' '.join(f'BT /F1 10 Tf 72 {740-i*20} Td (Line {i+1}) Tj ET' for i in range(4));cases.append(dict(id='line-pitch',data=pdf(pitch),body={},pitch=20))
     for cid in [False, True]:cases.append(dict(id='legacy-cid' if cid else 'legacy-simple',data=legacy_font_pdf(cid),body={},font='OwnedCJK'))
+    cases.append(dict(id='singleton-rgb',data=singleton_rgb_pdf(),body={},pixels=[12,34,56,78,90,123]))
     manifest=json.loads((ROOT/'corpus/manifest.json').read_text());entry=next(e for e in manifest['pending_semantic'] if e['id']=='nta-invoice-domestic-english-2026');data=((ROOT/'corpus/cache')/(entry['id']+'.pdf')).read_bytes();assert len(data)==entry['bytes'] and hashlib.sha256(data).hexdigest()==entry['sha256'];cases.append(dict(id='encrypted',data=data,error='encrypt'))
     with tempfile.TemporaryDirectory() as temp:
      descriptors=[]
@@ -38,7 +40,10 @@ def main():
         assert 'error' in output,output;checks.append('detected quality loss rejected')
        else:
         assert 'file' in output,output
-        with zipfile.ZipFile(output['file']) as z:doc=E.fromstring(z.read('word/document.xml'))
+        with zipfile.ZipFile(output['file']) as z:
+         doc=E.fromstring(z.read('word/document.xml'))
+         if 'pixels' in case:
+          media=[f.filename for f in z.infolist() if f.filename.startswith('word/media/') and not f.is_dir()];assert len(media)==1;actual=owned_rgb_pixels(z.read(media[0]));assert actual==case['pixels'],actual;checks.append('source RGB pixels preserved')
         margin=doc.find('.//w:pgMar',n).attrib;size=doc.find('.//w:pgSz',n).attrib;left=int(margin[W+'left']);width=int(size[W+'w']);right=int(margin[W+'right']);assert (width,int(size[W+'h']))==case.get('page',(12240,15840))
         paragraphs={''.join(t.text or '' for t in p.findall('.//w:t',n)):p for p in doc.findall('.//w:p',n)}
         if 'font' in case:
