@@ -84,3 +84,5 @@ macOSの実プロセステストで検証した。総RSSの強制制限、単一
 埋め込みType1 FontFileでPDF側BaseEncodingがない場合、対応済みの静的な組み込みEncodingとDifferencesを適用する。ToUnicodeはcodeごとに優先する。実際に描画したglyph名が確認不能なら `UnsupportedFontReason::Encoding` / `unverified_encoding` を報告し、strictは拒否する。未使用の未知slotだけでは拒否しない。動的PostScriptやISOLatin1基底表は未検証で、独自glyph名のOCR復元を意味しない。
 
 完全な描画用Type1の検証には、既存の公開fixtureからToUnicodeだけを外した一時入力を使う。`python3 tools/generate_type1_drawing_controls.py /tmp/jade-type1-controls-UNIQUE`（pypdfが必要）で未使用のディレクトリへ生成し、利用条件・全ページの描画不変性を確認してから `JADE_TYPE1_DRAWING_CONTROLS=/tmp/jade-type1-controls-UNIQUE cargo test -p jade-pdf2docx-parser --test external_type1_drawing -- --ignored` を実行する。元PDF・正解本文・FontFileは変更しない。Type1の既知のFontDirectory/UniqueID/FontType比較によるcache前処理は有限の字句列として認識し、PostScriptを実行しない。未知の実行式は確認不能のまま扱う。
+
+標準14書体以外のType1で組み込みfont programを取得できず、使用codeのToUnicodeもなければ確認不能としてstrictで拒否する。任意のEncodingのnull・未定義参照はPDF 32000-1:2008 §7.3.7/7.3.9/7.3.10に従い省略と同じ扱いにして、利用できる組み込み表を使う。標準14書体の非埋め込み経路は維持する。
