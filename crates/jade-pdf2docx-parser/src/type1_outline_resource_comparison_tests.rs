@@ -11,6 +11,9 @@ pub(super) struct Metadata {
     generation: u16,
     /// 256code順の原本対応。
     slots: Vec<ExpectedSlot>,
+    /// UnicodeのNoneも意図的に宣言した独立goldか。
+    #[serde(default)]
+    unicode_reference_complete: bool,
 }
 
 /// GIDの番号ではなく、元のglyph名で対応の正しさを比較する。
@@ -24,12 +27,30 @@ struct ExpectedSlot {
     width: f64,
     /// 元Widths内の明示的な値か。
     explicit_width: bool,
+    /// 原本ToUnicode、または確認済み名前のAGLから得た未正規化の列。
+    #[serde(default)]
+    scalars: Option<Vec<u32>>,
+    /// 原本ToUnicodeの明示対応か。
+    #[serde(default)]
+    from_tounicode: bool,
 }
 
 /// 原本PDFから読み始め、独立metadataを入力へ混ぜずに全codeの対応・幅を得る。
 #[test]
 #[ignore = "reviewed original PDF and resource gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
 fn original_pdf_resources_match_all_independent_code_widths() {
+    compare(false);
+}
+
+/// 原本PDFのToUnicodeを実際に読み、文字列の正規化なしで全codeへ結び付ける。
+#[test]
+#[ignore = "reviewed original PDF and Unicode gold require JADE_SOURCE_PDF and JADE_TYPE1_OUTLINE_GOLD"]
+fn original_pdf_resources_match_all_independent_unicode_sequences() {
+    compare(true);
+}
+
+/// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
+fn compare(check_unicode: bool) {
     let gold_bytes = std::fs::read(std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap()).unwrap();
     assert!(gold_bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&gold_bytes).unwrap();
@@ -46,6 +67,7 @@ fn original_pdf_resources_match_all_independent_code_widths() {
     let offsets = parser::stream_object_offsets(&budget, &pdf);
     let mut count = 0;
     let mut explicit = 0;
+    let (mut mapped, mut unicode_explicit, mut multi) = (0, 0, 0);
     for font in gold.fonts {
         let reference = font.pdf_resource.as_ref().unwrap();
         let &(generation, dictionary) = objects.get(&reference.object_number).unwrap();
@@ -80,6 +102,45 @@ fn original_pdf_resources_match_all_independent_code_widths() {
                 .unwrap();
         assert_eq!(slots.len(), reference.slots.len());
         assert_eq!(slots.len(), 256);
+        if check_unicode {
+            assert!(reference.unicode_reference_complete);
+            let original = match metadata::value(dictionary, b"ToUnicode") {
+                Some(raw) => {
+                    let (_, number) = resolver.resolve(raw).unwrap();
+                    parser::font_cmap_for_object_number(&budget, &pdf, number.unwrap(), &offsets)
+                        .unwrap()
+                }
+                None => crate::text::ToUnicodeCMap::default(),
+            };
+            let unicode =
+                crate::type1_outline::unicode::map(&budget, &decoded, &slots, &original).unwrap();
+            for (code, (actual, expected)) in unicode.iter().zip(&reference.slots).enumerate() {
+                assert_eq!(
+                    actual.scalars, expected.scalars,
+                    "{} code{code}",
+                    font.source_name
+                );
+                assert_eq!(
+                    actual.from_tounicode, expected.from_tounicode,
+                    "{} code{code}",
+                    font.source_name
+                );
+                assert_eq!(
+                    actual.source.width, expected.width,
+                    "{} code{code}",
+                    font.source_name
+                );
+                if actual.scalars.is_some() {
+                    mapped += 1;
+                }
+                if actual.from_tounicode {
+                    unicode_explicit += 1;
+                }
+                if actual.scalars.as_ref().is_some_and(|text| text.len() > 1) {
+                    multi += 1;
+                }
+            }
+        }
         for (code, (actual, expected)) in slots.iter().zip(&reference.slots).enumerate() {
             let name = actual
                 .glyph
@@ -112,5 +173,13 @@ fn original_pdf_resources_match_all_independent_code_widths() {
     }
     assert_eq!(count, 2816);
     assert_eq!(explicit, 340);
+    if check_unicode {
+        assert_eq!(mapped, 1023);
+        assert_eq!(unicode_explicit, 1020);
+        assert_eq!(multi, 20);
+        println!(
+            "all2816code Unicode states match;1020original ToUnicode,3AGL,20multi-scalar sequences"
+        );
+    }
     assert!(budget.check().is_ok());
 }
