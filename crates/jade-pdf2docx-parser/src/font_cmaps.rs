@@ -44,8 +44,20 @@ pub(super) fn read(
     let mut resolver = crate::resource_resolver::ResourceResolver::new(objects, budget);
     for (&number, (generation, dictionary)) in objects.iter() {
         if super::is_font_dictionary(&mut resolver, dictionary)
-            && let Some(stream) = reference(objects, dictionary)
-            && let Some(cmap) = super::font_cmap_for_object_number(budget, bytes, stream, offsets)
+            && let Some(cmap) = crate::type1_font::read(
+                budget,
+                bytes,
+                dictionary,
+                Some(number),
+                &mut resolver,
+                offsets,
+            )
+            .map(|mapping| mapping.cmap)
+            .or_else(|| {
+                reference(objects, dictionary).and_then(|stream| {
+                    super::font_cmap_for_object_number(budget, bytes, stream, offsets)
+                })
+            })
             && !cmap.is_empty()
         {
             entries.push((number, *generation, cmap));

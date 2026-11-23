@@ -11,11 +11,20 @@ pub(crate) struct Selection {
     pub(crate) reason: UnsupportedFontReason,
 }
 
+/// 選択Fontの診断identityと、その描画codeごとの確認不能状態。
+#[derive(Clone, Copy)]
+pub(crate) struct Chosen {
+    /// reportの重複除去に使う固定identity。
+    issue: Selection,
+    /// Encodingの場合だけ使う、256codeのbit列。
+    unknown: Option<[u64; 4]>,
+}
+
 /// Font の選択と文字描画 operand を追う。q/Q 保存は呼び出し側で行う。
 #[derive(Default)]
 pub(crate) struct State {
     /// Font 自体を選択時に解決し、Form の同名 resource に取り違えない。
-    pub(crate) selected: Option<Selection>,
+    pub(crate) selected: Option<Chosen>,
     /// BT/ET の文字描画区間。
     in_text: bool,
     /// Tf operand のresource名を本文内の範囲として保持し、復号名を確保しない。
@@ -24,6 +33,8 @@ pub(crate) struct State {
     size: bool,
     /// 直前の文字列または TJ array が非空の文字 byte を持つか。
     text: bool,
+    /// 直前の文字列operandが未知codeを実際に含むか。
+    unknown_text: bool,
     /// 偽命令を除外する container 深度。
     depth: usize,
     /// 最外 container が TJ operand の array か。
@@ -32,7 +43,7 @@ pub(crate) struct State {
 
 impl State {
     /// Form への暗黙の graphics state 保存で Font だけ継承する。
-    pub(crate) fn inherited(selected: Option<Selection>) -> Self {
+    pub(crate) fn inherited(selected: Option<Chosen>) -> Self {
         Self {
             selected,
             ..Default::default()
@@ -40,8 +51,12 @@ impl State {
     }
 
     /// 一つの字句を進め、非空の文字描画で使った未対応 Font を返す。
+    #[allow(clippy::too_many_arguments)]
     pub(crate) fn observe<'bytes>(
         &mut self,
+        budget: &crate::decode::DecodeBudget,
+        bytes: &[u8],
+        offsets: &crate::parser::StreamOffsets,
         token: Token<'_>,
         content: &[u8],
         span: Range<usize>,
@@ -53,6 +68,7 @@ impl State {
                 if self.depth == 0 {
                     self.array = !dictionary;
                     self.text = false;
+                    self.unknown_text = false;
                 }
                 self.depth += 1;
                 self.name = None;
@@ -60,7 +76,14 @@ impl State {
             }
             Token::Close(_) => self.depth = self.depth.saturating_sub(1),
             Token::Other if self.depth == 0 || self.depth == 1 && self.array => {
-                self.text |= has_string_bytes(&content[span]);
+                self.text |= has_string_bytes(&content[span.clone()]);
+                if let Some(mask) = self.selected.and_then(|chosen| chosen.unknown)
+                    && let Some(raw) = crate::text::pdf_string_bytes(budget, &content[span.clone()])
+                {
+                    self.unknown_text |= raw
+                        .iter()
+                        .any(|code| mask[usize::from(*code) / 64] & (1u64 << (code % 64)) != 0);
+                }
                 self.name = None;
                 self.size = false;
             }
@@ -70,6 +93,7 @@ impl State {
                     .then_some(span.start + 1..span.end);
                 self.size = false;
                 self.text = false;
+                self.unknown_text = false;
             }
             Token::Word(word) => {
                 if std::str::from_utf8(word)
@@ -83,6 +107,7 @@ impl State {
                         self.name = None;
                     }
                     self.text = false;
+                    self.unknown_text = false;
                     return None;
                 }
                 let used = match word {
@@ -90,7 +115,14 @@ impl State {
                         if self.size
                             && let Some(name) = self.name.as_ref()
                         {
-                            self.selected = select(resources, &content[name.clone()], resolver);
+                            self.selected = select(
+                                budget,
+                                bytes,
+                                offsets,
+                                resources,
+                                &content[name.clone()],
+                                resolver,
+                            );
                         }
                         None
                     }
@@ -102,18 +134,23 @@ impl State {
                         self.in_text = false;
                         None
                     }
-                    b"Tj" | b"TJ" | b"'" | b"\"" if self.in_text && self.text => self.selected,
+                    b"Tj" | b"TJ" | b"'" | b"\"" if self.in_text && self.text => self
+                        .selected
+                        .filter(|chosen| chosen.unknown.is_none() || self.unknown_text)
+                        .map(|chosen| chosen.issue),
                     _ => None,
                 };
                 self.name = None;
                 self.size = false;
                 self.text = false;
+                self.unknown_text = false;
                 return used;
             }
             _ => {
                 self.name = None;
                 self.size = false;
                 self.text = false;
+                self.unknown_text = false;
             }
         }
         None
@@ -122,10 +159,13 @@ impl State {
 
 /// 現在の局所 Font map から参照を解決し、未対応 Subtype のみを保持する。
 fn select<'bytes>(
+    budget: &crate::decode::DecodeBudget,
+    bytes: &[u8],
+    offsets: &crate::parser::StreamOffsets,
     resources: &'bytes [u8],
     name: &[u8],
     resolver: &mut ResourceResolver<'_, 'bytes>,
-) -> Option<Selection> {
+) -> Option<Chosen> {
     let (fonts, _) = metadata::value(resources, b"Font").and_then(|v| resolver.resolve(v))?;
     let value = metadata::entries(fonts)?
         .into_iter()
@@ -134,19 +174,33 @@ fn select<'bytes>(
         })?;
     let (font, object_number) = resolver.resolve(value)?;
     let (subtype, _) = metadata::value(font, b"Subtype").and_then(|v| resolver.resolve(v))?;
+    if let Some(mapping) =
+        crate::type1_font::read(budget, bytes, font, object_number, resolver, offsets)
+    {
+        return Some(Chosen {
+            issue: Selection {
+                object_number,
+                reason: UnsupportedFontReason::Encoding,
+            },
+            unknown: Some(mapping.unknown),
+        });
+    }
     if [b"Type1".as_slice(), b"MMType1", b"TrueType", b"Type0"]
         .iter()
         .any(|name| metadata::is_name(subtype, name))
     {
         return None;
     }
-    Some(Selection {
-        object_number,
-        reason: if metadata::is_name(subtype, b"Type3") {
-            UnsupportedFontReason::Type3
-        } else {
-            UnsupportedFontReason::Subtype
+    Some(Chosen {
+        issue: Selection {
+            object_number,
+            reason: if metadata::is_name(subtype, b"Type3") {
+                UnsupportedFontReason::Type3
+            } else {
+                UnsupportedFontReason::Subtype
+            },
         },
+        unknown: None,
     })
 }
 

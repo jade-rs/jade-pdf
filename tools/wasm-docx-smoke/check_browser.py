@@ -3,6 +3,7 @@ from pathlib import Path
 import tempfile,subprocess,hashlib,json,zipfile,xml.etree.ElementTree as E,sys,argparse
 import os
 from owned_lzw import owned_lzw_cases
+from owned_type1_encoding import owned_type1_cases
 from owned_font_names import legacy_font_pdf
 from owned_image_colors import singleton_rgb_pdf, owned_rgb_pixels
 from owned_table_order import owned_table_order_cases, assert_owned_table_rows
@@ -20,6 +21,8 @@ def main():
      data+=f'trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n'.encode();return bytes(data)
     anchor='BT /F1 10 Tf 72 740 Td (Anchor) Tj ET';heading='BT /F1 10 Tf 60 650 Td ('+'x'*85+') Tj ET';offset='BT /F1 10 Tf 84 600 Td (Offset body) Tj ET';grid='100 500 m 300 500 l S 100 460 m 300 460 l S 100 460 m 100 500 l S 200 460 m 200 500 l S 300 460 m 300 500 l S BT /F1 10 Tf 110 480 Td (A) Tj ET BT /F1 10 Tf 210 480 Td (B) Tj ET'
     cases=[dict(id='plain',data=pdf(anchor),body={'Anchor':72}),dict(id='body-overhang',data=pdf(anchor+' '+heading+' '+offset),body={'Anchor':72,'Offset body':84}),dict(id='graphic-left',data=pdf(anchor+' 30 700 m 40 700 l S'),body={'Anchor':72}),dict(id='table-overhang',data=pdf(anchor+' '+heading+' '+grid),body={},table=100),dict(id='centre-control',data=pdf(anchor+' BT /F1 10 Tf 93.5 650 Td ('+'x'*85+') Tj ET'),body={'Anchor':72},centre=306),dict(id='word-limit',data=pdf(anchor,2000,1000),body={'Anchor':72*1584/2000},page=(31680,15840),resized=True),dict(id='empty',data=b'',error='header')]
+    for identifier, operand, expected in [('tj-word-gap', '[(Alpha) -600 (Beta)]', 'Alpha Beta'), ('tj-explicit-space', '[(Alpha ) -600 (Beta)]', 'Alpha Beta'), ('tj-small-kerning', '[(A) -50 (B)]', 'AB')]:
+     cases.append(dict(id=identifier, data=pdf(f'BT /F1 12 Tf 72 700 Td {operand} TJ ET'), body={expected:72}, expected_text=expected, expected_issues=[]))
     pitch=' '.join(f'BT /F1 10 Tf 72 {740-i*20} Td (Line {i+1}) Tj ET' for i in range(4));cases.append(dict(id='line-pitch',data=pdf(pitch),body={},pitch=20))
     for cid in [False, True]:cases.append(dict(id='legacy-cid' if cid else 'legacy-simple',data=legacy_font_pdf(cid),body={},font='OwnedCJK'))
     cases.append(dict(id='singleton-rgb',data=singleton_rgb_pdf(),body={},pixels=[12,34,56,78,90,123]))
@@ -29,6 +32,7 @@ def main():
     cases.append(owned_overfull_cell(pdf))
     cases.append(owned_single_line_styles(pdf))
     cases.extend(owned_lzw_cases())
+    cases.extend(owned_type1_cases())
     visible='BT /F1 10 Tf 20 80 Td (VISIBLE TEXT) Tj ET '
     for name,path,painted,graphics in [('painted','10 10 m 20 40 40 40 60 10 c f',True,0),('cancelled','10 10 m 20 40 40 40 60 10 c n',False,0),('rule','10 10 m 20 40 40 40 60 40 c 60 10 l S',True,0),('cancelled-then-rule','10 10 m 20 40 40 40 60 10 c n 10 10 m 60 10 l S',False,1)]:
      cases.append(dict(id='curve-'+name,data=pdf(visible+path,100,100),page=(2000,2000),expected_issues=[dict(kind='unsupported_curved_path',page=0)] if painted else [],expected_graphics=graphics,retained_text='VISIBLE TEXT'))
@@ -57,6 +61,8 @@ def main():
         assert 'file' in output,output
         with zipfile.ZipFile(output['file']) as z:
          doc=E.fromstring(z.read('word/document.xml'))
+         if 'expected_text' in case:
+          actual_text=''.join(t.text or '' for t in doc.findall('.//w:t',n));assert actual_text==case['expected_text'],dict(expected=case['expected_text'],actual=actual_text);checks.append('authored Type1 glyph Unicode and per-code priority')
          if 'rows' in case:checks.append(assert_owned_table_rows(doc,case['rows']))
          if case.get('cell_lines'):checks.append(assert_cell_lines(doc))
          if 'single_line_styles' in case:

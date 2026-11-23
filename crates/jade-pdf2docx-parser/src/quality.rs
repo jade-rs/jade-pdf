@@ -177,6 +177,8 @@ pub enum UnsupportedFontReason {
     Type3,
     /// その他の未対応 Subtype。CIDFont を直接選択する入力も含む。
     Subtype,
+    /// 使用codeの組み込みEncodingをUnicodeへ検証できない。
+    Encoding,
 }
 
 impl UnsupportedFontReason {
@@ -185,6 +187,7 @@ impl UnsupportedFontReason {
         match self {
             Self::Type3 => "type3",
             Self::Subtype => "unsupported_subtype",
+            Self::Encoding => "unverified_encoding",
         }
     }
 }

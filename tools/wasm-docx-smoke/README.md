@@ -19,6 +19,13 @@ archive and executable from the existing runtime preparation. It copies the
 production WASM artifact when Cargo reports it, before temporary build artifacts
 can be collected.
 
+The generated directory includes `LICENSE-adobe-glyph-list.txt` and
+`LICENSE-fonttools.txt` for the conversion parser's glyph and StandardEncoding
+tables. Distribute these notices with the WASM and generated bindings. The build
+helper verifies their complete contents and records their hashes in `build.json`.
+Recheck a copied distribution with
+`python3 tools/wasm-docx-smoke/check_distribution.py --probe <directory>`.
+
 The checks compare the generated DOCX paragraph and table coordinates with
 authored PDF coordinates. Owned Helvetica inputs are created in a temporary
 directory. Both default and strict conversion exports, inspection, Word's maximum
@@ -67,3 +74,12 @@ These controls do not establish filter-chain, indirect parameter, or predictor
 support. Literal controls reset the dictionary per byte; native codec tests
 separately cover 9–12-bit transitions and full-table resets for both EarlyChange
 values.
+
+Six additional Type1 metadata controls check built-in glyph assignments,
+Differences overlays, unknown used glyphs, partial/complete ToUnicode priority,
+and StandardEncoding quotes/ligatures. They verify exact DOCX Unicode and the
+`unverified_encoding` inspection reason; strict export rejects painted unknown
+codes. These controls have no CharStrings and do not establish drawing-font or
+Word fidelity. Complete real Type1 drawing-font controls are separately generated
+with `tools/generate_type1_drawing_controls.py`. All earlier 27 input hashes are
+retained.

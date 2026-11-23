@@ -175,7 +175,7 @@ use font_definitions::{
     Definition as PageFontResourceDefinition, extract as font_resource_definitions_from_dictionary,
 };
 use font_names::read as font_object_names;
-use stream_offsets::StreamOffsets;
+pub(crate) use stream_offsets::StreamOffsets;
 
 #[path = "legacy_font_resources.rs"]
 mod legacy_font_resources;
@@ -2525,6 +2525,27 @@ fn extract_text_elements_with_matrices<'clip>(
                 && let Some(bounds) = bounds
             {
                 if merge && let Some(previous) = elements.last_mut() {
+                    let separator = page_matrix
+                        .and_then(|current| {
+                            let (last_begin, matrix, width) = last_draw?;
+                            (last_begin == begin && last_sequence == Some(sequence))
+                                .then(|| crate::text_draws::gap(matrix, width, current))
+                                .flatten()
+                        })
+                        .is_some_and(|gap| {
+                            crate::text_word_gap::needs_separator(
+                                &previous.text,
+                                &text,
+                                gap,
+                                state.size,
+                            )
+                        });
+                    if separator
+                        && crate::text_result_storage::extend(budget, &mut previous.text, " ")
+                            .is_none()
+                    {
+                        return 0.;
+                    }
                     if crate::text_result_storage::extend(budget, &mut previous.text, &text)
                         .is_none()
                     {
@@ -2937,7 +2958,7 @@ pub(crate) fn form_stream_payload(
 }
 
 /// Font の Filter 方針を検査して、検査済み stream の完成 map を共有する。
-fn font_cmap_for_object_number(
+pub(crate) fn font_cmap_for_object_number(
     budget: &DecodeBudget,
     bytes: &[u8],
     number: u32,

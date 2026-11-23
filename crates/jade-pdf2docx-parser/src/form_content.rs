@@ -2,7 +2,7 @@
 use crate::{
     QualityReport,
     decode::DecodeBudget,
-    font_diagnostics::{Selection, State},
+    font_diagnostics::{Chosen, State},
     form_clip::Clip,
     form_operands::Operands,
     metadata,
@@ -23,7 +23,7 @@ struct Saved<'a> {
     /// 呼び出し元の座標変換。
     matrix: [f32; 6],
     /// 未対応Fontの診断用選択。
-    selected: Option<Selection>,
+    selected: Option<Chosen>,
     /// 文字と塗りの保存状態。
     text: crate::text_draws::State,
     /// 保存時のFont選択元辞書。
@@ -186,15 +186,19 @@ pub(crate) fn visit(
                 stack.pop();
                 continue;
             };
-            if let Some(selection) =
-                frame
-                    .fonts
-                    .observe(token, content, span.clone(), frame.resources, &mut resolver)
-                && frame.text.rendering.uses_glyph_shape_for(
-                    selection.reason == crate::UnsupportedFontReason::Type3,
-                    budget.is_pdf20(),
-                )
-                && seen_fonts.record(budget, report, page, selection).is_none()
+            if let Some(selection) = frame.fonts.observe(
+                budget,
+                bytes,
+                &offsets,
+                token,
+                content,
+                span.clone(),
+                frame.resources,
+                &mut resolver,
+            ) && frame.text.rendering.uses_glyph_shape_for(
+                selection.reason == crate::UnsupportedFontReason::Type3,
+                budget.is_pdf20(),
+            ) && seen_fonts.record(budget, report, page, selection).is_none()
             {
                 return;
             }

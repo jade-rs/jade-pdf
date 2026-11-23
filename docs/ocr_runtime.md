@@ -80,3 +80,13 @@ macOSの実プロセステストで検証した。総RSSの強制制限、単一
 成功時に本文と `OcrPageTimings`（全体・モデル読込・認識API内・その他処理、読込/認識回数）を返す。
 認識API内の時間にはテンソル準備・推論・復号が含まれる。通常APIは計測しない。
 手元の画像で初回とセッション再利用を比較する場合は `crates/jade-pdf2docx-ocr/examples/ocr_benchmark.rs` を利用できる。過去のfixture専用取得・配布・評価ツールと保存済み評価値は削除した。現在の公開PDF E2EはOCR精度を測定しない。
+
+埋め込みType1 FontFileでPDF側BaseEncodingがない場合、対応済みの静的な組み込みEncodingとDifferencesを適用する。ToUnicodeはcodeごとに優先する。実際に描画したglyph名が確認不能なら `UnsupportedFontReason::Encoding` / `unverified_encoding` を報告し、strictは拒否する。未使用の未知slotだけでは拒否しない。動的PostScriptやISOLatin1基底表は未検証で、独自glyph名のOCR復元を意味しない。
+
+完全な描画用Type1の検証には、既存の公開fixtureからToUnicodeだけを外した一時入力を使う。`python3 tools/generate_type1_drawing_controls.py /tmp/jade-type1-controls-UNIQUE`（pypdfが必要）で未使用のディレクトリへ生成し、利用条件・全ページの描画不変性を確認してから `JADE_TYPE1_DRAWING_CONTROLS=/tmp/jade-type1-controls-UNIQUE cargo test -p jade-pdf2docx-parser --test external_type1_drawing -- --ignored` を実行する。元PDF・正解本文・FontFileは変更しない。Type1の既知のFontDirectory/UniqueID/FontType比較によるcache前処理は有限の字句列として認識し、PostScriptを実行しない。未知の実行式は確認不能のまま扱う。
+
+標準14書体以外のType1で組み込みfont programを取得できず、使用codeのToUnicodeもなければ確認不能としてstrictで拒否する。任意のEncodingのnull・未定義参照はPDF 32000-1:2008 §7.3.7/7.3.9/7.3.10に従い省略と同じ扱いにして、利用できる組み込み表を使う。標準14書体の非埋め込み経路は維持する。
+
+同じTJ配列内で語間を持つ文字同士が0.2em以上離れる場合は、glyph座標を変えず空白を一つ補う。明示空白・小さいkerning・CJKのtracking・別の描画命令には追加しない。空白を除いた文字列一致だけでは単語欠落を検出できないため、実フォント検証では単語列も比較する。フォント代替や実際の改ページの一致は別途描画して確認する。
+
+組み込み表を取得できず追加のglyph名対応もない場合、既存ToUnicodeを複製せず共有し、未確認codeのbit列だけを診断で保持する。通常出力には未検証のfallback文字が残る場合があり、本文復元の成功を意味しない。strictは描画した未確認codeを拒否する。

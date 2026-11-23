@@ -84,6 +84,10 @@ use cmap_references::parse as parse_tounicode_object_refs;
 mod cmap;
 pub(crate) use cmap::{ToUnicodeCMap, ToUnicodeCMapData};
 
+#[path = "type1_mapping.rs"]
+mod type1;
+pub(crate) use type1::{Mapping as Type1Mapping, build as type1_mapping};
+
 /// ページ・Formの可視本文を借用し、文書全体の重複除去・文字数制限を適用する。
 pub(crate) fn preview_from_text_elements(
     budget: &DecodeBudget,
