@@ -1,7 +1,7 @@
 //! 所有FontFileからの実出力を独立シェーパーへ渡し、同一文字列の外形と幅を区別する。
 use super::*;
 use crate::type1_outline::{
-    bounds, cff, charstring, file, gsub, opentype, plan, resource::Slot, type2, unicode::Mapping,
+    bounds, cff, file, gsub, opentype, plan, resource::Slot, scale, type2, unicode::Mapping,
 };
 
 /// 所有の元program・幅・Unicodeから、三つの実fontを生成する。
@@ -55,10 +55,7 @@ fn owned_fonts() -> Vec<(String, Vec<u8>)> {
         .iter()
         .map(|entry| {
             let original = &original.glyphs[usize::from(entry.original)];
-            charstring::Glyph {
-                advance: entry.pdf_width.unwrap_or(original.outline.advance),
-                commands: original.outline.commands.clone(),
-            }
+            scale::prepare(&budget, &original.outline, entry.pdf_width, 1000).unwrap()
         })
         .collect::<Vec<_>>();
     let programs = outlines
