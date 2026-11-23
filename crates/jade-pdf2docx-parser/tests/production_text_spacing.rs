@@ -94,6 +94,17 @@ fn cjk_tracking_keeps_original_word_boundaries() {
     assert_eq!(parsed.text_elements[0].bounds.x1, 36.);
 }
 
+/// 別のtext objectの隣接描画は従来どおり結合し、TJ用の推論を適用しない。
+#[test]
+fn separate_text_objects_do_not_gain_inferred_tj_spaces() {
+    let parsed = parse(
+        "BT /F 10 Tf 20 150 Td (Top) Tj ET BT /F 10 Tf 42 150 Td (Line) Tj ET",
+        false,
+        false,
+    );
+    assert_eq!(parsed.text_elements[0].text, "TopLine");
+}
+
 /// Tz は glyph と間隔/TJ 数値調整を倍率変更し、Tm の位置は変更しない。
 #[test]
 fn horizontal_scaling_applies_to_glyph_spacing_and_tj() {
