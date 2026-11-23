@@ -36,3 +36,21 @@ def assert_cell_lines(document):
     assert cells[1].find('w:tcPr/w:vAlign', ns).attrib[w + 'val'] == 'center'
     return dict(source_lines=actual, font_half_points=sizes,
                 single_line_control='unchanged vertically centered')
+
+
+def owned_cell_row_heights(make_pdf):
+    """40ptと100ptの所有表を作り、平均70ptでは切れる本文行を含める。"""
+    grid = ' '.join(
+        [f'72 {y} m 272 {y} l S' for y in (600, 700, 740)]
+        + [f'{x} 600 m {x} 740 l S' for x in (72, 172, 272)]
+    )
+    text = []
+    for label, y in [('Top', 728), ('Bottom', 688)]:
+        text.extend([
+            f'BT /F1 10 Tf 82 {y} Td ({label}) Tj ET',
+            f'BT /F1 10 Tf 82 {y - 16} Td (Second) Tj ET',
+            f'BT /F1 10 Tf 182 {y} Td (Control) Tj ET',
+        ])
+    return dict(id='native-cell-row-heights',
+                data=make_pdf(grid + ' ' + ' '.join(text)),
+                body={}, row_heights=[800, 2000])
