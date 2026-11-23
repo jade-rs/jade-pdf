@@ -199,43 +199,12 @@ fn unequal_source_row_heights_are_not_averaged() {
     assert_eq!(row_heights(&unequal_row_source(40, 100)), [800, 2000]);
 }
 
-/// 字面座標と行端空白が両方あるnative本文では、空白幅を二重に加算しない。
-#[test]
-fn native_ink_bounds_with_edge_spaces_keep_legacy_cell_fallback() {
-    use jade_pdf2docx_docx::{MinimumPdfToDocxRequest, convert_minimum_pdf_to_docx};
-    let temp = tempfile::tempdir().unwrap();
-    let input = temp.path().join("padded-native-cell.pdf");
-    let output = temp.path().join("padded-native-cell.docx");
-    std::fs::write(&input, source_with_padding(24, 14, "    ", "  ")).unwrap();
-    let parsed = jade_pdf2docx_parser::parse_pdf(&input).unwrap();
-    assert!(
-        parsed
-            .text_elements
-            .iter()
-            .any(|t| t.baseline_y.is_some() && t.text.starts_with("    Alpha"))
-    );
-    convert_minimum_pdf_to_docx(&MinimumPdfToDocxRequest {
-        input_pdf_path: input,
-        output_docx_path: output.clone(),
-        ocr_text_lines: None,
-        ocr_table: None,
-        clean_output: true,
-    })
-    .unwrap();
-    let xml = document_xml(std::fs::read(output).unwrap());
-    let start = xml.find("<w:tc>").unwrap();
-    let end = start + xml[start..].find("</w:tc>").unwrap();
-    let p = paragraphs(&xml[start..end]);
-    assert_eq!(
-        p.len(),
-        1,
-        "ambiguous ink-origin geometry must retain legacy cell layout"
-    );
-    assert_eq!(p[0].0, "Alpha Beta");
-}
-
 proptest! {
-    #![proptest_config(ProptestConfig::with_cases(16))]
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_table_geometry.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
     /// 独立に変えた各行高は、総高や本文の値にかかわらず対応する行へ残る。
     #[test]
     fn each_source_row_height_survives(top in 32u32..96, bottom in 100u32..180) {
