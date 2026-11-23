@@ -54,7 +54,7 @@ pub(super) fn read<'bytes>(
         let (value, _) = resolver.resolve(raw)?;
         *width = values::number(value)?;
     }
-    if values.next_value()? != None {
+    if values.next_value()?.is_some() {
         return None;
     }
     let encoding = values::field(budget, dictionary, b"Encoding", resolver)?;

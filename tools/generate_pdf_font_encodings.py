@@ -48,6 +48,7 @@ def main():
             "#[rustfmt::skip]\npub(super) const " + table["constant"] + ": [&[u8]; 256] = [\n"
             + "".join("    b" + json.dumps(n or ".notdef") + ",\n" for n in names) + "];\n\n"
         )
+    output = output.rstrip() + "\n"
     license_path = META.parent.parent / metadata["license"]
     if hashlib.sha256(license_path.read_bytes()).hexdigest() != metadata["license_sha256"]:
         raise SystemExit("ReportLab license SHA256 mismatch")
