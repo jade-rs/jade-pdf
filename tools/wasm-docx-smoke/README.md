@@ -74,3 +74,12 @@ These controls do not establish filter-chain, indirect parameter, or predictor
 support. Literal controls reset the dictionary per byte; native codec tests
 separately cover 9–12-bit transitions and full-table resets for both EarlyChange
 values.
+
+Six additional Type1 metadata controls check built-in glyph assignments,
+Differences overlays, unknown used glyphs, partial/complete ToUnicode priority,
+and StandardEncoding quotes/ligatures. They verify exact DOCX Unicode and the
+`unverified_encoding` inspection reason; strict export rejects painted unknown
+codes. These controls have no CharStrings and do not establish drawing-font or
+Word fidelity. Complete real Type1 drawing-font controls are separately generated
+with `tools/generate_type1_drawing_controls.py`. All earlier 27 input hashes are
+retained.
