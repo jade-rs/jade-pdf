@@ -4285,8 +4285,6 @@ fn infer_positioned_table_from_graphics(
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
     let mut assigned_font_sizes = Vec::new();
-    let mut assigned_rows = Vec::new();
-    let mut assigned_text_ys = Vec::new();
     for text in parsed
         .text_elements
         .iter()
@@ -4297,7 +4295,7 @@ fn infer_positioned_table_from_graphics(
         let Some(col) = column_index_for_x(center_x, &xs) else {
             continue;
         };
-        let Some((row, grid_center_y)) =
+        let Some((row, _)) =
             row_index_for_text_y(parsed, page, center_y, &ys, allow_top_origin_text_y)
         else {
             continue;
@@ -4318,16 +4316,6 @@ fn infer_positioned_table_from_graphics(
             assigned_font_names.push(font_name.to_string());
         }
         assigned_font_sizes.push(text.font_size);
-        assigned_rows.push(row);
-        assigned_text_ys.push(grid_center_y);
-    }
-    let flipped_rows = should_flip_table_rows_from_text_order(&assigned_rows)
-        || should_flip_table_rows_from_text_y_order(&assigned_text_ys)
-        || should_flip_table_rows_from_cell_text(&cells);
-    if flipped_rows {
-        cells.reverse();
-        cell_underlines.reverse();
-        cell_text_bounds.reverse();
     }
     let cell_alignments = cell_text_bounds
         .iter()
@@ -4352,7 +4340,8 @@ fn infer_positioned_table_from_graphics(
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    let docx_table = if text_augmented_columns || flipped_rows {
+    // 行は既に正規PDF座標の上から下へ割り当て済みであり、paint順や数値で反転しない。
+    let docx_table = if text_augmented_columns {
         None
     } else {
         docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines)
@@ -4473,60 +4462,6 @@ fn table_rule_stroke_width(page_graphics: &[ParsedGraphicElement], xs: &[i32], y
         .map(|graphic| graphic.stroke_width)
         .filter(|width| width.is_finite() && *width > 0.0)
         .fold(0.0f32, f32::max)
-}
-
-/// content stream の text 出現順から table row を上下反転すべきか判定する。
-fn should_flip_table_rows_from_text_order(rows: &[usize]) -> bool {
-    let first = rows.iter().copied().find(|row| *row > 0);
-    let last = rows.iter().rev().copied().find(|row| *row > 0);
-    matches!((first, last), (Some(first), Some(last)) if first > last)
-}
-
-/// text の出現順で y が増加する座標系なら table row を上下反転する。
-fn should_flip_table_rows_from_text_y_order(ys: &[f32]) -> bool {
-    let Some(first) = ys.first().copied() else {
-        return false;
-    };
-    let Some(last) = ys.last().copied() else {
-        return false;
-    };
-    last > first + 1.0
-}
-
-/// セル文字列の連番が下から上へ入っている場合に table row を上下反転する。
-fn should_flip_table_rows_from_cell_text(cells: &[Vec<String>]) -> bool {
-    let first = cells
-        .iter()
-        .find_map(|row| row.iter().find_map(first_decimal_number));
-    let last = cells
-        .iter()
-        .rev()
-        .find_map(|row| row.iter().find_map(first_decimal_number));
-    matches!((first, last), (Some(first), Some(last)) if first > last)
-}
-
-/// 文字列中の最初の連続した 10 進数字を読む。
-fn first_decimal_number(text: &String) -> Option<u32> {
-    let mut value = None;
-    for ch in text.chars() {
-        let digit = decimal_digit_value(ch);
-        match (value, digit) {
-            (None, Some(digit)) => value = Some(digit),
-            (Some(current), Some(digit)) => value = current.checked_mul(10)?.checked_add(digit),
-            (Some(current), None) => return Some(current),
-            (None, None) => {}
-        }
-    }
-    value
-}
-
-/// ASCII / 全角数字を 10 進値へ変換する。
-fn decimal_digit_value(ch: char) -> Option<u32> {
-    match ch {
-        '0'..='9' => Some(ch as u32 - '0' as u32),
-        '０'..='９' => Some(ch as u32 - '０' as u32),
-        _ => None,
-    }
 }
 
 /// 同一セルに分割抽出された文字片を自然な区切りで追加する。
