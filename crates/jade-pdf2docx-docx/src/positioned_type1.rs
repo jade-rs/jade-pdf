@@ -239,6 +239,10 @@ mod tests {
             })
             .collect();
         parsed.embedded_fonts = vec![font];
+        parsed.text_elements.push(ParsedTextElement {
+            baseline_y:None,page:0,bounds:ParsedBounds {x0:20.,x1:70.,y0:40.,y1:50.},font_size:10.,
+            font_name:Some("JadeLayoutSpace-0".into()),fill_color:None,text:"reserved source font".into(),
+        });
         let docx = build_structured_docx_from_parsed(&parsed, &None, &[]).unwrap();
         let bytes = pack_docx_to_bytes(docx, &parsed.embedded_fonts).unwrap();
         let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
@@ -248,6 +252,7 @@ mod tests {
             .unwrap()
             .read_to_string(&mut document)
             .unwrap();
+        assert!(document.contains("JadeLayoutSpace-1"), "{document}");
         assert!(document.contains("JadeLayoutSpace-0"), "{document}");
         assert!(document.contains(r#"<w:spacing w:val="45""#), "{document}");
         let mut table = String::new();
@@ -256,7 +261,8 @@ mod tests {
             .unwrap()
             .read_to_string(&mut table)
             .unwrap();
-        assert!(table.contains("JadeLayoutSpace-0"), "{table}");
+        assert!(table.contains("JadeLayoutSpace-1"), "{table}");
+        assert!(!table.contains("JadeLayoutSpace-0"), "{table}");
         let mut settings = String::new();
         archive
             .by_name("word/settings.xml")
