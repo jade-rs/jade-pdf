@@ -87,6 +87,8 @@ pub(super) fn append(
     let mut point = None;
     let mut segments = Vec::new();
     let mut rectangles = Vec::new();
+    // 曲線を直線近似しない。途中の線分だけから罫線を推測することも避ける。
+    let mut curved = false;
     while let Some(token) = lexer.next() {
         match token {
             Token::Open(_) => {
@@ -147,6 +149,10 @@ pub(super) fn append(
                     push(budget, &mut rectangles, rect)?;
                 }
             }
+            b"c" | b"v" | b"y" => {
+                curved = true;
+                point = None;
+            }
             b"cm" if count == 6 => {
                 state.matrix = concat_matrix(state.matrix, operands);
             }
@@ -161,7 +167,7 @@ pub(super) fn append(
             }
             b"S" => {
                 for segment in segments.drain(..) {
-                    if is_axis_aligned(segment) {
+                    if !curved && is_axis_aligned(segment) {
                         emit(
                             budget,
                             output,
@@ -173,23 +179,26 @@ pub(super) fn append(
                 }
                 rectangles.clear();
                 point = None;
+                curved = false;
             }
             b"f" | b"f*" => {
                 for [x, y, w, h] in rectangles.drain(..) {
-                    if let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
+                    if !curved && let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
                         emit(budget, output, page, bounds, width)?;
                     }
                 }
-                if let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
+                if !curved && let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
                     emit(budget, output, page, bounds, width)?;
                 }
                 segments.clear();
                 point = None;
+                curved = false;
             }
-            b"n" => {
+            b"n" | b"s" | b"F" | b"B" | b"B*" | b"b" | b"b*" => {
                 segments.clear();
                 rectangles.clear();
                 point = None;
+                curved = false;
             }
             // 未対応のinline画像のbinary本文を命令として解釈しない。
             b"BI" => break,
