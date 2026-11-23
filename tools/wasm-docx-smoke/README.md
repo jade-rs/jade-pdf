@@ -30,6 +30,8 @@ license body used with verified OFL source fonts. Generated font names preserve
 source notices internally and avoid reusing reserved source family names.
 `LICENSE-ttf-parser-0.25.1.txt` covers the pure Rust font advance reader and is
 also required in native converter distributions.
+The owned nonprinting layout font retains the repository license in its name
+table; `LICENSE-jade-layout-font.txt` is included alongside the generated WASM.
 Recheck a copied distribution with
 `python3 tools/wasm-docx-smoke/check_distribution.py --probe <directory>`.
 

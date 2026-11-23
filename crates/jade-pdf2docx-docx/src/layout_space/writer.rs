@@ -117,7 +117,7 @@ pub(super) fn encode(family: &str) -> Vec<u8> {
             head_offset = start;
         }
         output.extend_from_slice(&data);
-        while output.len() % 4 != 0 {
+        while !output.len().is_multiple_of(4) {
             output.push(0);
         }
     }
@@ -136,7 +136,7 @@ fn names(family: &str) -> Vec<u8> {
         (4, family),
         (5, "Version 1.0"),
         (6, family),
-        (13, include_str!("../../../../LICENSE")),
+        (13, include_str!("../../licenses/jade-layout-font.txt")),
     ];
     let mut output = Vec::new();
     words(

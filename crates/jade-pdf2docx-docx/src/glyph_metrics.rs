@@ -164,7 +164,7 @@ mod tests {
             result[entry + 8..entry + 12].copy_from_slice(&(offset as u32).to_be_bytes());
             result[entry + 12..entry + 16].copy_from_slice(&(bytes.len() as u32).to_be_bytes());
             result.extend_from_slice(bytes);
-            while result.len() % 4 != 0 {
+            while !result.len().is_multiple_of(4) {
                 result.push(0);
             }
         }
