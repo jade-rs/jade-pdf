@@ -2,7 +2,6 @@
 use crate::{
     ParseError, ParseLimits,
     decode::DecodeBudget,
-    limits::check_limit,
     metadata,
     metadata_workspace::{ensure_active, vector},
     page_attributes::{Objects, is_null, resolve_value},
@@ -31,11 +30,6 @@ pub(crate) fn resolve(
             ensure_active(budget)?;
             entry.ok_or_else(|| invalid(path, "invalid Contents array"))?;
             count += 1;
-            check_limit(
-                "page content streams",
-                count as u64,
-                limits.max_xref_entries as u64,
-            )?;
         }
         let mut streams = vector(budget, count)?;
         for entry in metadata::array_entries(value, usize::MAX).unwrap() {
@@ -45,7 +39,6 @@ pub(crate) fn resolve(
         }
         return Ok(streams);
     }
-    check_limit("page content streams", 1, limits.max_xref_entries as u64)?;
     let number = stream_number(path, value, number)?;
     let mut streams = vector(budget, 1)?;
     streams.push(number);
