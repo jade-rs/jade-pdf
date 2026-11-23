@@ -204,3 +204,7 @@ fn integer(value: &[u8]) -> Option<u8> {
     let value = std::str::from_utf8(word).ok()?.parse().ok()?;
     lexer.next().is_none().then_some(value)
 }
+
+#[cfg(test)]
+#[path = "lzw_content_tests.rs"]
+mod tests;
