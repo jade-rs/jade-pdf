@@ -28,11 +28,99 @@ pub(super) struct Code {
 
 /// codeをUnicodeやglyph名から推測せず、幅違いと複数scalarを計画する。
 pub(super) fn build(
-    _budget: &DecodeBudget,
-    _font: &Font<'_>,
-    _mappings: Vec<Mapping>,
+    budget: &DecodeBudget,
+    font: &Font<'_>,
+    mappings: Vec<Mapping>,
 ) -> Option<Plan> {
-    None
+    if mappings.len() != 256
+        || font.glyphs.is_empty()
+        || font.glyphs.len() > 4096
+        || font.glyphs[0].name != b".notdef"
+        || budget.is_stopped()
+    {
+        return None;
+    }
+    for glyph in &font.glyphs {
+        if budget.is_stopped() || !glyph.outline.advance.is_finite() || glyph.outline.advance < 0. {
+            return None;
+        }
+    }
+    let mut count = font.glyphs.len();
+    for (index, mapping) in mappings.iter().enumerate() {
+        let source = mapping.source;
+        if budget.is_stopped()
+            || !source.width.is_finite()
+            || source.width < 0.
+            || source
+                .glyph
+                .is_some_and(|g| usize::from(g) >= font.glyphs.len())
+        {
+            return None;
+        }
+        if let Some(scalars) = &mapping.scalars {
+            if scalars.len() > 65535 {
+                return None;
+            }
+            for &scalar in scalars {
+                if budget.is_stopped() || char::from_u32(scalar).is_none() {
+                    return None;
+                }
+            }
+        }
+        if let Some(original) = source.glyph.filter(|&g| g != 0)
+            && source.width != font.glyphs[usize::from(original)].outline.advance
+            && !mappings[..index].iter().any(|prior| {
+                prior.source.glyph == source.glyph && prior.source.width == source.width
+            })
+        {
+            count += 1;
+            if count > 4096 {
+                return None;
+            }
+        }
+    }
+    let mut glyphs = budget.font_vector(count)?;
+    let mut codes = budget.font_vector(256)?;
+    for original in 0..font.glyphs.len() {
+        if budget.is_stopped() {
+            return None;
+        }
+        glyphs.push(Glyph {
+            original: original as u16,
+            pdf_width: None,
+        });
+    }
+    for mapping in mappings {
+        if budget.is_stopped() {
+            return None;
+        }
+        let glyph = match mapping.source.glyph.filter(|&g| g != 0) {
+            None => None,
+            Some(original)
+                if mapping.source.width == font.glyphs[usize::from(original)].outline.advance =>
+            {
+                Some(original)
+            }
+            Some(original) => {
+                let index = glyphs
+                    .iter()
+                    .position(|entry| {
+                        entry.original == original && entry.pdf_width == Some(mapping.source.width)
+                    })
+                    .unwrap_or_else(|| {
+                        let index = glyphs.len();
+                        glyphs.push(Glyph {
+                            original,
+                            pdf_width: Some(mapping.source.width),
+                        });
+                        index
+                    });
+                Some(index as u16)
+            }
+        };
+        codes.push(Code { mapping, glyph });
+    }
+    (!budget.is_stopped()).then_some(Plan { glyphs, codes })
 }
 
 #[cfg(test)]
