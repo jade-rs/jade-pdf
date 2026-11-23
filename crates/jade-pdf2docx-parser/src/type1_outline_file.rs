@@ -72,7 +72,7 @@ pub(super) fn read<'a>(
     }
 }
 
-/// lenIVが指定されなければ元byteを保ち、指定時はprefixを捨てて復号する。
+/// lenIV=-1なら元byteを保ち、その他は指定されたprefixを捨てて復号する。
 fn program(budget: &DecodeBudget, bytes: &[u8], prefix: Option<usize>) -> Option<Vec<u8>> {
     match prefix {
         Some(skip) => super::crypt::decrypt(budget, bytes, 4330, skip),

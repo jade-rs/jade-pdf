@@ -113,3 +113,48 @@ fn original_headers_match_independent_metadata_and_encoding() {
     }
     assert_eq!(total, 11);
 }
+
+/// 一つのproduct関数が元headerから全glyphまで読み、独立した原本外形へ一致する。
+#[test]
+#[ignore = "reviewed original Type1 header/geometry gold requires JADE_TYPE1_OUTLINE_GOLD"]
+fn original_fontfile_reader_matches_every_source_outline() {
+    let input = std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap();
+    let bytes = std::fs::read(input).unwrap();
+    assert!(bytes.len() <= 8 * 1024 * 1024);
+    let gold: Gold = serde_json::from_slice(&bytes).unwrap();
+    let mut total = 0;
+    for font in gold.fonts {
+        let budget = DecodeBudget::default();
+        let actual =
+            crate::type1_outline::file::read(&budget, &font.fontfile, font.length1, font.length2)
+                .expect("original font file must keep every source glyph");
+        assert_eq!(
+            actual.header.name,
+            font.header.as_ref().unwrap().name.as_bytes()
+        );
+        assert_eq!(actual.header.matrix, font.header.as_ref().unwrap().matrix);
+        assert_eq!(actual.header.bbox, font.header.as_ref().unwrap().bbox);
+        assert_eq!(actual.glyphs.len(), font.glyphs.len());
+        assert_eq!(actual.glyphs[0].name, b".notdef");
+        for actual in actual.glyphs {
+            let expected = font
+                .glyphs
+                .iter()
+                .find(|g| g.name.as_bytes() == actual.name)
+                .unwrap();
+            assert_geometry(
+                &actual.outline,
+                expected,
+                &format!("{} {}", font.source_name, expected.name),
+            );
+            total += 1;
+        }
+        assert!(budget.check().is_ok());
+        println!(
+            "{}: header and {} outlines match through product reader",
+            font.source_name,
+            font.glyphs.len()
+        );
+    }
+    assert_eq!(total, 351);
+}
