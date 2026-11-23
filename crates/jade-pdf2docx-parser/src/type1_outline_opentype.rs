@@ -83,10 +83,10 @@ pub(super) fn encode(
         u16::try_from(info.metrics.len()).ok()?,
     )?;
     let name = names::build(budget, font, info)?;
-    let head = tables::head(info, &summary);
+    let head = tables::head(info, &summary, font.units_per_em);
     let hhea = tables::hhea(info, &summary)?;
     let hmtx = tables::hmtx(budget, info)?;
-    let os2 = tables::os2(budget, info, &summary)?;
+    let os2 = tables::os2(budget, info, &summary, font.units_per_em)?;
     let post = tables::post(font, info)?;
     let mut maxp = [0, 0, 80, 0, 0, 0];
     maxp[4..].copy_from_slice(&u16::try_from(info.metrics.len()).ok()?.to_be_bytes());

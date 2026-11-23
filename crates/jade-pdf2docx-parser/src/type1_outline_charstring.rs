@@ -17,7 +17,7 @@ pub(super) enum Command {
 /// 完成した水平glyphのadvanceと外形。
 #[derive(Debug, PartialEq)]
 pub(super) struct Glyph {
-    /// 1000単位座標系の水平advance。
+    /// charstringの座標単位での水平advance。
     pub(super) advance: f64,
     /// 元の順序を保つ外形。途中失敗では公開しない。
     pub(super) commands: Vec<Command>,

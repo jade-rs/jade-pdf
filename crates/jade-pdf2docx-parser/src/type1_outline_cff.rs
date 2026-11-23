@@ -21,7 +21,7 @@ pub(super) struct Font<'a> {
     pub(super) name: &'a [u8],
     /// 元の著作権と許諾情報を省略せずに渡す。
     pub(super) notice: &'a [u8],
-    /// 1000単位での元の外形範囲。
+    /// units_per_emと同じ座標単位へ変換した外形範囲。
     pub(super) bbox: [i16; 4],
     /// 元の傾斜角度。
     pub(super) italic_angle: f64,
@@ -33,7 +33,8 @@ pub(super) struct Font<'a> {
 
 /// 名前・辞書・charset・文字programを、8MiB内のCFF1へ格納する。
 pub(super) fn encode(budget: &DecodeBudget, font: &Font<'_>) -> Option<Vec<u8>> {
-    if !valid_name(font.name, 63)
+    if !(16..=16384).contains(&font.units_per_em)
+        || !valid_name(font.name, 63)
         || font.notice.len() > 65_535
         || !font.italic_angle.is_finite()
         || font.italic_angle.abs() > 32767.

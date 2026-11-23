@@ -83,13 +83,13 @@ fn put32(bytes: &mut [u8], at: usize, value: u32) {
 }
 
 /// fontの実輪郭と書体属性からheadを作る。時刻は再現可能なUnix epochに固定する。
-pub(super) fn head(info: &Info<'_>, summary: &Summary) -> [u8; 54] {
+pub(super) fn head(info: &Info<'_>, summary: &Summary, units: u16) -> [u8; 54] {
     let mut bytes = [0; 54];
     put32(&mut bytes, 0, 0x10000);
     put32(&mut bytes, 4, 0x10000);
     put32(&mut bytes, 12, 0x5f0f3cf5);
     put16(&mut bytes, 16, 1);
-    put16(&mut bytes, 18, 1000);
+    put16(&mut bytes, 18, units);
     for offset in [20, 28] {
         bytes[offset..offset + 8].copy_from_slice(&2082844800_i64.to_be_bytes());
     }
@@ -155,7 +155,12 @@ pub(super) fn post(font: &cff::Font<'_>, info: &Info<'_>) -> Option<[u8; 32]> {
 }
 
 /// OS/2 version4に元の許可・書体・line metricと、実cmapのUnicode coverageを保存する。
-pub(super) fn os2(budget: &DecodeBudget, info: &Info<'_>, summary: &Summary) -> Option<[u8; 96]> {
+pub(super) fn os2(
+    budget: &DecodeBudget,
+    info: &Info<'_>,
+    summary: &Summary,
+    units: u16,
+) -> Option<[u8; 96]> {
     let mut bytes = [0; 96];
     for (offset, value) in [
         (0, 4),
@@ -163,7 +168,11 @@ pub(super) fn os2(budget: &DecodeBudget, info: &Info<'_>, summary: &Summary) -> 
         (4, info.weight),
         (6, 5),
         (8, info.embedding_flags),
-        (10, 650),
+    ] {
+        put16(&mut bytes, offset, value);
+    }
+    for (offset, value) in [
+        (10, 650_u32),
         (12, 600),
         (16, 75),
         (18, 650),
@@ -172,7 +181,8 @@ pub(super) fn os2(budget: &DecodeBudget, info: &Info<'_>, summary: &Summary) -> 
         (26, 50),
         (28, 300),
     ] {
-        put16(&mut bytes, offset, value);
+        let scaled = (value * u32::from(units) + 500) / 1000;
+        put16(&mut bytes, offset, u16::try_from(scaled).ok()?);
     }
     let mut ranges = [0_u32; 4];
     let mut first = 65535;

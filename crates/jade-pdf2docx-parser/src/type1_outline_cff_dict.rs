@@ -128,6 +128,16 @@ pub(super) fn top(
     dict.push(&[12, 1])?;
     dict.real(font.italic_angle)?;
     dict.push(&[12, 2])?;
+    if font.units_per_em != 1000 {
+        let scale = 1. / f64::from(font.units_per_em);
+        dict.real(scale)?;
+        dict.integer(0)?;
+        dict.integer(0)?;
+        dict.real(scale)?;
+        dict.integer(0)?;
+        dict.integer(0)?;
+        dict.push(&[12, 7])?;
+    }
     dict.offset(charset)?;
     dict.push(&[15])?;
     dict.offset(charstrings)?;
