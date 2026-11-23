@@ -171,6 +171,22 @@ fn invalid() -> io::Error {
     io::ErrorKind::InvalidData.into()
 }
 
+/// 本文用入口では、破損・未対応parameterを空白の成功として隠さない。
+pub(crate) fn content(dictionary: &[u8], data: &[u8], budget: &DecodeBudget) -> Option<Vec<u8>> {
+    let Some(early) = early_change(dictionary) else {
+        budget.reject_content(io::ErrorKind::Unsupported, "unsupported LZW DecodeParms");
+        return None;
+    };
+    let decoded = crate::decode::decode_lzw(data, budget, early);
+    if decoded.is_none() {
+        budget.reject_content(
+            io::ErrorKind::InvalidData,
+            "invalid or truncated LZW content stream",
+        );
+    }
+    decoded
+}
+
 /// 直接DecodeParmsのEarlyChange0/1を読み、未対応の予測変換を適用せず拒否する。
 pub(crate) fn early_change(dictionary: &[u8]) -> Option<u8> {
     let Some(parameters) = metadata::value(dictionary, b"DecodeParms") else {

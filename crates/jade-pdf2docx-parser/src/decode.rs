@@ -504,6 +504,14 @@ impl DecodeBudget {
         self.stopped.get()
     }
 
+    /// 復号不能・未対応の本文を最初の失敗として保持し、空白の成功を防ぐ。
+    pub(crate) fn reject_content(&self, kind: std::io::ErrorKind, reason: &'static str) {
+        if !self.is_stopped() {
+            self.stopped.set(true);
+            *self.failure.borrow_mut() = Some(ParseError::Io(std::io::Error::new(kind, reason)));
+        }
+    }
+
     /// ToUnicode のループ開始前に処理数を累積で予約する。
     pub(crate) fn charge_tounicode_entries(&self, count: u64) -> Option<()> {
         if self.is_stopped() {

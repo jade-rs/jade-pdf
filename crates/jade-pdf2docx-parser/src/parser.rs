@@ -2893,7 +2893,7 @@ fn estimate_helvetica_text_width(
 /// `/Type /Page` の `/Contents` が参照する stream payload をページ番号付きで取り出す。
 ///
 /// 本文一覧の保存配列は metadata 予算へ確保前に予約する。
-/// `/Filter /FlateDecode` は展開し、Filter なしの stream はそのまま content stream として扱う。
+/// 直接のFlateDecode/LZWDecodeは展開し、Filterなしの本文はそのまま扱う。
 pub(crate) fn extract_page_content_streams_with_page(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
@@ -3053,11 +3053,7 @@ fn decode_content_stream_payload(
     if crate::metadata::value(dict, b"Filter")
         .is_some_and(|filter| crate::metadata::is_name(filter, b"LZWDecode"))
     {
-        return crate::decode::decode_lzw(
-            data,
-            decode_budget,
-            crate::lzw_content::early_change(dict)?,
-        );
+        return crate::lzw_content::content(dict, data, decode_budget);
     }
     if dict
         .windows(b"FlateDecode".len())
