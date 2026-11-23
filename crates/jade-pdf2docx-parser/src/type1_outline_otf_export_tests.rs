@@ -1,6 +1,6 @@
 //! OpenType writerの検査用に、元外形と独立metricを組み合わせて出力する。
 use super::*;
-use crate::type1_outline::{cff, cmap, opentype, type2};
+use crate::type1_outline::{bounds, cff, cmap, opentype, scale, type2};
 use std::path::Path;
 
 /// 独立した所有glyphの外形情報とlayout情報。
@@ -87,13 +87,16 @@ fn export(
         is_fixed_pitch: metadata.is_fixed_pitch,
         glyphs: &entries,
     };
-    let metrics = layout
-        .metrics
+    assert_eq!(glyphs.len(), layout.metrics.len());
+    let metrics = glyphs
         .iter()
-        .map(|m| opentype::Metric {
-            advance: m.advance,
-            left: m.left,
-            bounds: m.bounds,
+        .zip(&layout.metrics)
+        .map(|((name, glyph), expected)| {
+            let actual = bounds::measure(&budget, glyph).unwrap();
+            assert_eq!(actual.advance, expected.advance, "{source} {name}");
+            assert_eq!(actual.left, expected.left, "{source} {name}");
+            assert_eq!(actual.bounds, expected.bounds, "{source} {name}");
+            actual
         })
         .collect::<Vec<_>>();
     let mappings = layout
@@ -131,7 +134,90 @@ fn export(
         .iter()
         .map(|(name, g)| super::type2_export::record(source, name, g))
         .collect::<Vec<_>>();
-    serde_json::json!({"path":filename,"source":source,"name":metadata.name,"glyphs":records})
+    serde_json::json!({"path":filename,"source":source,"name":metadata.name,"units_per_em":metadata.units_per_em,"glyphs":records})
+}
+
+/// 元PDF幅と独立した単位選択の期待値。
+#[derive(Deserialize)]
+pub(super) struct ScaleProfile {
+    /// GID順の元PDF幅。未指定glyphは元programの幅を使う。
+    widths: Vec<Option<f64>>,
+    /// 独立した有理数演算で選んだem単位数。
+    expected_units: u16,
+    /// 元の独立geometryから計算した値の上限。
+    limits: ReferenceLimits,
+}
+
+/// 元の1000単位系で独立して求めた値の上限。
+#[derive(Deserialize)]
+struct ReferenceLimits {
+    /// 絶対座標の上限。
+    coordinate: f64,
+    /// 連続点の差分上限。
+    delta: f64,
+    /// header等のmetric上限。
+    metric: f64,
+    /// 元programの幅上限。
+    advance: f64,
+}
+
+/// PDF幅と外形をproduct helperで変換し、独立metricへ一致するOpenTypeを渡す。
+#[test]
+#[ignore = "reviewed original PDF-width gold and new JADE_OTF_EXPORT_DIR required"]
+fn export_pdf_width_scaled_fonts_for_independent_reader() {
+    let input = std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap();
+    let output = std::env::var("JADE_OTF_EXPORT_DIR").unwrap();
+    let directory = Path::new(&output);
+    let bytes = std::fs::read(input).unwrap();
+    assert!(bytes.len() <= 8 * 1024 * 1024);
+    let gold: Gold = serde_json::from_slice(&bytes).unwrap();
+    std::fs::create_dir(directory).unwrap();
+    let budget = DecodeBudget::default();
+    let mut fonts = Vec::new();
+    for font in gold.fonts {
+        let original = compare_original(&font);
+        let profile = font.pdf_scale.as_ref().unwrap();
+        assert_eq!(original.len(), profile.widths.len());
+        let widths = profile.widths.iter().flatten().copied().collect::<Vec<_>>();
+        let limits = scale::Limits {
+            coordinate: profile.limits.coordinate,
+            delta: profile.limits.delta,
+            metric: profile.limits.metric,
+            advance: profile.limits.advance,
+        };
+        let units = scale::choose_units(&budget, &widths, &limits).unwrap();
+        assert_eq!(units, profile.expected_units, "{}", font.source_name);
+        assert_eq!(units, font.cff.as_ref().unwrap().units_per_em);
+        let glyphs = original
+            .into_iter()
+            .zip(&profile.widths)
+            .map(|((name, glyph), &width)| {
+                (name, scale::prepare(&budget, &glyph, width, units).unwrap())
+            })
+            .collect();
+        fonts.push(export(
+            directory,
+            &font.source_name,
+            glyphs,
+            font.cff.as_ref().unwrap(),
+            font.otf.as_ref().unwrap(),
+        ));
+    }
+    assert!(budget.check().is_ok());
+    let hash = hmac_sha256::Hash::hash(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    let file = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("manifest.json"))
+        .unwrap();
+    serde_json::to_writer(
+        file,
+        &serde_json::json!({"source_gold_sha256":hash,"fonts":fonts}),
+    )
+    .unwrap();
 }
 
 /// 元FontFileから復号した全外形を、独立metadataでOpenTypeとして検査へ渡す。

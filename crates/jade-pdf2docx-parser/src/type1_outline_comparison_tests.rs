@@ -40,6 +40,9 @@ struct Font {
     /// 独立に読んだsource line metric・glyph bounds・Unicode対応。
     #[serde(default)]
     otf: Option<otf_export::Metadata>,
+    /// 元PDF幅を使う、独立して宣言した単位変換の検査条件。
+    #[serde(default)]
+    pdf_scale: Option<otf_export::ScaleProfile>,
     /// fontToolsが独立復号したType1 subroutine。
     subrs: Vec<Vec<u8>>,
     /// 外形とadvanceの独立gold。
