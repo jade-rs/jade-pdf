@@ -39,6 +39,12 @@ with Python's standard library, including chunk CRCs and bounded decompression.
 Strict conversion still rejects the unverified image diagnostic. Pixel recovery
 does not establish full image placement or table-layout fidelity.
 
+Two owned three-row tables independently check the original top-to-bottom cell
+order in both default and strict exports. Descending values and reverse paint
+order must preserve the authored row and column associations without introducing
+quality diagnostics. These checks do not establish complex table partitioning or
+within-cell rendering fidelity.
+
 This suite verifies byte-PDF conversion and inspection. It does not establish
 rendered-PNG API behavior, font or artwork fidelity, Microsoft Word rendering,
 or browser host memory and cancellation limits. The strict checks enforce
