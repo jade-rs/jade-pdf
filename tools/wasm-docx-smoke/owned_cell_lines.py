@@ -54,3 +54,16 @@ def owned_cell_row_heights(make_pdf):
     return dict(id='native-cell-row-heights',
                 data=make_pdf(grid + ' ' + ' '.join(text)),
                 body={}, row_heights=[800, 2000])
+
+
+def owned_overfull_cell(make_pdf):
+    """30ptセルへ積むと34ptになる二行を作り、従来本文への退避を検証する。"""
+    grid = ' '.join(
+        [f'72 {y} m 272 {y} l S' for y in (670, 700)]
+        + [f'{x} 670 m {x} 700 l S' for x in (72, 172, 272)]
+    )
+    text = ('BT /F1 10 Tf 82 680 Td (Alpha) Tj ET '
+            'BT /F1 14 Tf 92 674 Td (Beta) Tj ET '
+            'BT /F1 10 Tf 182 680 Td (Control) Tj ET')
+    return dict(id='native-overfull-cell', data=make_pdf(grid + ' ' + text),
+                body={}, overfull_cell=True)

@@ -5,7 +5,7 @@ import os
 from owned_font_names import legacy_font_pdf
 from owned_image_colors import singleton_rgb_pdf, owned_rgb_pixels
 from owned_table_order import owned_table_order_cases, assert_owned_table_rows
-from owned_cell_lines import owned_cell_lines, assert_cell_lines, owned_cell_row_heights
+from owned_cell_lines import owned_cell_lines, assert_cell_lines, owned_cell_row_heights, owned_overfull_cell
 ROOT=Path(__file__).resolve().parents[2]
 TOOLS=Path(__file__).resolve().parent
 
@@ -25,6 +25,7 @@ def main():
     cases.extend(owned_table_order_cases(pdf))
     cases.append(owned_cell_lines(pdf))
     cases.append(owned_cell_row_heights(pdf))
+    cases.append(owned_overfull_cell(pdf))
     visible='BT /F1 10 Tf 20 80 Td (VISIBLE TEXT) Tj ET '
     for name,path,painted,graphics in [('painted','10 10 m 20 40 40 40 60 10 c f',True,0),('cancelled','10 10 m 20 40 40 40 60 10 c n',False,0),('rule','10 10 m 20 40 40 40 60 40 c 60 10 l S',True,0),('cancelled-then-rule','10 10 m 20 40 40 40 60 10 c n 10 10 m 60 10 l S',False,1)]:
      cases.append(dict(id='curve-'+name,data=pdf(visible+path,100,100),page=(2000,2000),expected_issues=[dict(kind='unsupported_curved_path',page=0)] if painted else [],expected_graphics=graphics,retained_text='VISIBLE TEXT'))
@@ -44,7 +45,7 @@ def main():
       try:
        if 'expected_issues' in case:assert issues==case['expected_issues'],issues
        if 'expected_graphics' in case:assert inspection['value']['graphics_count']==case['expected_graphics'],inspection
-       if 'rows' in case:assert not issues,issues
+       if 'rows' in case or case.get('cell_lines') or 'row_heights' in case or case.get('overfull_cell'):assert not issues,issues
        if case.get('error'):
         assert case['error'] in output.get('error','').lower(),output;assert case['error'] in inspection.get('error','').lower(),inspection;checks.append('explicit rejection')
        elif output['mode']=='strict' and issues:
@@ -55,6 +56,8 @@ def main():
          doc=E.fromstring(z.read('word/document.xml'))
          if 'rows' in case:checks.append(assert_owned_table_rows(doc,case['rows']))
          if case.get('cell_lines'):checks.append(assert_cell_lines(doc))
+         if case.get('overfull_cell'):
+          cell=doc.find('.//w:tbl/w:tr/w:tc',n);paragraphs=cell.findall('w:p',n);actual=[''.join(t.text or '' for t in p.findall('.//w:t',n)) for p in paragraphs];assert actual==['Alpha Beta'],actual;checks.append('overfull source line boxes retain legacy editable cell text')
          if 'row_heights' in case:
           actual=[int(h.attrib[W+'val']) for h in doc.findall('.//w:tbl/w:tr/w:trPr/w:trHeight',n)];assert actual==case['row_heights'],dict(expected=case['row_heights'],actual=actual);checks.append(dict(source_row_heights=case['row_heights'],actual=actual))
          if 'pixels' in case:
