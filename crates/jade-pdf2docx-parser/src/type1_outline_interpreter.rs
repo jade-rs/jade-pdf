@@ -1,6 +1,9 @@
 //! 有限のType1 operand stackと描画状態。未知の動的命令は失敗として返す。
 use super::{Command, Glyph};
 use crate::decode::DecodeBudget;
+use crate::type1_outline::standard::Verified;
+#[path = "type1_outline_flex.rs"]
+mod flex;
 
 /// 一glyph内で共有するstack・相対原点・処理量。
 pub(super) struct State<'a> {
@@ -22,6 +25,18 @@ pub(super) struct State<'a> {
     remaining: usize,
     /// 最上位のendcharまで到達したか。
     ended: bool,
+    /// 完全な定義を照合した標準OtherSubrsだけを許可する。
+    standard: Option<Verified>,
+    /// Flex中の七点。輪郭命令にはまだ追加しない。
+    flex: Option<flex::Capture>,
+    /// 標準OtherSubrsが返す最大二つの結果。
+    returned: [f64; 2],
+    /// 今回返す結果の個数。
+    return_count: usize,
+    /// 次にpopする結果の位置。
+    return_cursor: usize,
+    /// Flexの二つのpop後にsetcurrentpointを必須とする。
+    restore_point: bool,
 }
 
 impl<'a> State<'a> {
@@ -37,7 +52,20 @@ impl<'a> State<'a> {
             open: false,
             remaining: 100_000,
             ended: false,
+            standard: None,
+            flex: None,
+            returned: [0.; 2],
+            return_count: 0,
+            return_cursor: 0,
+            restore_point: false,
         }
+    }
+
+    /// 標準定義の承認値を持つ場合だけ専用の補助演算を有効にする。
+    pub(super) fn with_standard(budget: &'a DecodeBudget, verified: Verified) -> Self {
+        let mut state = Self::new(budget);
+        state.standard = Some(verified);
+        state
     }
 
     /// 保存前に容量を予約し、途中失敗したglyphは公開しない。
@@ -91,6 +119,9 @@ impl<'a> State<'a> {
 
     /// closepathでもType1の相対原点を変更しない。
     fn close(&mut self) -> Option<()> {
+        if self.flex.is_some() {
+            return None;
+        }
         if self.open {
             self.emit(Command::Close)?;
             self.open = false;
@@ -101,6 +132,9 @@ impl<'a> State<'a> {
     /// 新しい輪郭の前に旧輪郭を完了する。
     fn move_to(&mut self, x: f64, y: f64) -> Option<()> {
         self.advance?;
+        if self.flex.is_some() {
+            return self.flex_move(x, y);
+        }
         self.close()?;
         let point = self.shift(x, y)?;
         self.emit(Command::Move(point))?;
@@ -110,7 +144,7 @@ impl<'a> State<'a> {
 
     /// 始点のある輪郭に直線を追加する。
     fn line_to(&mut self, x: f64, y: f64) -> Option<()> {
-        if !self.open {
+        if !self.open || self.flex.is_some() {
             return None;
         }
         let point = self.shift(x, y)?;
@@ -119,7 +153,7 @@ impl<'a> State<'a> {
 
     /// 三つの相対座標を絶対座標の三次曲線へ変える。
     fn curve_to(&mut self, values: [f64; 6]) -> Option<()> {
-        if !self.open {
+        if !self.open || self.flex.is_some() {
             return None;
         }
         let a = self.shift(values[0], values[1])?;
@@ -174,6 +208,13 @@ impl<'a> State<'a> {
             }
             self.remaining = self.remaining.checked_sub(1)?;
             cursor += 1;
+            if self.return_cursor < self.return_count {
+                if byte != 12 || bytes.get(cursor) != Some(&17) {
+                    return None;
+                }
+            } else if self.restore_point && (byte != 12 || bytes.get(cursor) != Some(&33)) {
+                return None;
+            }
             if byte >= 32 {
                 self.push(Self::number(byte, bytes, &mut cursor)?)?;
                 continue;
@@ -279,6 +320,9 @@ impl<'a> State<'a> {
                 }
                 self.push(numerator / divisor)?;
             }
+            16 => self.other_subr()?,
+            17 => self.pop_result()?,
+            33 => self.restore_currentpoint()?,
             _ => return None,
         }
         Some(())

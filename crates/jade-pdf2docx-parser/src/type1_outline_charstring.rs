@@ -37,8 +37,9 @@ pub(super) fn decode_verified(
     subrs: &[Vec<u8>],
     verified: super::standard::Verified,
 ) -> Option<Glyph> {
-    let _ = verified;
-    decode(budget, bytes, subrs)
+    let mut state = interpreter::State::with_standard(budget, verified);
+    state.run(bytes, subrs, 0)?;
+    state.finish()
 }
 
 #[path = "type1_outline_interpreter.rs"]
