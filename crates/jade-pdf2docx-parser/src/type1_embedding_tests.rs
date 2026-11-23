@@ -24,7 +24,7 @@ fn charstring(program: &[u8]) -> Vec<u8> {
 }
 
 /// 幅600・高さ700の三角形Aと空の.notdefを持つ、所有のType1を作る。
-fn program() -> (Vec<u8>, usize, usize, usize) {
+pub(crate) fn program() -> (Vec<u8>, usize, usize, usize) {
     let clear = b"%!PS-AdobeFont-1.0: JadeOwnedType1 1.0\n\
         11 dict begin /FontName /JadeOwnedType1 def /FontType 1 def\n\
         /FontMatrix [0.001 0 0 0.001 0 0] readonly def /FontBBox [0 0 600 700] readonly def\n\

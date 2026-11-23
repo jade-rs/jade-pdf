@@ -60,8 +60,46 @@ fn unsafe_definitions_and_storage_limit_are_rejected() {
         ),
         text.replace("/.notdef 3 RD", "/.notdef 999999999 RD"),
         text.replace("/lenIV 4 def", "/lenIV -2 def"),
+        text.replace("/lenIV 4 def", "/lenIV 4 def /lenIV 4 def"),
+        text.replace("/lenIV 4 def", "/lenIV 4 def /OtherSubrs [] def"),
         text.replace("/Subrs 1 array", "/Subrs 999999999 array"),
         text.replace("closefile", "closefile run"),
+    ] {
+        assert!(parse(&DecodeBudget::default(), changed.as_bytes()).is_none());
+    }
+}
+
+/// 平文・prefixなし・既定prefixを区別し、未初期化slotと重複を見逃さない。
+#[test]
+fn explicit_prefix_and_dictionary_identity_are_not_inferred() {
+    let source = String::from_utf8(private(b"abc", b"def", b" ")).unwrap();
+    for (definition, expected) in [
+        ("", Some(4)),
+        ("/lenIV -1 def", None),
+        ("/lenIV 0 def", Some(0)),
+        ("/lenIV 64 def", Some(64)),
+    ] {
+        let changed = source.replace("/lenIV 4 def", definition);
+        assert_eq!(
+            parse(&DecodeBudget::default(), changed.as_bytes())
+                .unwrap()
+                .prefix,
+            expected
+        );
+    }
+    let sparse = source.replace("/Subrs 1 array", "/Subrs 2 array");
+    assert_eq!(
+        parse(&DecodeBudget::default(), sparse.as_bytes())
+            .unwrap()
+            .subrs,
+        vec![Some(b"def".as_slice()), None]
+    );
+    for changed in [
+        source.replace("def NP", "def NP dup 0 3 RD def NP"),
+        source
+            .replace("/CharStrings 1 dict", "/CharStrings 2 dict")
+            .replace("abc ND", "abc ND /.notdef 3 RD abc ND"),
+        source.replace("/.notdef", "/A"),
     ] {
         assert!(parse(&DecodeBudget::default(), changed.as_bytes()).is_none());
     }

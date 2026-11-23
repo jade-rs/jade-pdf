@@ -69,7 +69,7 @@ pub(super) fn parse<'a>(budget: &DecodeBudget, bytes: &'a [u8]) -> Option<Privat
     }
     words(budget, &mut lexer, &[b"readonly", b"put", b"dup"])?;
     name(budget, &mut lexer, b"CharStrings")?;
-    let capacity = number(budget, &mut lexer)?.min(4097);
+    let capacity = number(budget, &mut lexer)?;
     if capacity == 0 || capacity > 4096 {
         return None;
     }
