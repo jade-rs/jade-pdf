@@ -77,7 +77,8 @@ proptest! {
         let raw=bytes.iter().map(|b|format!("\\{b:03o}")).collect::<String>();
         prop_assert_eq!(decode(&DecodeBudget::default(),raw.as_bytes()).unwrap(),bytes.clone());
         let delimited=format!("({raw})");let mut output=Vec::new();
-        prop_assert!(crate::pdf_binary_string::visit_string(delimited.as_bytes(),|b|{output.push(b);Some(())}).is_some());
+        let result=crate::pdf_binary_string::visit_string(delimited.as_bytes(),|b|{output.push(b);Some(())});
+        prop_assert!(result.is_some());
         prop_assert_eq!(output,bytes);
     }
 }
