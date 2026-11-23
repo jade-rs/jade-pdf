@@ -7,6 +7,8 @@ mod crypt;
 mod private;
 #[path = "type1_outline_standard.rs"]
 mod standard;
+#[path = "type1_outline_type2.rs"]
+mod type2;
 
 #[cfg(test)]
 mod tests {
