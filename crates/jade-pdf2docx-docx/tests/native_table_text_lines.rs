@@ -242,3 +242,43 @@ proptest! {
         prop_assert_eq!(&p[0].0, "Alpha Beta");
     }
 }
+
+/// 表全体で文字サイズが異なる二つの単一行セルを、正式な所有PDFとして作る。
+fn mixed_single_line_cells(small: u32, large: u32) -> Vec<u8> {
+    owned_pdf_content(&format!(
+        "1 w 72 600 m 272 600 l S 72 640 m 272 640 l S 72 600 m 72 640 l S 172 600 m 172 640 l S 272 600 m 272 640 l S BT /F1 {small} Tf 82 620 Td (Small) Tj ET BT /F1 {large} Tf 182 620 Td (Large) Tj ET"
+    ))
+}
+
+/// 製品APIの実際のセル段落から、独立に指定したサイズをラベルで照合する。
+fn single_line_sizes(small: u32, large: u32) -> (Vec<u32>, Vec<u32>) {
+    let bytes = convert_minimum_pdf_bytes_to_docx_bytes(
+        "owned-mixed-single-line.pdf",
+        &mixed_single_line_cells(small, large),
+    )
+    .unwrap();
+    let p = paragraphs(&document_xml(bytes));
+    (
+        p.iter().find(|p| p.0 == "Small").unwrap().3.clone(),
+        p.iter().find(|p| p.0 == "Large").unwrap().3.clone(),
+    )
+}
+
+/// サイズの混在する表で既定の11ptへ戻すと、小さい原本行で本文が切れる。
+#[test]
+fn single_line_cells_keep_their_source_run_sizes() {
+    assert_eq!(single_line_sizes(6, 14), (vec![12], vec![28]));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_single_line_styles.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// セルごとに変えたem高が、表全体の共通サイズや既定値に置き換わらない。
+    #[test]
+    fn single_line_cell_font_sizes_are_independent(small in 6u32..11, large in 12u32..21) {
+        prop_assert_eq!(single_line_sizes(small, large), (vec![small * 2], vec![large * 2]));
+    }
+}
