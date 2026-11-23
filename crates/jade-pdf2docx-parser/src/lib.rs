@@ -7,6 +7,7 @@ mod cid_widths;
 mod content_clip;
 mod content_refs;
 mod decode;
+mod glyph_names;
 mod font_diagnostics;
 mod font_fallback;
 mod font_metrics_cache;
