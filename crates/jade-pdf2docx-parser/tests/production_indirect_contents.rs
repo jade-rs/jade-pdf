@@ -122,6 +122,32 @@ fn repeated_contents_references_are_not_deduplicated() {
     }
 }
 
+/// 少数のxrefから多数回同じ命令を実行しても、xref件数の上限とは混同しない。
+#[test]
+fn repeated_contents_may_exceed_unique_xref_entries() {
+    for contents in [
+        "6 0 R",
+        "[4 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 7 0 R 8 0 R]",
+    ] {
+        let array = format!("[4 0 R {}8 0 R]", "7 0 R ".repeat(16));
+        let mut objects = objects(contents, &array, 0, "BT /F1 12 Tf 72 700 Td", "(A) Tj");
+        objects.push((0, stream("ET")));
+        let mut options = ParseOptions::default();
+        options.limits.max_xref_entries = objects.len() + 1;
+        let parsed =
+            parse_pdf_bytes_with_options("repeat-limited-xref.pdf", &pdf(&objects), &options)
+                .unwrap();
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|text| text.text.as_str())
+                .collect::<String>(),
+            "A".repeat(16)
+        );
+    }
+}
+
 /// Contents配列に至るaliasも解決し、配列本文ではなく実streamを実行する。
 #[test]
 fn indirect_array_alias_is_resolved() {
