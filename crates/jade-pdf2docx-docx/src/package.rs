@@ -11,6 +11,7 @@ pub(super) fn pack_docx_to_bytes(
 ) -> Result<Vec<u8>, ConvertError> {
     let mut package = docx.build();
     crate::word_page_fit::fit(&mut package)?;
+    crate::ruby::apply_to_document_xml(&mut package.document);
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
     let capacity = package
@@ -280,6 +281,7 @@ pub(super) fn pack_docx_to_file(
     let mut output = BufWriter::new(tempfile::tempfile()?);
     let mut package = docx.build();
     crate::word_page_fit::fit(&mut package)?;
+    crate::ruby::apply_to_document_xml(&mut package.document);
     package
         .pack(&mut output)
         .map_err(|err| ConvertError::Pack(err.to_string()))?;
