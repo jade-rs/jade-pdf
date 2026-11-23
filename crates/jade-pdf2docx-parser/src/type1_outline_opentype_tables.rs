@@ -49,12 +49,11 @@ pub(super) fn summarize(info: &Info<'_>) -> Option<Summary> {
                 ],
             });
             let width = i32::from(b[2]) - i32::from(b[0]);
-            let r =
-                i16::try_from(i32::from(metric.advance) - i32::from(metric.left) - width).ok()?;
-            let e = i16::try_from(i32::from(metric.left) + width).ok()?;
+            let r = i32::from(metric.advance) - i32::from(metric.left) - width;
+            let e = i32::from(metric.left) + width;
             left = Some(left.map_or(metric.left, |old: i16| old.min(metric.left)));
-            right = Some(right.map_or(r, |old: i16| old.min(r)));
-            extent = Some(extent.map_or(e, |old: i16| old.max(e)));
+            right = Some(right.map_or(r, |old: i32| old.min(r)));
+            extent = Some(extent.map_or(e, |old: i32| old.max(e)));
         } else if metric.left != 0 {
             return None;
         }
@@ -68,8 +67,8 @@ pub(super) fn summarize(info: &Info<'_>) -> Option<Summary> {
         bbox: bbox.unwrap_or([0; 4]),
         max_advance: max,
         min_left: left.unwrap_or(0),
-        min_right: right.unwrap_or(0),
-        max_extent: extent.unwrap_or(0),
+        min_right: i16::try_from(right.unwrap_or(0)).ok()?,
+        max_extent: i16::try_from(extent.unwrap_or(0)).ok()?,
         average,
     })
 }
