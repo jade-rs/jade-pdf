@@ -86,6 +86,11 @@ fn pdf() -> Vec<u8> {
 
 /// 同じ原本programを使い、描画命令と別resourceの幅だけを変更する所有PDF。
 pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec<u8> {
+    encode_objects(objects(content, second_width))
+}
+
+/// stream長と原本fontを保った、拡張可能な所有object列。
+fn objects(content: &[u8], second_width: Option<u16>) -> Vec<Vec<u8>> {
     let (font, first, second, third) = font_program();
     let cmap=b"begincmap\n1 begincodespacerange\n<00> <FF>\nendcodespacerange\n2 beginbfchar\n<41> <0066>\n<42> <00660066>\nendbfchar\nendcmap";
     let resources = if second_width.is_some() {
@@ -104,6 +109,11 @@ pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec
     if let Some(width) = second_width {
         objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /JadeOwnedClusters /FirstChar 65 /LastChar 66 /Widths [{width} 500] /FontDescriptor 6 0 R /ToUnicode 8 0 R >>").into_bytes());
     }
+    objects
+}
+
+/// 任意の所有object列へ正しいxrefとSizeを付ける。
+fn encode_objects(objects: Vec<Vec<u8>>) -> Vec<u8> {
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
     let count = objects.len() + 1;
@@ -122,6 +132,101 @@ pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec
         format!("trailer << /Size {count} /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
     );
     bytes
+}
+
+/// 同じresource名を持つFormの局所Tfと、親から選択済みのfontを区別する。
+#[test]
+fn form_local_and_inherited_font_routes_preserve_resource_scope() {
+    let expected = crate::parse_pdf_bytes(
+        "owned-page-ligature.pdf",
+        &pdf_with_content(b"BT /F1 20 Tf 20 80 Td (B) Tj ET", None),
+    )
+    .unwrap()
+    .text_elements[0]
+        .font_name
+        .clone();
+    for (form, inherit, width) in [
+        (b"BT 20 40 Td (B) Tj ET".as_slice(), true, 10.),
+        (b"BT /F1 20 Tf 20 40 Td (AA) Tj ET".as_slice(), false, 18.),
+    ] {
+        let mut objects = objects(b"BT /F1 20 Tf 20 80 Td (AA) Tj ET /X Do", Some(450));
+        objects[2]=b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Resources << /Font << /F1 5 0 R >> /XObject << /X 10 0 R >> >> /Contents 4 0 R >>".to_vec();
+        objects.push(stream(form,"/Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 200 120] /Resources << /Font << /F1 9 0 R >> >>"));
+        let parsed =
+            crate::parse_pdf_bytes("owned-scoped-form.pdf", &encode_objects(objects)).unwrap();
+        assert_eq!(parsed.text_elements.len(), 2);
+        let e = &parsed.text_elements[1];
+        assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001, "{e:?}");
+        if inherit {
+            assert_eq!(e.font_name, expected);
+        } else {
+            assert_ne!(e.font_name, parsed.text_elements[0].font_name);
+        }
+        assert!(
+            parsed
+                .embedded_fonts
+                .iter()
+                .any(|f| Some(&f.font_name) == e.font_name.as_ref())
+        );
+    }
+}
+
+/// 同じ辞書byteでも、新文書の権利とprogramへ切り替え、以前の生成fontを再使用しない。
+#[test]
+fn document_revalidation_drops_previous_font_outputs_and_aliases() {
+    let first = pdf_with_content(b"BT /F1 20 Tf 20 80 Td (AA) Tj ET", None);
+    let mut second = first.clone();
+    let offset = second
+        .windows(b"/FSType 0".len())
+        .position(|s| s == b"/FSType 0")
+        .unwrap()
+        + b"/FSType ".len();
+    second[offset] = b'2';
+    let limits = crate::ParseLimits::default();
+    let budget = crate::decode::DecodeBudget::default();
+    let parsed = crate::parser::parse_pdf_bytes_pure_with_budget(
+        "owned-first.pdf".into(),
+        &first,
+        &limits,
+        &budget,
+    )
+    .unwrap();
+    assert!(!parsed.embedded_fonts.is_empty());
+    let denied = crate::parser::parse_pdf_bytes_pure_with_budget(
+        "owned-denied.pdf".into(),
+        &second,
+        &limits,
+        &budget,
+    )
+    .unwrap();
+    assert!(denied.embedded_fonts.is_empty());
+    assert_eq!(
+        denied.text_elements[0].font_name.as_deref(),
+        Some("JadeOwnedClusters")
+    );
+}
+
+/// 未使用のresourceや合字faceを、出力fontの件数上限へ数えて有効な文書を拒否しない。
+#[test]
+fn unused_resource_fonts_do_not_exhaust_the_published_font_limit() {
+    let mut objects = objects(b"BT /F0 20 Tf 20 80 Td (AA) Tj ET", None);
+    let mut resources = String::from("/F0 5 0 R");
+    for index in 1..17 {
+        let number = objects.len() + 1;
+        resources.push_str(&format!(" /F{index} {number} 0 R"));
+        objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /JadeOwnedClusters /FirstChar 65 /LastChar 66 /Widths [{} 500] /FontDescriptor 6 0 R /ToUnicode 8 0 R >>",300+index).into_bytes());
+    }
+    objects[2]=format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 120] /Resources << /Font << {resources} >> >> /Contents 4 0 R >>").into_bytes();
+    let parsed =
+        crate::parse_pdf_bytes("owned-unused-resource-fonts.pdf", &encode_objects(objects))
+            .unwrap();
+    assert_eq!(parsed.text_elements.len(), 1);
+    assert_eq!(parsed.text_elements[0].text, "ff");
+    assert_eq!(parsed.embedded_fonts.len(), 1);
+    assert_eq!(
+        parsed.text_elements[0].font_name.as_deref(),
+        Some(parsed.embedded_fonts[0].font_name.as_str())
+    );
 }
 
 /// 一つのTj内の合字・通常二字・合字を、escapeやhexでも元の位置へ振り分ける。
