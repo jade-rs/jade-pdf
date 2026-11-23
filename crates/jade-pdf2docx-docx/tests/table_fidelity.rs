@@ -509,3 +509,42 @@ fn dashed_rules_become_dashed_cell_borders() {
         "solid rules must stay solid: {xml}"
     );
 }
+
+/// 見出しの下に横罫線のない財務表は、科目と金額の行ごとに行を分け、上から順に並べる
+/// （金額が下へ行くほど小さくても上下を反転しない）。
+#[test]
+fn ruled_frame_with_item_lines_becomes_one_row_per_item() {
+    let mut content = String::from(
+        "0.5 w 20 180 m 220 180 l S 20 165 m 220 165 l S 20 80 m 220 80 l S \
+         20 80 m 20 180 l S 120 80 m 120 180 l S 220 80 m 220 180 l S \
+         BT /F1 10 Tf 1 0 0 1 25 169 Tm (Item) Tj ET BT /F1 10 Tf 1 0 0 1 125 169 Tm (Amount) Tj ET",
+    );
+    for (index, (label, amount)) in [
+        ("Cash", "9,000"),
+        ("Loans", "7,000"),
+        ("Bonds", "5,000"),
+        ("Other", "3,000"),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let y = 150 - 18 * index as i32;
+        content.push_str(&format!(
+            " BT /F1 10 Tf 1 0 0 1 25 {y} Tm ({label}) Tj ET BT /F1 10 Tf 1 0 0 1 160 {y} Tm ({amount}) Tj ET"
+        ));
+    }
+    let xml = convert("table_fidelity_item_rows", &content);
+    assert_eq!(
+        xml.matches("<w:tr>").count(),
+        5,
+        "header plus one row per item: {xml}"
+    );
+    let order = ["Item", "Cash", "Loans", "Bonds", "Other"]
+        .iter()
+        .map(|label| xml.find(&format!(">{label}<")).expect("label"))
+        .collect::<Vec<_>>();
+    assert!(
+        order.windows(2).all(|pair| pair[0] < pair[1]),
+        "rows must stay top to bottom: {xml}"
+    );
+}

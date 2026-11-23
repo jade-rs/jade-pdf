@@ -67,6 +67,7 @@ mod stacked_rules;
 mod staged_output;
 mod table_cell_text;
 mod table_grid;
+mod text_line_rows;
 mod vertical_forms;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
@@ -4470,7 +4471,7 @@ fn infer_ruled_positioned_tables(parsed: &ParsedDocument) -> Vec<PositionedTable
                 .cmp(&b.page)
                 .then(b.bounds.y1.total_cmp(&a.bounds.y1))
         });
-        return group_side_by_side_tables(attach_nested_positioned_tables(graphic_tables));
+        return group_side_by_side_tables(parsed, attach_nested_positioned_tables(graphic_tables));
     }
     // 罫線のないページの文字格子の表は、罫線を付けずに出す。
     infer_positioned_tables_from_text_grid(parsed)
@@ -4483,13 +4484,51 @@ fn infer_ruled_positioned_tables(parsed: &ParsedDocument) -> Vec<PositionedTable
 ///
 /// DOCX の本文は上から下へ流れるため、横に並んだ表を別々に出すと縦に積まれてしまう。
 /// 縦方向の範囲が互いに半分以上重なり、横方向には重ならない表どうしを 1 つにまとめる。
-fn group_side_by_side_tables(tables: Vec<PositionedTable>) -> Vec<PositionedTable> {
+fn group_side_by_side_tables(
+    parsed: &ParsedDocument,
+    tables: Vec<PositionedTable>,
+) -> Vec<PositionedTable> {
+    // 段を区切る縦罫線の左右にある表は、別の段の表なのでまとめない（段の順に読む）。
+    let mut dividers: BTreeMap<usize, Vec<ParsedBounds>> = BTreeMap::new();
+    for page in tables
+        .iter()
+        .map(|table| table.page)
+        .collect::<BTreeSet<_>>()
+    {
+        let mut rules = column_bands::partial_band_rules(parsed, page, &[]);
+        rules.extend(
+            column_bands::column_band_edges(parsed, page, &[])
+                .into_iter()
+                .map(|x| ParsedBounds {
+                    x0: x,
+                    y0: f32::NEG_INFINITY,
+                    x1: x,
+                    y1: f32::INFINITY,
+                }),
+        );
+        dividers.insert(page, rules);
+    }
+    let divided = |a: ParsedBounds, b: ParsedBounds, page: usize| {
+        let (left, right) = if a.x0 <= b.x0 { (a, b) } else { (b, a) };
+        dividers.get(&page).is_some_and(|rules| {
+            rules.iter().any(|rule| {
+                rule.x0 >= left.x1 - 2.0
+                    && rule.x0 <= right.x0 + 2.0
+                    && rule.y0 < left.y1.max(right.y1)
+                    && rule.y1 > left.y0.min(right.y0)
+            })
+        })
+    };
     let overlaps = |a: &PositionedTable, b: &PositionedTable| {
         let (a_bounds, b_bounds) = (normalized_bounds(a.bounds), normalized_bounds(b.bounds));
         let vertical = a_bounds.y1.min(b_bounds.y1) - a_bounds.y0.max(b_bounds.y0);
         let smaller = (a_bounds.y1 - a_bounds.y0).min(b_bounds.y1 - b_bounds.y0);
         let horizontal = a_bounds.x1.min(b_bounds.x1) - a_bounds.x0.max(b_bounds.x0);
-        a.page == b.page && smaller > 0.0 && vertical >= smaller * 0.5 && horizontal < 0.0
+        a.page == b.page
+            && smaller > 0.0
+            && vertical >= smaller * 0.5
+            && horizontal < 0.0
+            && !divided(a_bounds, b_bounds, a.page)
     };
     let mut groups: Vec<Vec<PositionedTable>> = Vec::new();
     for table in tables {
@@ -5388,6 +5427,28 @@ fn infer_positioned_table_from_graphics(
     {
         return None;
     }
+    // 横罫線のない背の高い行に並んだ項目の行は、文字の行ごとの行に分ける。
+    // 分けた境界には罫線を引かず、セルの結合だけを止める（線幅 0 の見えない境界として渡す）。
+    let mut model_graphics = page_graphics.to_vec();
+    if !text_augmented_columns {
+        let split_ys = text_line_rows::split_rows_at_text_lines(parsed, page, &xs, &ys);
+        if let (Some(left), Some(right)) = (xs.first(), xs.last()) {
+            for y in split_ys.iter().filter(|y| !ys.contains(y)) {
+                model_graphics.push(ParsedGraphicElement {
+                    page,
+                    bounds: ParsedBounds {
+                        x0: *left as f32,
+                        y0: *y as f32,
+                        x1: *right as f32,
+                        y1: *y as f32,
+                    },
+                    stroke_width: 0.0,
+                    dashed: false,
+                });
+            }
+        }
+        ys = split_ys;
+    }
 
     let rows = ys.len() - 1;
     let cols = xs.len() - 1;
@@ -5396,8 +5457,6 @@ fn infer_positioned_table_from_graphics(
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
     let mut assigned_font_sizes = Vec::new();
-    let mut assigned_rows = Vec::new();
-    let mut assigned_text_ys = Vec::new();
     let mut cell_fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
     // マスごとの（下線のある文字片の数, 文字片の数）。
     let mut underline_counts = vec![vec![(0usize, 0usize); cols]; rows];
@@ -5416,7 +5475,7 @@ fn infer_positioned_table_from_graphics(
         .filter(|text| text.page == page && !text.text.trim().is_empty())
     {
         let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
-        let Some((row, grid_center_y)) =
+        let Some((row, _)) =
             row_index_for_text_y(parsed, page, center_y, &ys, allow_top_origin_text_y)
         else {
             continue;
@@ -5465,8 +5524,6 @@ fn infer_positioned_table_from_graphics(
             assigned_font_names.push(font_name.to_string());
         }
         assigned_font_sizes.push(text.font_size);
-        assigned_rows.push(row);
-        assigned_text_ys.push(grid_center_y);
     }
     // 一部の値だけに引かれた傍線でセル全体を下線にしないよう、ほぼ全ての文字片に
     // 下線がある場合だけセルの下線とする。
@@ -5475,7 +5532,7 @@ fn infer_positioned_table_from_graphics(
             cell_underlines[row][col] = *total > 0 && underlined * 5 >= total * 4;
         }
     }
-    let mut cell_font_sizes = cell_fragments
+    let cell_font_sizes = cell_fragments
         .iter()
         .map(|row| {
             row.iter()
@@ -5492,6 +5549,25 @@ fn infer_positioned_table_from_graphics(
         })
         .collect::<Vec<_>>();
     let mut row_line_counts = vec![0usize; rows];
+    // 字の高さに対して余白の少ない行（行の高さが字の高さの 1.6 倍未満）は、代替フォントの
+    // 行の高さで字の上下が切れるため、固定せず内容に合わせて伸ばせるようにする。
+    for (row_index, row) in cell_text_bounds.iter().enumerate() {
+        let glyph_height = row
+            .iter()
+            .flatten()
+            .map(|bounds| bounds.y1 - bounds.y0)
+            .fold(0.0f32, f32::max);
+        let row_height = (ys[rows - row_index] - ys[rows - row_index - 1]) as f32;
+        if glyph_height > 0.0 && row_height < 1.6 * glyph_height {
+            row_line_counts[row_index] = row_line_counts[row_index].max(2);
+        }
+    }
+    // 文字の行ごとに分けた行は、PDF の行間が詰まっているので高さを固定しない。
+    if model_graphics.len() > page_graphics.len() {
+        for count in &mut row_line_counts {
+            *count = (*count).max(2);
+        }
+    }
     // 文字がセル幅の 85% を超える行は、代替フォントの字幅で折り返すと固定の行高では
     // 2 行目が隠れるため、行数を 2 として扱い内容に合わせて伸ばせるようにする。
     for (row_index, row) in cell_text_bounds.iter().enumerate() {
@@ -5525,34 +5601,33 @@ fn infer_positioned_table_from_graphics(
                 row_line_counts[row_index].max(table_cell_text::cell_line_count(fragments));
         }
     }
-    let mut row_heights_pt = ys
+    let row_heights_pt = ys
         .windows(2)
         .rev()
         .map(|pair| (pair[1] - pair[0]) as f32)
         .collect::<Vec<_>>();
     // 各マスの文字範囲とマスの位置から、セル内の横配置と縦位置を推定する。
-    let (mut cell_alignments, mut cell_vertical_alignments): (Vec<Vec<_>>, Vec<Vec<_>>) =
-        cell_text_bounds
-            .iter()
-            .enumerate()
-            .map(|(row, row_bounds)| {
-                row_bounds
-                    .iter()
-                    .enumerate()
-                    .map(|(col, bounds)| {
-                        let cell = ParsedBounds {
-                            x0: xs[col] as f32,
-                            y0: ys[rows - row - 1] as f32,
-                            x1: xs[col + 1] as f32,
-                            y1: ys[rows - row] as f32,
-                        };
-                        bounds
-                            .map(|bounds| table_cell_text::infer_cell_alignment(bounds, cell))
-                            .unwrap_or((ParagraphAlignment::Left, None))
-                    })
-                    .unzip()
-            })
-            .unzip();
+    let (cell_alignments, cell_vertical_alignments): (Vec<Vec<_>>, Vec<Vec<_>>) = cell_text_bounds
+        .iter()
+        .enumerate()
+        .map(|(row, row_bounds)| {
+            row_bounds
+                .iter()
+                .enumerate()
+                .map(|(col, bounds)| {
+                    let cell = ParsedBounds {
+                        x0: xs[col] as f32,
+                        y0: ys[rows - row - 1] as f32,
+                        x1: xs[col + 1] as f32,
+                        y1: ys[rows - row] as f32,
+                    };
+                    bounds
+                        .map(|bounds| table_cell_text::infer_cell_alignment(bounds, cell))
+                        .unwrap_or((ParagraphAlignment::Left, None))
+                })
+                .unzip()
+        })
+        .unzip();
     let cell_padding_pt = cell_text_bounds
         .iter()
         .zip(cell_alignments.iter())
@@ -5562,7 +5637,7 @@ fn infer_positioned_table_from_graphics(
         .filter(|gap| gap.is_finite() && *gap >= 0.0)
         .reduce(f32::min);
     // マスの面積の大半を覆う塗りつぶし矩形を、そのマスの背景色にする。
-    let mut cell_shading = (0..rows)
+    let cell_shading = (0..rows)
         .map(|row| {
             (0..cols)
                 .map(|col| {
@@ -5580,27 +5655,11 @@ fn infer_positioned_table_from_graphics(
                 .collect::<Vec<_>>()
         })
         .collect::<Vec<_>>();
-    let flipped_rows = should_flip_table_rows_from_text_order(&assigned_rows)
-        || should_flip_table_rows_from_text_y_order(&assigned_text_ys)
-        || should_flip_table_rows_from_cell_text(&cells);
-    if flipped_rows {
-        cells.reverse();
-        cell_underlines.reverse();
-        cell_text_bounds.reverse();
-        row_line_counts.reverse();
-        row_heights_pt.reverse();
-        cell_alignments.reverse();
-        cell_vertical_alignments.reverse();
-        cell_font_sizes.reverse();
-        cell_tab_stops.reverse();
-        cell_fragments.reverse();
-        cell_shading.reverse();
-    }
-    let docx_table = if text_augmented_columns || flipped_rows {
+    let docx_table = if text_augmented_columns {
         None
     } else {
         docx_table_model_from_grid(
-            &page_graphics,
+            &model_graphics,
             &xs,
             &ys,
             &cells,
@@ -5732,60 +5791,6 @@ fn table_rule_stroke_width(page_graphics: &[ParsedGraphicElement], xs: &[i32], y
         .map(|graphic| graphic.stroke_width)
         .filter(|width| width.is_finite() && *width > 0.0)
         .fold(0.0f32, f32::max)
-}
-
-/// content stream の text 出現順から table row を上下反転すべきか判定する。
-fn should_flip_table_rows_from_text_order(rows: &[usize]) -> bool {
-    let first = rows.iter().copied().find(|row| *row > 0);
-    let last = rows.iter().rev().copied().find(|row| *row > 0);
-    matches!((first, last), (Some(first), Some(last)) if first > last)
-}
-
-/// text の出現順で y が増加する座標系なら table row を上下反転する。
-fn should_flip_table_rows_from_text_y_order(ys: &[f32]) -> bool {
-    let Some(first) = ys.first().copied() else {
-        return false;
-    };
-    let Some(last) = ys.last().copied() else {
-        return false;
-    };
-    last > first + 1.0
-}
-
-/// セル文字列の連番が下から上へ入っている場合に table row を上下反転する。
-fn should_flip_table_rows_from_cell_text(cells: &[Vec<String>]) -> bool {
-    let first = cells
-        .iter()
-        .find_map(|row| row.iter().find_map(first_decimal_number));
-    let last = cells
-        .iter()
-        .rev()
-        .find_map(|row| row.iter().find_map(first_decimal_number));
-    matches!((first, last), (Some(first), Some(last)) if first > last)
-}
-
-/// 文字列中の最初の連続した 10 進数字を読む。
-fn first_decimal_number(text: &String) -> Option<u32> {
-    let mut value = None;
-    for ch in text.chars() {
-        let digit = decimal_digit_value(ch);
-        match (value, digit) {
-            (None, Some(digit)) => value = Some(digit),
-            (Some(current), Some(digit)) => value = current.checked_mul(10)?.checked_add(digit),
-            (Some(current), None) => return Some(current),
-            (None, None) => {}
-        }
-    }
-    value
-}
-
-/// ASCII / 全角数字を 10 進値へ変換する。
-fn decimal_digit_value(ch: char) -> Option<u32> {
-    match ch {
-        '0'..='9' => Some(ch as u32 - '0' as u32),
-        '０'..='９' => Some(ch as u32 - '０' as u32),
-        _ => None,
-    }
 }
 
 /// 同一セルに分割抽出された文字片を自然な区切りで追加する。
@@ -6151,9 +6156,16 @@ fn docx_table_model_from_grid(
     if cells.is_empty() || cells.iter().any(|row| row.len() + 1 != xs.len()) {
         return None;
     }
-    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    // 結合は線幅 0 の見えない境界も区切りとして求め、罫線は実際に描かれた線だけから求める。
+    let (merge_horizontal, merge_vertical) = grid_rules_from_graphics(graphics);
+    let drawn = graphics
+        .iter()
+        .filter(|graphic| graphic.stroke_width > 0.0)
+        .cloned()
+        .collect::<Vec<_>>();
+    let (horizontal, vertical) = grid_rules_from_graphics(&drawn);
     let (dashed_graphics, solid_graphics): (Vec<_>, Vec<_>) =
-        graphics.iter().cloned().partition(|graphic| graphic.dashed);
+        drawn.iter().cloned().partition(|graphic| graphic.dashed);
     let (dashed_horizontal, dashed_vertical) = grid_rules_from_graphics(&dashed_graphics);
     let (solid_horizontal, solid_vertical) = grid_rules_from_graphics(&solid_graphics);
     let xs = xs.iter().map(|x| *x as f32).collect::<Vec<_>>();
@@ -6162,7 +6174,7 @@ fn docx_table_model_from_grid(
         .iter()
         .map(|row| row.iter().map(|cell| !cell.trim().is_empty()).collect())
         .collect::<Vec<Vec<bool>>>();
-    let rects = table_grid::merged_cells(&horizontal, &vertical, &xs, &ys, &has_text);
+    let rects = table_grid::merged_cells(&merge_horizontal, &merge_vertical, &xs, &ys, &has_text);
     let has_span = rects
         .iter()
         .any(|rect| rect.row0 != rect.row1 || rect.col0 != rect.col1);

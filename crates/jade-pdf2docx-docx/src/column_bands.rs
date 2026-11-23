@@ -198,14 +198,19 @@ pub(super) fn insertion_index_in_band(
         return block_insertion_order_index(lines, top_y);
     }
     let rank = band_rank(band_of(center_x, edges), edges, page_width);
-    lines
-        .iter()
-        .position(|line| {
-            let line_rank = band_rank(line_band(line, edges), edges, page_width);
-            line_rank > rank || (line_rank == rank && line.top_y < top_y)
-        })
-        .map(|index| index.saturating_mul(2))
-        .unwrap_or_else(|| lines.len().saturating_mul(2))
+    let Some(index) = lines.iter().position(|line| {
+        let line_rank = band_rank(line_band(line, edges), edges, page_width);
+        line_rank > rank || (line_rank == rank && line.top_y < top_y)
+    }) else {
+        return lines.len().saturating_mul(2);
+    };
+    let next_band = band_rank(line_band(&lines[index], edges), edges, page_width) > rank;
+    if next_band && index > 0 {
+        // 段の最後の表は、その段の最後の行の直後に置く（次の段の先頭に置く表より前）。
+        index * 2 - 1
+    } else {
+        index.saturating_mul(2)
+    }
 }
 
 /// 4 辺の罫線で囲まれた枠（50pt 四方以上）を、ページの罫線から探す。
