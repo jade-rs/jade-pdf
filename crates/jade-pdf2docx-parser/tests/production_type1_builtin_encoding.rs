@@ -124,6 +124,74 @@ fn opaque_builtin_glyph_names_report_the_painted_font() {
     }
 }
 
+/// 未使用の不明slotが同じ表にあっても、描画した既知glyphは正しく復元する。
+#[test]
+fn unused_opaque_slot_does_not_reject_a_known_glyph() {
+    let bytes = pdf(
+        "256 array dup 65 /B put dup 66 /G42 put",
+        "",
+        false,
+        "F1",
+        "A",
+    );
+    let parsed = parse_pdf_bytes_with_options(
+        "mixed-builtin.pdf",
+        &bytes,
+        &ParseOptions {
+            strict: true,
+            ..Default::default()
+        },
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>(),
+        "B"
+    );
+    assert!(parsed.quality.issues.is_empty());
+}
+
+/// 一部のToUnicodeがあっても、描画した別codeの未知glyphを検証済みにはしない。
+#[test]
+fn partial_tounicode_does_not_hide_an_opaque_painted_glyph() {
+    let bytes = pdf(
+        "256 array dup 65 /G41 put dup 66 /G42 put",
+        "",
+        true,
+        "F1",
+        "AB",
+    );
+    let parsed =
+        parse_pdf_bytes_with_options("partial-builtin.pdf", &bytes, &ParseOptions::default())
+            .unwrap();
+    assert!(
+        parsed.quality.issues.iter().any(|issue| matches!(
+            issue,
+            QualityIssue::UnsupportedFont {
+                page: 0,
+                object_number: Some(5),
+                ..
+            }
+        )),
+        "{:?}",
+        parsed.quality
+    );
+    assert!(matches!(
+        parse_pdf_bytes_with_options(
+            "strict-partial-builtin.pdf",
+            &bytes,
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            }
+        ),
+        Err(ParseError::QualityRejected { .. })
+    ));
+}
+
 /// control codeだけのDifferencesでも、本文の未知Encodingはstrict拒否する。
 #[test]
 fn strict_rejects_unverified_builtin_encoding() {
