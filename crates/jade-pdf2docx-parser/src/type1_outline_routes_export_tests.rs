@@ -1,11 +1,12 @@
 //! 所有FontFileからの実出力を独立シェーパーへ渡し、同一文字列の外形と幅を区別する。
 use super::*;
 use crate::type1_outline::{
-    bounds, cff, file, gsub, opentype, plan, resource::Slot, scale, type2, unicode::Mapping,
+    bounds, cff, file, gsub, identity, opentype, plan, resource::Slot, scale, type2,
+    unicode::Mapping,
 };
 
 /// 所有の元program・幅・Unicodeから、三つの実fontを生成する。
-fn owned_fonts() -> Vec<(String, Vec<u8>)> {
+fn owned_fonts(derived_names: bool) -> Vec<(String, Vec<u8>)> {
     let budget = DecodeBudget::default();
     let (source, first, second, _) = crate::type1_cluster_embedding_tests::font_program();
     let original = file::read(&budget, &source, first, second).unwrap();
@@ -109,9 +110,24 @@ fn owned_fonts() -> Vec<(String, Vec<u8>)> {
             components: &face.components,
             glyph,
         });
-        let bytes =
-            opentype::encode_with_ligatures(&budget, &font, &info, rules.as_slice()).unwrap();
-        output.push((name, bytes));
+        if derived_names {
+            let named = opentype::encode_derived(
+                &budget,
+                &identity::Source {
+                    program: &source,
+                    plan: &plan,
+                },
+                &font,
+                &info,
+                rules.as_slice(),
+            )
+            .unwrap();
+            output.push((named.family, named.bytes));
+        } else {
+            let bytes =
+                opentype::encode_with_ligatures(&budget, &font, &info, rules.as_slice()).unwrap();
+            output.push((name, bytes));
+        }
     }
     assert!(budget.check().is_ok());
     output
@@ -120,7 +136,7 @@ fn owned_fonts() -> Vec<(String, Vec<u8>)> {
 /// 通常font・元合字・幅違いfontが、同じ所有原本外形を含む実OTTOになる。
 #[test]
 fn original_fontfile_routes_produce_three_complete_fonts() {
-    let fonts = owned_fonts();
+    let fonts = owned_fonts(false);
     assert_eq!(fonts.len(), 3);
     for (_, font) in fonts {
         assert_eq!(font.get(..4), Some(b"OTTO".as_slice()));
@@ -134,7 +150,7 @@ fn export_owned_source_cluster_fonts() {
     let directory =
         std::path::PathBuf::from(std::env::var_os("JADE_OWNED_CLUSTER_EXPORT_DIR").unwrap());
     std::fs::create_dir(&directory).unwrap();
-    for (name, bytes) in owned_fonts() {
+    for (name, bytes) in owned_fonts(false) {
         let mut file = std::fs::OpenOptions::new()
             .write(true)
             .create_new(true)
@@ -142,4 +158,49 @@ fn export_owned_source_cluster_fonts() {
             .unwrap();
         std::io::Write::write_all(&mut file, &bytes).unwrap();
     }
+}
+
+/// 同じ原本の三経路でも、出力glyph・合字が違えば三つの派生familyになる。
+#[test]
+fn original_fontfile_routes_receive_distinct_derived_families() {
+    let fonts = owned_fonts(true);
+    assert_eq!(
+        fonts
+            .iter()
+            .map(|(name, _)| name)
+            .collect::<std::collections::BTreeSet<_>>()
+            .len(),
+        3
+    );
+    for (name, bytes) in fonts {
+        assert!(name.starts_with("JadeT1-"));
+        assert_eq!(bytes.get(..4), Some(b"OTTO".as_slice()));
+    }
+}
+
+/// 派生名も含む実fontを保存し、独立したtable検査と同じ原文の描画へ渡す。
+#[test]
+#[ignore = "new JADE_OWNED_CLUSTER_DERIVED_EXPORT_DIR required for independent shaping"]
+fn export_owned_derived_source_cluster_fonts() {
+    let directory = std::path::PathBuf::from(
+        std::env::var_os("JADE_OWNED_CLUSTER_DERIVED_EXPORT_DIR").unwrap(),
+    );
+    std::fs::create_dir(&directory).unwrap();
+    let mut records = Vec::new();
+    for (index, (family, bytes)) in owned_fonts(true).into_iter().enumerate() {
+        let filename = format!("route{index}.otf");
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join(&filename))
+            .unwrap();
+        std::io::Write::write_all(&mut file, &bytes).unwrap();
+        records.push(serde_json::json!({"route":index,"file":filename,"family":family}));
+    }
+    let mut manifest = std::fs::OpenOptions::new()
+        .write(true)
+        .create_new(true)
+        .open(directory.join("product-families.json"))
+        .unwrap();
+    serde_json::to_writer_pretty(&mut manifest,&serde_json::json!({"fonts":records,"scope":"Owned component fonts; actual PDF text-run routing, metadata extraction and DOCX integration remain unqualified"})).unwrap();
 }
