@@ -32,6 +32,8 @@ mod html_table;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
+mod native_table_rows;
+mod native_table_text;
 mod ocr_reconcile;
 mod output;
 mod package;
@@ -2769,6 +2771,8 @@ struct PositionedTable {
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
+    /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
+    row_heights_twips: Vec<f32>,
     /// 表セル。
     table: OcrTable,
     /// セル内テキストへ DOCX 下線を付けるか。
@@ -2777,6 +2781,8 @@ struct PositionedTable {
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
+    /// 原本と文字照合できたセルの位置・行・run style。
+    native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
 }
@@ -3332,13 +3338,19 @@ fn docx_table_from_model_with_row_height_and_nested(
             let mut grid_col = 0usize;
             let cells = row
                 .iter()
-                .map(|cell| {
+                .enumerate()
+                .map(|(cell_index, cell)| {
                     let nested_tables = parent
                         .map(|parent| {
                             nested_tables_for_cell(parent, row_index, grid_col, cell.grid_span)
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
+                    let native_cell = parent
+                        .filter(|_| !has_nested_tables)
+                        .and_then(|table| table.native_cells.get(row_index))
+                        .and_then(|row| row.get(cell_index))
+                        .and_then(Option::as_ref);
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
                     let mut run = text_run(text.as_str());
                     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
@@ -3360,18 +3372,25 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if cell.underlined && !text.trim().is_empty() {
                         run = run.underline("single");
                     }
-                    let mut paragraph = Paragraph::new().add_run(run);
+                    let native_paragraph =
+                        native_cell.and_then(native_table_text::single_line_paragraph);
+                    let has_native_paragraph = native_paragraph.is_some();
+                    let mut paragraph =
+                        native_paragraph.unwrap_or_else(|| Paragraph::new().add_run(run));
                     paragraph = match cell.alignment {
                         ParagraphAlignment::Left => paragraph,
                         ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
                         ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
                     };
-                    if parent.is_some() {
+                    if parent.is_some() && !has_native_paragraph {
                         paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
                     }
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(VAlignType::Center);
+                    }
+                    if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
+                        table_cell = native;
                     }
                     for nested_table in nested_tables {
                         table_cell = table_cell.add_table(docx_table_from_structured_table(
@@ -3407,6 +3426,11 @@ fn docx_table_from_model_with_row_height_and_nested(
             if parent.is_some() {
                 table_row = table_row.cant_split();
             }
+            let row_height_twips = parent
+                .filter(|table| table.nested_tables.is_empty())
+                .and_then(|table| table.row_heights_twips.get(row_index))
+                .copied()
+                .or(row_height_twips);
             if let Some(row_height_twips) = row_height_twips
                 && row_height_twips > 0.0
             {
@@ -3959,10 +3983,12 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         font_embedded: false,
         font_size: None,
         column_widths_twips: width_twips,
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
     }
 }
@@ -4281,6 +4307,7 @@ fn infer_positioned_table_from_graphics(
     let rows = ys.len() - 1;
     let cols = xs.len() - 1;
     let mut cells = vec![vec![String::new(); cols]; rows];
+    let mut cell_source_texts = vec![vec![Vec::new(); cols]; rows];
     let mut cell_underlines = vec![vec![false; cols]; rows];
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
@@ -4301,6 +4328,10 @@ fn infer_positioned_table_from_graphics(
             continue;
         };
         append_cell_fragment(&mut cells[row][col], text.text.trim());
+        // 上原点の互換補正が必要な本文は原本座標の復元に混ぜず、従来出力へ戻す。
+        if row_index_for_y(center_y, &ys) == Some(row) {
+            cell_source_texts[row][col].push(text.clone());
+        }
         cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
         let bounds = normalized_bounds(text.bounds);
         cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
@@ -4352,6 +4383,15 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
+    let native_cells = native_table_text::cells(
+        parsed,
+        &xs,
+        &ys,
+        &cell_source_texts,
+        &docx_table
+            .clone()
+            .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+    );
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
     let font_embedded = font_name.as_deref().is_some_and(|font_name| {
         parsed
@@ -4372,10 +4412,15 @@ fn infer_positioned_table_from_graphics(
         font_embedded,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
         column_widths_twips: table_column_widths_twips(&xs),
+        row_heights_twips: native_table_rows::heights(
+            &ys,
+            thin_table_rule_height_adjustment(table_rule_stroke_width(&page_graphics, &xs, &ys)),
+        ),
         table,
         cell_underlines,
         cell_alignments,
         docx_table,
+        native_cells,
         nested_tables: Vec::new(),
     })
 }
@@ -5154,10 +5199,12 @@ fn infer_positioned_table_from_text_grid_page(
         font_embedded: false,
         font_size: None,
         column_widths_twips: Vec::new(),
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
     })
 }
