@@ -2016,11 +2016,17 @@ fn mark_embedded_fonts_in_line(
         run.style.font_embedded = font.is_some();
         run.style.embedded_face = font.and_then(|font| embedded_face::Face::read(&font.bytes));
     }
+    positioned_type1::prepare(line, embedded_fonts);
 }
 
 /// structured run から DOCX run を作る。
 fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     let mut run = text_run(structured_run.text.as_str());
+    if let Some(placement) = structured_run.style.placement {
+        run = run
+            .stretch(placement.stretch)
+            .character_spacing(placement.spacing);
+    }
     if let Some(size) = pdf_font_size_to_half_points(structured_run.style.font_size) {
         run = run.size(size);
     }

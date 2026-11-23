@@ -66,8 +66,16 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
             .map_err(|err| ConvertError::Pack(err.to_string()))?;
         xml
     };
+    let space_name = crate::layout_space::family(embedded_fonts);
+    let space_font = document_xml
+        .contains(space_name.as_str())
+        .then(|| ParsedEmbeddedFont {
+            bytes: crate::layout_space::font(&space_name),
+            font_name: space_name,
+        });
     let used_fonts = embedded_fonts
         .iter()
+        .chain(space_font.iter())
         .filter(|font| document_xml.contains(font.font_name.as_str()))
         .collect::<Vec<_>>();
     if used_fonts.is_empty() {

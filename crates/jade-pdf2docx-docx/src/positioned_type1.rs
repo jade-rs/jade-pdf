@@ -14,10 +14,87 @@ pub(super) struct Placement {
 
 /// 行全体を確認できた場合だけ、元glyphの原点列から配置指定を返す。
 pub(super) fn placements(
-    _runs: &[StructuredTextRun],
-    _fonts: &[ParsedEmbeddedFont],
+    runs: &[StructuredTextRun],
+    fonts: &[ParsedEmbeddedFont],
 ) -> Option<Vec<Placement>> {
-    None
+    let first = runs.first()?.style.source_bounds?;
+    if runs.first()?.text.trim().is_empty() || runs.last()?.text.trim().is_empty() {
+        return None;
+    }
+    let mut output = Vec::with_capacity(runs.len());
+    let mut actual = 0f64;
+    for (index, run) in runs.iter().enumerate() {
+        let bounds = run.style.source_bounds?;
+        if ![
+            bounds.x0,
+            bounds.x1,
+            bounds.y0,
+            bounds.y1,
+            run.style.font_size,
+        ]
+        .iter()
+        .all(|v| v.is_finite())
+            || bounds.x1 <= bounds.x0
+            || bounds.y0 != first.y0
+            || bounds.y1 <= bounds.y0
+        {
+            return None;
+        }
+        let logical_space = run.text == " " && run.style.font_name.is_none();
+        let (stretch, width) = if logical_space {
+            (100, 1.)
+        } else {
+            let name = run.style.font_name.as_deref()?;
+            if !run.style.font_embedded || !name.starts_with("JadeT1-") {
+                return None;
+            }
+            let font = fonts.iter().find(|f| f.font_name == name)?;
+            let half_points = pdf_font_size_to_half_points(run.style.font_size)?;
+            let normal = glyph_metrics::advance(&font.bytes, &run.text)? * half_points as f64 / 2.;
+            let percent = (f64::from(bounds.x1 - bounds.x0) / normal * 100.).round();
+            if !normal.is_finite() || !(1. ..=600.).contains(&percent) {
+                return None;
+            }
+            (percent as i32, normal * percent / 100.)
+        };
+        let target = if let Some(next) = runs.get(index + 1) {
+            let next = next.style.source_bounds?;
+            if next.x0 <= bounds.x0 {
+                return None;
+            }
+            next.x0
+        } else {
+            bounds.x1
+        };
+        let spacing = ((f64::from(target - first.x0) - actual - width) * 20.).round();
+        if !spacing.is_finite() || !(-31680. ..=31680.).contains(&spacing) {
+            return None;
+        }
+        actual += width + spacing / 20.;
+        output.push(Placement {
+            stretch,
+            spacing: spacing as i32,
+            logical_space,
+        });
+    }
+    Some(output)
+}
+
+/// 行全体の計測が成功してから、空白font選択と字間を一度だけ反映する。
+pub(super) fn prepare(line: &mut StructuredTextLine, fonts: &[ParsedEmbeddedFont]) {
+    let Some(plan) = placements(&line.runs, fonts) else {
+        return;
+    };
+    let family = layout_space::family(fonts);
+    for (run, placement) in line.runs.iter_mut().zip(plan) {
+        if placement.logical_space {
+            run.style.font_name = Some(family.clone());
+            run.style.font_size = 1.;
+            run.style.font_embedded = true;
+            run.style.embedded_face = Some(embedded_face::Face::default());
+        }
+        run.style.placement = Some(placement);
+    }
 }
 
 #[cfg(test)]
