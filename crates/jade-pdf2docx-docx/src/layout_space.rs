@@ -29,7 +29,18 @@ pub(super) fn font(family: &str) -> Vec<u8> {
 
 /// 内部spaceを参照する文書だけ、確認済みadvanceを半emへ補正する互換flagを外す。
 pub(super) fn preserve_advance(package: &mut docx_rs::XMLDocx) -> Result<(), crate::ConvertError> {
-    if selected_family(&package.document)?.is_none() {
+    let mut selected = false;
+    for part in std::iter::once(&package.document)
+        .chain(package.headers.iter())
+        .chain(package.footers.iter())
+        .chain(std::iter::once(&package.footnotes))
+    {
+        if selected_family(part)?.is_some() {
+            selected = true;
+            break;
+        }
+    }
+    if !selected {
         return Ok(());
     }
     // docx-rsが生成したsettingsだけを対象にし、他の互換設定は保持する。

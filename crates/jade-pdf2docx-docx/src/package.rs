@@ -3,6 +3,8 @@ use crate::ConvertError;
 use docx_rs::Docx;
 use jade_pdf2docx_parser::ParsedEmbeddedFont;
 use std::io::{Cursor, Read, Seek, Write};
+#[path = "font_usage.rs"]
+mod font_usage;
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
 pub(super) fn pack_docx_to_bytes(
@@ -57,27 +59,16 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
     embedded_fonts: &[ParsedEmbeddedFont],
     output: W,
 ) -> Result<bool, ConvertError> {
-    let document_xml = {
-        let mut entry = archive
-            .by_name("word/document.xml")
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        let mut xml = String::new();
-        entry
-            .read_to_string(&mut xml)
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        xml
-    };
-    let space_font =
-        crate::layout_space::selected_family(document_xml.as_bytes())?.map(|space_name| {
-            ParsedEmbeddedFont {
-                bytes: crate::layout_space::font(&space_name),
-                font_name: space_name,
-            }
-        });
+    let usage = font_usage::read(archive, embedded_fonts)?;
+    let space_font = usage.space_family.map(|space_name| ParsedEmbeddedFont {
+        bytes: crate::layout_space::font(&space_name),
+        font_name: space_name,
+    });
     let used_fonts = embedded_fonts
         .iter()
+        .zip(usage.source_fonts)
+        .filter_map(|(font, used)| used.then_some(font))
         .chain(space_font.iter())
-        .filter(|font| document_xml.contains(font.font_name.as_str()))
         .collect::<Vec<_>>();
     if used_fonts.is_empty() {
         return Ok(false);
