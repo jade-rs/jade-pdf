@@ -129,16 +129,14 @@ pub(super) fn encode(family: &str) -> Vec<u8> {
 /// Windows Unicodeの日本語環境でも同じfamilyを解決できる、標準name recordを作る。
 fn names(family: &str) -> Vec<u8> {
     let records = [
-        (
-            0,
-            "Copyright Jade contributors. Owned layout font; MIT license.",
-        ),
+        (0, "Copyright (c) 2026 bokuweb (https://github.com/bokuweb)"),
         (1, family),
         (2, "Regular"),
         (3, family),
         (4, family),
         (5, "Version 1.0"),
         (6, family),
+        (13, include_str!("../../../../LICENSE")),
     ];
     let mut output = Vec::new();
     words(
