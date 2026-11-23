@@ -149,7 +149,10 @@ fn reconciliation_isolates_page_count_mismatch() {
     let native = vec![element("ab", 0), element("xy", 1), element("new", 2)];
     let target = budget(16384);
     let actual = reconcile_pdfium_characters(&target, &pure, &native, &Default::default());
-    assert_eq!(actual, Some(vec![verified, native[1].clone(), native[2].clone()]));
+    assert_eq!(
+        actual,
+        Some(vec![verified, native[1].clone(), native[2].clone()])
+    );
     assert!(target.check().is_ok());
 }
 
