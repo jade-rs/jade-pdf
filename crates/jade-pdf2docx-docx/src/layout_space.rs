@@ -11,6 +11,8 @@ pub(super) fn family(fonts: &[ParsedEmbeddedFont], texts: &[ParsedTextElement]) 
         .map(|f| f.font_name.as_str())
         .chain(texts.iter().filter_map(|t| t.font_name.as_deref()))
         .filter_map(|name| {
+            let normalized = crate::docx_font_name_from_pdf_font_name(name);
+            let name = normalized.as_str();
             let prefix = name.get(..16)?;
             (name.len() < 63 && prefix.eq_ignore_ascii_case("JadeLayoutSpace-")).then_some(())?;
             name.get(16..)?.parse::<usize>().ok()
@@ -117,7 +119,7 @@ mod tests {
             let prefix=if upper {"JADELAYOUTSPACE-"} else {"JadeLayoutSpace-"};
             let fonts = (0..count).map(|i| ParsedEmbeddedFont { font_name: format!("{prefix}{i}"), bytes: Vec::new() }).collect::<Vec<_>>();
             let texts=(count..count+unembedded).map(|i|ParsedTextElement {
-                font_name:Some(format!("{prefix}{i}")),baseline_y:None,page:0,font_size:10.,fill_color:None,
+                font_name:Some(format!("ABCDEF+ {prefix}{i} ")),baseline_y:None,page:0,font_size:10.,fill_color:None,
                 bounds:jade_pdf2docx_parser::ParsedBounds {x0:0.,x1:10.,y0:0.,y1:10.},text:"source".into(),
             }).collect::<Vec<_>>();
             let name = family(&fonts,&texts);
