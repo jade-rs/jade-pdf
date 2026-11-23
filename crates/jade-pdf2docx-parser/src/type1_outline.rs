@@ -11,6 +11,8 @@ mod charstring;
 mod cmap;
 #[path = "type1_outline_crypt.rs"]
 mod crypt;
+#[path = "type1_outline_file.rs"]
+mod file;
 #[path = "type1_outline_header.rs"]
 mod header;
 #[path = "type1_outline_opentype.rs"]
