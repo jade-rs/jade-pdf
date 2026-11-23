@@ -1,0 +1,34 @@
+{
+  "primary_source": "https://pypi.org/project/reportlab/4.4.9/",
+  "version": "4.4.9",
+  "source_archive": "https://files.pythonhosted.org/packages/1a/39/42cf24aee570a80e1903221ae3a92a2e34c324794a392eb036cbb6dc3839/reportlab-4.4.9.tar.gz",
+  "source_archive_sha256": "7cf487764294ee791a4781f5a157bebce262a666ae4bbb87786760a9676c9378",
+  "tables": [
+    {
+      "file": "_fontdata_enc_winansi.py",
+      "definition": "WinAnsiEncoding",
+      "constant": "WIN_ANSI",
+      "sha256": "e7b5d1be40351a19333dc1741573bd8e8014c363b4a845c8de63693ea7c629a2",
+      "entries": 256
+    },
+    {
+      "file": "_fontdata_enc_macroman.py",
+      "definition": "MacRomanEncoding",
+      "constant": "MAC_ROMAN",
+      "sha256": "235cc3f87af60d4da009cc1250d6508ff69786355ee84082b0c5219df343de33",
+      "entries": 256
+    },
+    {
+      "file": "_fontdata_enc_macexpert.py",
+      "definition": "MacExpertEncoding",
+      "constant": "MAC_EXPERT",
+      "sha256": "0a57cd77e313dc11abd69847fe0cdc4b0d87e5b81732ca2513fdce3fe22450ef",
+      "entries": 256
+    }
+  ],
+  "license": "licenses/reportlab.txt",
+  "license_sha256": "ef831761646313921375fc2cb888e8eeaf7da213d0b92852c10c42f3a0b4d138",
+  "scope": "Only standard glyph-name facts; no ReportLab implementation or runtime dependency. PDF MacRoman differs from the operating-system MacRoman vector.",
+  "standard": "ISO32000-1:2008 AnnexD; independently cross-check ReportLab StandardEncoding against existing pinned fontTools table.",
+  "generator": "python3 tools/generate_pdf_font_encodings.py"
+}

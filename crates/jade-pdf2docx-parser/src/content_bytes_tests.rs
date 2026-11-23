@@ -219,6 +219,7 @@ fn text_elements_discard_partial_results_when_stopped() {
             &cmaps,
             &ToUnicodeCMap::default(),
             &metrics,
+            &BTreeMap::new(),
             |_| Default::default(),
         )
         .is_empty()

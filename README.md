@@ -105,6 +105,8 @@ For embedded Type1 FontFile fonts without an explicit PDF BaseEncoding, the byte
 
 If a nonstandard Type1 font has no usable built-in font program and no per-code Unicode mapping, its painted codes are unverified; strict conversion rejects them. Optional null or unresolved Encoding values use the built-in default, as required by PDF null-object semantics. The existing non-embedded Standard 14 font path is preserved.
 
+Supported static Type1 drawing programs can now be converted to embedded OpenType/CFF faces by the pure Rust parser, including the bytes/WASM conversion path. Original code widths and verified Unicode mappings select each face; source rights and notices are retained. Native reconciliation preserves those selections on matching pages. DOCX uses intrinsic bold/italic attributes and respects the no-subsetting flag. This is partial Type1 support, and does not establish page-layout or Microsoft Word fidelity. See the [Type1 support and qualification guide](docs/type1_fonts.md).
+
 Within a `TJ` array, a forward gap of at least 0.2 em between word-spaced characters restores one missing word separator without changing glyph positions. Explicit spaces, small kerning adjustments, CJK tracking, and separate show operators retain their existing behavior. This bounded spacing heuristic does not establish font substitution or pagination fidelity.
 
 Native conversion preserves physically printed line-end hyphens. Pdfium's control-code representation is restored only for characters that its hyphen API verifies; literal control codes keep their identity. Public PDF tests compare original word boundaries and punctuation without deleting source hyphens.
@@ -113,4 +115,4 @@ The bytes parser preserves empty `bfchar` destinations and empty elements in `bf
 
 When the built-in program is unavailable, the existing ToUnicode map stays shared and unmapped codes remain explicitly unverified in the quality report; normal best-effort output may still contain fallback text. Strict mode rejects any painted unverified code.
 
-The production DOCX WASM build helper bundles and verifies the Adobe Glyph List and fontTools notices. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include both parser notices.
+The production DOCX WASM build helper bundles and verifies the Adobe Glyph List, fontTools, and [ReportLab notices](crates/jade-pdf2docx-parser/licenses/reportlab.txt). ReportLab contributes static PDF encoding glyph names and is not a runtime dependency. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include all three parser notices.

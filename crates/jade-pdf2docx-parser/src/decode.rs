@@ -97,6 +97,8 @@ pub(crate) struct DecodeBudget {
     cmaps: RefCell<crate::tounicode_cache::CMapCache>,
     /// 有効世代の埋め込みType1表を抽出と診断で共有する。
     type1: RefCell<crate::resource_cache::Cache<(u16, crate::text::Type1Mapping)>>,
+    /// 同じ検証済み文書の生成fontと、局所resourceが共有するcode別の出力先。
+    type1_output: RefCell<crate::parser::type1_fonts::Cache>,
 }
 
 impl Default for DecodeBudget {
@@ -153,6 +155,7 @@ impl DecodeBudget {
             legacy_geometry: RefCell::new(None),
             cmaps: RefCell::new(Default::default()),
             type1: RefCell::new(Default::default()),
+            type1_output: RefCell::new(Default::default()),
         }
     }
 
@@ -201,6 +204,7 @@ impl DecodeBudget {
         *self.legacy_geometry.borrow_mut() = None;
         *self.cmaps.borrow_mut() = Default::default();
         *self.type1.borrow_mut() = Default::default();
+        *self.type1_output.borrow_mut() = Default::default();
         let Some(mut index) = crate::stream_index::StreamIndex::new(self, bytes, streams) else {
             return;
         };
@@ -224,6 +228,31 @@ impl DecodeBudget {
             .get(&number)
             .filter(|entry| entry.0 == generation)
             .map(|entry| entry.1.clone())
+    }
+
+    /// source検査から最終font移動まで、生成結果を同じ解析内だけで共有する。
+    pub(crate) fn with_type1_output<T>(
+        &self,
+        access: impl FnOnce(&mut crate::parser::type1_fonts::Cache) -> T,
+    ) -> T {
+        access(&mut self.type1_output.borrow_mut())
+    }
+
+    /// 生成fontも既存fontと同じ件数上限へ数え、超過時は部分文書を公開しない。
+    pub(crate) fn check_embedded_font_count(&self, count: usize) -> Option<()> {
+        if self.is_stopped() {
+            return None;
+        }
+        if count > crate::parser::MAX_EMBEDDED_FONT_COUNT {
+            self.exceeded(
+                "embedded font count",
+                crate::parser::MAX_EMBEDDED_FONT_COUNT as u64,
+                count as u64,
+            );
+            None
+        } else {
+            Some(())
+        }
     }
 
     /// 完成表だけを共有cacheへ保存し、追加容量を先に検査する。

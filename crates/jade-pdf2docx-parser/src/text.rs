@@ -88,6 +88,36 @@ use cmap_references::parse as parse_tounicode_object_refs;
 mod cmap;
 pub(crate) use cmap::{ToUnicodeCMap, ToUnicodeCMapData};
 
+/// 実glyphと原文の対応が確認できた単byte codeだけを、描画とclipで共有する。
+pub(crate) fn verified_single_byte_cmap<'a>(
+    budget: &DecodeBudget,
+    mappings: impl IntoIterator<Item = (u8, &'a [u32])>,
+) -> Option<ToUnicodeCMap> {
+    let mut data = ToUnicodeCMapData::default();
+    for (code, scalars) in mappings {
+        budget.charge_tounicode_entries(1)?;
+        let length = scalars.iter().try_fold(0usize, |sum, &s| {
+            sum.checked_add(char::from_u32(s)?.len_utf8())
+        })?;
+        budget.charge_tounicode_bytes((2 + length) as u64)?;
+        data.reserve_mapping(budget)?;
+        let mut key = budget.try_string_capacity(2)?;
+        key.push(char::from(b"0123456789ABCDEF"[usize::from(code >> 4)]));
+        key.push(char::from(b"0123456789ABCDEF"[usize::from(code & 15)]));
+        let mut value = budget.try_string_capacity(length)?;
+        for &scalar in scalars {
+            if budget.is_stopped() {
+                return None;
+            }
+            value.push(char::from_u32(scalar)?);
+        }
+        data.insert_mapping(key, value);
+    }
+    data.insert_code_space_range(budget, "00", "FF")?;
+    let cmap = data.finish(budget);
+    (!budget.is_stopped()).then_some(cmap)
+}
+
 #[path = "type1_mapping.rs"]
 mod type1;
 pub(crate) use type1::{Mapping as Type1Mapping, build as type1_mapping};

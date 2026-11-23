@@ -1,0 +1,9 @@
+{
+  "source": "https://raw.githubusercontent.com/fonttools/fonttools/4.60.1/Lib/fontTools/cffLib/__init__.py",
+  "version": "4.60.1",
+  "source_sha256": "eb6be9711eeef1c138d3b91776e0309c5b6d1e7b280a90d0ec804afaa398150f",
+  "string_count": 391,
+  "reference": "https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf Appendix A",
+  "license": "MIT",
+  "license_file": "../licenses/fonttools.txt"
+}

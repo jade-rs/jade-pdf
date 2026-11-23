@@ -19,10 +19,15 @@ archive and executable from the existing runtime preparation. It copies the
 production WASM artifact when Cargo reports it, before temporary build artifacts
 can be collected.
 
-The generated directory includes `LICENSE-adobe-glyph-list.txt` and
-`LICENSE-fonttools.txt` for the conversion parser's glyph and StandardEncoding
-tables. Distribute these notices with the WASM and generated bindings. The build
-helper verifies their complete contents and records their hashes in `build.json`.
+The generated directory includes `LICENSE-adobe-glyph-list.txt`,
+`LICENSE-fonttools.txt`, and `LICENSE-reportlab.txt` for the conversion parser's
+glyph and standard encoding tables. ReportLab contributes static glyph-name
+facts and is not a runtime dependency. Distribute these notices with the WASM and
+generated bindings. The build helper verifies their complete contents and records
+their hashes in `build.json`.
+The distribution also includes `LICENSE-open-font-license-1.1.txt`, the standard
+license body used with verified OFL source fonts. Generated font names preserve
+source notices internally and avoid reusing reserved source family names.
 Recheck a copied distribution with
 `python3 tools/wasm-docx-smoke/check_distribution.py --probe <directory>`.
 
@@ -83,3 +88,7 @@ codes. These controls have no CharStrings and do not establish drawing-font or
 Word fidelity. Complete real Type1 drawing-font controls are separately generated
 with `tools/generate_type1_drawing_controls.py`. All earlier 27 input hashes are
 retained.
+
+The parser now prepares supported static Type1 drawing fonts for DOCX embedding;
+see [support and qualification](../../docs/type1_fonts.md). Browser metadata
+controls alone do not prove the generated drawing fonts render correctly.

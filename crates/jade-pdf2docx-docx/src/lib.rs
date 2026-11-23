@@ -27,6 +27,9 @@ pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 #[cfg(test)]
 mod conversion_cancellation_tests;
 mod conversion_control;
+mod embedded_face;
+#[cfg(test)]
+mod embedded_style_tests;
 
 mod html_table;
 mod native_baseline;
@@ -1966,6 +1969,7 @@ fn structured_text_runs_from_row(
                 font_size: text.font_size,
                 font_name: text.font_name.clone(),
                 font_embedded: false,
+                embedded_face: None,
                 fill_color: text.fill_color.clone(),
                 underlined: parsed_text_has_underline(text, page_graphics),
             },
@@ -1992,11 +1996,13 @@ fn mark_embedded_fonts_in_line(
     embedded_fonts: &[ParsedEmbeddedFont],
 ) {
     for run in &mut line.runs {
-        run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|font_name| {
-            embedded_fonts
-                .iter()
-                .any(|font| font.font_name == font_name)
-        });
+        let font = run
+            .style
+            .font_name
+            .as_deref()
+            .and_then(|name| embedded_fonts.iter().find(|font| font.font_name == name));
+        run.style.font_embedded = font.is_some();
+        run.style.embedded_face = font.and_then(|font| embedded_face::Face::read(&font.bytes));
     }
 }
 
@@ -2009,7 +2015,12 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     if let Some(font_name) = structured_run.style.font_name.as_deref()
         && !font_name.trim().is_empty()
     {
-        run = apply_pdf_font_name_to_run(run, font_name, structured_run.style.font_embedded);
+        run = apply_pdf_font_name_to_run(
+            run,
+            font_name,
+            structured_run.style.font_embedded,
+            structured_run.style.embedded_face,
+        );
     }
     if let Some(color) = structured_run.style.fill_color.as_deref()
         && is_rgb_hex_color(color)
@@ -2022,18 +2033,30 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     run
 }
 
-/// PDF font 名とそこから推定できる太字・斜体を DOCX run へ反映する。
-fn apply_pdf_font_name_to_run(mut run: Run, font_name: &str, embedded: bool) -> Run {
+/// 埋め込みfaceの属性を優先し、通常の代替fontだけ名前からstyleを推定する。
+fn apply_pdf_font_name_to_run(
+    mut run: Run,
+    font_name: &str,
+    embedded: bool,
+    face: Option<embedded_face::Face>,
+) -> Run {
     run = run.fonts(if embedded {
         run_fonts(font_name)
     } else {
         run_fonts_from_pdf_font_name(font_name)
     });
     let normalized = font_name.to_ascii_lowercase();
-    if normalized.contains("bold") || normalized.contains("black") {
+    let infer = !(embedded && font_name.starts_with("JadeT1-"));
+    if face.map_or(
+        infer && (normalized.contains("bold") || normalized.contains("black")),
+        |face| face.bold,
+    ) {
         run = run.bold();
     }
-    if normalized.contains("italic") || normalized.contains("oblique") {
+    if face.map_or(
+        infer && (normalized.contains("italic") || normalized.contains("oblique")),
+        |face| face.italic,
+    ) {
         run = run.italic();
     }
     run
@@ -2645,6 +2668,8 @@ struct StructuredTextStyle {
     font_name: Option<String>,
     /// PDFに埋め込まれた同名subset fontをDOCXへ再利用できるか。
     font_embedded: bool,
+    /// SFNT内部で確認できた埋め込みfaceの属性。
+    embedded_face: Option<embedded_face::Face>,
     /// RGB hex fill color。
     fill_color: Option<String>,
     /// PDF の短い水平線から推定した下線。
@@ -2657,6 +2682,7 @@ impl Default for StructuredTextStyle {
             font_size: 10.0,
             font_name: None,
             font_embedded: false,
+            embedded_face: None,
             fill_color: None,
             underlined: false,
         }
@@ -2767,6 +2793,8 @@ struct PositionedTable {
     font_name: Option<String>,
     /// 表セルの共通fontをPDF埋め込みsubsetから再利用できるか。
     font_embedded: bool,
+    /// SFNT内部で確認できた埋め込みfaceの属性。
+    embedded_face: Option<embedded_face::Face>,
     /// 表セルで共通する妥当な PDF font size（pt）。
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
@@ -3355,7 +3383,12 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let mut run = text_run(text.as_str());
                     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
                         let embedded = parent.is_some_and(|table| table.font_embedded);
-                        run = apply_pdf_font_name_to_run(run, font_name, embedded);
+                        run = apply_pdf_font_name_to_run(
+                            run,
+                            font_name,
+                            embedded,
+                            parent.and_then(|table| table.embedded_face),
+                        );
                         if !embedded
                             && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name)
                         {
@@ -3981,6 +4014,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         stroke_width: table.stroke_width,
         font_name: None,
         font_embedded: false,
+        embedded_face: None,
         font_size: None,
         column_widths_twips: width_twips,
         row_heights_twips: Vec::new(),
@@ -4393,12 +4427,14 @@ fn infer_positioned_table_from_graphics(
             .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
     );
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
-    let font_embedded = font_name.as_deref().is_some_and(|font_name| {
+    let embedded_font = font_name.as_deref().and_then(|name| {
         parsed
             .embedded_fonts
             .iter()
-            .any(|font| font.font_name == font_name)
+            .find(|font| font.font_name == name)
     });
+    let font_embedded = embedded_font.is_some();
+    let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
     Some(PositionedTable {
         page,
         bounds: ParsedBounds {
@@ -4410,6 +4446,7 @@ fn infer_positioned_table_from_graphics(
         stroke_width: table_rule_stroke_width(&page_graphics, &xs, &ys),
         font_name,
         font_embedded,
+        embedded_face,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
         column_widths_twips: table_column_widths_twips(&xs),
         row_heights_twips: native_table_rows::heights(
@@ -5197,6 +5234,7 @@ fn infer_positioned_table_from_text_grid_page(
         stroke_width: 0.0,
         font_name: None,
         font_embedded: false,
+        embedded_face: None,
         font_size: None,
         column_widths_twips: Vec::new(),
         row_heights_twips: Vec::new(),

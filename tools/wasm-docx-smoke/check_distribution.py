@@ -9,6 +9,8 @@ ROOT = Path(__file__).resolve().parents[2]
 NOTICES = {
     'LICENSE-adobe-glyph-list.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/adobe-glyph-list.txt',
     'LICENSE-fonttools.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/fonttools.txt',
+    'LICENSE-reportlab.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt',
+    'LICENSE-open-font-license-1.1.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/open-font-license-1.1.txt',
 }
 BINDINGS = ['jade_pdf2docx_wasm.js', 'jade_pdf2docx_wasm.d.ts',
             'jade_pdf2docx_wasm_bg.wasm', 'jade_pdf2docx_wasm_bg.wasm.d.ts']

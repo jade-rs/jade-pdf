@@ -93,8 +93,15 @@ mod text_rendering;
 mod text_result_storage;
 mod text_word_gap;
 mod tounicode_cache;
+#[cfg(test)]
+#[path = "type1_cluster_embedding_tests.rs"]
+mod type1_cluster_embedding_tests;
+#[cfg(test)]
+mod type1_embedding_tests;
 mod type1_font;
+mod type1_outline;
 mod type1_program;
+mod type1_standard_encoding;
 mod unsupported_content;
 mod xobject_refs;
 mod xref;

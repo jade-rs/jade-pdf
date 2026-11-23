@@ -3,7 +3,7 @@ use super::lex::{Item, Lexer};
 use crate::{decode::DecodeBudget, syntax::Token};
 
 /// 同じfont名の存在・UniqueID・FontTypeの比較だけを行う慣用句を消費する。
-pub(super) fn skip(budget: &DecodeBudget, lexer: &mut Lexer<'_>) -> Option<()> {
+pub(crate) fn skip(budget: &DecodeBudget, lexer: &mut Lexer<'_>) -> Option<()> {
     let Item::Pdf(Token::Name(name)) = lexer.next(budget)? else {
         return None;
     };

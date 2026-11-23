@@ -23,6 +23,7 @@ fn extract(
         &BTreeMap::new(),
         &ToUnicodeCMap::default(),
         &BTreeMap::new(),
+        &BTreeMap::new(),
         |_| Default::default(),
     );
     (target, results)
@@ -148,6 +149,7 @@ fn later_font_code_failure_discards_prior_text_results() {
             &BTreeMap::new(),
             &ToUnicodeCMap::default(),
             &metrics,
+            &BTreeMap::new(),
             |_| Default::default(),
         );
         assert!(values.is_empty());

@@ -1,0 +1,7 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+cc e1788a3e4ce3df4edc8d2155f5633360c36c22f7dcf4259c7646d1ee77e8eb98 # shrinks to glyph = [], subr = [169, 85, 161, 188, 33, 11, 86, 162, 109, 214, 44, 196, 108, 20, 146, 197, 60, 16, 144, 212, 143, 33, 129, 178, 176, 200, 127, 185, 113, 150, 227, 176, 183, 133, 253, 230, 142, 255, 109, 71, 225, 88, 52, 10, 128, 229, 201, 29, 87, 196, 92, 16, 11, 110, 107, 1, 108, 64, 19, 221, 6, 74, 254, 181, 5, 2, 81, 192, 90, 244, 159, 89, 103, 76, 18, 91, 2, 96, 5, 71, 136, 117, 221, 229, 234, 201, 220, 243, 104, 229, 253, 168, 118, 102, 194, 62, 46, 78, 226, 53, 66, 20, 3, 225, 76, 42, 144, 195, 16, 5, 193, 127, 234, 27, 116, 223, 141, 105, 26, 250, 200, 222, 187, 205, 46, 199, 78, 121, 237, 185, 153, 241, 43, 165, 33, 17, 247, 254, 249, 255, 214, 248, 88, 166, 210, 232, 205, 201, 249, 105, 181, 91, 100, 226, 23, 80, 46, 156, 173], crlf = false

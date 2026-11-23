@@ -139,7 +139,77 @@ fn reconciliation_mismatch_is_not_resource_failure() {
     assert!(target.check().is_ok());
 }
 
+/// 一ページの欠落文字は、別ページの検証済みフォントと幾何を失わせない。
+#[test]
+fn reconciliation_isolates_page_count_mismatch() {
+    let mut verified = element("a b", 0);
+    verified.font_name = Some("JadeT1-verified".into());
+    verified.fill_color = Some("123ABC".into());
+    let pure = vec![verified.clone(), element("x", 1), element("missing", 3)];
+    let native = vec![element("ab", 0), element("xy", 1), element("new", 2)];
+    let target = budget(16384);
+    let actual = reconcile_pdfium_characters(&target, &pure, &native, &Default::default());
+    assert_eq!(
+        actual,
+        Some(vec![verified, native[1].clone(), native[2].clone()])
+    );
+    assert!(target.check().is_ok());
+}
+
+/// Formの抽出順違いも、そのページだけnativeへ戻す。
+#[test]
+fn reconciliation_isolates_form_order_mismatch() {
+    let pure = vec![element("ab", 0), element("xy", 1)];
+    let native = vec![element("ba", 0), element("xy", 1)];
+    let quality = crate::QualityReport {
+        issues: vec![crate::QualityIssue::UnsupportedXObject {
+            page: 0,
+            object_number: 5,
+            reason: crate::UnsupportedXObjectReason::Form,
+        }],
+    };
+    assert_eq!(
+        reconcile_pdfium_characters(&budget(16384), &pure, &native, &quality),
+        Some(vec![native[0].clone(), pure[1].clone()]),
+    );
+}
+
+/// 生成フォントのcmapにない置換文字へ、元の生成フォント名を引き継がない。
+#[test]
+fn reconciliation_does_not_reuse_generated_font_for_changed_unicode() {
+    let mut derived = element("ab", 0);
+    derived.font_name = Some("JadeT1-verified".into());
+    let pure = vec![derived, element("xy", 1)];
+    let native = vec![element("ac", 0), element("xy", 1)];
+    assert_eq!(
+        reconcile_pdfium_characters(&budget(16384), &pure, &native, &Default::default()),
+        Some(vec![native[0].clone(), pure[1].clone()]),
+    );
+}
+
 proptest::proptest! {
+    /// 任意の一ページの件数増加は、他ページの本文・style・幾何を変えない。
+    #[test]
+    fn reconciliation_mismatch_has_page_local_effect(
+        lengths in proptest::collection::vec(1usize..12, 2..9),
+        affected in 0usize..64,
+    ) {
+        let affected = affected % lengths.len();
+        let pure: Vec<_> = lengths.iter().enumerate().map(|(page, &length)| {
+            let mut value = element(&"a ".repeat(length), page);
+            value.font_name = Some(format!("JadeT1-{page}"));
+            value
+        }).collect();
+        let mut native = pure.clone();
+        native[affected].text.push('x');
+        native[affected].font_name = None;
+        let mut expected = pure.clone();
+        expected[affected] = native[affected].clone();
+        let target = budget(128 * 1024);
+        proptest::prop_assert_eq!(reconcile_pdfium_characters(&target, &pure, &native, &Default::default()), Some(expected));
+        proptest::prop_assert!(target.check().is_ok());
+    }
+
     /// ページが交互でもUnicode増幅とpureの空白・幾何/styleを保持する。
     #[test]
     fn reconciliation_preserves_page_grouping_and_attributes(

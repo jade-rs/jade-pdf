@@ -6,8 +6,7 @@ use crate::{
 };
 use std::borrow::Cow;
 
-#[path = "type1_standard_encoding.rs"]
-mod standard;
+use crate::type1_standard_encoding as standard;
 
 /// 完成Unicode表と、ToUnicodeでも確認できない256個のcode。
 #[derive(Clone)]
