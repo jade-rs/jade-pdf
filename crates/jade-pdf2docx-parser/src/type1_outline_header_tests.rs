@@ -108,7 +108,7 @@ fn raw_strings_and_permission_presence_are_not_normalized() {
 fn metadata_budget_and_cancellation_are_retained() {
     let bytes = source("");
     let budget = DecodeBudget::new(&ParseLimits {
-        max_total_metadata_bytes: 0,
+        max_total_metadata_workspace_bytes: 0,
         ..Default::default()
     });
     assert!(parse(&budget, bytes.as_bytes()).is_none());
