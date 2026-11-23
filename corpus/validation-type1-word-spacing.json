@@ -1,9 +1,9 @@
 {
   "schema": 1,
-  "recorded_utc": "2026-11-23T23:25:53.296375+00:00",
+  "recorded_utc": "2026-11-23T23:35:48.973615+00:00",
   "change": "Bounded upright Type1 glyph origins and logical TJ space advances in DOCX",
-  "qualified_head": "de177f82a40559caa066f46c9071ad8250bc13eb",
-  "qualified_crates_tree": "9ae2311a8352b2f423778120f2d1d76d23b5c1eb",
+  "qualified_head": "4f1597df6b49ccb2633444bfc363fb015afdc2bb",
+  "qualified_crates_tree": "7d224ff58352065a2e7b829a871aeee84aa8723d",
   "base_main": "2ba58970f8e67949bdd435ea116e4cabe952dccb",
   "production_ready": false,
   "complete_document_fidelity_accepted": false,
@@ -13,7 +13,7 @@
       "One element per verified upright source glyph; preserve original code advances, Tc/Tw/Tz/TJ and ligature routes",
       "Logical TJ spaces have independent bounds and no source font/code32 assignment",
       "Verified single-glyph cmap/hmtx or bounded required-rlig measurement; unsupported whole lines keep prior styling",
-      "Owned U+0020-only TTF, conflict-free across embedded and unembedded source families; source font bytes retained",
+      "Owned U+0020-only TTF; reserve embedded, unembedded and renderer-normalized source families; source font bytes retained",
       "Disable legacy half/full-width balancing only for documents selecting the internal space font",
       "Retain header/footer/footnote font references when packaging; header/footer owned regressions",
       "Rebuild bounded1024-character Type1 preview rows before deduplicating; preserve repeated letters and legacy rotated fragments"
@@ -41,10 +41,10 @@
       "default_strict_outcomes_across_both_engines": 24,
       "all_outcomes_quality_and_nonwhite_OOXML_preserved": true,
       "candidate_actual_DOCX_bytes_equal_to_reviewed_outputs": true,
-      "wasm_sha256": "71797ce4202e0a568bb64f312e4d3e9366a7405ed2aaab98c9886613c24be931"
+      "wasm_sha256": "360e736f158d105e7bf896ceda16646b894b72f6e00cdda696487a943b7aaeee"
     },
     "native": {
-      "frozen_executable_sha256": "d628acc59112a0cf8ee18033d7b852b060f6f63a16dde18d3bbc9673cdec31df",
+      "frozen_executable_sha256": "697a2261c5eb4ef6fa1d6630f5cde6a0818599fea304a3277b19e6b49048a000",
       "all4_actual_DOCX_bytes_equal_to_reviewed_outputs": true,
       "SDK": "7961"
     },
@@ -55,35 +55,35 @@
       "reference_timing": "Known development fixtures, verification after observed regressions; not an uncontaminated holdout claim"
     },
     "receipts": {
-      "positioned-candidate-default": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-default-results.json",
-        "sha256": "57e1d16baddc835f2b35b1b3ebc02008e36c279732d47487ba084c8ccc4980a2",
-        "log_sha256": "fcafeb9b1a3f5ed49942885887c822499c7a784c302ffa59459dd6f6ca9384f1"
+      "positioned-final-default": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-default-results.json",
+        "sha256": "a18a9e446170c1ca49bb1644d9cd803d6eb216472294b9a4cd5dee714d295c4d",
+        "log_sha256": "5830e476851020b8e4bc61ee535ec0ea30240af1be65f7313233ce07192761ff"
       },
-      "positioned-candidate-Python": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-Python-results.json",
-        "sha256": "3ce9a7ca1818facff08d1336cccb46d469702e875a1140dbb1d322af6b6dbc54",
-        "log_sha256": "6699be7420efc0f4f1445c65235b3ccdd07cb79ed19956c14700bef7235962e2"
+      "positioned-final-Python": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-Python-results.json",
+        "sha256": "77f581db5a524dee1f23ccd23ded2678c0a8e46b5c378e6d4815069f900b6ae3",
+        "log_sha256": "443e8c514be93a246f13a3a1c155f48adbdf80091265e3684d4379e9928de855"
       },
-      "positioned-candidate-WASM": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-WASM-results.json",
-        "sha256": "006e3b414f85887c68d4f79572825212cda7f3e7b2017a2eea03677963724d56",
-        "log_sha256": "fb929680d5c2d9893eb2cae007e41e79a56fcf8881d002c3c1cb9aae793e2b04"
+      "positioned-final-WASM": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-WASM-results.json",
+        "sha256": "b306fb6d05d0e9e38cc76d2655e34d0085e9b746849f2acfed7d4e721dc8e29c",
+        "log_sha256": "a7b3b077fd19877a47b4728edac3b1aca3bb51a8bb0b0c518a98d7f204ae5e90"
       },
-      "positioned-candidate-format": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-format-results.json",
-        "sha256": "322f251b6cb3926ee31f5b492beaff864ccdfc8bcdeddfde26c338db24fb6965",
+      "positioned-final-format": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-format-results.json",
+        "sha256": "3ec4adffd012545b8939f810f2a0ccf75575db28027cda8930b609d8f2445acd",
         "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
       },
-      "positioned-candidate-browser-chromium": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-browser-chromium-results.json",
-        "sha256": "bff920fb7aa51e08a07f2d25ead74571ddb9447d3c49becf0ff80f381d2f66a7",
-        "log_sha256": "a7d68b2c1a3e3c0d97f409781770f53ac00aa694997cc2b0af0dab385942294d"
+      "positioned-publish-browser-chromium": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-publish-browser-chromium-results.json",
+        "sha256": "8554110d89b9a40fda6134a27917471493bf1d377c5a797a79ebc9c1758f7c1c",
+        "log_sha256": "1e11b7c16ddde64185d722eafa8de82dfdf75c255de317554632932b058a026b"
       },
-      "positioned-candidate-browser-webkit": {
-        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-candidate-browser-webkit-results.json",
-        "sha256": "4d8d0964e7a1f7ef23759f22603f5766d19245e716a9f13ab2066cf96b9005a7",
-        "log_sha256": "630529fd18aa92f55cba33b10d939ed648b847fc393733aee5d7ff44881b3552"
+      "positioned-publish-browser-webkit": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-publish-browser-webkit-results.json",
+        "sha256": "0beb1a7cbfbb50d86a904c490e6969e250d23a0b4b4502db1cc2c53f87f04983",
+        "log_sha256": "acd50b624d76ff45ad14d74a7dacaf090dc1d14fdd440c4b887cd6c92de6c0c3"
       }
     }
   },
@@ -166,16 +166,18 @@
     "Unscoped workspace used conversion SDK7961 for jade-pdf-diff;2 diff tests failed. Correct conversion CI command excludes that crate; no diff code or expectations changed",
     "Initial Python fixture lacked newly required notices, later152/152",
     "PR29 previews split/deduplicated ff; old evidence preserved, corrected previews verified against original source",
-    "QA ZIP variants and absent optional font-rel assumptions failed before corrected independent checks"
+    "QA ZIP variants and absent optional font-rel assumptions failed before corrected independent checks",
+    "Subset-prefixed unembedded source family collision Red then Green; font aliases use the same normalization as final DOCX runs."
   ],
   "evidence": {
-    "local_manifest": "corpus/wasm-runtime/type1-word-spacing-qualification/qualification-manifest-as-of-de177f8.json",
-    "manifest_sha256": "030d560c4f2aa09a1816f3789f52ac56e93ceb72991287a824a76b0e8ae1048f",
-    "files": 1005,
+    "local_manifest": "corpus/wasm-runtime/type1-word-spacing-qualification/qualification-manifest-as-of-4f1597d.json",
+    "manifest_sha256": "2f504cc9bfa4ac20d7501b7ce4868f102847bec25bf4d18bb853585f6507bf12",
+    "files": 1194,
     "previous_PR29_manifest_sha256": "18c0f3e4a34ba143c232b9c064c12028474b7fb72e8d30a7598ac53806865380",
     "all626_previous_records_reverified": true,
     "artifact_render_inheritance": "Candidate native and both-browser actual DOCX outputs are byte-identical to the already rendered and reviewed7cfcb52 artifacts. No predicted render passes.",
-    "tracked_PDFs": "Exactly the original3 fixtures; no external source PDF or generated document is added to Git"
+    "tracked_PDFs": "Exactly the original3 fixtures; no external source PDF or generated document is added to Git",
+    "previous_de177f8_manifest_sha256": "030d560c4f2aa09a1816f3789f52ac56e93ceb72991287a824a76b0e8ae1048f"
   },
   "reproduction": [
     "sh scripts/check_rust_features.sh default",
