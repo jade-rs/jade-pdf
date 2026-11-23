@@ -119,6 +119,7 @@ fn positioned_type1_keeps_tj_space_geometry() {
     let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET", None);
     let parsed = crate::parse_pdf_bytes("owned-positioned-gap.pdf", &input).unwrap();
     let text = &parsed.text_elements;
+    assert!(text.iter().all(|e| e.baseline_y == Some(80.)));
     assert_eq!(
         text.iter().map(|e| e.text.as_str()).collect::<Vec<_>>(),
         ["f", " ", "f"]
