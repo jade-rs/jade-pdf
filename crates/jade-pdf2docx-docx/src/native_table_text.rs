@@ -12,9 +12,11 @@ pub(super) struct Cell {
     bottom: f32,
     /// 原本baselineでまとめた表示行。
     lines: Vec<StructuredTextLine>,
+    /// 単一行セルの既存本文と完全に一致する、描画順のstyle付きrun。
+    single_line_runs: Vec<StructuredTextRun>,
 }
 
-/// gridの表示順と結合セル範囲に従い、本文の欠落がない複数行セルだけを復元する。
+/// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
 pub(super) fn cells(
     parsed: &ParsedDocument,
     xs: &[i32],
@@ -76,7 +78,7 @@ pub(super) fn cells(
                             Some(line)
                         })
                         .collect::<Vec<_>>();
-                    (lines.len() > 1
+                    (!lines.is_empty()
                         && characters(
                             &lines
                                 .iter()
@@ -88,16 +90,62 @@ pub(super) fn cells(
                                 .iter()
                                 .all(|v| v.is_finite())
                         }))
-                    .then_some(Cell {
+                    .then(|| Cell {
                         left,
                         top,
                         bottom,
+                        single_line_runs: if lines.len() == 1 {
+                            legacy_runs(parsed, selected, &cell.text)
+                        } else {
+                            Vec::new()
+                        },
                         lines,
                     })
                 })
                 .collect()
         })
         .collect()
+}
+
+/// 既存のセル文字列・断片間空白と完全一致する場合だけ、原本runのstyleを対応させる。
+fn legacy_runs(
+    parsed: &ParsedDocument,
+    selected: &[Vec<ParsedTextElement>],
+    expected: &str,
+) -> Vec<StructuredTextRun> {
+    let mut text = String::new();
+    let mut runs = Vec::new();
+    for element in selected.iter().flatten() {
+        let start = text.len();
+        append_cell_fragment(&mut text, element.text.trim());
+        if text.len() == start {
+            continue;
+        }
+        let Some(mut run) = structured_text_runs_from_row(&[element], &parsed.graphics).pop()
+        else {
+            return Vec::new();
+        };
+        run.text = text[start..].to_string();
+        run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|name| {
+            parsed
+                .embedded_fonts
+                .iter()
+                .any(|font| font.font_name == name)
+        });
+        runs.push(run);
+    }
+    if text == expected { runs } else { Vec::new() }
+}
+
+/// 単一行の文字列・既存の配置を変えず、表全体の共通fontではなく各runのstyleを使う。
+pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
+    (!cell.single_line_runs.is_empty()).then(|| {
+        cell.single_line_runs
+            .iter()
+            .fold(Paragraph::new(), |p, run| {
+                p.add_run(docx_run_from_structured_run(run))
+            })
+    })
 }
 
 /// 原点を字面へ移動しないセル行では、共通本文builderがtrimした原文の端の空白を戻す。
@@ -135,6 +183,9 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
+    if cell.lines.len() < 2 {
+        return None;
+    }
     let capacity = pdf_points_to_twips(cell.top - cell.bottom)?;
     let mut used = 0usize;
     let mut out = TableCell::new().vertical_align(VAlignType::Top);

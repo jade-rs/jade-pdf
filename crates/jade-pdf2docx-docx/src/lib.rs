@@ -3346,6 +3346,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
+                    let native_cell = parent
+                        .filter(|_| !has_nested_tables)
+                        .and_then(|table| table.native_cells.get(row_index))
+                        .and_then(|row| row.get(cell_index))
+                        .and_then(Option::as_ref);
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
                     let mut run = text_run(text.as_str());
                     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
@@ -3367,7 +3372,9 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if cell.underlined && !text.trim().is_empty() {
                         run = run.underline("single");
                     }
-                    let mut paragraph = Paragraph::new().add_run(run);
+                    let mut paragraph = native_cell
+                        .and_then(native_table_text::single_line_paragraph)
+                        .unwrap_or_else(|| Paragraph::new().add_run(run));
                     paragraph = match cell.alignment {
                         ParagraphAlignment::Left => paragraph,
                         ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
@@ -3380,13 +3387,7 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(VAlignType::Center);
                     }
-                    if !has_nested_tables
-                        && let Some(native) = parent
-                            .and_then(|table| table.native_cells.get(row_index))
-                            .and_then(|row| row.get(cell_index))
-                            .and_then(Option::as_ref)
-                            .and_then(native_table_text::table_cell)
-                    {
+                    if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
                         table_cell = native;
                     }
                     for nested_table in nested_tables {
