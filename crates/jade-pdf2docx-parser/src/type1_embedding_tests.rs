@@ -135,6 +135,19 @@ fn owned_type1_preserves_drawable_font_for_docx() {
 #[test]
 #[ignore = "reviewed JADE_SOURCE_PDF and new JADE_TYPE1_PARSED_EXPORT_DIR required"]
 fn export_reviewed_original_from_actual_parser() {
+    export_reviewed_original(false);
+}
+
+/// 同じ原本をnative入口へ通し、SDKの照合後にも生成font選択が残るか検査する。
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+#[ignore = "reviewed JADE_SOURCE_PDF, explicit PDFIUM_LIB_PATH and new JADE_TYPE1_PARSED_EXPORT_DIR required"]
+fn export_reviewed_original_from_actual_native_parser() {
+    export_reviewed_original(true);
+}
+
+/// 原本を差し替えずに、指定された実入口のfont・本文・品質を保存する。
+fn export_reviewed_original(native: bool) {
     let source = std::path::PathBuf::from(std::env::var_os("JADE_SOURCE_PDF").unwrap());
     let bytes = std::fs::read(&source).unwrap();
     let hash = hmac_sha256::Hash::hash(&bytes)
@@ -145,6 +158,14 @@ fn export_reviewed_original_from_actual_parser() {
         hash,
         "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b"
     );
+    #[cfg(not(target_arch = "wasm32"))]
+    let parsed = if native {
+        crate::parse_pdf(&source)
+    } else {
+        crate::parse_pdf_bytes(&source, &bytes)
+    }
+    .unwrap();
+    #[cfg(target_arch = "wasm32")]
     let parsed = crate::parse_pdf_bytes(&source, &bytes).unwrap();
     let directory =
         std::path::PathBuf::from(std::env::var_os("JADE_TYPE1_PARSED_EXPORT_DIR").unwrap());
@@ -176,7 +197,7 @@ fn export_reviewed_original_from_actual_parser() {
         .create_new(true)
         .open(directory.join("actual-parser-output.json"))
         .unwrap();
-    serde_json::to_writer_pretty(file,&serde_json::json!({"source_pdf_sha256":hash,"page_count":parsed.page_count,"fonts":fonts,"text_elements":elements,"text_preview":parsed.text_preview,"quality_issues":issues,"scope":"Actual parser default entry point; DOCX packaging, native reconciliation and rendered layout remain unqualified","production_ready":false})).unwrap();
+    serde_json::to_writer_pretty(file,&serde_json::json!({"source_pdf_sha256":hash,"backend":if native {"native"} else {"pure"},"page_count":parsed.page_count,"fonts":fonts,"text_elements":elements,"text_preview":parsed.text_preview,"quality_issues":issues,"scope":"Actual selected parser entry point; DOCX packaging and rendered layout remain unqualified","production_ready":false})).unwrap();
     println!(
         "actual parser: {} pages, {} text elements, {} generated fonts",
         parsed.page_count,

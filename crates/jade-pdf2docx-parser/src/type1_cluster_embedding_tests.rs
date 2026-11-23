@@ -276,6 +276,45 @@ fn mixed_source_clusters_in_one_operand_keep_distinct_routes_and_positions() {
     }
 }
 
+/// 実SDK照合後も、元ff一glyphと二glyphの選択・幅を消さない。
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+#[ignore = "explicit PDFIUM_LIB_PATH required for real native routing qualification"]
+fn native_mixed_clusters_keep_embedded_routes_after_sdk_reconciliation() {
+    let bytes = pdf_with_content(b"BT /F1 20 Tf 20 80 Td (BAAB) Tj ET", None);
+    let limits = crate::ParseLimits::default();
+    let budget = crate::decode::DecodeBudget::default();
+    let parsed = crate::pdfium_backend::parse_pdf(
+        std::path::Path::new("owned-native-clusters.pdf"),
+        &bytes,
+        &limits,
+        &budget,
+    )
+    .unwrap();
+    assert_eq!(parsed.text_elements.len(), 3);
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|e| e.text.as_str())
+            .collect::<Vec<_>>(),
+        ["ff", "ff", "ff"]
+    );
+    assert_ne!(
+        parsed.text_elements[0].font_name,
+        parsed.text_elements[1].font_name
+    );
+    for (e, width) in parsed.text_elements.iter().zip([10., 12., 10.]) {
+        assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001, "{e:?}");
+        assert!(
+            parsed
+                .embedded_fonts
+                .iter()
+                .any(|f| Some(&f.font_name) == e.font_name.as_ref())
+        );
+    }
+}
+
 /// TJの移動とTcはUnicode文字数でなく元glyph数へ適用し、分割後も次の原点を保つ。
 #[test]
 fn source_cluster_routing_preserves_tj_and_original_glyph_character_spacing() {
