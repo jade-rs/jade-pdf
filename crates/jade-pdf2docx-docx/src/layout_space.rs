@@ -102,10 +102,17 @@ mod tests {
     proptest! {
         /// 入力が内部名を宣言しても、有限個のsource familyと重ならない名前を得る。
         #[test]
-        fn family_is_collision_free(count in 0usize..40) {
-            let fonts = (0..count).map(|i| ParsedEmbeddedFont { font_name: format!("JadeLayoutSpace-{i}"), bytes: Vec::new() }).collect::<Vec<_>>();
-            let name = family(&fonts,&[]);
-            prop_assert!(!fonts.iter().any(|f| f.font_name == name));
+        fn family_is_collision_free(count in 0usize..40,unembedded in 0usize..40,upper in any::<bool>()) {
+            let prefix=if upper {"JADELAYOUTSPACE-"} else {"JadeLayoutSpace-"};
+            let fonts = (0..count).map(|i| ParsedEmbeddedFont { font_name: format!("{prefix}{i}"), bytes: Vec::new() }).collect::<Vec<_>>();
+            let texts=(count..count+unembedded).map(|i|ParsedTextElement {
+                font_name:Some(format!("{prefix}{i}")),baseline_y:None,page:0,font_size:10.,fill_color:None,
+                bounds:jade_pdf2docx_parser::ParsedBounds {x0:0.,x1:10.,y0:0.,y1:10.},text:"source".into(),
+            }).collect::<Vec<_>>();
+            let name = family(&fonts,&texts);
+            prop_assert_eq!(&name,&format!("JadeLayoutSpace-{}",count+unembedded));
+            prop_assert!(!fonts.iter().any(|f| f.font_name.eq_ignore_ascii_case(&name)));
+            prop_assert!(!texts.iter().any(|t| t.font_name.as_ref().unwrap().eq_ignore_ascii_case(&name)));
             prop_assert!(name.len() < 63);
         }
     }

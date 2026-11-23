@@ -24,6 +24,7 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
+    let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     model
         .rows
         .iter()
@@ -74,8 +75,6 @@ pub(super) fn cells(
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
                             let mut line = source_line(row, &parsed.graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
-                            let family =
-                                layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             Some(line)
                         })
