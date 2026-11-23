@@ -186,6 +186,11 @@ fn band_rank(band: usize, edges: &[f32], page_width: f32) -> (bool, usize) {
     (is_margin, band)
 }
 
+/// x 座標の段を読む順の順位（区切りがなければ同じ順位）を返す。
+pub(super) fn reading_rank(center_x: f32, edges: &[f32], page_width: f32) -> (bool, usize) {
+    band_rank(band_of(center_x, edges), edges, page_width)
+}
+
 /// 表や画像を、同じ段の行の流れの中で上端の位置に差し込む順序番号を返す。
 pub(super) fn insertion_index_in_band(
     lines: &[StructuredTextLine],

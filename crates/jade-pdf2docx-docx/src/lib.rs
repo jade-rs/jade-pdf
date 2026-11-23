@@ -1380,6 +1380,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     {
         let top_y = table.bounds.y1;
         blocks.push(StructuredBlock::Table {
+            band_rank: column_bands::reading_rank(
+                (table.bounds.x0 + table.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             order_index: column_bands::insertion_index_in_band(
                 &page.lines,
                 top_y,
@@ -1399,6 +1404,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     {
         let top_y = image.bounds.y1;
         blocks.push(StructuredBlock::Image {
+            band_rank: column_bands::reading_rank(
+                (image.bounds.x0 + image.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             order_index: column_bands::insertion_index_in_band(
                 &page.lines,
                 top_y,
@@ -3197,6 +3207,8 @@ enum StructuredBlock {
     Table {
         /// flow 内の挿入順序。
         order_index: usize,
+        /// 段を読む順の順位（同じ挿入順序の表・画像を段の順に並べる）。
+        band_rank: (bool, usize),
         /// ブロック上端の PDF y 座標。
         top_y: f32,
         /// 表。
@@ -3206,6 +3218,8 @@ enum StructuredBlock {
     Image {
         /// flow 内の挿入順序。
         order_index: usize,
+        /// 段を読む順の順位（同じ挿入順序の表・画像を段の順に並べる）。
+        band_rank: (bool, usize),
         /// ブロック上端の PDF y 座標。
         top_y: f32,
         /// 画像要素。
@@ -3222,6 +3236,16 @@ impl StructuredBlock {
             StructuredBlock::Paragraph { top_y, .. }
             | StructuredBlock::Table { top_y, .. }
             | StructuredBlock::Image { top_y, .. } => *top_y,
+        }
+    }
+
+    /// 表・画像の段を読む順の順位を返す（段落は段の順に並べ済み）。
+    fn band_rank(&self) -> (bool, usize) {
+        match self {
+            StructuredBlock::Paragraph { .. } => (false, 0),
+            StructuredBlock::Table { band_rank, .. } | StructuredBlock::Image { band_rank, .. } => {
+                *band_rank
+            }
         }
     }
 
@@ -3249,6 +3273,7 @@ fn compare_structured_blocks(a: &StructuredBlock, b: &StructuredBlock) -> std::c
     a.flow_order()
         .cmp(&b.flow_order())
         .then(a.kind_order().cmp(&b.kind_order()))
+        .then(a.band_rank().cmp(&b.band_rank()))
         .then(b.top_y().total_cmp(&a.top_y()))
 }
 
