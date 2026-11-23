@@ -34,6 +34,12 @@ impl<'a> Lexer<'a> {
         };
         let (token, span) = source.next_spanned()?;
         self.cursor = source.cursor;
+        if &self.bytes[span.clone()] == b"{" {
+            return Some(Item::Procedure(true));
+        }
+        if &self.bytes[span.clone()] == b"}" {
+            return Some(Item::Procedure(false));
+        }
         let raw = match token {
             Token::Name(raw) | Token::Word(raw) => raw,
             _ => return Some(Item::Pdf(token)),

@@ -78,7 +78,7 @@ fn definition<'a>(budget: &DecodeBudget, lexer: &mut Lexer<'a>) -> Option<Encodi
         }
         _ => return None,
     };
-    let mut slots = crate::metadata_workspace::vector(budget, 256).ok()?;
+    let mut slots = budget.metadata_vector(256)?;
     slots.resize(256, None);
     let mut table = Encoding { base, slots };
     if !mutable {
