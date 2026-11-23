@@ -112,3 +112,34 @@ fn real_embedded_fonts_preserve_source_word_boundaries() {
         }
     }
 }
+
+/// native経路も同じ原文の印刷された行末hyphenを保持し、制御文字へ置き換えない。
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+#[ignore = "requires reviewed Type1 controls and the pinned native Pdfium SDK"]
+fn native_file_preserves_printed_line_end_hyphens() {
+    let directory =
+        std::env::var_os("JADE_TYPE1_DRAWING_CONTROLS").expect("reviewed input directory");
+    let input = Path::new(&directory).join("pdflatex-text-without-ToUnicode.pdf");
+    let parsed = jade_pdf2docx_parser::parse_pdf(&input).unwrap();
+    let actual = parsed
+        .text_elements
+        .iter()
+        .map(|element| element.text.as_str())
+        .collect::<Vec<_>>()
+        .join("\n");
+    let actual = actual
+        .replace('\u{fb00}', "ff")
+        .replace('\u{fb01}', "fi")
+        .replace('\u{fb02}', "fl")
+        .replace('\u{fb03}', "ffi")
+        .replace('\u{fb04}', "ffl");
+    let fixtures = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../fixtures");
+    let expected = fs::read_to_string(fixtures.join("expected/pdflatex-text.txt")).unwrap();
+    assert_eq!(
+        actual.split_whitespace().collect::<Vec<_>>(),
+        expected.split_whitespace().collect::<Vec<_>>()
+    );
+    assert!(!parsed.text_preview.contains('\u{2}'));
+    assert!(parsed.text_preview.contains("taki-"));
+}

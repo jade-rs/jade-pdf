@@ -70,6 +70,8 @@ mod pdfium_clip_overlap;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_font_tags;
 #[cfg(not(target_arch = "wasm32"))]
+mod pdfium_printed_hyphens;
+#[cfg(not(target_arch = "wasm32"))]
 mod pdfium_text;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_visible_text;

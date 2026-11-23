@@ -27,6 +27,7 @@ pub(crate) fn characters<'a>(
 /// segment本文と先頭文字の幾何/styleを、共有indexと予算付き保存でIRへ変換する。
 pub(crate) fn extract(
     budget: &DecodeBudget,
+    path: &std::path::Path,
     page_number: usize,
     page_text: &PdfPageText<'_>,
     characters: &PdfPageTextChars<'_>,
@@ -36,7 +37,14 @@ pub(crate) fn extract(
     for segment in page_text.segments().iter() {
         crate::metadata_workspace::ensure_active(budget)?;
         // API内部の一時Stringは現APIで確保前の正確な容量取得ができない。
-        let raw = segment.text();
+        let mut raw = segment.text();
+        crate::pdfium_printed_hyphens::segment(
+            budget,
+            path,
+            &mut raw,
+            characters,
+            segment.bounds(),
+        )?;
         // 描画された空白を単語境界として保持し、SDKの端の改行だけを除く。
         let content = raw.trim_matches(|ch| matches!(ch, '\r' | '\n'));
         if content.is_empty() {

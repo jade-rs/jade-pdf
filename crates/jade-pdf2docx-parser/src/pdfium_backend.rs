@@ -142,10 +142,17 @@ pub(crate) fn parse_pdf(
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
             decode_budget.check()?;
         } else {
-            append_text_preview(decode_budget, &mut text_preview, &page_text.all());
+            let mut preview = page_text.all();
+            crate::pdfium_printed_hyphens::page(decode_budget, path, &mut preview, &characters)?;
+            append_text_preview(decode_budget, &mut text_preview, &preview);
             decode_budget.check()?;
-            let elements =
-                crate::pdfium_text::extract(decode_budget, page_number, &page_text, &characters)?;
+            let elements = crate::pdfium_text::extract(
+                decode_budget,
+                path,
+                page_number,
+                &page_text,
+                &characters,
+            )?;
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
             decode_budget.check()?;
         }
