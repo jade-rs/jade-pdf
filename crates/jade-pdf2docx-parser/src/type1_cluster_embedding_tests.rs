@@ -9,6 +9,7 @@ fn positioned_type1_preview_preserves_repeated_letters_and_logical_gaps() {
         ("BT /F1 20 Tf 20 80 Td (BAAB) Tj ET","ffffff"),
         ("BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET","f f"),
         ("BT /F1 20 Tf 20 80 Td (B) Tj 0 -40 Td (AA) Tj ET","ff"),
+        ("BT /F1 20 Tf 0 1 -1 0 100 20 Tm (AAAA) Tj ET","ffff"),
     ] {
         let parsed=crate::parse_pdf_bytes("owned-positioned-preview.pdf",&pdf_with_content(content.as_bytes(),None)).unwrap();
         assert_eq!(parsed.text_preview,expected,"{content}");
