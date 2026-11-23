@@ -19,6 +19,13 @@ archive and executable from the existing runtime preparation. It copies the
 production WASM artifact when Cargo reports it, before temporary build artifacts
 can be collected.
 
+The generated directory includes `LICENSE-adobe-glyph-list.txt` and
+`LICENSE-fonttools.txt` for the conversion parser's glyph and StandardEncoding
+tables. Distribute these notices with the WASM and generated bindings. The build
+helper verifies their complete contents and records their hashes in `build.json`.
+Recheck a copied distribution with
+`python3 tools/wasm-docx-smoke/check_distribution.py --probe <directory>`.
+
 The checks compare the generated DOCX paragraph and table coordinates with
 authored PDF coordinates. Owned Helvetica inputs are created in a temporary
 directory. Both default and strict conversion exports, inspection, Word's maximum
