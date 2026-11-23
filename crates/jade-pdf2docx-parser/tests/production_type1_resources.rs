@@ -195,6 +195,40 @@ fn standard_font_with_optional_descriptor_remains_supported() {
 /// font programがなくても完成ToUnicodeを共有し、未知code検査でentry予算を膨らませない。
 #[test]
 fn missing_program_preserves_existing_tounicode_budget_and_coverage() {
+    // fixtureは一つのcode space範囲と一つのbfcharを持つため、既存処理量は二件。
+    let control = fixture::pdf(
+        "256 array dup 65 /G41 put",
+        "/Encoding /WinAnsiEncoding",
+        true,
+        "F1",
+        "A",
+    );
+    for limit in [1, 2] {
+        let result = parse_pdf_bytes_with_options(
+            "unicode-cost-control.pdf",
+            &control,
+            &ParseOptions {
+                strict: true,
+                limits: ParseLimits {
+                    max_total_tounicode_entries: limit,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+        );
+        if limit == 1 {
+            assert!(matches!(
+                result,
+                Err(ParseError::ResourceLimit {
+                    resource: "ToUnicode entries",
+                    actual: 2,
+                    ..
+                })
+            ));
+        } else {
+            assert!(result.is_ok(), "{result:?}");
+        }
+    }
     for text in ["A", "AB"] {
         let mut objects = objects("256 array dup 65 /G41 put", "", true, "F1", text);
         objects[4] =
@@ -205,7 +239,7 @@ fn missing_program_preserves_existing_tounicode_budget_and_coverage() {
             &ParseOptions {
                 strict: true,
                 limits: ParseLimits {
-                    max_total_tounicode_entries: 1,
+                    max_total_tounicode_entries: 2,
                     ..Default::default()
                 },
                 ..Default::default()
