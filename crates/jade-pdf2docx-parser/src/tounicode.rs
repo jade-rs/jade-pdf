@@ -48,6 +48,9 @@ pub(super) fn parse_tounicode_cmap_from_bytes(
         let (Some(first), Some(second)) = (hexes.next(), hexes.next()) else {
             continue;
         };
+        if first.is_empty() {
+            continue;
+        }
         if in_codespace_range {
             if budget.charge_tounicode_entries(1).is_none() {
                 break;
@@ -203,6 +206,9 @@ fn insert_utf16_mapping(
     key: MappingKey<'_>,
     hex: &str,
 ) -> Option<()> {
+    if !hex.len().is_multiple_of(4) {
+        return Some(());
+    }
     let Some(length) =
         utf16_chars(hex).try_fold(0usize, |length, ch| Some(length + ch.ok()?.len_utf8()))
     else {
@@ -238,7 +244,7 @@ impl<'a> HexTokens<'a> {
 impl<'a> Iterator for HexTokens<'a> {
     type Item = &'a str;
 
-    /// 有効な hex を借用し、不正 token は従来と同じく読み飛ばす。
+    /// 空の宛先も保持し、不正hexだけを読み飛ばす。空のsource codeは呼出側で拒否する。
     fn next(&mut self) -> Option<Self::Item> {
         let bytes = self.line.as_bytes();
         while self.cursor < bytes.len() {
@@ -255,7 +261,7 @@ impl<'a> Iterator for HexTokens<'a> {
             let end = start + length;
             self.cursor = end + 1;
             let hex = &self.line[start..end];
-            if !hex.is_empty() && hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
+            if hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
                 return Some(hex);
             }
         }
