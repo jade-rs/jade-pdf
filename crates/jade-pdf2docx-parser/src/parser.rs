@@ -2581,7 +2581,9 @@ fn extract_text_elements_with_matrices<'clip>(
                         .flatten()
                 })
                 .is_some_and(|gap| {
-                    crate::text_word_gap::needs_separator(&previous.text, &text, gap, state.size)
+                    elements.last().is_some_and(|previous| {
+                        crate::text_word_gap::needs_separator(&previous.text, &text, gap, state.size)
+                    })
                 });
             if derived.is_some() && last_derived && separator {
                 let gap = elements.last().and_then(|previous| {
