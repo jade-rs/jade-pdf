@@ -282,3 +282,36 @@ proptest! {
         prop_assert_eq!(single_line_sizes(small, large), (vec![small * 2], vec![large * 2]));
     }
 }
+
+/// サイズの混在する単一行セルの行boxを、段落markの既定fontから独立して読む。
+fn single_line_box_heights(small: u32, large: u32) -> (u32, u32) {
+    let bytes = convert_minimum_pdf_bytes_to_docx_bytes(
+        "owned-single-line-boxes.pdf",
+        &mixed_single_line_cells(small, large),
+    )
+    .unwrap();
+    let p = paragraphs(&document_xml(bytes));
+    (
+        p.iter().find(|p| p.0 == "Small").unwrap().1,
+        p.iter().find(|p| p.0 == "Large").unwrap().1,
+    )
+}
+
+/// runが6ptでも段落markの既定11ptが自動行高へ残ると、短い原本行からはみ出す。
+#[test]
+fn single_line_cell_line_boxes_use_source_em_heights() {
+    assert_eq!(single_line_box_heights(6, 14), (120, 280));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_single_line_styles.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 既存の保存済み6pt/12pt反例と独立なem高で、単一行の行boxを検証する。
+    #[test]
+    fn single_line_cell_line_boxes_are_independent(small in 6u32..11, large in 12u32..21) {
+        prop_assert_eq!(single_line_box_heights(small, large), (small * 20, large * 20));
+    }
+}
