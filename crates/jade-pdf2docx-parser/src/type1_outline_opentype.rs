@@ -1,6 +1,10 @@
 //! 確認済みCFF外形とmetricを、必要な九tableを持つOpenTypeへまとめる。
 use super::{cff, cmap};
 use crate::decode::DecodeBudget;
+#[path = "type1_outline_opentype_names.rs"]
+mod names;
+#[path = "type1_outline_opentype_tables.rs"]
+mod tables;
 
 /// GIDに対応する水平metricと、輪郭を外側へ丸めた範囲。
 pub(super) struct Metric {
@@ -52,8 +56,53 @@ pub(super) fn encode(
     font: &cff::Font<'_>,
     info: &Info<'_>,
 ) -> Option<Vec<u8>> {
-    let _ = (budget, font, info);
-    None
+    let flags = info.embedding_flags;
+    if info.metrics.len() != font.glyphs.len()
+        || info.metrics.is_empty()
+        || info.metrics.len() > 4096
+        || info.weight == 0
+        || info.weight > 1000
+        || info.ascent < 0
+        || info.descent > 0
+        || info.ascent <= info.descent
+        || info.line_gap < 0
+        || info.underline_thickness < 0
+        || info.x_height < 0
+        || info.cap_height < 0
+        || flags & !0x010c != 0
+        || !matches!(flags & 15, 0 | 4 | 8)
+        || budget.is_stopped()
+    {
+        return None;
+    }
+    let summary = tables::summarize(info)?;
+    let cff = cff::encode(budget, font)?;
+    let cmap = super::cmap::encode(
+        budget,
+        info.mappings,
+        u16::try_from(info.metrics.len()).ok()?,
+    )?;
+    let name = names::build(budget, font, info)?;
+    let head = tables::head(info, &summary);
+    let hhea = tables::hhea(info, &summary)?;
+    let hmtx = tables::hmtx(budget, info)?;
+    let os2 = tables::os2(budget, info, &summary)?;
+    let post = tables::post(font, info)?;
+    let mut maxp = [0, 0, 80, 0, 0, 0];
+    maxp[4..].copy_from_slice(&u16::try_from(info.metrics.len()).ok()?.to_be_bytes());
+    let data = [
+        (*b"CFF ", cff.as_slice()),
+        (*b"OS/2", &os2),
+        (*b"cmap", &cmap),
+        (*b"head", &head),
+        (*b"hhea", &hhea),
+        (*b"hmtx", &hmtx),
+        (*b"maxp", &maxp),
+        (*b"name", &name),
+        (*b"post", &post),
+    ];
+    let tables = data.map(|(tag, bytes)| super::sfnt::Table { tag, bytes });
+    super::sfnt::pack(budget, &tables)
 }
 
 #[cfg(test)]
