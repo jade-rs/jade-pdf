@@ -16,7 +16,7 @@ def main():
     parser.add_argument("--source", type=Path, help="固定SHA256と照合する既存の一次資料")
     parser.add_argument("--check", action="store_true")
     args = parser.parse_args()
-    metadata = json.loads(META.read_text())
+    metadata = json.loads(META.read_text(encoding="utf-8"))
     if args.source:
         source = args.source.read_bytes()
     else:
@@ -43,10 +43,10 @@ def main():
         + "];\n"
     )
     if args.check:
-        if TARGET.read_text() != output:
+        if TARGET.read_text(encoding="utf-8") != output:
             raise SystemExit("generated CFF string table differs")
     else:
-        TARGET.write_text(output)
+        TARGET.write_text(output, encoding="utf-8")
 
 
 if __name__ == "__main__":
