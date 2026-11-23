@@ -67,6 +67,7 @@ pub(crate) fn extract(
                     budget,
                     &mut elements,
                     ParsedTextElement {
+                        baseline_y: piece.baseline_y,
                         page: page_number,
                         bounds: piece.bounds,
                         font_size: piece.font_size,
@@ -125,6 +126,8 @@ struct CharInfo {
     font_name: Option<String>,
     /// 塗り色。
     fill_color: Option<String>,
+    /// 回転のない水平な文字のベースライン y。
+    baseline_y: Option<f32>,
 }
 
 /// 大きな字間で分けた segment の一部。
@@ -140,6 +143,8 @@ struct SegmentPiece {
     font_name: Option<String>,
     /// 先頭文字の塗り色。
     fill_color: Option<String>,
+    /// 先頭文字のベースライン y。
+    baseline_y: Option<f32>,
 }
 
 /// 字送り方向の隙間がこの em 数を超えたら別の要素に分ける。
@@ -180,6 +185,7 @@ fn split_at_wide_gaps(
             font_size: effective_font_size(&character),
             font_name: (!name.is_empty()).then_some(name),
             fill_color: character.fill_color().ok().map(|color| color.to_hex()),
+            baseline_y: horizontal_baseline(&character),
         });
     }
     // 矩形で拾う文字は隣の segment の文字を含むことがあるため、segment の本文と
@@ -240,6 +246,7 @@ fn group_chars_at_wide_gaps(chars: &[CharInfo], horizontal: bool) -> Vec<Segment
                 font_size: info.font_size,
                 font_name: info.font_name.clone(),
                 fill_color: info.fill_color.clone(),
+                baseline_y: info.baseline_y,
             });
         } else if let Some(piece) = pieces.last_mut() {
             piece.text.push_str(&info.text);
@@ -339,6 +346,7 @@ mod split_tests {
             font_size: 8.0,
             font_name: Some("F".into()),
             fill_color: None,
+            baseline_y: None,
         }
     }
 

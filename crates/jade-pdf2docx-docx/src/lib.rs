@@ -6999,6 +6999,7 @@ mod tests {
     #[test]
     fn private_use_dot_between_digits_becomes_decimal_point() {
         let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds { x0, y0, x1, y1 },
             font_size: 8.0,
@@ -7039,6 +7040,7 @@ mod tests {
     #[test]
     fn private_use_angle_marks_become_degree_minute_second() {
         let text = |x0: f32, x1: f32, y0: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds {
                 x0,
@@ -7088,6 +7090,7 @@ mod tests {
     #[test]
     fn raised_angle_mark_fragments_are_learned() {
         let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds { x0, y0, x1, y1 },
             font_size: 8.0,
@@ -7133,6 +7136,7 @@ mod tests {
     #[test]
     fn known_dynafont_private_use_glyphs_are_mapped() {
         let text = |font: &str, body: &str| ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds {
                 x0: 0.0,
@@ -7182,6 +7186,7 @@ mod tests {
     #[test]
     fn rule_glyphs_are_dropped() {
         let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
             page: 0,
             bounds: ParsedBounds { x0, y0, x1, y1 },
             font_size: 8.0,

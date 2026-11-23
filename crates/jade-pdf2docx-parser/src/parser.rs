@@ -614,8 +614,22 @@ pub(crate) fn normalize_text_elements_to_display(
     text_elements: &mut Vec<ParsedTextElement>,
 ) {
     let viewports = parse_page_viewports(decode_budget, bytes);
-    text_elements
-        .retain_mut(|text| normalize_bounds_for_page(text.page, &mut text.bounds, &viewports));
+    text_elements.retain_mut(|text| {
+        let before = text.bounds.y0.min(text.bounds.y1);
+        let kept = normalize_bounds_for_page(text.page, &mut text.bounds, &viewports);
+        // ベースラインは回転のないページでだけ、bounds と同じだけ表示原点へ移す。
+        let unrotated = viewports
+            .iter()
+            .find(|viewport| viewport.page.page_number == text.page)
+            .is_none_or(|viewport| viewport.page.rotation.rem_euclid(360) == 0);
+        text.baseline_y = if unrotated {
+            text.baseline_y
+                .map(|baseline| baseline + text.bounds.y0.min(text.bounds.y1) - before)
+        } else {
+            None
+        };
+        kept
+    });
 }
 
 /// 1要素のboundsを表示原点へ移し、page内に残る場合だけ`true`を返す。
