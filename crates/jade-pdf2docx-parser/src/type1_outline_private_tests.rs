@@ -1,0 +1,80 @@
+//! 自分で作った二進辞書だけで、境界・重複・実行不能条件を固定する。
+use super::*;
+use crate::{ParseError, ParseLimits};
+use proptest::prelude::*;
+
+/// 検証対象のbinaryを一つずつRDに渡す、所有の静的な辞書。
+fn private(glyph: &[u8], subr: &[u8], separator: &[u8]) -> Vec<u8> {
+    let mut bytes = b"dup /Private 8 dict dup begin\n/RD{string currentfile exch readstring pop}executeonly def\n/ND{noaccess def}executeonly def /NP{noaccess put}executeonly def\n/lenIV 4 def /Subrs 1 array\ndup 0 ".to_vec();
+    bytes.extend_from_slice(subr.len().to_string().as_bytes());
+    bytes.extend_from_slice(b" RD");
+    bytes.extend_from_slice(separator);
+    bytes.extend_from_slice(subr);
+    bytes.extend_from_slice(
+        b" NP\nND end readonly put dup /CharStrings 1 dict dup begin\n/.notdef ",
+    );
+    bytes.extend_from_slice(glyph.len().to_string().as_bytes());
+    bytes.extend_from_slice(b" RD");
+    bytes.extend_from_slice(separator);
+    bytes.extend_from_slice(glyph);
+    bytes.extend_from_slice(
+        b" ND\nend readonly put dup /FontName get exch definefont pop mark currentfile closefile\n",
+    );
+    bytes
+}
+
+/// delimiter・comment・NULを含むbinaryを、tokenとして読み直さない。
+#[test]
+fn binary_payload_and_charstring_prefix_survive() {
+    let source = private(b"%{}\0/CharStrings\n", b"ND\r\n()", b"\r\n");
+    let parsed = parse(&DecodeBudget::default(), &source).unwrap();
+    assert_eq!(parsed.prefix, Some(4));
+    assert_eq!(parsed.subrs, vec![Some(b"ND\r\n()".as_slice())]);
+    assert_eq!(parsed.glyphs.len(), 1);
+    assert_eq!(parsed.glyphs[0].name, b".notdef");
+    assert_eq!(parsed.glyphs[0].bytes, b"%{}\0/CharStrings\n");
+}
+
+/// 容量予約を前置し、未知のRD実装や動的glyph辞書を推測しない。
+#[test]
+fn unsafe_definitions_and_storage_limit_are_rejected() {
+    let source = private(b"abc", b"def", b" ");
+    let target = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: 0,
+        ..Default::default()
+    });
+    assert!(parse(&target, &source).is_none());
+    assert!(matches!(
+        target.check(),
+        Err(ParseError::ResourceLimit {
+            resource: "embedded font bytes",
+            ..
+        })
+    ));
+    let text = String::from_utf8(source).unwrap();
+    for changed in [
+        text.replace("readstring pop", "readstring pop run"),
+        text.replace(
+            "/CharStrings 1 dict",
+            "/CharStrings 1 dict dup /Other begin",
+        ),
+        text.replace("/.notdef 3 RD", "/.notdef 999999999 RD"),
+        text.replace("/lenIV 4 def", "/lenIV -2 def"),
+        text.replace("/Subrs 1 array", "/Subrs 999999999 array"),
+        text.replace("closefile", "closefile run"),
+    ] {
+        assert!(parse(&DecodeBudget::default(), changed.as_bytes()).is_none());
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// binary中の字句に依存せず、宣言長ちょうどの二つのprogramを保持する。
+    #[test]
+    fn arbitrary_binary_is_length_delimited(glyph in proptest::collection::vec(any::<u8>(),0..512),subr in proptest::collection::vec(any::<u8>(),0..512),crlf in any::<bool>()) {
+        let bytes = private(&glyph,&subr,if crlf { b"\r\n" } else { b" " });
+        let parsed = parse(&DecodeBudget::default(), &bytes).unwrap();
+        prop_assert_eq!(parsed.glyphs[0].bytes,glyph.as_slice());
+        prop_assert_eq!(parsed.subrs[0],Some(subr.as_slice()));
+    }
+}
