@@ -56,6 +56,16 @@ pub(super) fn encode(
     font: &cff::Font<'_>,
     info: &Info<'_>,
 ) -> Option<Vec<u8>> {
+    encode_with_ligatures(budget, font, info, &[])
+}
+
+/// 原本cluster専用の合字規則を含むfontを作る。通常runへの適用判断は呼出元で行う。
+pub(super) fn encode_with_ligatures(
+    budget: &DecodeBudget,
+    font: &cff::Font<'_>,
+    info: &Info<'_>,
+    rules: &[super::gsub::Rule<'_>],
+) -> Option<Vec<u8>> {
     let flags = info.embedding_flags;
     if info.metrics.len() != font.glyphs.len()
         || info.metrics.is_empty()
@@ -75,6 +85,7 @@ pub(super) fn encode(
     {
         return None;
     }
+    let gsub = super::gsub::encode(budget, rules, u16::try_from(info.metrics.len()).ok()?)?;
     let summary = tables::summarize(info)?;
     let cff = cff::encode(budget, font)?;
     let cmap = super::cmap::encode(
@@ -100,19 +111,11 @@ pub(super) fn encode(
         (*b"maxp", &maxp),
         (*b"name", &name),
         (*b"post", &post),
+        (*b"GSUB", &gsub),
     ];
     let tables = data.map(|(tag, bytes)| super::sfnt::Table { tag, bytes });
-    super::sfnt::pack(budget, &tables)
-}
-
-/// 原本cluster専用の合字規則を含むfontを作る。通常runへの適用判断は呼出元で行う。
-pub(super) fn encode_with_ligatures(
-    budget: &DecodeBudget,
-    font: &cff::Font<'_>,
-    info: &Info<'_>,
-    _rules: &[super::gsub::Rule<'_>],
-) -> Option<Vec<u8>> {
-    encode(budget, font, info)
+    let count = if gsub.is_empty() { 9 } else { 10 };
+    super::sfnt::pack(budget, &tables[..count])
 }
 
 #[cfg(test)]
