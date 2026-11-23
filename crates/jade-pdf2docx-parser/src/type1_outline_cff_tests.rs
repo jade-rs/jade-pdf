@@ -103,6 +103,64 @@ fn invalid_cff_identity_or_metadata_is_rejected() {
     assert!(encode(&DecodeBudget::default(), &owned).is_none());
 }
 
+/// 実際に必要だった累積保存量の境界と、停止後の再試行を検査する。
+#[test]
+fn cff_all_intermediate_storage_is_reserved_and_cancelled_output_is_discarded() {
+    let glyphs = [
+        Entry {
+            name: b".notdef",
+            program: &[14],
+        },
+        Entry {
+            name: b"custom-Jade",
+            program: &[14],
+        },
+    ];
+    let owned = font(&glyphs);
+    // 最小の成功容量はruntime実装と異なる二分探索で求め、境界の左右を照合する。
+    let mut low = 0;
+    let mut high = 8192;
+    while low < high {
+        let mid = (low + high) / 2;
+        let budget = DecodeBudget::new(&ParseLimits {
+            max_total_embedded_font_bytes: mid,
+            ..Default::default()
+        });
+        if encode(&budget, &owned).is_some() {
+            high = mid;
+        } else {
+            low = mid + 1;
+        }
+    }
+    let exact = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: low,
+        ..Default::default()
+    });
+    let bytes = encode(&exact, &owned).unwrap();
+    assert!(
+        low > bytes.len() as u64,
+        "all intermediate buffers must be included"
+    );
+    assert!(encode(&exact, &owned).is_none());
+    let short = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: low - 1,
+        ..Default::default()
+    });
+    assert!(encode(&short, &owned).is_none());
+    assert!(matches!(
+        short.check(),
+        Err(ParseError::ResourceLimit {
+            resource: "embedded font bytes",
+            ..
+        })
+    ));
+    let token = crate::ParseCancellation::new();
+    token.cancel();
+    let stopped = DecodeBudget::with_cancellation(&ParseLimits::default(), Some(&token));
+    assert!(encode(&stopped, &owned).is_none());
+    assert!(matches!(stopped.check(), Err(ParseError::Cancelled)));
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// noticeの大きさと傾斜値に関係なく、完成CFFは上限内で決定的に再現できる。

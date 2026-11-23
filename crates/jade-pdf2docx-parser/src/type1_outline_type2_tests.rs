@@ -120,6 +120,35 @@ fn invalid_geometry_and_unrepresentable_delta_are_rejected() {
     }
 }
 
+/// 65535byteちょうどは保存でき、一byte超過は確保前に拒否する。
+#[test]
+fn maximum_type2_program_length_is_checked_before_reservation() {
+    let mut commands = vec![Command::Move([108., 0.])];
+    for _ in 0..21843 {
+        commands.push(Command::Line([108., 0.]));
+    }
+    commands.push(Command::Close);
+    let mut glyph = Glyph {
+        advance: 32768.,
+        commands,
+    };
+    let exact = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: 65535,
+        ..Default::default()
+    });
+    assert_eq!(encode(&exact, &glyph).unwrap().len(), 65535);
+    glyph.advance = 32876.; // 幅差分が一byteから二byteになり、全長も一byteだけ増える。
+    let no_storage = DecodeBudget::new(&ParseLimits {
+        max_total_embedded_font_bytes: 0,
+        ..Default::default()
+    });
+    assert!(encode(&no_storage, &glyph).is_none());
+    assert!(
+        no_storage.check().is_ok(),
+        "oversize program must be rejected before allocation"
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     /// 任意u16幅を、空文字としても失わずに有限byteへ格納する。
