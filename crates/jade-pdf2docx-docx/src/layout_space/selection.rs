@@ -21,7 +21,7 @@ struct Signature {
 }
 
 /// sourceからXMLを受け取らない生成packageの、所有space runが選ぶfamilyだけを返す。
-pub(super) fn read(document: &[u8]) -> Result<Option<String>, ConvertError> {
+pub(crate) fn read(document: &[u8]) -> Result<Option<String>, ConvertError> {
     let mut reader = Reader::from_reader(document);
     let mut run = None::<Signature>;
     let mut in_text = false;
@@ -58,7 +58,7 @@ pub(super) fn read(document: &[u8]) -> Result<Option<String>, ConvertError> {
             }
             Event::Text(ref text) if in_text => {
                 if let Some(run) = run.as_mut() {
-                    run.space = text.as_ref() == b" ";
+                    run.space = &text[..] == b" ";
                 }
             }
             Event::End(ref e) if e.name().as_ref() == b"w:t" => in_text = false,
