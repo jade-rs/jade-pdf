@@ -4,6 +4,7 @@ mod assemble;
 #[path = "type1_outline_attributes.rs"]
 mod attributes;
 pub(crate) use assemble::{Input, Prepared, prepare};
+pub(crate) use resource::values::field as resource_field;
 #[path = "type1_outline_bounds.rs"]
 mod bounds;
 #[path = "type1_outline_cff.rs"]

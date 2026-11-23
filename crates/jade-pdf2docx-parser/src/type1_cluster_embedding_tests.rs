@@ -173,7 +173,7 @@ fn mixed_source_clusters_in_one_operand_keep_distinct_routes_and_positions() {
 
 /// TJの移動とTcはUnicode文字数でなく元glyph数へ適用し、分割後も次の原点を保つ。
 #[test]
-fn source_cluster_routing_preserves_TJ_and_original_glyph_character_spacing() {
+fn source_cluster_routing_preserves_tj_and_original_glyph_character_spacing() {
     for (content, positions, widths) in [
         (
             "BT /F1 20 Tf 20 80 Td [(B) -100 (AA) 50 (B)] TJ ET",

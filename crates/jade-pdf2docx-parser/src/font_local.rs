@@ -7,6 +7,9 @@ use super::{
 /// 1ページで有効なfont resource情報。
 #[derive(Debug, Default)]
 pub(super) struct Resources {
+    /// 同名の別Fontを混同しない、resource固有の生成font選択。
+    pub(super) outlines:
+        crate::metadata_map::Map<String, std::sync::Arc<super::type1_fonts::Routes>>,
     /// resource名からPDF BaseFont名への対応。
     pub(super) base_fonts: crate::metadata_map::Map<String, String>,
     /// resource名からexternal CMap encoding名への対応。
@@ -42,6 +45,20 @@ pub(super) fn build(
             .and_then(|n| objects.get(&n).map(|(_, body)| *body))
             .or_else(|| definition.inline_dictionary.map(str::as_bytes));
         if let Some(dictionary) = dictionary {
+            if let Some(routes) = super::type1_fonts::for_dictionary(
+                decode_budget,
+                bytes,
+                dictionary,
+                objects,
+                stream_offsets,
+            ) {
+                crate::metadata_map::save(
+                    decode_budget,
+                    &mut page_resources.outlines,
+                    name,
+                    routes,
+                );
+            }
             if page_resources
                 .metrics
                 .prepare(decode_budget, name.as_str())

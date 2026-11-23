@@ -152,6 +152,10 @@ mod compressed_objects;
 mod embedded_fonts;
 #[path = "font_descriptor_cmaps.rs"]
 mod font_descriptor_cmaps;
+#[path = "type1_fonts.rs"]
+pub(crate) mod type1_fonts;
+#[path = "type1_runs.rs"]
+mod type1_runs;
 
 #[path = "font_cmaps.rs"]
 mod font_cmaps;
@@ -365,7 +369,18 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         &mut text_elements,
         &mut image_elements,
     );
-    let embedded_fonts = extract_embedded_truetype_fonts(decode_budget, &bytes);
+    let mut embedded_fonts = extract_embedded_truetype_fonts(decode_budget, &bytes);
+    let mut outlines = decode_budget.with_type1_output(|cache| cache.take_fonts());
+    if !outlines.is_empty() {
+        let count = embedded_fonts.len().saturating_add(outlines.len());
+        decode_budget.check_embedded_font_count(count);
+        decode_budget.check()?;
+        let mut combined = decode_budget.metadata_vector(count).unwrap_or_default();
+        decode_budget.check()?;
+        combined.append(&mut embedded_fonts);
+        combined.append(&mut outlines);
+        embedded_fonts = combined;
+    }
     decode_budget.check()?;
     let text_preview = if page_count > 0 {
         crate::text::preview_from_text_elements(decode_budget, &text_elements)
@@ -777,6 +792,8 @@ fn extract_text_elements_from_pdf_bytes(
     };
     let mut elements = Vec::new();
     let empty_metrics = BTreeMap::new();
+    let empty_outlines =
+        crate::metadata_map::Map::<String, std::sync::Arc<type1_fonts::Routes>>::default();
     let empty_cmap = ToUnicodeCMap::default();
     // Contents配列は一つの命令列であり、Tr・Font・文字行列をstream境界で初期化しない。
     let Some(streams) = crate::form_storage::pages(decode_budget, streams) else {
@@ -827,6 +844,12 @@ fn extract_text_elements_from_pdf_bytes(
                         >
                 })
                 .unwrap_or(&empty_metrics),
+            page_resources
+                .map(|r| {
+                    &r.outlines
+                        as &dyn crate::metadata_map::Lookup<std::sync::Arc<type1_fonts::Routes>>
+                })
+                .unwrap_or(&empty_outlines),
             |name| match (
                 alpha_resources
                     .as_ref()
@@ -987,6 +1010,7 @@ fn extract_form_text_elements(
                 &fonts.cmaps,
                 &ToUnicodeCMap::default(),
                 &fonts.metrics,
+                &fonts.outlines,
                 Some(inherited_fonts),
                 state,
                 |name| crate::text_alpha::resolve(resources, name, &mut alpha_resolver),
@@ -2321,6 +2345,7 @@ fn extract_text_elements_from_content_stream(
     font_cmaps: &dyn crate::metadata_map::Lookup<ToUnicodeCMap>,
     cmap: &ToUnicodeCMap,
     metrics: &dyn crate::metadata_map::Lookup<std::sync::Arc<crate::font_widths::Metrics>>,
+    outlines: &dyn crate::metadata_map::Lookup<std::sync::Arc<type1_fonts::Routes>>,
     alpha: impl FnMut(&[u8]) -> crate::text_alpha::Parameters,
 ) -> Vec<ParsedTextElement> {
     let matrices = crate::form_content::text_matrices(budget, content, [1., 0., 0., 1., 0., 0.]);
@@ -2334,6 +2359,7 @@ fn extract_text_elements_from_content_stream(
         font_cmaps,
         cmap,
         metrics,
+        outlines,
         None,
         crate::text_draws::State::initial(Default::default()),
         alpha,
@@ -2357,6 +2383,7 @@ fn extract_text_elements_with_matrices<'clip>(
     font_cmaps: &dyn crate::metadata_map::Lookup<ToUnicodeCMap>,
     cmap: &ToUnicodeCMap,
     metrics: &dyn crate::metadata_map::Lookup<std::sync::Arc<crate::font_widths::Metrics>>,
+    outlines: &dyn crate::metadata_map::Lookup<std::sync::Arc<type1_fonts::Routes>>,
     inherited_fonts: Option<&PageFontResources>,
     state: crate::text_draws::State,
     alpha: impl FnMut(&[u8]) -> crate::text_alpha::Parameters,
@@ -2368,228 +2395,287 @@ fn extract_text_elements_with_matrices<'clip>(
     let mut last_draw = None;
     let mut current_sequence = None;
     let mut current_geometry = None;
-    crate::text_draws::visit_with_state(
-        budget,
-        bytes,
-        state,
-        alpha,
-        |begin, sequence, raw, state, matrix| {
-            if budget.is_stopped() {
-                return 0.;
-            }
-            let (font_names, font_encodings, font_cmaps, metrics) =
-                if let Some(fonts) = inherited_fonts.filter(|_| state.inherited_font) {
-                    (
-                        &fonts.base_fonts as &dyn crate::metadata_map::Lookup<String>,
-                        &fonts.encodings as &dyn crate::metadata_map::Lookup<String>,
-                        &fonts.cmaps as &dyn crate::metadata_map::Lookup<ToUnicodeCMap>,
-                        &fonts.metrics
-                            as &dyn crate::metadata_map::Lookup<
-                                std::sync::Arc<crate::font_widths::Metrics>,
-                            >,
-                    )
-                } else {
-                    (font_names, font_encodings, font_cmaps, metrics)
-                };
-            let mut text = decode_text_show_operand(
+    let mut emit = |begin: usize,
+                    sequence: usize,
+                    raw: &[u8],
+                    state: &crate::text_draws::State,
+                    matrix: [f32; 6],
+                    derived: Option<(&str, &ToUnicodeCMap)>| {
+        if budget.is_stopped() {
+            return 0.;
+        }
+        let (font_names, font_encodings, font_cmaps, metrics) = if let Some(fonts) =
+            inherited_fonts.filter(|_| state.inherited_font)
+        {
+            (
+                &fonts.base_fonts as &dyn crate::metadata_map::Lookup<String>,
+                &fonts.encodings as &dyn crate::metadata_map::Lookup<String>,
+                &fonts.cmaps as &dyn crate::metadata_map::Lookup<ToUnicodeCMap>,
+                &fonts.metrics
+                    as &dyn crate::metadata_map::Lookup<std::sync::Arc<crate::font_widths::Metrics>>,
+            )
+        } else {
+            (font_names, font_encodings, font_cmaps, metrics)
+        };
+        let mut text = if let Some((_, verified)) = derived {
+            decode_text_show_operand(
+                budget,
+                raw,
+                verified,
+                font_encodings,
+                &BTreeMap::<String, ToUnicodeCMap>::new(),
+                None,
+            )
+        } else {
+            decode_text_show_operand(
                 budget,
                 raw,
                 cmap,
                 font_encodings,
                 font_cmaps,
                 state.font.as_deref(),
-            );
-            if budget.is_stopped() {
-                return 0.;
-            }
-            let font_name = state.font.as_deref().map(|resource| {
+            )
+        };
+        if budget.is_stopped() {
+            return 0.;
+        }
+        let font_name = derived.map(|(name, _)| name).or_else(|| {
+            state.font.as_deref().map(|resource| {
                 font_names
                     .get(resource)
                     .map(String::as_str)
                     .unwrap_or(resource)
+            })
+        });
+        if current_sequence != Some(sequence) {
+            current_sequence = Some(sequence);
+            current_geometry = geometry(&bytes[..sequence]);
+        }
+        let rendering_matrix =
+            concat_matrix(matrix, [state.horizontal_scale, 0., 0., 1., 0., state.rise]);
+        let geometry = current_geometry.map(|geometry| geometry.transformed(rendering_matrix));
+        let page_matrix = geometry.map(|geometry| geometry.matrix);
+        let layout = state
+            .font
+            .as_ref()
+            .and_then(|font| metrics.get(font))
+            .and_then(|metrics| {
+                metrics.layout(
+                    budget,
+                    raw,
+                    state.size,
+                    state.character_spacing,
+                    state.word_spacing,
+                )
+            })
+            .unwrap_or_else(|| {
+                let width = estimate_text_width_for_matrix(
+                    &text,
+                    state.size,
+                    font_name,
+                    geometry.as_ref().map_or(matrix, |geometry| geometry.matrix),
+                );
+                state
+                    .font
+                    .as_ref()
+                    .and_then(|font| metrics.get(font))
+                    .and_then(|metrics| {
+                        metrics.estimated_layout(
+                            budget,
+                            raw,
+                            width,
+                            state.character_spacing,
+                            state.word_spacing,
+                        )
+                    })
+                    .unwrap_or_else(|| {
+                        crate::font_widths::Layout::estimated(
+                            &text,
+                            width,
+                            state.character_spacing,
+                            state.word_spacing,
+                        )
+                    })
             });
-            if current_sequence != Some(sequence) {
-                current_sequence = Some(sequence);
-                current_geometry = geometry(&bytes[..sequence]);
-            }
-            let rendering_matrix =
-                concat_matrix(matrix, [state.horizontal_scale, 0., 0., 1., 0., state.rise]);
-            let geometry = current_geometry.map(|geometry| geometry.transformed(rendering_matrix));
-            let page_matrix = geometry.map(|geometry| geometry.matrix);
-            let layout = state
-                .font
-                .as_ref()
-                .and_then(|font| metrics.get(font))
-                .and_then(|metrics| {
-                    metrics.layout(
-                        budget,
-                        raw,
-                        state.size,
-                        state.character_spacing,
-                        state.word_spacing,
-                    )
-                })
-                .unwrap_or_else(|| {
-                    let width = estimate_text_width_for_matrix(
-                        &text,
-                        state.size,
-                        font_name,
-                        geometry.as_ref().map_or(matrix, |geometry| geometry.matrix),
-                    );
-                    state
-                        .font
-                        .as_ref()
-                        .and_then(|font| metrics.get(font))
-                        .and_then(|metrics| {
-                            metrics.estimated_layout(
-                                budget,
-                                raw,
-                                width,
-                                state.character_spacing,
-                                state.word_spacing,
-                            )
-                        })
-                        .unwrap_or_else(|| {
-                            crate::font_widths::Layout::estimated(
-                                &text,
-                                width,
-                                state.character_spacing,
-                                state.word_spacing,
-                            )
-                        })
-                });
-            if budget.is_stopped() {
-                return 0.;
-            }
-            let font_size =
-                state.size * geometry.map_or(1., |g| g.vertical_scale().max(f32::EPSILON));
-            let clipped = geometry
-                .filter(|g| g.needs_glyph_clip(layout.left, layout.right, state.size))
-                .and_then(|geometry| {
-                    crate::text_clipping::filter(
-                        budget,
-                        raw,
-                        state.font.as_deref().and_then(|font| metrics.get(font))?,
-                        geometry,
-                        state.size,
-                        state.character_spacing,
-                        state.word_spacing,
+        if budget.is_stopped() {
+            return 0.;
+        }
+        let font_size = state.size * geometry.map_or(1., |g| g.vertical_scale().max(f32::EPSILON));
+        let clipped = geometry
+            .filter(|g| g.needs_glyph_clip(layout.left, layout.right, state.size))
+            .and_then(|geometry| {
+                crate::text_clipping::filter(
+                    budget,
+                    raw,
+                    state.font.as_deref().and_then(|font| metrics.get(font))?,
+                    geometry,
+                    state.size,
+                    state.character_spacing,
+                    state.word_spacing,
+                    derived.map(|(_, cmap)| cmap).unwrap_or_else(|| {
                         state
                             .font
                             .as_deref()
                             .and_then(|font| font_cmaps.get(font))
-                            .unwrap_or(cmap),
+                            .unwrap_or(cmap)
+                    }),
+                    if derived.is_some() {
+                        None
+                    } else {
                         state
                             .font
                             .as_deref()
                             .and_then(|font| font_encodings.get(font))
-                            .map(String::as_str),
-                    )
-                });
-            let bounds = if let Some((visible, bounds)) = clipped {
-                text = visible;
-                bounds
-            } else {
-                geometry.and_then(|geometry| {
-                    geometry
-                        .transformed([1., 0., 0., 1., layout.left, 0.])
-                        .bounds(budget, layout.right - layout.left, state.size)
-                })
-            };
-            let adjacent = page_matrix.is_some_and(|current| {
-                last_draw.is_some_and(|(last_begin, previous, width)| {
-                    last_begin == begin
-                        && crate::text_draws::adjacent(previous, width, current, state.size)
-                })
+                            .map(String::as_str)
+                    },
+                )
             });
-            let merge = (last_sequence == Some(sequence) || adjacent)
-                && elements.last().is_some_and(|previous| {
-                    previous.font_size == font_size
-                        && previous.font_name.as_deref() == font_name
-                        && previous.fill_color == state.color
-                });
-            if state.rendering.paints_with_alpha(
-                state
-                    .font
-                    .as_deref()
-                    .and_then(|name| metrics.get(name))
-                    .is_some_and(|font| font.is_type3()),
-                budget.is_pdf20(),
-                state.alpha,
-            ) && (!text.trim().is_empty()
-                || (merge && !text.is_empty())
-                || (!text.is_empty()
-                    && text
-                        .chars()
-                        .all(|ch| ch.is_whitespace() && !ch.is_control())))
-                && let Some(bounds) = bounds
-            {
-                if merge && let Some(previous) = elements.last_mut() {
-                    let separator = page_matrix
-                        .and_then(|current| {
-                            let (last_begin, matrix, width) = last_draw?;
-                            (last_begin == begin && last_sequence == Some(sequence))
-                                .then(|| crate::text_draws::gap(matrix, width, current))
-                                .flatten()
-                        })
-                        .is_some_and(|gap| {
-                            crate::text_word_gap::needs_separator(
-                                &previous.text,
-                                &text,
-                                gap,
-                                state.size,
-                            )
-                        });
-                    if separator
-                        && crate::text_result_storage::extend(budget, &mut previous.text, " ")
-                            .is_none()
-                    {
-                        return 0.;
-                    }
-                    if crate::text_result_storage::extend(budget, &mut previous.text, &text)
-                        .is_none()
-                    {
-                        return 0.;
-                    }
-                    previous.bounds.x0 = previous.bounds.x0.min(bounds.x0);
-                    previous.bounds.y0 = previous.bounds.y0.min(bounds.y0);
-                    previous.bounds.x1 = previous.bounds.x1.max(bounds.x1);
-                    previous.bounds.y1 = previous.bounds.y1.max(bounds.y1);
-                } else {
-                    let Some(font_name) = crate::text_result_storage::copy(budget, font_name)
-                    else {
-                        return 0.;
-                    };
-                    let Some(fill_color) =
-                        crate::text_result_storage::copy(budget, state.color.as_deref())
-                    else {
-                        return 0.;
-                    };
-                    if crate::metadata_workspace::try_push(
-                        budget,
-                        &mut elements,
-                        ParsedTextElement {
-                            baseline_y: None,
-                            page,
-                            bounds,
-                            font_size,
-                            font_name,
-                            fill_color,
-                            text,
-                        },
-                    )
-                    .is_none()
-                    {
-                        return 0.;
-                    }
+        let bounds = if let Some((visible, bounds)) = clipped {
+            text = visible;
+            bounds
+        } else {
+            geometry.and_then(|geometry| {
+                geometry
+                    .transformed([1., 0., 0., 1., layout.left, 0.])
+                    .bounds(budget, layout.right - layout.left, state.size)
+            })
+        };
+        let adjacent = page_matrix.is_some_and(|current| {
+            last_draw.is_some_and(|(last_begin, previous, width)| {
+                last_begin == begin
+                    && crate::text_draws::adjacent(previous, width, current, state.size)
+            })
+        });
+        let merge = (last_sequence == Some(sequence) || adjacent)
+            && elements.last().is_some_and(|previous| {
+                previous.font_size == font_size
+                    && previous.font_name.as_deref() == font_name
+                    && previous.fill_color == state.color
+            });
+        if state.rendering.paints_with_alpha(
+            state
+                .font
+                .as_deref()
+                .and_then(|name| metrics.get(name))
+                .is_some_and(|font| font.is_type3()),
+            budget.is_pdf20(),
+            state.alpha,
+        ) && (!text.trim().is_empty()
+            || (merge && !text.is_empty())
+            || (!text.is_empty()
+                && text
+                    .chars()
+                    .all(|ch| ch.is_whitespace() && !ch.is_control())))
+            && let Some(bounds) = bounds
+        {
+            if merge && let Some(previous) = elements.last_mut() {
+                let separator = page_matrix
+                    .and_then(|current| {
+                        let (last_begin, matrix, width) = last_draw?;
+                        (last_begin == begin && last_sequence == Some(sequence))
+                            .then(|| crate::text_draws::gap(matrix, width, current))
+                            .flatten()
+                    })
+                    .is_some_and(|gap| {
+                        crate::text_word_gap::needs_separator(
+                            &previous.text,
+                            &text,
+                            gap,
+                            state.size,
+                        )
+                    });
+                if separator
+                    && crate::text_result_storage::extend(budget, &mut previous.text, " ").is_none()
+                {
+                    return 0.;
                 }
-                last_sequence = Some(sequence);
-                last_draw = page_matrix.map(|matrix| (begin, matrix, layout.advance));
+                if crate::text_result_storage::extend(budget, &mut previous.text, &text).is_none() {
+                    return 0.;
+                }
+                previous.bounds.x0 = previous.bounds.x0.min(bounds.x0);
+                previous.bounds.y0 = previous.bounds.y0.min(bounds.y0);
+                previous.bounds.x1 = previous.bounds.x1.max(bounds.x1);
+                previous.bounds.y1 = previous.bounds.y1.max(bounds.y1);
             } else {
-                last_sequence = None;
-                last_draw = None;
+                let Some(font_name) = crate::text_result_storage::copy(budget, font_name) else {
+                    return 0.;
+                };
+                let Some(fill_color) =
+                    crate::text_result_storage::copy(budget, state.color.as_deref())
+                else {
+                    return 0.;
+                };
+                if crate::metadata_workspace::try_push(
+                    budget,
+                    &mut elements,
+                    ParsedTextElement {
+                        baseline_y: None,
+                        page,
+                        bounds,
+                        font_size,
+                        font_name,
+                        fill_color,
+                        text,
+                    },
+                )
+                .is_none()
+                {
+                    return 0.;
+                }
             }
-            layout.advance * state.horizontal_scale
+            last_sequence = Some(sequence);
+            last_draw = page_matrix.map(|matrix| (begin, matrix, layout.advance));
+        } else {
+            last_sequence = None;
+            last_draw = None;
+        }
+        layout.advance * state.horizontal_scale
+    };
+    crate::text_draws::visit_with_state(
+        budget,
+        bytes,
+        state,
+        alpha,
+        |begin, sequence, raw, state, matrix| {
+            let (outlines, metrics) = if let Some(fonts) =
+                inherited_fonts.filter(|_| state.inherited_font)
+            {
+                (
+                    &fonts.outlines
+                        as &dyn crate::metadata_map::Lookup<std::sync::Arc<type1_fonts::Routes>>,
+                    &fonts.metrics
+                        as &dyn crate::metadata_map::Lookup<
+                            std::sync::Arc<crate::font_widths::Metrics>,
+                        >,
+                )
+            } else {
+                (outlines, metrics)
+            };
+            let resource = state.font.as_deref();
+            if let Some(routes) = resource.and_then(|name| outlines.get(name)) {
+                type1_runs::show(
+                    budget,
+                    raw,
+                    routes,
+                    state,
+                    matrix,
+                    resource
+                        .and_then(|name| metrics.get(name))
+                        .map(std::sync::Arc::as_ref),
+                    |raw, matrix, family| {
+                        emit(
+                            begin,
+                            sequence,
+                            raw,
+                            state,
+                            matrix,
+                            family.map(|name| (name, &routes.cmap)),
+                        )
+                    },
+                )
+            } else {
+                emit(begin, sequence, raw, state, matrix, None)
+            }
         },
     );
     if budget.is_stopped() {
@@ -2670,7 +2756,7 @@ pub(crate) fn font_object_encodings(
 pub(crate) const MAX_EMBEDDED_FONT_BYTES: usize = 8 * 1024 * 1024;
 
 /// 1 PDF から保持する埋め込み font の最大数。
-const MAX_EMBEDDED_FONT_COUNT: usize = 32;
+pub(crate) const MAX_EMBEDDED_FONT_COUNT: usize = 32;
 
 /// PDF の FontDescriptor から再利用可能な `FontFile2` stream を抽出する。
 fn extract_embedded_truetype_fonts(

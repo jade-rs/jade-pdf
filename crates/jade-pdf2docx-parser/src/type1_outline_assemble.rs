@@ -27,6 +27,8 @@ pub(crate) struct Prepared {
     pub(crate) fonts: Vec<ParsedEmbeddedFont>,
     /// 元の256code順のfont index。未確認はNone。
     pub(crate) routes: [Option<u16>; 256],
+    /// 実glyphと原文が確認できたcodeだけを含む、描画とclip用の単byte表。
+    pub(crate) cmap: ToUnicodeCMap,
 }
 
 impl Prepared {
@@ -106,9 +108,17 @@ pub(crate) fn prepare<'bytes>(
             bytes: named.bytes,
         });
     }
+    let cmap = crate::text::verified_single_byte_cmap(
+        budget,
+        plan.codes.iter().enumerate().filter_map(|(code, entry)| {
+            routes.codes[code]?;
+            Some((code as u8, entry.mapping.scalars.as_deref()?))
+        }),
+    )?;
     (!budget.is_stopped()).then_some(Prepared {
         fonts,
         routes: routes.codes,
+        cmap,
     })
 }
 
