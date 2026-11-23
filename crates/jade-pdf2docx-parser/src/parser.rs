@@ -3050,6 +3050,15 @@ fn decode_content_stream_payload(
     dict: &[u8],
     data: &[u8],
 ) -> Option<Vec<u8>> {
+    if crate::metadata::value(dict, b"Filter")
+        .is_some_and(|filter| crate::metadata::is_name(filter, b"LZWDecode"))
+    {
+        return crate::decode::decode_lzw(
+            data,
+            decode_budget,
+            crate::lzw_content::early_change(dict)?,
+        );
+    }
     if dict
         .windows(b"FlateDecode".len())
         .any(|w| w == b"FlateDecode")

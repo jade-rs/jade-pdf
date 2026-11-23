@@ -34,6 +34,7 @@ mod legacy_page_resources;
 mod legacy_stream;
 mod limits;
 mod lossy_chunks;
+mod lzw_content;
 mod metadata;
 #[cfg(test)]
 mod metadata_extraction_tests;

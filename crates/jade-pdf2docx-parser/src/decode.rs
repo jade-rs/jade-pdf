@@ -826,6 +826,15 @@ pub(crate) fn decode_zlib(data: &[u8], decode_budget: &DecodeBudget) -> Option<V
     decode_zlib_buffer(data, decode_budget, false)
 }
 
+/// LZWの作業配列と展開本文を、Flateと同じ確保・単一/累積展開上限で検査する。
+pub(crate) fn decode_lzw(data: &[u8], budget: &DecodeBudget, early: u8) -> Option<Vec<u8>> {
+    decode_buffer(
+        crate::lzw_content::Decoder::new(data, early, budget)?,
+        budget,
+        false,
+    )
+}
+
 /// Font 展開配列の全ての再確保を保存予算にも数える。
 pub(crate) fn decode_zlib_font(data: &[u8], decode_budget: &DecodeBudget) -> Option<Vec<u8>> {
     decode_zlib_buffer(data, decode_budget, true)
