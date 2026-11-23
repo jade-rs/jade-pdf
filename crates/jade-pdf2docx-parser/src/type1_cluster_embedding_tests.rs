@@ -2,6 +2,19 @@
 use crate::type1_embedding_tests::{charstring, encrypt};
 use proptest::prelude::*;
 
+/// glyphごとの位置を保存しても、previewを一文字ずつ重複除去して原文を壊さない。
+#[test]
+fn positioned_type1_preview_preserves_repeated_letters_and_logical_gaps() {
+    for (content,expected) in [
+        ("BT /F1 20 Tf 20 80 Td (BAAB) Tj ET","ffffff"),
+        ("BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET","f f"),
+        ("BT /F1 20 Tf 20 80 Td (B) Tj 0 -40 Td (AA) Tj ET","ff"),
+    ] {
+        let parsed=crate::parse_pdf_bytes("owned-positioned-preview.pdf",&pdf_with_content(content.as_bytes(),None)).unwrap();
+        assert_eq!(parsed.text_preview,expected,"{content}");
+    }
+}
+
 proptest! {
     /// Tc・Tzと負のTJが変わっても、元glyphの幅と各原点をUnicode字数から独立に保つ。
     #[test]
