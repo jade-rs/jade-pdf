@@ -4,6 +4,8 @@ use crate::syntax::{Token, integer, whitespace};
 #[path = "type1_program_lexer.rs"]
 mod lex;
 use lex::{Item, Lexer};
+#[path = "type1_outline_private_hints.rs"]
+mod hints;
 
 /// 同じ復号bufferを借用する一glyphの暗号化program。
 pub(super) struct Entry<'a> {
@@ -21,6 +23,8 @@ pub(super) struct Private<'a> {
     pub(super) subrs: Vec<Option<&'a [u8]>>,
     /// 元の名前とprogramを保つglyph。
     pub(super) glyphs: Vec<Entry<'a>>,
+    /// 辞書内の完全な定義を照合できた標準OtherSubrs。
+    pub(super) standard: Option<super::standard::Verified>,
 }
 
 /// 既知の静的なRD/ND/NP定義と、長さで区切った辞書だけを読む。
@@ -46,7 +50,9 @@ pub(super) fn parse<'a>(budget: &DecodeBudget, bytes: &'a [u8]) -> Option<Privat
     let mut prefix = Some(4);
     let mut seen_prefix = false;
     let mut subrs = None;
-    loop {
+    let mut standard = None;
+    let mut seen_hints = 0_u32;
+    let nested = loop {
         match lexer.next(budget)? {
             Item::Pdf(Token::Name(b"lenIV")) if !seen_prefix => {
                 let Item::Pdf(Token::Word(value)) = lexer.next(budget)? else {
@@ -63,12 +69,27 @@ pub(super) fn parse<'a>(budget: &DecodeBudget, bytes: &'a [u8]) -> Option<Privat
             Item::Pdf(Token::Name(b"Subrs")) if subrs.is_none() => {
                 subrs = Some(subroutines(budget, &mut lexer)?)
             }
-            Item::Pdf(Token::Word(b"end")) => break,
+            Item::Pdf(Token::Name(b"OtherSubrs")) if standard.is_none() => {
+                let (verified, length) =
+                    super::standard::verify(budget, &lexer.bytes[lexer.cursor..])?;
+                lexer.cursor = lexer.cursor.checked_add(length)?;
+                words(budget, &mut lexer, &[b"ND"])?;
+                standard = Some(verified);
+            }
+            Item::Pdf(Token::Name(key)) => hints::skip(budget, &mut lexer, key, &mut seen_hints)?,
+            Item::Pdf(Token::Word(b"end")) => {
+                words(budget, &mut lexer, &[b"readonly", b"put", b"dup"])?;
+                name(budget, &mut lexer, b"CharStrings")?;
+                break false;
+            }
+            Item::Pdf(Token::Word(b"2")) if subrs.is_some() => {
+                words(budget, &mut lexer, &[b"index"])?;
+                name(budget, &mut lexer, b"CharStrings")?;
+                break true;
+            }
             _ => return None,
         }
-    }
-    words(budget, &mut lexer, &[b"readonly", b"put", b"dup"])?;
-    name(budget, &mut lexer, b"CharStrings")?;
+    };
     let capacity = number(budget, &mut lexer)?;
     if capacity == 0 || capacity > 4096 {
         return None;
@@ -93,7 +114,15 @@ pub(super) fn parse<'a>(budget: &DecodeBudget, bytes: &'a [u8]) -> Option<Privat
             _ => return None,
         }
     }
-    words(budget, &mut lexer, &[b"readonly", b"put", b"dup"])?;
+    if nested {
+        words(
+            budget,
+            &mut lexer,
+            &[b"end", b"readonly", b"put", b"put", b"dup"],
+        )?;
+    } else {
+        words(budget, &mut lexer, &[b"readonly", b"put", b"dup"])?;
+    }
     name(budget, &mut lexer, b"FontName")?;
     words(
         budget,
@@ -118,6 +147,7 @@ pub(super) fn parse<'a>(budget: &DecodeBudget, bytes: &'a [u8]) -> Option<Privat
         prefix,
         subrs: subrs.unwrap_or_default(),
         glyphs,
+        standard,
     })
 }
 
