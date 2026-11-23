@@ -154,11 +154,14 @@ fn add_embedded_fonts_to_font_table(
     let mut definitions = String::new();
     for (index, font) in fonts.iter().enumerate() {
         let key = embedded_font_key(font, index);
+        let face = crate::embedded_face::Face::read(&font.bytes).unwrap_or_default();
         definitions.push_str(&format!(
-            r#"<w:font w:name="{}"><w:embedRegular r:id="rIdEmbeddedFont{}" w:fontKey="{}" w:subsetted="true" /></w:font>"#,
+            r#"<w:font w:name="{}"><w:{} r:id="rIdEmbeddedFont{}" w:fontKey="{}" w:subsetted="{}" /></w:font>"#,
             escape_xml_attribute(font.font_name.as_str()),
+            face.slot(),
             index + 1,
             embedded_font_key_guid(&key),
+            !face.no_subsetting,
         ));
     }
     let Some(close_pos) = xml.rfind("</w:fonts>") else {
