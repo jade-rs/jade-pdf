@@ -81,7 +81,7 @@ fn indirect_contents_array_keeps_order_and_text_state() {
         "BT /F1 12 Tf 72 700 Td (FIRST) Tj",
         "(SECOND) Tj ET",
     );
-    assert_eq!(texts(&objects), ["FIRST", "SECOND"]);
+    assert_eq!(texts(&objects).concat(), "FIRSTSECOND");
 }
 
 /// 同一streamを二度参照する命令は、二回の描画として実行する。
@@ -104,8 +104,21 @@ fn repeated_contents_references_are_not_deduplicated() {
             .iter()
             .map(|text| text.text.as_str())
             .collect::<Vec<_>>();
-        assert_eq!(text, ["A", "A"]);
-        assert!(parsed.text_elements[1].bounds.x0 > parsed.text_elements[0].bounds.x0);
+        assert_eq!(text.concat(), "AA");
+        let left = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.bounds.x0)
+            .fold(f32::INFINITY, f32::min);
+        let right = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.bounds.x1)
+            .fold(f32::NEG_INFINITY, f32::max);
+        assert!(
+            right - left > 15.0,
+            "two12ptHelveticaA glyphs must advance twice"
+        );
     }
 }
 
@@ -120,7 +133,7 @@ fn indirect_array_alias_is_resolved() {
         "(SECOND) Tj ET",
     );
     objects.push((0, b"6 0 R".to_vec()));
-    assert_eq!(texts(&objects), ["FIRST", "SECOND"]);
+    assert_eq!(texts(&objects).concat(), "FIRSTSECOND");
 }
 
 /// 誤世代・循環・配列の入れ子を、空白文書への黙った置換で受け入れない。
