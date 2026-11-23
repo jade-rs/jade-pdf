@@ -5,6 +5,8 @@ mod cff;
 mod cff_index;
 #[path = "type1_outline_charstring.rs"]
 mod charstring;
+#[path = "type1_outline_cmap.rs"]
+mod cmap;
 #[path = "type1_outline_crypt.rs"]
 mod crypt;
 #[path = "type1_outline_private.rs"]
