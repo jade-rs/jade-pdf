@@ -105,6 +105,8 @@ For embedded Type1 FontFile fonts without an explicit PDF BaseEncoding, the byte
 
 If a nonstandard Type1 font has no usable built-in font program and no per-code Unicode mapping, its painted codes are unverified; strict conversion rejects them. Optional null or unresolved Encoding values use the built-in default, as required by PDF null-object semantics. The existing non-embedded Standard 14 font path is preserved.
 
+Within a `TJ` array, a forward gap of at least 0.2 em between word-spaced characters restores one missing word separator without changing glyph positions. Explicit spaces, small kerning adjustments, CJK tracking, and separate show operators retain their existing behavior. This bounded spacing heuristic does not establish font substitution or pagination fidelity.
+
 When the built-in program is unavailable, the existing ToUnicode map stays shared and unmapped codes remain explicitly unverified in the quality report; normal best-effort output may still contain fallback text. Strict mode rejects any painted unverified code.
 
 The production DOCX WASM build helper bundles and verifies the Adobe Glyph List and fontTools notices. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include both parser notices.

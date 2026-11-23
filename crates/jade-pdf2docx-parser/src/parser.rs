@@ -2528,7 +2528,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     let separator = page_matrix
                         .and_then(|current| {
                             let (last_begin, matrix, width) = last_draw?;
-                            (last_begin == begin)
+                            (last_begin == begin && last_sequence == Some(sequence))
                                 .then(|| crate::text_draws::gap(matrix, width, current))
                                 .flatten()
                         })
