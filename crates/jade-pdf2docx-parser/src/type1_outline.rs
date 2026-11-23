@@ -9,6 +9,8 @@ mod charstring;
 mod crypt;
 #[path = "type1_outline_private.rs"]
 mod private;
+#[path = "type1_outline_sfnt.rs"]
+mod sfnt;
 #[path = "type1_outline_standard.rs"]
 mod standard;
 #[path = "type1_outline_type2.rs"]
