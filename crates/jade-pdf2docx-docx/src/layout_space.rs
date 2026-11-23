@@ -1,14 +1,18 @@
 //! 論理空白専用の所有fontを用い、source fontの未確認codeへ空白を割り当てない。
 use jade_pdf2docx_parser::ParsedEmbeddedFont;
+mod writer;
 
 /// source familyと衝突しない、文書内だけで使う空白font名を選ぶ。
-pub(super) fn family(_fonts: &[ParsedEmbeddedFont]) -> String {
-    "JadeLayoutSpace-0".into()
+pub(super) fn family(fonts: &[ParsedEmbeddedFont]) -> String {
+    (0..=fonts.len())
+        .map(|i| format!("JadeLayoutSpace-{i}"))
+        .find(|name| !fonts.iter().any(|f| f.font_name.eq_ignore_ascii_case(name)))
+        .expect("n source names cannot occupy n+1 distinct internal names")
 }
 
 /// U+0020だけを持つ固定幅の所有TrueType fontを生成する。
-pub(super) fn font(_family: &str) -> Vec<u8> {
-    Vec::new()
+pub(super) fn font(family: &str) -> Vec<u8> {
+    writer::encode(family)
 }
 
 #[cfg(test)]
@@ -28,14 +32,26 @@ mod tests {
         assert_eq!(face.glyph_index('\u{00a0}'), None);
         assert_eq!(face.glyph_hor_advance(ttf_parser::GlyphId(1)), Some(1000));
         assert!(face.glyph_bounding_box(ttf_parser::GlyphId(1)).is_none());
-        assert_eq!(face.permissions(), Some(ttf_parser::Permissions::Installable));
+        assert_eq!(
+            face.permissions(),
+            Some(ttf_parser::Permissions::Installable)
+        );
         assert_eq!(face.ascender(), 800);
         assert_eq!(face.descender(), -200);
-        assert_eq!(bytes.chunks(4).fold(0u32, |sum, chunk| {
-            let mut word = [0;4]; word[..chunk.len()].copy_from_slice(chunk);
-            sum.wrapping_add(u32::from_be_bytes(word))
-        }), 0xb1b0afba);
-        let names = face.names().into_iter().filter(|n| n.name_id == 1 || n.name_id == 6).filter_map(|n| n.to_string()).collect::<Vec<_>>();
+        assert_eq!(
+            bytes.chunks(4).fold(0u32, |sum, chunk| {
+                let mut word = [0; 4];
+                word[..chunk.len()].copy_from_slice(chunk);
+                sum.wrapping_add(u32::from_be_bytes(word))
+            }),
+            0xb1b0afba
+        );
+        let names = face
+            .names()
+            .into_iter()
+            .filter(|n| n.name_id == 1 || n.name_id == 6)
+            .filter_map(|n| n.to_string())
+            .collect::<Vec<_>>();
         assert_eq!(names, ["JadeLayoutSpace-0", "JadeLayoutSpace-0"]);
         assert_eq!(bytes, font("JadeLayoutSpace-0"));
     }

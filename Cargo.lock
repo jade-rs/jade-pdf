@@ -1568,6 +1568,7 @@ dependencies = [
  "same-file",
  "scraper",
  "tempfile",
+ "ttf-parser",
  "zip 0.6.6",
 ]
 
