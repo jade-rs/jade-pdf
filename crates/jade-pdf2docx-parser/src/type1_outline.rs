@@ -29,6 +29,8 @@ mod private;
 mod ps_string;
 #[path = "type1_outline_resource.rs"]
 mod resource;
+#[path = "type1_outline_routes.rs"]
+mod routes;
 #[path = "type1_outline_scale.rs"]
 mod scale;
 #[path = "type1_outline_sfnt.rs"]
