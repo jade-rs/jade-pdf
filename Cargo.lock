@@ -1598,6 +1598,7 @@ dependencies = [
  "fax",
  "flate2",
  "hayro-jbig2",
+ "hmac-sha256",
  "moxcms",
  "pdfium-auto",
  "pdfium-render",
