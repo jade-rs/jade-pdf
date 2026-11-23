@@ -21,9 +21,9 @@ pub(crate) struct Encoding<'a> {
 }
 
 #[path = "type1_program_lexer.rs"]
-mod lex;
+pub(crate) mod lex;
 #[path = "type1_preamble.rs"]
-mod preamble;
+pub(crate) mod preamble;
 use crate::syntax::Token;
 use lex::{Item, Lexer};
 
@@ -72,7 +72,7 @@ pub(crate) fn parse<'a>(budget: &DecodeBudget, program: &'a [u8]) -> Option<Enco
 }
 
 /// 一つの明示的な表の作成を、既知の静的演算だけでdefまで進める。
-fn definition<'a>(budget: &DecodeBudget, lexer: &mut Lexer<'a>) -> Option<Encoding<'a>> {
+pub(crate) fn definition<'a>(budget: &DecodeBudget, lexer: &mut Lexer<'a>) -> Option<Encoding<'a>> {
     let first = lexer.next(budget)?;
     let (base, mut mutable) = match first {
         Item::Pdf(Token::Word(b"StandardEncoding")) => (Base::Standard, false),
