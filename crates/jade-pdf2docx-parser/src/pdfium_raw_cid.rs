@@ -113,26 +113,31 @@ fn tag_elements(raw: &[RawChar], text_elements: &mut [ParsedTextElement]) {
         return;
     }
     for text in text_elements.iter_mut() {
-        let (x0, x1) = (
-            text.bounds.x0.min(text.bounds.x1) - SLACK_PT,
-            text.bounds.x0.max(text.bounds.x1) + SLACK_PT,
-        );
-        let (y0, y1) = (
-            text.bounds.y0.min(text.bounds.y1) - SLACK_PT,
-            text.bounds.y0.max(text.bounds.y1) + SLACK_PT,
-        );
-        let inside: Vec<char> = raw
-            .iter()
-            .filter(|raw| {
-                raw.page == text.page
-                    && (x0..=x1).contains(&raw.center.0)
-                    && (y0..=y1).contains(&raw.center.1)
-            })
-            .map(|raw| raw.ch)
-            .collect();
+        let inside_with = |slack: f32| -> Vec<char> {
+            let (x0, x1) = (
+                text.bounds.x0.min(text.bounds.x1) - slack,
+                text.bounds.x0.max(text.bounds.x1) + slack,
+            );
+            let (y0, y1) = (
+                text.bounds.y0.min(text.bounds.y1) - slack,
+                text.bounds.y0.max(text.bounds.y1) + slack,
+            );
+            raw.iter()
+                .filter(|raw| {
+                    raw.page == text.page
+                        && (x0..=x1).contains(&raw.center.0)
+                        && (y0..=y1).contains(&raw.center.1)
+                })
+                .map(|raw| raw.ch)
+                .collect()
+        };
+        let mut inside = inside_with(SLACK_PT);
         if inside.is_empty() {
             continue;
         }
+        // 対応の無い字を含む要素は、矩形が字の一部しか覆わないことがある（小さな括弧の部品が
+        // 続く要素など）ので、字の大きさまで範囲を広げて続く字も探す。
+        inside.extend(inside_with(SLACK_PT.max(text.font_size)));
         text.text = text
             .text
             .chars()
