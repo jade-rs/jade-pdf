@@ -8,7 +8,7 @@ PDF の Type1 `/FontFile` に含まれる対応済みの静的描画プログラ
 
 ## 元glyphと空白の位置
 
-生成faceを選んだ文字は、同じfontでも元PDFのcodeごとに `ParsedTextElement` を分けます。一つの元合字に対応する `ff` は一要素、二つの元 `f` は二要素です。呼び出し側は、一要素が単語や行全体を表すと仮定せず、要素の順序・矩形・本文を扱ってください。正立した描画行列からbaselineを確認できた要素では、pure/bytes/WASMでも `baseline_y` を設定します。未対応の回転・反転からbaselineを推測しません。
+生成faceを選んだ正立文字は、同じfontでも元PDFのcodeごとに `ParsedTextElement` を分けます。一つの元合字に対応する `ff` は一要素、二つの元 `f` は二要素です。呼び出し側は、一要素が単語や行全体を表すと仮定せず、要素の順序・矩形・本文を扱ってください。正立した描画行列からbaselineを確認できた要素では、pure/bytes/WASMでも `baseline_y` を設定します。未対応の回転・反転からbaselineを推測せず、従来の同一face断片の結合を保持します。previewは正立glyphを有界な行へ戻してから重複除去し、反復した文字や論理空白を失いません。
 
 `TJ`から復元した論理空白は、両端の正立glyphと同じbaseline・em高を確認できたとき、`font_name: None` の独立した矩形として保持します。元fontのcode32や未知glyphへU+0020を割り当てる処理ではありません。
 

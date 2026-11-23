@@ -2396,6 +2396,7 @@ fn extract_text_elements_with_matrices<'clip>(
     let mut last_sequence = None;
     let mut last_draw = None;
     let mut last_derived = false;
+    let mut last_positioned = false;
     let mut current_sequence = None;
     let mut current_geometry = None;
     let mut emit = |begin: usize,
@@ -2549,8 +2550,10 @@ fn extract_text_elements_with_matrices<'clip>(
                     && crate::text_draws::adjacent(previous, width, current, state.size)
             })
         });
-        let merge = derived.is_none()
-            && !last_derived
+        let positioned =
+            derived.is_some() && page_matrix.and_then(type1_positions::baseline).is_some();
+        let merge = !positioned
+            && !last_positioned
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
@@ -2590,7 +2593,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         )
                     })
                 });
-            if derived.is_some() && last_derived && separator {
+            if !merge && derived.is_some() && last_derived && separator {
                 let gap = elements.last().and_then(|previous| {
                     type1_positions::gap(previous.bounds, bounds, page_matrix?)
                 });
@@ -2667,10 +2670,12 @@ fn extract_text_elements_with_matrices<'clip>(
             }
             last_sequence = Some(sequence);
             last_derived = derived.is_some();
+            last_positioned = positioned;
             last_draw = page_matrix.map(|matrix| (begin, matrix, layout.advance));
         } else {
             last_sequence = None;
             last_derived = false;
+            last_positioned = false;
             last_draw = None;
         }
         layout.advance * state.horizontal_scale
