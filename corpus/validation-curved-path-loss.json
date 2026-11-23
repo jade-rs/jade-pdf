@@ -596,6 +596,15 @@
     "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-text-geometry-before-conversion.json": "49ba3ef035b8617262eecd52b90838cab4612479112060df6a133c5a0602a2be",
     "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source.pdf": "72fdab8fc55908ec89f95ce9231a563611e37ecf0605e5716fcd15f4a7ddfa23",
     "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-provenance-before-review.json": "976b88f1e47723acb86b2514886934a0499a885e24ff191d9b7f4a49296c6b5a",
-    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-qualification-before-conversion.json": "1612703b1250b8787413c70610727d80ca4d74a604a5941955b81b1622c32af9"
+    "corpus/wasm-runtime/curved-path-qualification/public-English-before-conversion/source-qualification-before-conversion.json": "1612703b1250b8787413c70610727d80ca4d74a604a5941955b81b1622c32af9",
+    "corpus/wasm-runtime/curved-path-qualification/integrate-merged-parent.json": "034836e4a81615d3992106bc0d5ab6e5963e9f94c5825110a93e43fa455452e8",
+    "corpus/wasm-runtime/curved-path-qualification/integrate-merged-parent.log": "566137f2e2e7a31aa5339d94a8d75a16232bd96ad387bd2709d734e56e82a91c"
+  },
+  "publication": {
+    "merged_parent_main": "91329f807e4f6eb0e47e744dd6825308ca2b9124",
+    "integration_revision": "5c53c77dcc462e25ed6444a95bb1a56585aa9d79",
+    "preintegration_qualified_revision": "77d13c0ff1707314748cc0ec7b19acd6603ed2dc",
+    "entire_qualified_tree_retained": true,
+    "original_execution_revisions_retained": true
   }
 }
