@@ -4,6 +4,7 @@ import tempfile,subprocess,hashlib,json,zipfile,xml.etree.ElementTree as E,sys,a
 import os
 from owned_font_names import legacy_font_pdf
 from owned_image_colors import singleton_rgb_pdf, owned_rgb_pixels
+from owned_table_order import owned_table_order_cases, assert_owned_table_rows
 ROOT=Path(__file__).resolve().parents[2]
 TOOLS=Path(__file__).resolve().parent
 
@@ -20,6 +21,7 @@ def main():
     pitch=' '.join(f'BT /F1 10 Tf 72 {740-i*20} Td (Line {i+1}) Tj ET' for i in range(4));cases.append(dict(id='line-pitch',data=pdf(pitch),body={},pitch=20))
     for cid in [False, True]:cases.append(dict(id='legacy-cid' if cid else 'legacy-simple',data=legacy_font_pdf(cid),body={},font='OwnedCJK'))
     cases.append(dict(id='singleton-rgb',data=singleton_rgb_pdf(),body={},pixels=[12,34,56,78,90,123]))
+    cases.extend(owned_table_order_cases(pdf))
     manifest=json.loads((ROOT/'corpus/manifest.json').read_text());entry=next(e for e in manifest['pending_semantic'] if e['id']=='nta-invoice-domestic-english-2026');data=((ROOT/'corpus/cache')/(entry['id']+'.pdf')).read_bytes();assert len(data)==entry['bytes'] and hashlib.sha256(data).hexdigest()==entry['sha256'];cases.append(dict(id='encrypted',data=data,error='encrypt'))
     with tempfile.TemporaryDirectory() as temp:
      descriptors=[]
@@ -34,6 +36,7 @@ def main():
      for output in row['outputs']:
       checks=[];failure=None
       try:
+       if 'rows' in case:assert not issues,issues
        if case.get('error'):
         assert case['error'] in output.get('error','').lower(),output;assert case['error'] in inspection.get('error','').lower(),inspection;checks.append('explicit rejection')
        elif output['mode']=='strict' and issues:
@@ -42,6 +45,7 @@ def main():
         assert 'file' in output,output
         with zipfile.ZipFile(output['file']) as z:
          doc=E.fromstring(z.read('word/document.xml'))
+         if 'rows' in case:checks.append(assert_owned_table_rows(doc,case['rows']))
          if 'pixels' in case:
           media=[f.filename for f in z.infolist() if f.filename.startswith('word/media/') and not f.is_dir()];assert len(media)==1;actual=owned_rgb_pixels(z.read(media[0]));assert actual==case['pixels'],actual;checks.append('source RGB pixels preserved')
         margin=doc.find('.//w:pgMar',n).attrib;size=doc.find('.//w:pgSz',n).attrib;left=int(margin[W+'left']);width=int(size[W+'w']);right=int(margin[W+'right']);assert (width,int(size[W+'h']))==case.get('page',(12240,15840))
