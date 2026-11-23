@@ -23,7 +23,7 @@ pub struct ParseLimits {
     /// palette/globals・PNG読み戻しのIDAT/RGBA・fallback画素も数える。zlib展開は別予算。
     /// 再確保と解放後の再作成も数える。codec内部の作業領域とallocator内部は対象外。
     pub max_total_image_storage_bytes: u64,
-    /// zlib/FlateDecode 展開・未圧縮 Contents/ObjStm/Form 本文 1 件の最大バイト数。
+    /// zlib/FlateDecode・LZWDecode展開と、未圧縮Contents/ObjStm/Form本文1件の最大バイト数。
     pub max_decoded_stream_bytes: u64,
     /// zlib 展開・未圧縮 Contents/ObjStm/Form 保存・Form 描画走査の累積。再処理も数える。
     pub max_total_decoded_bytes: u64,
