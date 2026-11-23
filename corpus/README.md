@@ -1,3 +1,11 @@
+# 原本座標に基づく表の行順
+
+[行順の検証台帳](validation-table-coordinate-order.json)では、罫線から行へ割り当てた文字を、描画順・y値の出現順・数値の大小から推測して上下反転していた処理を除いた。所有PDFの降順値・下段からの描画・任意値と六種類の描画順を生成範囲とするPBTで、製品byte APIの修正前3件失敗と修正後3件成功を確認した。実際の製品WASMは新しい四条件を含め修正前24/28、修正後Chromium・WebKit各28/28。既存12入力と追加後14入力のハッシュを固定し、defaultとstrictの両出力でセルの行・列対応を検証する。
+
+登録外の追加調査として、厚労省の[英語・日本語の労働条件通知書](https://www.mhlw.go.jp/new-info/kobetu/roudou/gyousei/kantoku/dl/040325-4.pdf)の全4ページを、出典・[利用条件](https://www.mhlw.go.jp/chosakuken/index.html)・記入済み個人情報の有無とともに変換前に確認した。原本の文字座標goldを先に保存し、同じSDK・flagで比較したところ、見出しから本文へ進む表の行順が回復した。前後のOOXML非空白4,668文字とfont・media payloadは同一で、既存の日本語原本のDOCXはbyte列全体が一致する。追加PDFやfontはGitへ保存せず、登録90本という集計は増やさない。
+
+出力5ページすべてを確認したが、原本4ページに対する余分な白紙1枚、セルの境界・結合・セル内行配置の誤りは残る。輪郭線で描かれた原本文字は独立した抽出gold自体にも含まれず、別途原本を目視して定めた4句は依然0/4である。strictでも欠落したまま保存される経路を記録しており、行順の修正を文字認識や文書全体の忠実度の達成とはしない。描画検証はLibreOfficeとPopplerで、実際のMicrosoft Wordは未検証。
+
 # Device色空間の画像画素検証
 
 [単一要素のDevice色空間](validation-singleton-colorspace.json)では、`/ColorSpace [/DeviceRGB]` が白い代替画像へ変わる失敗を、修正前の製品byte APIとWASMで再現した。既知のDevice名だけを一要素配列から選び、既存の共有byte範囲を使うため追加の割当や依存はない。未知の名前、入れ子、複数要素は推測しない。名前形式の対照、RGB/Gray、間接配列、任意RGB二画素のPBTを検証した。
