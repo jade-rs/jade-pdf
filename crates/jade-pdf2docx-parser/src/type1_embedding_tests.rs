@@ -2,7 +2,7 @@
 use crate::parse_pdf_bytes;
 
 /// 仕様の二つのseedを使い、所有のcharstring/eexecを暗号化する。
-fn encrypt(bytes: &[u8], mut seed: u16) -> Vec<u8> {
+pub(crate) fn encrypt(bytes: &[u8], mut seed: u16) -> Vec<u8> {
     bytes
         .iter()
         .map(|plain| {
@@ -17,7 +17,7 @@ fn encrypt(bytes: &[u8], mut seed: u16) -> Vec<u8> {
 }
 
 /// lenIV四byteと既知のType1演算だけからglyphを作る。
-fn charstring(program: &[u8]) -> Vec<u8> {
+pub(crate) fn charstring(program: &[u8]) -> Vec<u8> {
     let mut bytes = vec![0; 4];
     bytes.extend_from_slice(program);
     encrypt(&bytes, 4330)
