@@ -89,17 +89,12 @@ fn font_alias_keeps_the_final_font_identity() {
     }
 }
 
-/// 誤った世代のFontDescriptor・FontFile・Encodingでraw ASCIIへ黙って戻らない。
+/// 必要なFontDescriptor・FontFileを失った場合にraw ASCIIへ黙って戻らない。
 #[test]
 fn stale_font_references_cannot_bypass_strict_encoding_checks() {
     for (object, before, after) in [
         (4, "/FontDescriptor 6 0 R", "/FontDescriptor 6 1 R"),
         (5, "/FontFile 7 0 R", "/FontFile 7 1 R"),
-        (
-            4,
-            "/BaseFont /OwnedBuiltin",
-            "/BaseFont /OwnedBuiltin /Encoding 10 1 R",
-        ),
     ] {
         let mut objects = objects("256 array dup 65 /B put", "", false, "F1", "A");
         objects[object] = String::from_utf8(objects[object].clone())
@@ -116,6 +111,84 @@ fn stale_font_references_cannot_bypass_strict_encoding_checks() {
             },
         );
         assert!(result.is_err(), "{after}: {result:?}");
+    }
+}
+
+/// 任意のEncodingのnullと未定義参照は、仕様どおり省略と同じ組み込み表を使う。
+#[test]
+fn null_and_unresolved_optional_encoding_use_the_builtin_table() {
+    for encoding in ["/Encoding null", "/Encoding 10 1 R"] {
+        let mut objects = objects("256 array dup 65 /B put", encoding, false, "F1", "A");
+        objects.push(b"<< /Differences [65 /C] >>".to_vec());
+        let parsed = parse_pdf_bytes_with_options(
+            "null-encoding.pdf",
+            &serialize(&objects),
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|element| element.text.as_str())
+                .collect::<String>(),
+            "B"
+        );
+    }
+}
+
+/// 独自fontで組み込み表そのものが無ければ、明示nullと省略の両方を確認不能とする。
+#[test]
+fn missing_custom_font_program_is_unverified() {
+    for descriptor in ["", "/FontDescriptor null", "/FontDescriptor 6 1 R"] {
+        let mut objects = objects("256 array dup 65 /B put", "", false, "F1", "A");
+        objects[4] =
+            format!("<< /Type /Font /Subtype /Type1 /BaseFont /OwnedBuiltin {descriptor} >>")
+                .into_bytes();
+        assert!(
+            matches!(
+                parse_pdf_bytes_with_options(
+                    "missing-font.pdf",
+                    &serialize(&objects),
+                    &ParseOptions {
+                        strict: true,
+                        ..Default::default()
+                    }
+                ),
+                Err(ParseError::QualityRejected { .. })
+            ),
+            "{descriptor}"
+        );
+    }
+}
+
+/// 標準14書体はFontDescriptorの省略・nullでも既存の対応経路を保つ。
+#[test]
+fn standard_font_with_optional_descriptor_remains_supported() {
+    for descriptor in ["", "/FontDescriptor null", "/FontDescriptor 6 1 R"] {
+        let mut objects = objects("256 array dup 65 /B put", "", false, "F1", "A");
+        objects[4] = format!("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica {descriptor} >>")
+            .into_bytes();
+        let parsed = parse_pdf_bytes_with_options(
+            "standard-font.pdf",
+            &serialize(&objects),
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            },
+        )
+        .unwrap();
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|element| element.text.as_str())
+                .collect::<String>(),
+            "A"
+        );
     }
 }
 
