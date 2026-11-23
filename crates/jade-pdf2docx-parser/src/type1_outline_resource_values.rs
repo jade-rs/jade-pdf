@@ -7,7 +7,7 @@ use crate::{
 };
 
 /// 重複keyと破損辞書を拒否し、null・未指定と参照の失敗を区別する。
-pub(super) fn field<'bytes>(
+pub(in crate::type1_outline) fn field<'bytes>(
     budget: &DecodeBudget,
     dictionary: &'bytes [u8],
     key: &[u8],
@@ -38,7 +38,7 @@ pub(super) fn field<'bytes>(
 }
 
 /// 単一の有限なPDF数値を、f32へ縮めずに読む。
-pub(super) fn number(value: &[u8]) -> Option<f64> {
+pub(in crate::type1_outline) fn number(value: &[u8]) -> Option<f64> {
     let mut lexer = Lexer {
         bytes: value,
         cursor: 0,
