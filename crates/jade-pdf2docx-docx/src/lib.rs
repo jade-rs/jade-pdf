@@ -59,6 +59,7 @@ mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output_path::resolve_output_parent;
 mod column_bands;
+mod fractions;
 mod raw_cid_glyphs;
 mod ruby;
 mod rule_glyphs;
@@ -344,6 +345,7 @@ fn convert_pdf_file_with_check(
     recover_decimal_points(&mut parsed);
     recover_angle_marks(&mut parsed);
     ruby::attach(&mut parsed);
+    fractions::join(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
@@ -464,6 +466,7 @@ fn convert_pdf_bytes_with_check(
     recover_decimal_points(&mut parsed);
     recover_angle_marks(&mut parsed);
     ruby::attach(&mut parsed);
+    fractions::join(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
