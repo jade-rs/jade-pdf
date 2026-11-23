@@ -22,6 +22,8 @@ pub(crate) struct Encoding<'a> {
 
 #[path = "type1_program_lexer.rs"]
 mod lex;
+#[path = "type1_preamble.rs"]
+mod preamble;
 use crate::syntax::Token;
 use lex::{Item, Lexer};
 
@@ -44,6 +46,9 @@ pub(crate) fn parse<'a>(budget: &DecodeBudget, program: &'a [u8]) -> Option<Enco
             Item::Pdf(Token::Open(_)) => containers = containers.checked_add(1)?,
             Item::Pdf(Token::Close(_)) => containers = containers.checked_sub(1)?,
             _ if containers != 0 => {}
+            Item::Pdf(Token::Word(b"FontDirectory")) if dictionaries == 0 && table.is_none() => {
+                preamble::skip(budget, &mut lexer)?;
+            }
             Item::Pdf(Token::Word(b"begin")) => dictionaries = dictionaries.checked_add(1)?,
             Item::Pdf(Token::Word(b"end")) => dictionaries = dictionaries.checked_sub(1)?,
             _ if dictionaries > 1 => {}
