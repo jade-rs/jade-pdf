@@ -211,3 +211,34 @@ proptest! {
         prop_assert_eq!(row_heights(&unequal_row_source(top, bottom)), [top * 20, bottom * 20]);
     }
 }
+
+/// 原本の重なる字面を、セル高を超える段落boxの積み重ねへ変換しない所有PDFを作る。
+fn overfull_cell_source(gap: u32, second_size: u32) -> Vec<u8> {
+    owned_pdf_content(&format!(
+        "1 w 72 670 m 272 670 l S 72 700 m 272 700 l S 72 670 m 72 700 l S 172 670 m 172 700 l S 272 670 m 272 700 l S BT /F1 10 Tf 82 680 Td (Alpha) Tj ET BT /F1 {second_size} Tf 92 {} Td (Beta) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
+        680 - gap,
+    ))
+}
+
+/// 二つの行boxと原本上余白が30ptを超えるなら、編集可能な旧セル本文を保持する。
+#[test]
+fn cell_line_boxes_exceeding_source_height_keep_legacy_layout() {
+    let p = paragraphs(&first_cell_from_source(&overfull_cell_source(6, 14)));
+    assert_eq!(p.len(), 1);
+    assert_eq!(p[0].0, "Alpha Beta");
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_table_fit.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 重なる原本字面の間隔やem高を変えても、原本セルより高い段落列を公開しない。
+    #[test]
+    fn overfull_cell_line_boxes_keep_all_text(gap in 5u32..9, second_size in 14u32..25) {
+        let p = paragraphs(&first_cell_from_source(&overfull_cell_source(gap, second_size)));
+        prop_assert_eq!(p.len(), 1);
+        prop_assert_eq!(&p[0].0, "Alpha Beta");
+    }
+}
