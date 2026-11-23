@@ -31,7 +31,7 @@ fn pdf(builtin: &str, encoding: &str, unicode: bool, selected: &str, text: &str)
         format!("<< /Type /Font /Subtype /Type1 /BaseFont /OwnedBuiltin /FontDescriptor 6 0 R {encoding} {mapping} >>").into_bytes(),
         b"<< /Type /FontDescriptor /FontName /OwnedBuiltin /Flags 32 /FontBBox [0 0 600 700] /Ascent 700 /Descent -200 /CapHeight 700 /StemV 80 /FontFile 7 0 R >>".to_vec(),
         stream(&font_program, &format!("/Length1 {} /Length2 0 /Length3 0", font_program.len())),
-        stream("begincmap 1 begincodespacerange <00> <ff> endcodespacerange 1 beginbfchar <41> <005a> endbfchar endcmap", ""),
+        stream("begincmap\n1 begincodespacerange\n<00> <ff>\nendcodespacerange\n1 beginbfchar\n<41> <005a>\nendbfchar\nendcmap", ""),
         b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_vec(),
     ];
     let mut data = b"%PDF-1.4\n".to_vec();
