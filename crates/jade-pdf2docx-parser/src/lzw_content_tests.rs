@@ -299,6 +299,102 @@ fn malformed_codes_and_truncated_eod_are_not_partial_success() {
     }
 }
 
+/// テストで指定したcodeとbit幅だけを、辞書処理なしにMSB-firstで詰める。
+fn pack_widths(codes: &[(u16, u8)]) -> Vec<u8> {
+    let mut bits = Vec::new();
+    for &(code, width) in codes {
+        bits.extend((0..width).rev().map(|bit| ((code >> bit) & 1) as u8));
+    }
+    bits.chunks(8)
+        .map(|chunk| {
+            chunk
+                .iter()
+                .enumerate()
+                .fold(0, |byte, (bit, value)| byte | (value << (7 - bit)))
+        })
+        .collect()
+}
+
+/// literalだけのcode番号から、仕様の三つの固定境界で幅を直接指定する。
+fn literal_width(ordinal: usize, early: usize) -> u8 {
+    match ordinal + early {
+        0..=255 => 9,
+        256..=767 => 10,
+        768..=1791 => 11,
+        _ => 12,
+    }
+}
+
+/// EarlyChange両値の全幅変更・満杯の辞書・12bit clear後の9bit復帰を検査する。
+#[test]
+fn both_early_changes_keep_full_table_and_clear_boundaries() {
+    let mut expected: Vec<u8> = (0..5000).map(|index| (index % 251) as u8).collect();
+    expected.extend_from_slice(b"ABABA");
+    for early in [0, 1] {
+        let mut codes = vec![(256, 9)];
+        codes
+            .extend((0..5000).map(|index| ((index % 251) as u16, literal_width(index + 1, early))));
+        codes.push((256, 12));
+        codes.extend([(65, 9), (66, 9), (258, 9), (65, 9), (257, 9)]);
+        let budget = DecodeBudget::default();
+        assert_eq!(
+            decode_lzw(&pack_widths(&codes), &budget, early as u8),
+            Some(expected.clone())
+        );
+        assert!(budget.check().is_ok());
+    }
+}
+
+/// parameterの既定値・明示値を検査し、未対応predictorを勝手に無視しない。
+#[test]
+fn decode_parameters_are_checked_without_coercion() {
+    for (dictionary, expected) in [
+        ("<< >>", Some(1)),
+        ("<< /DecodeParms null >>", Some(1)),
+        ("<< /DecodeParms << >> >>", Some(1)),
+        (
+            "<< /DecodeParms << /EarlyChange 0 /Predictor 1 >> >>",
+            Some(0),
+        ),
+        ("<< /DecodeParms << /EarlyChange 1 >> >>", Some(1)),
+        ("<< /DecodeParms << /EarlyChange 2 >> >>", None),
+        ("<< /DecodeParms << /EarlyChange -1 >> >>", None),
+        ("<< /DecodeParms << /EarlyChange 1.0 >> >>", None),
+        ("<< /DecodeParms << /EarlyChange true >> >>", None),
+        ("<< /DecodeParms << /EarlyChange 7 0 R >> >>", None),
+        ("<< /DecodeParms << /Predictor 2 >> >>", None),
+        ("<< /DecodeParms << /Predictor 12 >> >>", None),
+        ("<< /DecodeParms [null] >>", None),
+        ("<< /DecodeParms 7 0 R >>", None),
+    ] {
+        assert_eq!(
+            early_change(dictionary.as_bytes()),
+            expected,
+            "{dictionary}"
+        );
+    }
+}
+
+/// 途中と開始前のキャンセルは、終端扱いや成功した再開へ変わらない。
+#[test]
+fn cancellation_stops_code_expansion_and_remains_terminal() {
+    let data = nine_bit(&[256, 65, 258, 257]);
+    let token = crate::ParseCancellation::new();
+    let budget = DecodeBudget::with_cancellation(&ParseLimits::default(), Some(&token));
+    let mut decoder = Decoder::new(&data, 1, &budget).unwrap();
+    let mut byte = [0];
+    assert_eq!(decoder.read(&mut byte).unwrap(), 1);
+    assert_eq!(byte, [b'A']);
+    token.cancel();
+    assert_eq!(
+        decoder.read(&mut byte).unwrap_err().kind(),
+        io::ErrorKind::Interrupted
+    );
+    assert!(matches!(budget.check(), Err(ParseError::Cancelled)));
+    assert!(decode_lzw(&data, &budget, 1).is_none());
+    assert!(matches!(budget.check(), Err(ParseError::Cancelled)));
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     /// KwKwK列の既知の総長で、単一streamと累積展開のinclusive境界を比較する。
