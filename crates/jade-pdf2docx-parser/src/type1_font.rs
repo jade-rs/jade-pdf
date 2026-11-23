@@ -22,9 +22,9 @@ pub(crate) fn read<'bytes>(
     if !metadata::is_name(subtype, b"Type1") && !metadata::is_name(subtype, b"MMType1") {
         return None;
     }
-    let pdf_encoding = metadata::value(font, b"Encoding")
-        .and_then(|v| resolver.resolve(v))
-        .map(|v| v.0);
+    let raw_encoding = metadata::value(font, b"Encoding");
+    let pdf_encoding = raw_encoding.and_then(|v| resolver.resolve(v)).map(|v| v.0);
+    let unverified_encoding = raw_encoding.is_some() && pdf_encoding.is_none();
     // 既存の明示BaseEncoding経路はここで組み込み表に置き換えない。
     if pdf_encoding.is_some_and(|value| {
         matches!(
@@ -39,21 +39,31 @@ pub(crate) fn read<'bytes>(
         return None;
     }
     let descriptor = metadata::value(font, b"FontDescriptor")
-        .and_then(|v| resolver.resolve(v))?
-        .0;
-    let (stream, stream_number) =
-        metadata::value(descriptor, b"FontFile").and_then(|v| resolver.resolve(v))?;
-    let stream_number = stream_number?;
+        .and_then(|v| resolver.resolve(v))
+        .map(|v| v.0);
+    let raw_program = descriptor.and_then(|dictionary| metadata::value(dictionary, b"FontFile"));
+    // FontDescriptor自体がない通常の非埋め込みFontと、明示した参照の失敗を区別する。
+    if metadata::value(font, b"FontDescriptor").is_none()
+        || descriptor.is_some() && raw_program.is_none()
+    {
+        return None;
+    }
+    let stream = raw_program.and_then(|v| resolver.resolve(v));
     let generation = number.and_then(|n| resolver.generation(n)).unwrap_or(0);
     if let Some(cached) = number.and_then(|n| budget.cached_type1(n, generation)) {
         return Some(cached);
     }
-    let program = parser::form_stream_payload(budget, bytes, stream_number, offsets)?;
-    let length = metadata::value(stream, b"Length1")
+    let program = stream
+        .and_then(|(_, number)| number)
+        .and_then(|number| parser::form_stream_payload(budget, bytes, number, offsets));
+    let length = stream
+        .and_then(|(dictionary, _)| metadata::value(dictionary, b"Length1"))
         .and_then(|v| resolver.resolve(v))
         .and_then(|v| crate::syntax::integer(v.0));
-    let cleartext = length.and_then(|length| program.get(..length));
-    let table = cleartext.and_then(|program| crate::type1_program::parse(budget, program));
+    let cleartext = length.and_then(|length| program.as_ref()?.get(..length));
+    let table = cleartext
+        .filter(|_| !unverified_encoding)
+        .and_then(|program| crate::type1_program::parse(budget, program));
     let mut differences = [None; 256];
     if let Some(raw) = pdf_encoding
         .and_then(|dictionary| metadata::value(dictionary, b"Differences"))
