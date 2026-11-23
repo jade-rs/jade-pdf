@@ -319,5 +319,16 @@
     "crates/jade-pdf2docx-docx/tests/native_table_coordinate_order.proptest-regressions": "d057973aeaa44c28aa05befa2b2bd0f4331f0252590351ec1ed5645a05fd2730",
     "tools/wasm-docx-smoke/owned_table_order.py": "9a01a1efed2ee424406bef1f872c37d3c8a27361bd51340b39c8c91e3b4a883a",
     "tools/wasm-docx-smoke/check_browser.py": "34df840de356a19fa06509570d804a77051bb34fe11428a0bdfc5d79128fbe90"
+  },
+  "publication_base": {
+    "main": "f3041a3efc328bb3efc6c5d0d9122380b706311b",
+    "parent_PR": 20,
+    "parent_merged": true,
+    "pre_rebase_head": "94c7506bce63f7fc10ed7368fe10f3d89fb7f8e2",
+    "post_rebase_head": "acb825d1d52c1fefdb79a455ae9bd5cbafc1423e",
+    "runtime_crates_tree_unchanged": true,
+    "all_evidence_hashes_reverified": 153,
+    "original_execution_revisions_retained": true,
+    "verified_utc": "2026-11-23T01:45:10.750916+00:00"
   }
 }
