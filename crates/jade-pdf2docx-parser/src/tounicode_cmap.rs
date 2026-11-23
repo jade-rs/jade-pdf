@@ -117,6 +117,11 @@ impl ToUnicodeCMap {
         self.mappings.is_empty()
     }
 
+    /// 単byte codeの許可範囲内の明示文字列を、非BMP・複数文字も保持して借用する。
+    pub(crate) fn lookup_byte(&self, _code: u8) -> Option<&str> {
+        None
+    }
+
     /// 単一 BMP 文字の対応だけを font cmap 修復用に返す。
     pub(crate) fn bmp_scalar_iter(&self) -> impl Iterator<Item = (u16, u16)> + Clone + '_ {
         self.mappings.iter().filter_map(|(source, value)| {

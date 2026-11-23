@@ -32,6 +32,9 @@ mod standard;
 #[path = "type1_outline_type2.rs"]
 mod type2;
 
+#[path = "type1_outline_unicode.rs"]
+mod unicode;
+
 #[cfg(test)]
 mod tests {
     use super::*;
