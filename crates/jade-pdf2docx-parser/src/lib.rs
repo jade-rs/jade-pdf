@@ -54,6 +54,7 @@ mod object_index;
 #[path = "../tests/support/page_attribute_pdf.rs"]
 mod page_attribute_fixture;
 mod page_attributes;
+mod page_contents;
 mod page_geometry_diagnostics;
 mod page_resources;
 mod page_tree;

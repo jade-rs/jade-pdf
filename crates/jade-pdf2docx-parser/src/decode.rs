@@ -277,6 +277,30 @@ impl DecodeBudget {
         self.pages.borrow().is_some()
     }
 
+    /// 検証済みContentsを描画回数分だけ保存し、結果配列の確保も累積予約する。
+    pub(crate) fn page_content_references(&self) -> Option<Vec<(usize, u32)>> {
+        let pages = self.pages.borrow();
+        let pages = pages.as_ref()?;
+        let Some(count) = pages
+            .iter()
+            .try_fold(0usize, |total, page| total.checked_add(page.contents.len()))
+        else {
+            self.exceeded(
+                "metadata workspace bytes",
+                self.metadata_workspace_limit,
+                u64::MAX,
+            );
+            return Some(Vec::new());
+        };
+        let Some(mut references) = self.metadata_vector(count) else {
+            return Some(Vec::new());
+        };
+        for (page, entry) in pages.iter().enumerate() {
+            references.extend(entry.contents.iter().map(|number| (page, *number)));
+        }
+        Some(references)
+    }
+
     /// 合成 metadata を所属順に借用し、出力配列を確保前に累積予約する。
     pub(crate) fn page_dictionaries<'a>(&self, source: &'a [u8]) -> Vec<&'a [u8]> {
         if self.is_stopped() {
