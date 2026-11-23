@@ -248,7 +248,7 @@ mod tests {
                 y1: 50.,
             },
             font_size: 10.,
-            font_name: Some("JadeLayoutSpace-0".into()),
+            font_name: Some("ABCDEF+JadeLayoutSpace-0".into()),
             fill_color: None,
             text: "reserved source font".into(),
         });
