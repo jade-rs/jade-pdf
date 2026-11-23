@@ -1,6 +1,8 @@
 //! 原本PDFの有効辞書・元FontFileから、全codeの対応と幅を独立goldへ照合する。
 use super::*;
 use crate::{metadata, parser, resource_resolver::ResourceResolver};
+#[path = "type1_outline_assemble_comparison_tests.rs"]
+mod assemble_comparison;
 #[path = "type1_outline_attributes_comparison_tests.rs"]
 mod attributes_comparison;
 #[path = "type1_outline_permission_comparison_tests.rs"]
@@ -22,6 +24,8 @@ enum Checks {
     Permission,
     /// 元FontInfoとdescriptorの未丸め属性。
     Attributes,
+    /// 原本resourceだけからの実font生成。
+    Assembled,
 }
 
 /// 独立解析器による、一つの原本PDF font resourceの期待値。
@@ -99,6 +103,13 @@ fn original_pdf_attributes_preserve_independent_style_and_metrics() {
     compare(Checks::Attributes);
 }
 
+/// 元PDFだけをproductへ渡し、実フォント生成結果を独立readerへ保存する。
+#[test]
+#[ignore = "reviewed PDF/Unicode gold and new JADE_TYPE1_ASSEMBLED_EXPORT_DIR required"]
+fn original_pdf_resources_generate_source_derived_fonts() {
+    compare(Checks::Assembled);
+}
+
 /// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
 fn compare(checks: Checks) {
     let check_unicode = !matches!(checks, Checks::Widths);
@@ -117,6 +128,10 @@ fn compare(checks: Checks) {
     let attributes =
         matches!(checks, Checks::Attributes).then(|| attributes_comparison::Reference::load(&hash));
     let mut attribute_rows = Vec::new();
+    let mut assembled = Vec::new();
+    if matches!(checks, Checks::Assembled) {
+        std::fs::create_dir(std::env::var_os("JADE_TYPE1_ASSEMBLED_EXPORT_DIR").unwrap()).unwrap();
+    }
     let budget = DecodeBudget::default();
     let source = parser::parser_source_with_compressed_objects(&budget, &pdf);
     let objects = crate::object_index::build(&budget, &source).unwrap();
@@ -192,6 +207,19 @@ fn compare(checks: Checks) {
             };
             let unicode =
                 crate::type1_outline::unicode::map(&budget, &decoded, &slots, &original).unwrap();
+            if matches!(checks, Checks::Assembled) {
+                assembled.push(assemble_comparison::export(
+                    &budget,
+                    reference.object_number,
+                    &payload,
+                    length1,
+                    length2,
+                    dictionary,
+                    descriptor,
+                    &mut resolver,
+                    &original,
+                ));
+            }
             for (code, (actual, expected)) in unicode.iter().zip(&reference.slots).enumerate() {
                 assert_eq!(
                     actual.scalars, expected.scalars,
@@ -269,6 +297,16 @@ fn compare(checks: Checks) {
         );
     }
     assert!(budget.check().is_ok());
+    if matches!(checks, Checks::Assembled) {
+        let directory =
+            std::path::PathBuf::from(std::env::var_os("JADE_TYPE1_ASSEMBLED_EXPORT_DIR").unwrap());
+        let file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(directory.join("product-source-families.json"))
+            .unwrap();
+        serde_json::to_writer_pretty(file,&serde_json::json!({"source_pdf_sha256":hash,"fonts":assembled,"scope":"Actual source-derived font assembly only; production PDF text-run selection and DOCX embedding remain unwired","production_ready":false})).unwrap();
+    }
     if attributes.is_some() {
         let path = std::env::var("JADE_TYPE1_ATTRIBUTES_REPORT").unwrap();
         let file = std::fs::OpenOptions::new()
