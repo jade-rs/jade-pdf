@@ -164,3 +164,7 @@ fn base(singles: &[Option<cmap::Mapping>], scalar: u32) -> Option<u16> {
 #[cfg(test)]
 #[path = "type1_outline_routes_tests.rs"]
 mod tests;
+
+#[cfg(test)]
+#[path = "type1_outline_routes_export_tests.rs"]
+mod export_tests;

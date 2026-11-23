@@ -14,6 +14,8 @@ enum Checks {
     Unicode,
     /// 元glyphを失わないcode単位の出力計画。
     Plan,
+    /// 原本codeの外形を選べる独立fontの振分け。
+    Routes,
     /// 元の埋め込み指定と表示全文。
     Permission,
 }
@@ -72,6 +74,13 @@ fn original_pdf_plans_preserve_every_code_width_and_sequence() {
     compare(Checks::Plan);
 }
 
+/// 全codeのfont選択を、原本Unicode・glyph名・Widthsの独立期待値へ照合する。
+#[test]
+#[ignore = "reviewed PDF/Unicode gold and new JADE_TYPE1_PLAN_REPORT required"]
+fn original_pdf_font_routes_preserve_source_clusters() {
+    compare(Checks::Routes);
+}
+
 /// 実FontFileの宣言と表示を、別のPS文字列decoderで作った未変更goldへ照合する。
 #[test]
 #[ignore = "reviewed PDF/Unicode/permission gold require JADE_SOURCE_PDF, JADE_TYPE1_OUTLINE_GOLD and JADE_TYPE1_PERMISSION_GOLD"]
@@ -82,7 +91,7 @@ fn original_pdf_permissions_preserve_independent_flags_and_notices() {
 /// 原本を使う共通経路で、任意でUnicodeの明示性・空文字・列全体も検査する。
 fn compare(checks: Checks) {
     let check_unicode = !matches!(checks, Checks::Widths);
-    let check_plan = matches!(checks, Checks::Plan);
+    let check_plan = matches!(checks, Checks::Plan | Checks::Routes);
     let gold_bytes = std::fs::read(std::env::var("JADE_TYPE1_OUTLINE_GOLD").unwrap()).unwrap();
     assert!(gold_bytes.len() <= 8 * 1024 * 1024);
     let gold: Gold = serde_json::from_slice(&gold_bytes).unwrap();
@@ -185,7 +194,13 @@ fn compare(checks: Checks) {
                 }
             }
             if check_plan {
-                plans.push(plan_comparison::compare(&budget, &decoded, &font, unicode));
+                plans.push(plan_comparison::compare(
+                    &budget,
+                    &decoded,
+                    &font,
+                    unicode,
+                    matches!(checks, Checks::Routes),
+                ));
             }
         }
         for (code, (actual, expected)) in slots.iter().zip(&reference.slots).enumerate() {
@@ -236,6 +251,6 @@ fn compare(checks: Checks) {
             .create_new(true)
             .open(path)
             .unwrap();
-        serde_json::to_writer_pretty(&mut file, &serde_json::json!({"fonts":plans,"scope":"Original PDF component plans only; font embedding, GSUB, source-cluster routing and rendered appearance remain unqualified","production_ready":false})).unwrap();
+        serde_json::to_writer_pretty(&mut file, &serde_json::json!({"fonts":plans,"scope":"Original PDF component plans and optional code-to-face routing only; actual PDF text run routing, font metadata integration, DOCX embedding and rendered appearance remain unqualified","production_ready":false})).unwrap();
     }
 }

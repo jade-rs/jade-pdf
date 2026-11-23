@@ -36,7 +36,7 @@ fn triangle(width: i32) -> Vec<u8> {
 }
 
 /// f幅300とff幅500を持ち、埋め込み許可も明示する所有fontを作る。
-fn font_program() -> (Vec<u8>, usize, usize, usize) {
+pub(crate) fn font_program() -> (Vec<u8>, usize, usize, usize) {
     let clear=b"%!PS-AdobeFont-1.0: JadeOwnedClusters 1.0\n\
         % Copyright Jade owned; these test outlines may be embedded and modified.\n\
         11 dict begin /FontType 1 def /FontName /JadeOwnedClusters def\n\
