@@ -8,6 +8,8 @@ pub(super) struct Cell {
     left: f32,
     /// セル上端のPDF座標。
     top: f32,
+    /// 原本gridが割り当てたセル下端。段落列が収まらないときは旧配置へ戻す。
+    bottom: f32,
     /// 原本baselineでまとめた表示行。
     lines: Vec<StructuredTextLine>,
 }
@@ -32,6 +34,7 @@ pub(super) fn cells(
                     col += cell.grid_span.max(1);
                     let band = ys.len().checked_sub(row_index + 2)?;
                     let top = *ys.get(band + 1)? as f32;
+                    let bottom = *ys.get(band)? as f32;
                     let left = *xs.get(start)? as f32;
                     let selected = texts.get(row_index)?.get(start..col)?;
                     let mut elements = selected.iter().flatten().collect::<Vec<_>>();
@@ -85,7 +88,12 @@ pub(super) fn cells(
                                 .iter()
                                 .all(|v| v.is_finite())
                         }))
-                    .then_some(Cell { left, top, lines })
+                    .then_some(Cell {
+                        left,
+                        top,
+                        bottom,
+                        lines,
+                    })
                 })
                 .collect()
         })
@@ -127,6 +135,8 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
+    let capacity = pdf_points_to_twips(cell.top - cell.bottom)?;
+    let mut used = 0usize;
     let mut out = TableCell::new().vertical_align(VAlignType::Top);
     out.property = out
         .property
@@ -138,6 +148,12 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     for line in &cell.lines {
         let before = pdf_points_to_twips((previous_bottom - line.top_y).max(0.0))?;
         let height = structured_line_max_font_size(line);
+        used = used
+            .checked_add(before)?
+            .checked_add(pdf_points_to_twips(height)?)?;
+        if used > capacity {
+            return None;
+        }
         let paragraph = paragraph_from_structured_line(line, cell.left, None, None).line_spacing(
             native_line_pitch::spacing(height, before.try_into().ok()?, 0)?,
         );
