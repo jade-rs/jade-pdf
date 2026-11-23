@@ -14,7 +14,7 @@ PDF の Type1 `/FontFile` に含まれる対応済みの静的描画プログラ
 
 DOCXでは、行全体について一つの元glyphのadvanceをcmap/hmtxまたは対応済みrequired rligから確認できたときだけ、整数percentの文字幅とtwip単位の字間を指定します。各次原点から字間を計算し、数値計画上の丸め誤差の累積を抑えます。小さい負のkerningは字形の圧縮で代用しません。複雑なshaping、未知字形、未確認位置を含む行には、この補正を部分適用しません。
 
-論理空白にはU+0020だけを持つ所有TrueType fontを文書内に生成し、1ptで選択します。source familyとの衝突を避け、元programを改変しません。この内部fontを使うDOCXでは、明示した空白幅を半emへ変更する `balanceSingleByteDoubleByteWidth` 互換設定を外します。他の互換設定は保持します。内部fontのname tableには本リポジトリの著作権・ライセンス本文を保持します。
+論理空白にはU+0020だけを持つ所有TrueType fontを文書内に生成し、1ptで選択します。埋め込み有無を問わずsource familyとの衝突を避け、元programを改変しません。header/footerだけで参照するfontも梱包します。この内部fontを使うDOCXでは、明示した空白幅を半emへ変更する `balanceSingleByteDoubleByteWidth` 互換設定を外します。他の互換設定は保持します。内部fontのname tableには本リポジトリの著作権・ライセンス本文を保持します。
 
 half-pointのfont size、整数percent、描画器側の丸めには制約があります。数値計画のproperty testは、Microsoft WordやLibreOfficeで全原点が同じ精度になることを保証しません。初行baseline、混在font、ページ送りも引き続き実描画で検証する必要があります。
 
@@ -27,6 +27,8 @@ half-pointのfont size、整数percent、描画器側の丸めには制約があ
 中間 font、文字属性、resource cache、埋め込み byte 数は既存の解析予算で制限します。未使用 resource の face は公開結果へ含めず、最終結果の埋め込み font 数上限は既存の32件です。native の文字数不一致や Form の抽出順不一致はページ単位で SDK 結果へ戻します。生成 cmap と異なる Unicode に置き換わる場合も、そのページへ元の生成 font を引き継ぎません。
 
 ## 検証と残っている問題
+
+位置保持の検証は[検証台帳](../corpus/validation-type1-word-spacing.json)に記録しています。公開3原本・全6ページの単語順と行末を独立に照合し、WASMの4ページ原本は従来の8ページから4ページへ戻りました。nativeとWASMの実DOCXも一致します。Type1原本の横位置の最大差は約1.335pt、baselineは最大4.38pt残ります。GNU原本17ページはnative26ページ・pure/WASM25ページで、引き続き不合格です。通常CI相当2,218件、Python152件、Chromium/WebKit各72件が成功し、実6入力・2engineのdefault/strict合計24結果も保持しました。これらは本番品質の認定や未見資料の精度ではありません。
 
 所有するメモリ内 PDF による Red/Green テストで、混在した単文字・複数文字 code、literal/hex/octal、`TJ` と文字間隔、同名 resource の異なる幅、Form の局所 scope、文書間 cache reset、未使用 font、native のページ単位 fallback を検証しています。font metadata の境界、style flags、ページ単位の不変条件には property test もあります。
 

@@ -1,3 +1,11 @@
+# Type1の元glyph位置と論理空白
+
+[位置保持の検証台帳](validation-type1-word-spacing.json)では、正立Type1を元glyph単位で保持し、source fontの未確認codeへ空白を割り当てず、TJの論理空白を所有fontと字間で再現する。未埋め込みfont名も衝突確認に含め、header/footerのfont参照と有界な本文previewを保持する。
+
+登録済み3原本・全6ページの単語順と行末を原本から独立に照合した。4ページ原本のWASM出力は従来8ページから4ページになった。候補のnative4文書と実browser6入力は、描画・確認済みのDOCXと全byte一致する。source fontのbyte列、Unicode、診断、strictの受理/拒否を保持し、外部PDFや生成文書はGitへ追加していない。通常CI相当2,218件、Python152件、Chromium/WebKit各72件が成功した。
+
+横位置約1.335pt・baseline4.38ptの差、GNU17ページに対するnative26/pure25ページ、索引、未確認circlecopyrtなどが残る。Word・複雑な組版・幅広い帳票やOCRの忠実度も未達であり、本番品質とはしていない。原本や既存goldの変更、登録件数やholdout件数の追加は行わない。
+
 # 曲線描画の未再現を公開前に検出する
 
 [曲線pathの検証台帳](validation-curved-path-loss.json)では、ページ本文で実行された曲線の描画を、ページごとの `unsupported_curved_path` として報告する。描画を取り消したpathや文字列内の命令は対象外とし、曲線の終点を無視して原本にない表の直線罫線を推定することも避ける。既存の共有metadata予算で状態と診断を予約し、新たな依存は加えない。
