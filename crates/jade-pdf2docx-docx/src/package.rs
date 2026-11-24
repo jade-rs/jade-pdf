@@ -16,6 +16,7 @@ fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertEr
     crate::column_frame::apply(&mut package.document, &column_frames)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::inline_baseline::apply(&mut package)?;
+    crate::normal_weight_package::apply(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     Ok(package)
 }

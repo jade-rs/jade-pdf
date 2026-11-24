@@ -36,6 +36,7 @@ mod embedded_face;
 mod embedded_style_tests;
 mod glyph_metrics;
 mod layout_space;
+mod normal_weight_package;
 mod positioned_type1;
 mod roman_fallback;
 #[cfg(test)]
