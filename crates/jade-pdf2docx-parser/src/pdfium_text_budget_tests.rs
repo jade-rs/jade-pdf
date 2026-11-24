@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// 指定容量だけを持つ独立したmetadata予算を作る。
-fn budget(capacity: u64) -> DecodeBudget {
+pub(super) fn budget(capacity: u64) -> DecodeBudget {
     DecodeBudget::new(&ParseLimits {
         max_total_metadata_workspace_bytes: capacity,
         ..Default::default()
@@ -14,7 +14,7 @@ fn budget(capacity: u64) -> DecodeBudget {
 }
 
 /// 正式なxref/Rootを持つPDFをnativeへ読み込み、借用ページ本文を検査する。
-fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
+pub(super) fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
     with_native_page(content, |page| check(&page.text().unwrap()));
 }
 
@@ -25,7 +25,7 @@ fn with_native_page(content: &str, check: impl FnOnce(&PdfPage<'_>)) {
 }
 
 /// 所有の正式なPDFを同じSDK lifecycleで検査し、assertionのpanicをdrop後に伝える。
-fn with_native_bytes(bytes: &[u8], check: impl FnOnce(&PdfPage<'_>)) {
+pub(super) fn with_native_bytes(bytes: &[u8], check: impl FnOnce(&PdfPage<'_>)) {
     // assertionのunwind中にnativeをdropすると、依存先の共有Mutexをpoisonする。
     let outcome = {
         let native = pdfium_auto::bind_pdfium_silent().unwrap();
@@ -151,7 +151,7 @@ fn mixed_printed_hyphen_and_literal_control_keep_distinct_identity() {
 }
 
 /// sourceの空白とSDKの報告を区別するため、同じowned入力を両経路へ渡す。
-fn owned_text_pdf(content: &str) -> Vec<u8> {
+pub(super) fn owned_text_pdf(content: &str) -> Vec<u8> {
     pdf(&[
         "<< /Type /Catalog /Pages 2 0 R >>".into(),
         "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
@@ -534,131 +534,6 @@ fn native_reconciliation_keeps_source_spaces_when_sdk_coalesces_them() {
             .collect::<String>(),
         "   "
     );
-}
-
-/// baselineが少し異なる隣接glyphを矩形抽出が再読しても、公開native結果で重複しない。
-#[test]
-fn native_logo_extracts_each_sdk_character_once() {
-    for (lowered_x, final_x) in [(38., 44.), (39., 45.), (40., 46.)] {
-        let content = format!(
-            "BT /F 12 Tf 1 0 0 1 20 100 Tm (LaT) Tj 1 0 0 1 {lowered_x} 97.65 Tm (E) Tj 1 0 0 1 {final_x} 100 Tm (X) Tj ET"
-        );
-        with_page(&content, |text| {
-            assert_eq!(
-                text.all()
-                    .chars()
-                    .filter(|c| !c.is_whitespace())
-                    .collect::<String>(),
-                "LaTEX"
-            );
-        });
-        let limits = ParseLimits::default();
-        let parsed = crate::pdfium_backend::parse_pdf(
-            std::path::Path::new("owned-lowered-glyph.pdf"),
-            &owned_text_pdf(&content),
-            &limits,
-            &DecodeBudget::new(&limits),
-        )
-        .unwrap();
-        assert_eq!(
-            parsed
-                .text_elements
-                .iter()
-                .flat_map(|e| e.text.chars())
-                .filter(|c| !c.is_whitespace())
-                .collect::<String>(),
-            "LaTEX",
-            "native output must contain each SDK character once"
-        );
-    }
-}
-
-/// 照合は確保不要でも停止済み予算を尊重し、反復・並び替え・未知文字を同一視しない。
-#[test]
-fn preview_comparison_preserves_repetition_unicode_and_stopped_budget() {
-    let mut element = ParsedTextElement {
-        baseline_y: Some(100.),
-        page: 0,
-        bounds: crate::ParsedBounds {
-            x0: 20.,
-            y0: 95.,
-            x1: 100.,
-            y1: 110.,
-        },
-        font_size: 12.,
-        font_name: None,
-        fill_color: None,
-        text: "AAA α一😀".into(),
-    };
-    assert!(matches_preview(&budget(0), &[element.clone()], "AAA\nα\t一😀").unwrap());
-    for different in ["AA α一😀", "AAAA α一😀", "AAA 一α😀", "AAA α一�"] {
-        assert!(!matches_preview(&budget(0), &[element.clone()], different).unwrap());
-    }
-    let stopped = budget(0);
-    stopped.charge_metadata_workspace_bytes(1);
-    assert!(matches_preview(&stopped, &[], "").is_err());
-    assert!(matches_preview(&stopped, &[element.clone()], &element.text).is_err());
-    element.text.clear();
-    assert!(!matches_preview(&budget(0), &[element], "X").unwrap());
-}
-
-/// 描画されたAをToUnicodeがCRへ対応させても、空白として捨てる復元経路へ入らない。
-#[test]
-fn indexed_recovery_rejects_painted_controls_but_keeps_generated_lines_and_hyphens() {
-    let source = pdf(&[
-        "<< /Type /Catalog /Pages 2 0 R >>".into(),
-        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
-        stream("BT /F 12 Tf 20 100 Td (A) Tj ET"),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 6 0 R >>".into(),
-        stream("1 beginbfchar\n<41> <000D>\nendbfchar"),
-    ]);
-    let path = std::path::Path::new("owned-painted-control.pdf");
-    with_native_bytes(&source, |page| {
-        let text = page.text().unwrap();
-        let chars = characters(&budget(65536), &text).unwrap();
-        assert!(
-            chars
-                .iter()
-                .any(|c| c.unicode_value() == 13 && !c.is_generated().unwrap())
-        );
-        assert!(!index_preserves_controls(&budget(0), path, &chars).unwrap());
-    });
-    with_page(
-        "BT /F 12 Tf 20 100 Td (well-) Tj 0 -20 Td (known) Tj ET",
-        |text| {
-            let chars = characters(&budget(65536), text).unwrap();
-            assert!(index_preserves_controls(&budget(0), path, &chars).unwrap());
-            let stopped = budget(0);
-            stopped.charge_metadata_workspace_bytes(1);
-            assert!(index_preserves_controls(&stopped, path, &chars).is_err());
-        },
-    );
-}
-
-proptest::proptest! {
-    #![proptest_config(proptest::test_runner::Config::with_cases(16))]
-    /// 文字サイズ・原点を変えても、矩形の境界では文字indexを使い、本物のAAA反復を失わない。
-    #[test]
-    fn native_lowered_glyphs_preserve_real_repetitions(
-        x in 10u16..50, y in 70u16..140, size in 8u16..18,
-    ) {
-        let (x, y, size) = (f32::from(x), f32::from(y), f32::from(size));
-        let content = format!(
-            "BT /F {size} Tf 1 0 0 1 {x} {y} Tm (AAA) Tj 1 0 0 1 {} {y} Tm (LaT) Tj 1 0 0 1 {} {} Tm (E) Tj 1 0 0 1 {} {y} Tm (X) Tj ET",
-            x + size * 3., x + size * 4.5, y - size * 0.19583333, x + size * 5.,
-        );
-        with_page(&content, |text| {
-            assert_eq!(text.all().chars().filter(|c| !c.is_whitespace()).collect::<String>(), "AAALaTEX");
-        });
-        let limits = ParseLimits::default();
-        let parsed = crate::pdfium_backend::parse_pdf(
-            std::path::Path::new("owned-repeated-lowered-glyphs.pdf"),
-            &owned_text_pdf(&content), &limits, &DecodeBudget::new(&limits),
-        ).unwrap();
-        let actual = parsed.text_elements.iter().flat_map(|e| e.text.chars()).filter(|c| !c.is_whitespace()).collect::<String>();
-        proptest::prop_assert_eq!(actual, "AAALaTEX");
-    }
 }
 
 /// baselineを報告しても元のink矩形は変えず、回転文字へ水平座標を推測しない。

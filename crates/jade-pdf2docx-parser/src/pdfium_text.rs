@@ -6,6 +6,10 @@ use pdfium_render::prelude::*;
 #[path = "pdfium_text_budget_tests.rs"]
 mod budget_tests;
 
+#[cfg(test)]
+#[path = "pdfium_segment_recovery_tests.rs"]
+mod segment_recovery_tests;
+
 /// i32文字indexの全要求容量を予約してから、共有するページ配列を取得する。
 pub(crate) fn characters<'a>(
     budget: &DecodeBudget,
