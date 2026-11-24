@@ -2481,6 +2481,10 @@ struct RepeatedPageChrome {
     header: Option<RepeatedPageChromeLine>,
     /// DOCX footer へ移す配置・style 付き反復行。
     footer: Option<RepeatedPageChromeLine>,
+    /// 先行sectionのheaderを空のpartで明示的に解除する。
+    clear_header: bool,
+    /// 先行sectionのfooterを空のpartで明示的に解除する。
+    clear_footer: bool,
 }
 
 /// structured line 内で最大の PDF font size を返す。
@@ -2505,15 +2509,39 @@ fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine
 
 /// 反復 page chrome を DOCX の header/footer part へ追加する。
 fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome) -> Docx {
-    if let Some(header) = chrome.header.as_ref() {
-        docx = docx
-            .header(Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)));
+    if let Some(header) = repeated_header(chrome) {
+        docx = docx.header(header);
     }
-    if let Some(footer) = chrome.footer.as_ref() {
-        docx = docx
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome) {
+        docx = docx.footer(footer);
     }
     docx
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空headerを作る。
+fn repeated_header(chrome: &RepeatedPageChrome) -> Option<Header> {
+    chrome
+        .header
+        .as_ref()
+        .map(|line| Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .or_else(|| {
+            chrome
+                .clear_header
+                .then(|| Header::new().add_paragraph(Paragraph::new()))
+        })
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空footerを作る。
+fn repeated_footer(chrome: &RepeatedPageChrome) -> Option<Footer> {
+    chrome
+        .footer
+        .as_ref()
+        .map(|line| Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .or_else(|| {
+            chrome
+                .clear_footer
+                .then(|| Footer::new().add_paragraph(Paragraph::new()))
+        })
 }
 
 /// 反復header/footerを順に確定し、混在ページの中間sectionへ本文とともに追加する。
@@ -2524,21 +2552,17 @@ fn append_section_with_repeated_chrome(
     mut section: Section,
     chrome: &RepeatedPageChrome,
 ) -> Result<Docx, ConvertError> {
-    if let Some(footer) = chrome.footer.as_ref() {
-        section = section
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome) {
+        section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = chrome.header.as_ref() {
+    if let Some(header) = repeated_header(chrome) {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
             ));
         };
-        docx =
-            docx.add_section(section.header(
-                Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)),
-            ));
+        docx = docx.add_section(section.header(header));
     }
     Ok(docx)
 }

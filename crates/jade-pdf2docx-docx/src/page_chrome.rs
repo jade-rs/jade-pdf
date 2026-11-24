@@ -141,6 +141,14 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
             }
         }
     }
+    let (mut seen_header, mut seen_footer) = (false, false);
+    for page in pages {
+        let chrome = plan.pages.get_mut(&page.page).expect("source page exists");
+        chrome.clear_header = seen_header && chrome.header.is_none();
+        chrome.clear_footer = seen_footer && chrome.footer.is_none();
+        seen_header |= chrome.header.is_some();
+        seen_footer |= chrome.footer.is_some();
+    }
     plan
 }
 
