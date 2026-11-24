@@ -86,6 +86,8 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
     events.sort_by(|a, b| a.0.total_cmp(&b.0));
     let mut active = 0_i32;
     let mut best = (0_i32, 0_f32);
+    let mut supported_regions = 0;
+    let mut previously_supported = false;
     let mut index = 0;
     while index < events.len() {
         let x = events[index].0;
@@ -94,6 +96,11 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             index += 1;
         }
         if let Some((next, _)) = events.get(index) {
+            let supported = active >= 4 && *next > x;
+            if supported && !previously_supported {
+                supported_regions += 1;
+            }
+            previously_supported = supported;
             let centre = x / 2.0 + next / 2.0;
             if active > best.0
                 || (active == best.0 && (centre - width / 2.0).abs() < (best.1 - width / 2.0).abs())
@@ -102,7 +109,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             }
         }
     }
-    if best.0 < 4 {
+    if best.0 < 4 || supported_regions != 1 {
         return None;
     }
     let cut = best.1;
