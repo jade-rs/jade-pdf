@@ -334,3 +334,80 @@ proptest! {
         prop_assert_eq!(single_line_box_heights(small, large), (small * 20, large * 20));
     }
 }
+
+/// 行boxが収まらない所有表で、同じ字形の上付き・下付き文字を別の原本位置に描く。
+fn overfull_script_source(rise: u32) -> Vec<u8> {
+    owned_pdf_content(&format!(
+        "1 w 72 660 m 272 660 l S 72 700 m 272 700 l S 72 660 m 72 700 l S 172 660 m 172 700 l S 272 660 m 272 700 l S BT /F1 10 Tf 82 680 Td (Alpha) Tj ET BT /F1 5 Tf 110 {} Td (2) Tj ET BT /F1 14 Tf 92 674 Td (Beta) Tj ET BT /F1 10 Tf 82 665 Td (Gamma) Tj ET BT /F1 5 Tf 122 {} Td (2) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
+        680 + rise,
+        665 - rise,
+    ))
+}
+
+/// 同じ添字文字を持つ各runから、文字サイズと符号付き位置指定を独立に読む。
+fn script_run_positions(xml: &str) -> Vec<(Option<u32>, Option<i32>)> {
+    let mut reader = Reader::from_str(xml);
+    let mut out = Vec::new();
+    let mut text = String::new();
+    let mut size = None;
+    let mut position = None;
+    let mut in_text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:r" => {
+                text.clear();
+                size = None;
+                position = None;
+            }
+            Event::Start(tag) if tag.name().as_ref() == b"w:t" => in_text = true,
+            Event::End(tag) if tag.name().as_ref() == b"w:t" => in_text = false,
+            Event::Text(value) if in_text => text.push_str(&value.decode().unwrap()),
+            Event::Empty(tag) if tag.name().as_ref() == b"w:sz" => {
+                size = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap());
+            }
+            Event::Empty(tag) if tag.name().as_ref() == b"w:position" => {
+                position = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap());
+            }
+            Event::End(tag) if tag.name().as_ref() == b"w:r" && text.trim() == "2" => {
+                out.push((size, position));
+            }
+            Event::Eof => return out,
+            _ => {}
+        }
+    }
+}
+
+/// 旧配置の一段落でも、同じ5pt文字の上付きと下付きの基線差を失わない。
+#[test]
+fn overfull_source_scripts_keep_independent_baseline_positions() {
+    let cell = first_cell_from_source(&overfull_script_source(3));
+    let p = paragraphs(&cell);
+    assert_eq!(p.len(), 1);
+    assert_eq!(p[0].0, "Alpha 2 Beta Gamma 2");
+    assert_eq!(
+        script_run_positions(&cell),
+        [(Some(10), Some(6)), (Some(10), Some(-6))],
+        "overfull source scripts must retain signed native baseline offsets"
+    );
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_table_text_lines.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 同じ字形・font・サイズの二つの断片が互いの上下位置を借用しない。
+    #[test]
+    fn overfull_source_script_positions_follow_each_fragment(rise in 2u32..=3) {
+        let cell = first_cell_from_source(&overfull_script_source(rise));
+        let expected = [(Some(10), Some((rise * 2) as i32)), (Some(10), Some(-((rise * 2) as i32)))];
+        prop_assert_eq!(script_run_positions(&cell), expected);
+    }
+}
