@@ -43,3 +43,27 @@ fn device_cmyk_jpeg_preserves_pdf_source_polarity() {
 fn device_ycck_jpeg_preserves_pdf_source_polarity() {
     source_polarity(owned::YCCK);
 }
+
+/// 四成分のDecodeとMatteをRGB化より前に扱い、透明度の指定も保持する。
+#[test]
+fn device_cmyk_jpeg_matte_is_applied_in_source_components() {
+    let pdf = fixture::source_image_pdf(
+        "/ColorSpace /DeviceCMYK /Filter /DCTDecode /SMask 5 0 R",
+        owned::CMYK,
+        "/Matte [0 0 0 0]",
+    );
+    let parsed =
+        parse_pdf_bytes_with_options("owned-cmyk-matte.pdf", &pdf, &ParseOptions::default())
+            .unwrap();
+    assert_eq!(
+        parsed.quality.issues,
+        [QualityIssue::OcrRequired { page: 0 }],
+        "DeviceCMYK with verified source Matte must decode"
+    );
+    let pixels = fixture::scanline(&parsed.image_elements[0].png_bytes);
+    assert_eq!(pixels.len(), 9);
+    assert!(pixels[1] > 240 && pixels[2] < 20 && pixels[3] < 20);
+    assert_eq!(pixels[4], 85);
+    assert!(pixels[5] < 60 && (60..=160).contains(&pixels[6]) && pixels[7] > 130);
+    assert_eq!(pixels[8], 255);
+}
