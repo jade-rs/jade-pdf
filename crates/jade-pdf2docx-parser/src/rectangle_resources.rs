@@ -1,0 +1,75 @@
+//! stroke用ExtGStateを所属ページで解決し、未対応の合成・mask・効果を引き継がない。
+use crate::{decode::DecodeBudget, metadata, resource_resolver::ResourceResolver};
+
+/// 完全かつ一意なgs辞書の、stroke alpha差分だけを返す。
+pub(super) fn resolve<'a>(
+    budget: &DecodeBudget,
+    resolver: &mut ResourceResolver<'_, 'a>,
+    resources: Option<&'a [u8]>,
+    name: &[u8],
+) -> Option<Option<f64>> {
+    let (states, _) = resolver.resolve(metadata::value(resources?, b"ExtGState")?)?;
+    if !metadata::dictionary_entries_complete(states) {
+        return None;
+    }
+    let mut selected = None;
+    for (key, value) in metadata::entries(states)? {
+        if budget.is_stopped() {
+            return None;
+        }
+        if crate::metadata_names::same_resource_name(key, name) && selected.replace(value).is_some()
+        {
+            return None;
+        }
+    }
+    let (state, _) = resolver.resolve(selected?)?;
+    if !metadata::dictionary_entries_complete(state) {
+        return None;
+    }
+    let keys = [
+        "Type", "CA", "ca", "BM", "SMask", "AIS", "OP", "op", "OPM", "SA", "TK",
+    ];
+    let mut seen = 0_u16;
+    let mut opacity = None;
+    for (key, value) in metadata::entries(state)? {
+        if budget.is_stopped() {
+            return None;
+        }
+        let index = keys
+            .iter()
+            .position(|name| crate::metadata_names::resource_name_order(key, name).is_eq())?;
+        if seen & (1 << index) != 0 {
+            return None;
+        }
+        seen |= 1 << index;
+        let (value, _) = resolver.resolve(value)?;
+        let valid = match index {
+            0 => metadata::is_name(value, b"ExtGState"),
+            1 => {
+                opacity = Some(crate::parser::image_draws::resources::alpha(
+                    crate::parser::image_draws::resources::keyword(value)?,
+                )?);
+                true
+            }
+            2 => crate::parser::image_draws::resources::alpha(
+                crate::parser::image_draws::resources::keyword(value)?,
+            )
+            .is_some(),
+            3 => metadata::is_name(value, b"Normal"),
+            4 => metadata::is_name(value, b"None"),
+            5 | 6 | 7 | 9 | 10 => matches!(
+                crate::parser::image_draws::resources::keyword(value)?,
+                b"true" | b"false"
+            ),
+            8 => matches!(
+                crate::parser::image_draws::resources::keyword(value)?,
+                b"0" | b"1"
+            ),
+            _ => false,
+        };
+        if !valid {
+            return None;
+        }
+    }
+    Some(opacity)
+}

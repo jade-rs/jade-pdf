@@ -38,6 +38,8 @@ mod graphics_budget_tests;
 mod graphics_draws;
 #[path = "graphics_merge.rs"]
 mod graphics_merge;
+#[path = "stroked_rectangles.rs"]
+mod stroked_rectangles;
 
 /// 罫線本文を共有予算付きで抽出し、失敗時は部分結果を破棄する。
 #[cfg(test)]
@@ -780,6 +782,9 @@ fn extract_graphics_from_pdf_bytes(
     } else {
         streams
     };
+    if stroked_rectangles::append(decode_budget, bytes, &streams, &mut segments).is_none() {
+        return Vec::new();
+    }
     for (page, stream) in streams {
         if graphics_draws::append(decode_budget, page, &stream, &mut segments).is_none() {
             return Vec::new();
