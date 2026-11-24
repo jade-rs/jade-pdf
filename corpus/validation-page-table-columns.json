@@ -2,10 +2,10 @@
   "generated_utc": "2026-11-24T05:14:16.502603+00:00",
   "scope": "Preserve detected text columns on pages unaffected by positioned tables, including table-only/floating-only/header-only source pages and production inferred-table summaries; reject unsafe column candidates with unsplit spanning body rows.",
   "production_ready": false,
-  "qualified_runtime_head": "df529dede7cbd6b2be8c155f3daffb17a5e73dce",
+  "qualified_runtime_head": "08b006e3ec4f15f14c7f9f034a3d03bea6943243",
   "qualified_crates_tree": "1b370f45f47922e7da04080b2a6447fc48a1bf8c",
   "parent_PR34_head": "2a1a86a2991f5771304e2fa7633b235eadea58a4",
-  "publication_status": "Local qualified candidate; PR34 merge and own rebase/qualification pending. No PR35 created yet.",
+  "publication_status": "Qualified candidate rebased onto verified merged PR34 main; code and artifacts unchanged. Publication and subsequent exact-head CI are tracked separately.",
   "behavior": {
     "page_isolation": "A positioned table or lack of body lines on one source page does not globally disable another page columns.",
     "production_metadata": "File/bytes conversion also passes a compatibility summary of the first inferred table. Its presence is distinguished from an unpositioned explicit OCR table.",
@@ -144,5 +144,9 @@
     "Native BatchNorm overlap guard requires object-level audit before any relaxation.",
     "No Microsoft Word rendering validation."
   ],
-  "local_evidence": "corpus/wasm-runtime/page-table-column-qualification (ignored research/source and artifacts); immutable qualification manifest prepared before publication."
+  "local_evidence": "corpus/wasm-runtime/page-table-column-qualification (ignored research/source and artifacts); immutable qualification manifest prepared before publication.",
+  "original_qualified_runtime_head": "df529dede7cbd6b2be8c155f3daffb17a5e73dce",
+  "base_main": "969f932e633d4c30f63a1b924571e54a0c208bb6",
+  "parent_PR34_merged_commit": "969f932e633d4c30f63a1b924571e54a0c208bb6",
+  "runtime_rebind_after_parent_merge": "EntireGitTree identical before/afterrebase; all672Rustsource hashes match full2263testreceipt. Nativeexample, ordinaryshippingCLI andproductionWASMactuallyrebuilt onrebasedhead; allbytes match testedartifacts. Previous rejectedprototypes and originalgold untouched."
 }
