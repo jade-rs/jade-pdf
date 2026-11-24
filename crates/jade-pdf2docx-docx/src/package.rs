@@ -6,19 +6,26 @@ use std::io::{Cursor, Read, Seek, Write};
 #[path = "font_usage.rs"]
 mod font_usage;
 
+/// bytesとファイルで同じXML処理を通し、位置指定をfont幅補正の後・ページ縮小の前に確定する。
+fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertError> {
+    let PreparedDocx {
+        docx,
+        column_frames,
+    } = prepared;
+    let mut package = crate::section_chrome_package::build(docx)?;
+    crate::column_frame::apply(&mut package.document, &column_frames)?;
+    crate::layout_space::preserve_advance(&mut package)?;
+    crate::inline_baseline::apply(&mut package)?;
+    crate::word_page_fit::fit(&mut package)?;
+    Ok(package)
+}
+
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
 pub(super) fn pack_docx_to_bytes(
     docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
-    let PreparedDocx {
-        docx,
-        column_frames,
-    } = docx.into();
-    let mut package = crate::section_chrome_package::build(docx)?;
-    crate::column_frame::apply(&mut package.document, &column_frames)?;
-    crate::layout_space::preserve_advance(&mut package)?;
-    crate::word_page_fit::fit(&mut package)?;
+    let mut package = prepare_package(docx.into())?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
     let capacity = package
@@ -286,14 +293,7 @@ pub(super) fn pack_docx_to_file(
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
-    let PreparedDocx {
-        docx,
-        column_frames,
-    } = docx.into();
-    let mut package = crate::section_chrome_package::build(docx)?;
-    crate::column_frame::apply(&mut package.document, &column_frames)?;
-    crate::layout_space::preserve_advance(&mut package)?;
-    crate::word_page_fit::fit(&mut package)?;
+    let mut package = prepare_package(docx.into())?;
     package
         .pack(&mut output)
         .map_err(|err| ConvertError::Pack(err.to_string()))?;

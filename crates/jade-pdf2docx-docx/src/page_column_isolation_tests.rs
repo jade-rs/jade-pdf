@@ -18,6 +18,11 @@ mod narrow_gutters;
 #[path = "column_flow_tests.rs"]
 mod column_flow;
 
+#[path = "inline_baseline_tests.rs"]
+mod inline_baselines;
+#[path = "inline_script_row_tests.rs"]
+mod script_rows;
+
 /// 外部資料を使わず、二つの段と別ページの所有画像を持つ解析結果を作る。
 fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
     assert!((2..=5).contains(&page_count));
@@ -238,9 +243,10 @@ proptest! {
     /// ページ幅・余白が端数でも、実XMLのWord領域とindentの和が原本位置を保つ。
     #[test]
     fn fractional_section_geometry_preserves_source_column_x(
-        width in 600.0_f32..1400.0,
-        left_fraction in 0.02_f32..0.12,
-        right_fraction in 0.58_f32..0.82,
+        // 正のf32の全bit表現を同じ半開区間から生成し、float sampler内部の丸めpanicを避ける。
+        width in (600.0_f32.to_bits()..1400.0_f32.to_bits()).prop_map(f32::from_bits),
+        left_fraction in (0.02_f32.to_bits()..0.12_f32.to_bits()).prop_map(f32::from_bits),
+        right_fraction in (0.58_f32.to_bits()..0.82_f32.to_bits()).prop_map(f32::from_bits),
     ) {
         let left = width * left_fraction;
         let right = width * right_fraction;

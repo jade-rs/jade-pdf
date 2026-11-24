@@ -26,6 +26,12 @@ pub(super) fn with_interior_spaces<'a>(
         .iter()
         .map(|text| native_baseline::line_y(text))
         .fold(f32::NEG_INFINITY, f32::max);
+    let mut local = if high - low > TEXT_ROW_Y_TOLERANCE_PT {
+        row.clone()
+    } else {
+        Vec::new()
+    };
+    local.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
     row.extend(elements.iter().filter(|text| {
         let b = text.bounds;
         let baseline = native_baseline::line_y(text);
@@ -38,7 +44,8 @@ pub(super) fn with_interior_spaces<'a>(
             && b.x1 <= right
             && b.x0 < b.x1
             && b.y0 < b.y1
-            && high.max(baseline) - low.min(baseline) <= TEXT_ROW_Y_TOLERANCE_PT
+            && (high.max(baseline) - low.min(baseline) <= TEXT_ROW_Y_TOLERANCE_PT
+                || matches_adjacent_baseline(&local, text))
     }));
     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
     let mut kept = Vec::with_capacity(row.len());
@@ -70,6 +77,16 @@ pub(super) fn with_interior_spaces<'a>(
         }
     }
     kept
+}
+
+/// 添字で行全体の縦範囲が広い場合も、直近の字に沿う実空白だけを二分探索で確認する。
+fn matches_adjacent_baseline(row: &[&ParsedTextElement], space: &ParsedTextElement) -> bool {
+    let baseline = native_baseline::line_y(space);
+    let next = row.partition_point(|t| t.bounds.x0 < space.bounds.x0);
+    [next.checked_sub(1).and_then(|i| row.get(i)), row.get(next)]
+        .into_iter()
+        .flatten()
+        .any(|text| (native_baseline::line_y(text) - baseline).abs() <= TEXT_ROW_Y_TOLERANCE_PT)
 }
 
 /// 空白の極薄の字面をfontのem高と区別し、非有限・非正の尺度は採用しない。
@@ -198,6 +215,43 @@ mod tests {
                 row.iter().map(|e| e.text.as_str()).collect::<String>(),
                 "ab"
             );
+        }
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 添字の上下・原点・描画順を変えても本文と添字の空白を保ち、別基線の空白を拒否する。
+        #[test]
+        fn mixed_script_baselines_keep_both_source_word_spaces(
+            half_points in 9i16..=12, raised in any::<bool>(),
+            x in 0i16..500, y in 100i16..700, reverse in any::<bool>(),
+        ) {
+            let delta = f32::from(half_points) / 2. * if raised { 1. } else { -1. };
+            let positioned = |text: &str, left: f32, width: f32, size: f32, shift: f32| {
+                let mut t = fragment(text, left + f32::from(x), width);
+                t.font_size = size;
+                t.baseline_y = Some(f32::from(y) + shift);
+                t.bounds.y0 = f32::from(y) + shift - size * 0.2;
+                t.bounds.y1 = f32::from(y) + shift + size * 0.8;
+                t
+            };
+            let texts = [
+                positioned("Alpha", 10., 25., 10., 0.),
+                positioned("Beta", 40., 20., 10., 0.),
+                positioned("max", 60.2, 10., 7., delta),
+                positioned("v", 72., 4., 7., delta),
+                positioned("=B", 78., 14., 10., 0.),
+            ];
+            let spaces = [
+                positioned(" ", 35., 5., 10., 0.),
+                positioned(" ", 70.2, 1.8, 7., delta),
+                positioned(" ", 35., 5., 10., 20.),
+                positioned(" ", 70.2, 1.8, 7., -delta),
+            ];
+            let mut row = texts.iter().collect::<Vec<_>>();
+            if reverse { row.reverse(); }
+            let kept = with_interior_spaces(&spaces, row);
+            prop_assert_eq!(kept.iter().map(|t| t.text.as_str()).collect::<String>(), "Alpha Betamax v=B");
         }
     }
 
