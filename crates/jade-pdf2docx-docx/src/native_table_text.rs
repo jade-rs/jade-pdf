@@ -241,6 +241,16 @@ fn legacy_runs<'a>(
                 .iter()
                 .any(|font| font.font_name == name)
         });
+        // 旧本文へ補った区切り空白は、原本の字面にだけある下線を延長しない。
+        let gap = run.text.len() - element.text.trim().len();
+        if run.style.underlined && gap > 0 {
+            let mut separator = run.clone();
+            separator.text = run.text[..gap].to_string();
+            separator.style.underlined = false;
+            separator.style.baseline_offset = None;
+            runs.push(separator);
+            run.text = element.text.trim().to_string();
+        }
         runs.push(run);
     }
     if text == expected { runs } else { Vec::new() }
