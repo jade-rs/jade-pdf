@@ -2,6 +2,9 @@
 use crate::{ParseError, ParsedTextElement, decode::DecodeBudget};
 use pdfium_render::prelude::*;
 
+#[path = "pdfium_recovery_spans.rs"]
+mod recovery_spans;
+
 /// Pdfiumの不可視描画・clipだけの描画・完全透明なpaintを判定する。
 fn hidden(character: &PdfPageTextChar<'_>, tags: &crate::pdfium_font_tags::Tagged) -> bool {
     hidden_paint(
@@ -132,12 +135,39 @@ pub(crate) fn extract(
     tags: &crate::pdfium_font_tags::Tagged,
     excluded: &[bool],
 ) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
+    extract_mode(budget, path, page, characters, tags, excluded, false)
+}
+
+/// 通常ページの矩形重複回復では、同じsource objectの水平連続文字をまとめる。
+pub(crate) fn extract_recovery_spans(
+    budget: &DecodeBudget,
+    path: &std::path::Path,
+    page: usize,
+    characters: &PdfPageTextChars<'_>,
+    tags: &crate::pdfium_font_tags::Tagged,
+    excluded: &[bool],
+) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
+    extract_mode(budget, path, page, characters, tags, excluded, true)
+}
+
+/// 不可視・clip経路の文字単位抽出を保ち、通常の回復時だけ連続spanを保持する。
+fn extract_mode(
+    budget: &DecodeBudget,
+    path: &std::path::Path,
+    page: usize,
+    characters: &PdfPageTextChars<'_>,
+    tags: &crate::pdfium_font_tags::Tagged,
+    excluded: &[bool],
+    recover_spans: bool,
+) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
     let mut preview = String::new();
     let mut elements: Vec<ParsedTextElement> = Vec::new();
+    let mut previous_key = None;
     let mut characters = characters.iter().peekable();
     while let Some(character) = characters.next() {
         if excluded.get(character.index()).copied().unwrap_or(false) || hidden(&character, tags) {
+            previous_key = None;
             continue;
         }
         let value = if crate::pdfium_printed_hyphens::is_printed(budget, path, &character)? {
@@ -157,6 +187,7 @@ pub(crate) fn extract(
             let low = characters.next().unwrap().unicode_value();
             char::from_u32(0x10000 + ((value - 0xd800) << 10) + low - 0xdc00).unwrap()
         } else {
+            previous_key = None;
             continue;
         };
         let mut utf8 = [0; 4];
@@ -164,6 +195,9 @@ pub(crate) fn extract(
         crate::text_result_storage::extend(budget, &mut preview, text);
         budget.check()?;
         if ch.is_whitespace() {
+            if matches!(ch, '\r' | '\n') {
+                previous_key = None;
+            }
             if !matches!(ch, '\r' | '\n')
                 && let Some(previous) = elements.last_mut()
             {
@@ -193,24 +227,32 @@ pub(crate) fn extract(
             budget.check()?;
             break;
         };
-        crate::metadata_workspace::push(
-            budget,
-            &mut elements,
-            ParsedTextElement {
-                baseline_y: crate::pdfium_text::horizontal_baseline(&character),
-                page,
-                bounds: crate::ParsedBounds {
-                    x0: rect.left().value,
-                    y0: rect.bottom().value,
-                    x1: rect.right().value,
-                    y1: rect.top().value,
-                },
-                font_size: character.scaled_font_size().value,
-                font_name,
-                fill_color,
-                text,
+        let element = ParsedTextElement {
+            baseline_y: crate::pdfium_text::horizontal_baseline(&character),
+            page,
+            bounds: crate::ParsedBounds {
+                x0: rect.left().value,
+                y0: rect.bottom().value,
+                x1: rect.right().value,
+                y1: rect.top().value,
             },
-        )?;
+            font_size: character.scaled_font_size().value,
+            font_name,
+            fill_color,
+            text,
+        };
+        let key = recover_spans
+            .then(|| recovery_spans::key(&character))
+            .flatten();
+        let joined = if let Some(previous) = elements.last_mut() {
+            recovery_spans::join(budget, previous, &element, previous_key, key)?
+        } else {
+            false
+        };
+        if !joined {
+            crate::metadata_workspace::push(budget, &mut elements, element)?;
+        }
+        previous_key = key;
     }
     Ok((preview, elements))
 }
