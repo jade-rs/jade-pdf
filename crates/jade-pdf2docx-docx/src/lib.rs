@@ -43,6 +43,7 @@ mod roman_fallback_tests;
 
 mod html_table;
 mod image_anchor;
+mod inline_baseline;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
@@ -2043,6 +2044,7 @@ fn structured_text_runs_from_row(
     let Some(first) = row.first() else {
         return Vec::new();
     };
+    let baseline = inline_baseline::reference(row);
     let mut runs = Vec::new();
     let mut right = first.bounds.x1;
     let mut height_sum = (first.bounds.y1 - first.bounds.y0).abs().max(1.0);
@@ -2081,6 +2083,7 @@ fn structured_text_runs_from_row(
                     })
                     .map(|_| text.bounds),
                 placement: None,
+                baseline_offset: inline_baseline::offset(text, baseline),
             },
         });
         right = right.max(text.bounds.x1);
@@ -2120,6 +2123,9 @@ fn mark_embedded_fonts_in_line(
 /// structured run から DOCX run を作る。
 fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     let mut run = text_run(structured_run.text.as_str());
+    if let Some(offset) = structured_run.style.baseline_offset {
+        run = run.style(&inline_baseline::marker(offset));
+    }
     if let Some(placement) = structured_run.style.placement {
         run = run
             .stretch(placement.stretch)
@@ -2737,6 +2743,8 @@ struct StructuredTextStyle {
     source_bounds: Option<ParsedBounds>,
     /// 検証済みglyph advanceに基づくDOCXの字間と幅指定。
     placement: Option<positioned_type1::Placement>,
+    /// 確認済みbaselineを持つ小さい文字の、通常行に対する符号付きhalf-point位置。
+    baseline_offset: Option<i32>,
 }
 
 impl Default for StructuredTextStyle {
@@ -2750,6 +2758,7 @@ impl Default for StructuredTextStyle {
             underlined: false,
             source_bounds: None,
             placement: None,
+            baseline_offset: None,
         }
     }
 }

@@ -16,6 +16,7 @@ pub(super) fn pack_docx_to_bytes(
         column_frames,
     } = docx.into();
     let mut package = crate::section_chrome_package::build(docx)?;
+    crate::inline_baseline::apply(&mut package)?;
     crate::column_frame::apply(&mut package.document, &column_frames)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
