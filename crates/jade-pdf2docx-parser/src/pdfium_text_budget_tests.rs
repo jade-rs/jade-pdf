@@ -536,6 +536,43 @@ fn native_reconciliation_keeps_source_spaces_when_sdk_coalesces_them() {
     );
 }
 
+/// baselineが少し異なる隣接glyphを矩形抽出が再読しても、公開native結果で重複しない。
+#[test]
+fn native_logo_extracts_each_sdk_character_once() {
+    for (lowered_x, final_x) in [(38., 44.), (39., 45.), (40., 46.)] {
+        let content = format!(
+            "BT /F 12 Tf 1 0 0 1 20 100 Tm (LaT) Tj 1 0 0 1 {lowered_x} 97.65 Tm (E) Tj 1 0 0 1 {final_x} 100 Tm (X) Tj ET"
+        );
+        with_page(&content, |text| {
+            assert_eq!(
+                text.all()
+                    .chars()
+                    .filter(|c| !c.is_whitespace())
+                    .collect::<String>(),
+                "LaTEX"
+            );
+        });
+        let limits = ParseLimits::default();
+        let parsed = crate::pdfium_backend::parse_pdf(
+            std::path::Path::new("owned-lowered-glyph.pdf"),
+            &owned_text_pdf(&content),
+            &limits,
+            &DecodeBudget::new(&limits),
+        )
+        .unwrap();
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .flat_map(|e| e.text.chars())
+                .filter(|c| !c.is_whitespace())
+                .collect::<String>(),
+            "LaTEX",
+            "native output must contain each SDK character once"
+        );
+    }
+}
+
 /// baselineを報告しても元のink矩形は変えず、回転文字へ水平座標を推測しない。
 #[test]
 fn baseline_metadata_preserves_ink_and_rejects_rotated_glyphs() {
