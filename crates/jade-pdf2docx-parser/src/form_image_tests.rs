@@ -5,6 +5,9 @@ use std::io::Write;
 #[path = "form_image_invariants.rs"]
 mod invariants;
 
+#[path = "form_content_ascii85_tests.rs"]
+mod ascii85_content;
+
 /// 所有する本文から長さが一致する stream を作る。
 fn stream(dictionary: &str, bytes: &[u8]) -> Vec<u8> {
     let mut out = format!("<< {dictionary} /Length {} >>\nstream\n", bytes.len()).into_bytes();
