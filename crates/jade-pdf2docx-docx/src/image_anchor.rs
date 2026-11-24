@@ -39,13 +39,27 @@ pub(super) fn picture(mut image: ParsedImageElement, page: Option<&ParsedPage>) 
 
 /// 正立した画像の有限な原本矩形だけを使い、回転前の辺が不明な画像は従来値へ戻す。
 fn upright_extent(image: &ParsedImageElement) -> Option<(u32, u32)> {
-    if image.rotation_degrees % 360 != 0 {
+    if image.rotation_degrees % 360 != 0 || !bounds_match_display_estimate(image) {
         return None;
     }
     Some((
         axis_extent(image.bounds.x0, image.bounds.x1)?,
         axis_extent(image.bounds.y0, image.bounds.y1)?,
     ))
+}
+
+/// CropBoxで矩形だけが切り詰められた場合など、元の表示寸法と矛盾するboundsを使わない。
+/// 表示pxとの整合はclipや描画位置の完全な正しさを保証しない。
+fn bounds_match_display_estimate(image: &ParsedImageElement) -> bool {
+    [
+        (image.bounds.x0, image.bounds.x1, image.width_px),
+        (image.bounds.y0, image.bounds.y1, image.height_px),
+    ]
+    .into_iter()
+    .all(|(start, end, pixels)| {
+        let points = (end - start).abs();
+        points.is_finite() && points > 0. && (points * 96. / 72.).round().max(1.) == pixels as f32
+    })
 }
 
 /// 元の二端をdoubleで差し引き、正のEMU寸法を一回だけ丸める。
