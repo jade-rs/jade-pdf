@@ -30,6 +30,8 @@ mod conversion_control;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
+#[cfg(test)]
+mod roman_fallback_tests;
 mod glyph_metrics;
 mod layout_space;
 mod positioned_type1;
