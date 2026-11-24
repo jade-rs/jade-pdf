@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[path = "pdfium_clip_index_tests.rs"]
-mod clip_index_tests;
+pub(crate) mod clip_index_tests;
 
 /// 指定容量だけを持つ独立したmetadata予算を作る。
 pub(super) fn budget(capacity: u64) -> DecodeBudget {

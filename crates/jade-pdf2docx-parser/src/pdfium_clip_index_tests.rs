@@ -4,7 +4,7 @@ use pdfium_render::prelude::*;
 use proptest::prelude::*;
 
 /// 最適化と独立に、SDKの厳密なobject所属APIを使う旧経路の除外maskを求める。
-fn native_ownership_reference(page: &PdfPage<'_>) -> Vec<bool> {
+pub(crate) fn native_ownership_reference(page: &PdfPage<'_>) -> Vec<bool> {
     let text = page.text().unwrap();
     let mut result = Vec::new();
     reference_objects(
