@@ -1,0 +1,582 @@
+{
+  "id": "nta-bonus-rate-2026-15-16",
+  "created_utc": "2026-11-24T21:22:48.726587+00:00",
+  "source_url": "https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/15-16.pdf",
+  "source_sha256": "5ab9d7d875ccb14769862757b4f8e027178925dae6e8ac40f903b1d55a9ae71b",
+  "source_bytes": 581604,
+  "source_pages": 2,
+  "printed_pages": [
+    15,
+    16
+  ],
+  "scope": "30 manually transcribed visible logical cells/headers and row-column associations, not independent full-document text gold or tax advice",
+  "candidate_fixed_before_collection": "f7049dbe4620c2bbdee026464d33d405992ab786",
+  "parent_fixed_before_collection": "a8366d70045d34f26c55111f297fd47b556980ae",
+  "product_used": false,
+  "source_review": "Both rendered original pages individually inspected before any Jade parse or conversion; values manually read from visible source pages. pdfplumber is used only for coordinate measurement.",
+  "visibility": "The PDF also contains off-media-box halves of the wide table. Gold is exclusively for the rendered visible page regions; off-page text is not visible gold.",
+  "independent_extraction_warning": "pdfplumber rate words after the first include U+0007 control suffix; these were not copied into visual gold and are not allowed aliases for product output.",
+  "matching": "Keep literal digits, decimal points, commas, and Japanese labels. Whitespace may be separated across runs; no Unicode substitution, no column/range/row reassociation.",
+  "negative_visibility": [
+    {
+      "page": 2,
+      "forbidden_visible_rate_labels": [
+        "0.000",
+        "2.042",
+        "4.084",
+        "30.630",
+        "45.945"
+      ],
+      "reason": "Rate column is outside the page2 media box and belongs only to page1."
+    }
+  ],
+  "cells": [
+    {
+      "id": "p15-rate-0.000",
+      "page": 1,
+      "printed_page": 15,
+      "role": "rate",
+      "row_rate": "0.000",
+      "expected_tokens": [
+        "0.000"
+      ],
+      "source_top_origin_bbox": [
+        54.43,
+        191.46138,
+        125.29,
+        201.96527999999998
+      ]
+    },
+    {
+      "id": "p15-dependents0-rate0.000",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "0.000",
+      "dependents_column": 0,
+      "expected_tokens": [
+        "82",
+        "千円未満"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        125.29,
+        191.46138,
+        227.34,
+        201.96527999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-dependents3-rate0.000",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "0.000",
+      "dependents_column": 3,
+      "expected_tokens": [
+        "181",
+        "千円未満"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        431.43,
+        191.46138,
+        533.48,
+        201.96527999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents4-rate0.000",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "0.000",
+      "dependents_column": 4,
+      "expected_tokens": [
+        "218",
+        "千円未満"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        60.09,
+        191.46138,
+        156.47,
+        201.96527999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents7-rate0.000",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "0.000",
+      "dependents_column": 7,
+      "expected_tokens": [
+        "317",
+        "千円未満"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        349.23,
+        191.46138,
+        445.61,
+        201.96527999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-rate-2.042",
+      "page": 1,
+      "printed_page": 15,
+      "role": "rate",
+      "row_rate": "2.042",
+      "expected_tokens": [
+        "2.042"
+      ],
+      "source_top_origin_bbox": [
+        54.43,
+        209.88658,
+        125.29,
+        220.39048
+      ]
+    },
+    {
+      "id": "p15-dependents0-rate2.042",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "2.042",
+      "dependents_column": 0,
+      "expected_tokens": [
+        "82",
+        "94"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        125.29,
+        209.88658,
+        227.34,
+        220.39048
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-dependents3-rate2.042",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "2.042",
+      "dependents_column": 3,
+      "expected_tokens": [
+        "181",
+        "300"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        431.43,
+        209.88658,
+        533.48,
+        220.39048
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents4-rate2.042",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "2.042",
+      "dependents_column": 4,
+      "expected_tokens": [
+        "218",
+        "300"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        60.09,
+        209.88658,
+        156.47,
+        220.39048
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents7-rate2.042",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "2.042",
+      "dependents_column": 7,
+      "expected_tokens": [
+        "317",
+        "383"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        349.23,
+        209.88658,
+        445.61,
+        220.39048
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-rate-4.084",
+      "page": 1,
+      "printed_page": 15,
+      "role": "rate",
+      "row_rate": "4.084",
+      "expected_tokens": [
+        "4.084"
+      ],
+      "source_top_origin_bbox": [
+        54.43,
+        218.39048,
+        125.29,
+        228.89437999999998
+      ]
+    },
+    {
+      "id": "p15-dependents0-rate4.084",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "4.084",
+      "dependents_column": 0,
+      "expected_tokens": [
+        "94",
+        "260"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        125.29,
+        218.39048,
+        227.34,
+        228.89437999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-dependents3-rate4.084",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "4.084",
+      "dependents_column": 3,
+      "expected_tokens": [
+        "300",
+        "354"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        431.43,
+        218.39048,
+        533.48,
+        228.89437999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents4-rate4.084",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "4.084",
+      "dependents_column": 4,
+      "expected_tokens": [
+        "300",
+        "387"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        60.09,
+        218.39048,
+        156.47,
+        228.89437999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents7-rate4.084",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "4.084",
+      "dependents_column": 7,
+      "expected_tokens": [
+        "383",
+        "463"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        349.23,
+        218.39048,
+        445.61,
+        228.89437999999998
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-rate-30.630",
+      "page": 1,
+      "printed_page": 15,
+      "role": "rate",
+      "row_rate": "30.630",
+      "expected_tokens": [
+        "30.630"
+      ],
+      "source_top_origin_bbox": [
+        54.43,
+        362.95748,
+        125.29,
+        373.46137999999996
+      ]
+    },
+    {
+      "id": "p15-dependents0-rate30.630",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "30.630",
+      "dependents_column": 0,
+      "expected_tokens": [
+        "854",
+        "922"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        125.29,
+        362.95748,
+        227.34,
+        373.46137999999996
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-dependents3-rate30.630",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "30.630",
+      "dependents_column": 3,
+      "expected_tokens": [
+        "938",
+        "1,013"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        431.43,
+        362.95748,
+        533.48,
+        373.46137999999996
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents4-rate30.630",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "30.630",
+      "dependents_column": 4,
+      "expected_tokens": [
+        "966",
+        "1,044"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        60.09,
+        362.95748,
+        156.47,
+        373.46137999999996
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents7-rate30.630",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "30.630",
+      "dependents_column": 7,
+      "expected_tokens": [
+        "1,051",
+        "1,135"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        349.23,
+        362.95748,
+        445.61,
+        373.46137999999996
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-rate-45.945",
+      "page": 1,
+      "printed_page": 15,
+      "role": "rate",
+      "row_rate": "45.945",
+      "expected_tokens": [
+        "45.945"
+      ],
+      "source_top_origin_bbox": [
+        54.43,
+        432.40628,
+        125.29,
+        442.91017999999997
+      ]
+    },
+    {
+      "id": "p15-dependents0-rate45.945",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "45.945",
+      "dependents_column": 0,
+      "expected_tokens": [
+        "3,495",
+        "千円以上"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        125.29,
+        432.40628,
+        227.34,
+        442.91017999999997
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p15-dependents3-rate45.945",
+      "page": 1,
+      "printed_page": 15,
+      "role": "salary_range",
+      "row_rate": "45.945",
+      "dependents_column": 3,
+      "expected_tokens": [
+        "3,590",
+        "千円以上"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        431.43,
+        432.40628,
+        533.48,
+        442.91017999999997
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents4-rate45.945",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "45.945",
+      "dependents_column": 4,
+      "expected_tokens": [
+        "3,622",
+        "千円以上"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        60.09,
+        432.40628,
+        156.47,
+        442.91017999999997
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-dependents7-rate45.945",
+      "page": 2,
+      "printed_page": 16,
+      "role": "salary_range",
+      "row_rate": "45.945",
+      "dependents_column": 7,
+      "expected_tokens": [
+        "3,717",
+        "千円以上"
+      ],
+      "unit": "thousand_JPY_as_printed",
+      "source_top_origin_bbox": [
+        349.23,
+        432.40628,
+        445.61,
+        442.91017999999997
+      ],
+      "lower_then_upper_when_both_numeric": true
+    },
+    {
+      "id": "p16-header-4人",
+      "page": 2,
+      "printed_page": 16,
+      "role": "column_header",
+      "expected_text_without_whitespace": "4人",
+      "source_top_origin_bbox": [
+        60.09,
+        120.47,
+        156.47,
+        140.32
+      ]
+    },
+    {
+      "id": "p16-header-5人",
+      "page": 2,
+      "printed_page": 16,
+      "role": "column_header",
+      "expected_text_without_whitespace": "5人",
+      "source_top_origin_bbox": [
+        156.47,
+        120.47,
+        252.85,
+        140.32
+      ]
+    },
+    {
+      "id": "p16-header-6人",
+      "page": 2,
+      "printed_page": 16,
+      "role": "column_header",
+      "expected_text_without_whitespace": "6人",
+      "source_top_origin_bbox": [
+        252.85,
+        120.47,
+        349.23,
+        140.32
+      ]
+    },
+    {
+      "id": "p16-header-7人以上",
+      "page": 2,
+      "printed_page": 16,
+      "role": "column_header",
+      "expected_text_without_whitespace": "7人以上",
+      "source_top_origin_bbox": [
+        349.23,
+        120.47,
+        445.61,
+        140.32
+      ]
+    },
+    {
+      "id": "p16-header-乙",
+      "page": 2,
+      "printed_page": 16,
+      "role": "column_header",
+      "expected_text_without_whitespace": "乙",
+      "source_top_origin_bbox": [
+        445.61,
+        80.79,
+        541.98,
+        140.32
+      ]
+    }
+  ],
+  "attribution": "出典：国税庁「令和8年分 源泉徴収税額表 賞与に対する源泉徴収税額の算出率の表」 https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/15-16.pdf をもとに、jade-pdfの変換品質確認用に選択した表項目を記録。国税庁による変換結果の作成・承認を示さない。",
+  "production_ready": false
+}
