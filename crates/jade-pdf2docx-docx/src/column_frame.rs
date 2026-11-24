@@ -7,6 +7,10 @@ use quick_xml::{
     events::{BytesEnd, BytesStart, Event},
 };
 
+#[cfg(test)]
+#[path = "column_frame_tests.rs"]
+mod tests;
+
 /// 一つの二段sectionの、丸め済み余白と任意の明示段幅。
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Frame {
@@ -17,6 +21,34 @@ pub(super) struct Frame {
 }
 
 impl Frame {
+    /// 段組本文だけの左右字面を集め、全幅の見出し・末尾注記を段幅へ混ぜない。
+    pub(super) fn for_lines(
+        width: f32,
+        origin: f32,
+        lines: &[crate::StructuredTextLine],
+        columns: &[f32],
+    ) -> Option<Self> {
+        let mut left_right = f32::NEG_INFINITY;
+        let mut right_left = f32::INFINITY;
+        let mut font_size = 0.0f32;
+        for line in lines {
+            if ![line.left_x, line.right_x].iter().all(|v| v.is_finite())
+                || line.left_x < origin
+                || line.right_x > width
+                || line.right_x <= line.left_x
+            {
+                return None;
+            }
+            if crate::column_index_for_line(line, columns) == 0 {
+                left_right = left_right.max(line.right_x);
+            } else {
+                right_left = right_left.min(line.left_x);
+            }
+            font_size = font_size.max(crate::structured_line_max_font_size(line));
+        }
+        Self::infer(width, origin, left_right, right_left, font_size)
+    }
+
     /// 両段の字面と有限な段間から、原本を横断しないWord段幅を決める。
     pub(super) fn infer(
         width: f32,

@@ -1070,12 +1070,9 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_column_index = column_index;
                 let column_origin_twips =
-                    text_columns
-                        .zip(page_width)
-                        .and_then(|(columns, page_width)| {
-                            let _ = columns;
-                            text_column_layout?.frame.origin(page_width, column_index)
-                        });
+                    text_columns.zip(page_width).and_then(|(_, page_width)| {
+                        text_column_layout?.frame.origin(page_width, column_index)
+                    });
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
@@ -1349,28 +1346,12 @@ fn detected_text_columns_for_page(
     {
         return None;
     }
-    let mut left_right = f32::NEG_INFINITY;
-    let mut right_left = f32::INFINITY;
-    let mut font_size = 0.0f32;
-    for line in page
-        .lines
-        .iter()
-        .skip(leading_single_column_line_count)
-        .take(column_line_count)
-    {
-        if column_index_for_line(line, &columns) == 0 {
-            left_right = left_right.max(line.right_x);
-        } else {
-            right_left = right_left.min(line.left_x);
-        }
-        font_size = font_size.max(structured_line_max_font_size(line));
-    }
-    let frame = column_frame::Frame::infer(
+    let frame = column_frame::Frame::for_lines(
         page_width,
         structured_page_left_x(parsed, positioned_tables, page),
-        left_right,
-        right_left,
-        font_size,
+        &page.lines[leading_single_column_line_count
+            ..leading_single_column_line_count + column_line_count],
+        &columns,
     )?;
     Some(DetectedTextColumnLayout {
         frame,
