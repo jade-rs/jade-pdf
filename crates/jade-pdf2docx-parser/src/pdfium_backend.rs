@@ -146,13 +146,28 @@ pub(crate) fn parse_pdf(
             crate::pdfium_printed_hyphens::page(decode_budget, path, &mut preview, &characters)?;
             append_text_preview(decode_budget, &mut text_preview, &preview);
             decode_budget.check()?;
-            let elements = crate::pdfium_text::extract(
+            let mut elements = crate::pdfium_text::extract(
                 decode_budget,
                 path,
                 page_number,
                 &page_text,
                 &characters,
             )?;
+            if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
+                && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
+            {
+                let (_, indexed) = crate::pdfium_visible_text::extract_recovery_spans(
+                    decode_budget,
+                    path,
+                    page_number,
+                    &characters,
+                    &tags,
+                    &elements,
+                )?;
+                if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
+                    elements = indexed;
+                }
+            }
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
             decode_budget.check()?;
         }

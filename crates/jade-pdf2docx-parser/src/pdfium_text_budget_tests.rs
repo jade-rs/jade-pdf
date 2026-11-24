@@ -6,7 +6,7 @@ use crate::{
 };
 
 /// 指定容量だけを持つ独立したmetadata予算を作る。
-fn budget(capacity: u64) -> DecodeBudget {
+pub(super) fn budget(capacity: u64) -> DecodeBudget {
     DecodeBudget::new(&ParseLimits {
         max_total_metadata_workspace_bytes: capacity,
         ..Default::default()
@@ -14,7 +14,7 @@ fn budget(capacity: u64) -> DecodeBudget {
 }
 
 /// 正式なxref/Rootを持つPDFをnativeへ読み込み、借用ページ本文を検査する。
-fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
+pub(super) fn with_page(content: &str, check: impl FnOnce(&PdfPageText<'_>)) {
     with_native_page(content, |page| check(&page.text().unwrap()));
 }
 
@@ -25,7 +25,7 @@ fn with_native_page(content: &str, check: impl FnOnce(&PdfPage<'_>)) {
 }
 
 /// 所有の正式なPDFを同じSDK lifecycleで検査し、assertionのpanicをdrop後に伝える。
-fn with_native_bytes(bytes: &[u8], check: impl FnOnce(&PdfPage<'_>)) {
+pub(super) fn with_native_bytes(bytes: &[u8], check: impl FnOnce(&PdfPage<'_>)) {
     // assertionのunwind中にnativeをdropすると、依存先の共有Mutexをpoisonする。
     let outcome = {
         let native = pdfium_auto::bind_pdfium_silent().unwrap();
@@ -151,7 +151,7 @@ fn mixed_printed_hyphen_and_literal_control_keep_distinct_identity() {
 }
 
 /// sourceの空白とSDKの報告を区別するため、同じowned入力を両経路へ渡す。
-fn owned_text_pdf(content: &str) -> Vec<u8> {
+pub(super) fn owned_text_pdf(content: &str) -> Vec<u8> {
     pdf(&[
         "<< /Type /Catalog /Pages 2 0 R >>".into(),
         "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),

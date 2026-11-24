@@ -155,6 +155,43 @@ fn export_reviewed_original_from_actual_native_parser() {
     export_reviewed_original(true);
 }
 
+/// 未確認circlecopyrtを含む既知ページまで、制御文字の欠落によってfont選択を失わない。
+#[test]
+#[cfg(not(target_arch = "wasm32"))]
+#[ignore = "reviewed JADE_SOURCE_PDF and explicit PDFIUM_LIB_PATH required"]
+fn native_segment_recovery_keeps_unverified_glyph_page_geometry() {
+    let source = std::path::PathBuf::from(std::env::var_os("JADE_SOURCE_PDF").unwrap());
+    let bytes = std::fs::read(&source).unwrap();
+    let hash = hmac_sha256::Hash::hash(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    assert_eq!(
+        hash,
+        "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b"
+    );
+    let pure = crate::parse_pdf_bytes(&source, &bytes).unwrap();
+    let native = crate::parse_pdf(&source).unwrap();
+    for page in [1, 8] {
+        let expected = pure
+            .text_elements
+            .iter()
+            .filter(|e| e.page == page)
+            .map(|e| (&e.font_name, e.bounds, e.baseline_y))
+            .collect::<Vec<_>>();
+        let actual = native
+            .text_elements
+            .iter()
+            .filter(|e| e.page == page)
+            .map(|e| (&e.font_name, e.bounds, e.baseline_y))
+            .collect::<Vec<_>>();
+        assert!(
+            actual == expected,
+            "unverified glyph page must retain established geometry and font choices"
+        );
+    }
+}
+
 /// 原本を差し替えずに、指定された実入口のfont・本文・品質を保存する。
 fn export_reviewed_original(native: bool) {
     let source = std::path::PathBuf::from(std::env::var_os("JADE_SOURCE_PDF").unwrap());

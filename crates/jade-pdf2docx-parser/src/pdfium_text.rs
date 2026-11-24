@@ -6,6 +6,10 @@ use pdfium_render::prelude::*;
 #[path = "pdfium_text_budget_tests.rs"]
 mod budget_tests;
 
+#[cfg(test)]
+#[path = "pdfium_segment_recovery_tests.rs"]
+mod segment_recovery_tests;
+
 /// i32文字indexの全要求容量を予約してから、共有するページ配列を取得する。
 pub(crate) fn characters<'a>(
     budget: &DecodeBudget,
@@ -79,6 +83,56 @@ pub(crate) fn extract(
         )?;
     }
     Ok(elements)
+}
+
+/// 全ページSDK本文と非空白文字の順序・件数を照合し、矩形の重複読取りを検出する。
+/// 字面の一致だけで反復を消さず、停止済み予算からも再開しない。
+pub(crate) fn matches_preview(
+    budget: &DecodeBudget,
+    elements: &[ParsedTextElement],
+    preview: &str,
+) -> Result<bool, ParseError> {
+    crate::metadata_workspace::ensure_active(budget)?;
+    let mut expected = preview.chars().filter(|ch| !ch.is_whitespace());
+    for element in elements {
+        for ch in element.text.chars() {
+            budget.check()?;
+            if !ch.is_whitespace() && expected.next() != Some(ch) {
+                return Ok(false);
+            }
+        }
+    }
+    Ok(expected.next().is_none())
+}
+
+/// SDKが実描画glyphを制御文字へ誤対応したページでは、文字index経路の空白除去を採用しない。
+/// 生成された改行と、別途確認した印刷hyphenだけを制御文字の例外とする。
+pub(crate) fn index_preserves_controls(
+    budget: &DecodeBudget,
+    path: &std::path::Path,
+    characters: &PdfPageTextChars<'_>,
+) -> Result<bool, ParseError> {
+    crate::metadata_workspace::ensure_active(budget)?;
+    for character in characters.iter() {
+        budget.check()?;
+        let value = character.unicode_value();
+        if value > 31 && !(127..=159).contains(&value) {
+            continue;
+        }
+        if crate::pdfium_printed_hyphens::is_printed(budget, path, &character)? {
+            continue;
+        }
+        if !character
+            .is_generated()
+            .map_err(|error| ParseError::Pdfium {
+                path: path.to_path_buf(),
+                message: error.to_string(),
+            })?
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
 }
 
 /// segment.charsと同じ端点・許容幅で検索し、範囲の先頭だけを無確保で取得する。

@@ -1,0 +1,141 @@
+{
+  "generated_utc": "2026-11-24T10:10:55.162090+00:00",
+  "scope": "Native overlapping-rectangle duplicate recovery with complete SDK-index text verification and original rectangle span provenance. Incremental improvement; full production goal remains active.",
+  "production_ready": false,
+  "locally_qualified_runtime_head": "b61a972c03c0807e7f18470facde496b72191560",
+  "final_test_cleanup_head": "2fabb929ec5fb1136ab2324f36cb348fd96fbbaa",
+  "base_PR37_merged_main": "b76bda90c428a9a10adf6e356faeb67030094948",
+  "publication_status": "Local qualification complete; PR CI and fresh merge gate still required.",
+  "behavior": {
+    "identity": "Compare nonspace order/count with stop checks; if rectangle text disagrees, recover by SDK index and adopt only if complete page preview agrees. Genuine repeated characters remain.",
+    "span_provenance": "Coalesce only horizontal same-object-geometry/style/baseline index groups whose complete text, style and object bounds exactly match an original rectangle. Restore that rectangle geometry. Others retain indexed glyphs. Public SDK geometry, no private handles or per-character fullpage scans.",
+    "controls": "Painted C0/C1 glyphs prevent recovery; SDK-generated breaks and independently verified printed hyphens are distinct. GNU source2/9 retain previous glyph/font handling, unknown circlecopyrt stays diagnosed.",
+    "budgets": "All additional vectors, borrowed-signature sets and string copies charged to existing cumulative metadata budget; stop/limit errors do not return partial results.",
+    "reconciliation": "Existing pure/native matching, generatedcmap and Form-order guards unchanged. Hidden/clip paths remain glyph-based; overlapping partialclip rejection unchanged.",
+    "unchanged": "No public API/CLI/config/dependency changes, Unicode guesses, fontpermission changes or added tracked PDFs. Shared DOCX underline algorithm unchanged.",
+    "primary_reference": "https://pdfium.googlesource.com/pdfium/+/refs/heads/main/public/fpdf_text.h"
+  },
+  "TDD": {
+    "owned_lowered_glyph_Red": "3de3aecbc2a5c8f0e81c9b2b084144d38b32a64c",
+    "painted_control_geometry_Red": "712c2051734e87c32e546eecd0bf4dcc20a34c97",
+    "coherent_heading_Red": "026089aa2db0b38736bdaf13d1203eca2a8e2c5f",
+    "coherent_heading_Red_observed": "21elements, expected1; complete unclipped SDK source precondition passed.",
+    "final_provenance_Green": "b61a972c03c0807e7f18470facde496b72191560",
+    "properties": "16ownedPDF origin/size cases retain AAALaTEX; sampled Unicode repetitions and bounds union; style/baseline/page separation, exact original rectangle approval, unknown overpaint separation, stopped budgets.",
+    "nonsemantic_failures": "Initial overlong heading clipped by200ptpage and one usize/u64 compile error were fixture/build mistakes, not semantic Reds.",
+    "rejected_prototypes": "Initial control-code dropping, shared row-wide underline inference and broad object coalescing were not published. Historical artifacts retained. b9glyph-only Efftable render introduced unrelated letter changes; final source-bound character-delta gate resolves this without changing source gold."
+  },
+  "validation": {
+    "Rust_default": {
+      "passed": 2295,
+      "failed": 0,
+      "ignored": 30,
+      "groups": 123,
+      "head": "b61a972c03c0807e7f18470facde496b72191560",
+      "log_sha256": "b34f984096ab5bf148c81c7b7511be947b329b525cf16a48b484d70432753e1e"
+    },
+    "final_parser_after_test_only_cleanup": {
+      "passed": 1030,
+      "ignored": 24,
+      "failed": 0
+    },
+    "Clippy": "Default suite and final parser all-target Clippy passed with existing warnings; introduced test clone warning corrected.",
+    "source_Rust_hash_count": 685,
+    "Python_harness": 152,
+    "Python_tools": 86,
+    "native_example_inputs": 10,
+    "native_CLI_default_strict_outcomes": 7,
+    "native_BatchNorm_clip_rejection_without_output": true,
+    "native_example_sha256": "4e89f6232eabff0860069fe6636b330337667adacd58b717763ef9080da60e19",
+    "native_CLI_sha256": "be503b0f07f4053cdf973cf3cc74fd15f5235eed977dc5a47dca08218f3f5a1e",
+    "raw_production_WASM_sha256": "cf2d4218540fe35e40a9ca09d28ab23daac50bf6f9b1d2ca0fb86379abec7899",
+    "distributed_WASM_sha256": "a9164faabc82ebfefff02138381cfed4fc4aeb74c563a7f3c9a0f3b302c44755",
+    "browser_scope": "Production runtime and all distributed files exactly PR37;11original input paths/hashes and458parent qualification files reverified. Prior72Chromium+72WebKit tests and44actual default/strict outcomes reused by exact binding, not rerun for this candidate."
+  },
+  "GNU_Hello": {
+    "url": "https://www.gnu.org/software/hello/manual/hello.pdf",
+    "source_sha256": "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b",
+    "source_pages": 17,
+    "native_before": 18,
+    "native_after": 17,
+    "changed_source_page": 10,
+    "duplicate_extra_chars_removed": 4,
+    "native_page10_exact_pure_IR": true,
+    "other16_source_pages_exact_parent_IR": true,
+    "render": "All17candidate pages exact RGB to guarded b9 result; previous reviewed correspondence: other16 exact mergedparent, changedpage10 exact qualified pure.",
+    "unknown_controlglyphs": "No guessed Unicode or changed fontselection on source2/9; strictEncoding rejection retained."
+  },
+  "paper_regressions": {
+    "EfficientNet": {
+      "url": "https://proceedings.mlr.press/v97/tan19a/tan19a.pdf",
+      "source_sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+      "source_pages": 10,
+      "native_pages_before_after": 19,
+      "changed_source_pages": [
+        4,
+        7,
+        9,
+        10
+      ],
+      "duplicate_extra_chars_removed": 42,
+      "per_source_page_rendered_character_inventory_delta_exact_independent_SDK": true,
+      "Table1_sourcepage5_entire_native_IR_exact_merged_parent": true,
+      "Table1_DOCX_row_cell_associations": "Still incorrect; global numeric substring presence not treated as table acceptance.",
+      "header_max_error_to_original_center_pt": 0.05206080000004931,
+      "whole_document_accepted": false
+    },
+    "BERT": {
+      "url": "https://aclanthology.org/N19-1423.pdf",
+      "source_sha256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+      "source_pages": 16,
+      "native_pages_before_after": 27,
+      "changed_source_pages": [
+        4,
+        6,
+        7,
+        11,
+        14
+      ],
+      "duplicate_extra_chars_removed": 24,
+      "per_source_page_rendered_character_inventory_delta_exact_independent_SDK": true,
+      "Table1_original45numeric_cells_in_ordered_contiguous_DOCX_rows": true,
+      "numeric_scope": "Text-content evidence for original5x9gold; no grid/style/layout acceptance.",
+      "whole_document_accepted": false
+    },
+    "identity_audit": "All9source pages: final indexed text exact b9 parser text, independently proven equal eachSDKindex once; mergedparent text exact repeated rectangle extraction. Rendered character multiplicity differences match source deltas per corresponding page groups. Reading order and mathematical appearance remain unqualified.",
+    "originals_and_gold": "Previously all pages/rights/privacy reviewed before first conversion. Source/gold hashes unchanged; known regressions, no unseen holdout claim.",
+    "preview_and_quality_issues_unchanged": true
+  },
+  "controls": "7of10native DOCX byte-identical mergedparent. Changed3only body/headerXML; fonts/images/licenses/allotherparts exact. Pure parser snapshots exact parent for3papers.",
+  "render_review": "All13changed paper pages reviewed in3contact sheets. GNU17RGB exact previously individually reviewed result. Scientific original plot/table/math failures remain visible and recorded.",
+  "remaining_failures": [
+    "Scientific overpagination, missingvectorfigures, rotatedaxes, math structure, tabletopology and numeric associations.",
+    "Unknown Unicode including GNUcirclecopyrt; widerforms/OCR/Arabic/NTA failures.",
+    "MicrosoftWord and unseenholdout fidelity unqualified."
+  ],
+  "evidence_root": "Ignored corpus/wasm-runtime/native-segment-boundary-qualification; originals, private diagnosticproject, binaries, generatedDOCX/fonts and renders untracked. Exactly3trackedPDFfixtures.",
+  "evidence_receipts": {
+    "Red-native-segment-identity-receipt.json": "544cfb0de882349fdea917af6c2272a08a0d9f9ee2eac40392958d4ca9e863d1",
+    "Red-native-control-glyph-geometry-receipt.json": "f5230eac2692facc94a8987313b798e2535f9bb3778d88a0a1849eacc7a54b94",
+    "Red-native-coherent-heading-unclipped-receipt.json": "98ec4aa038de455a8c3559810db4f94098ead18f2c4c582226da2e9d46a5d1f5",
+    "Provenance-default-full-receipt.json": "e7925e7a5517c40c51a3b845afbe337e116153193e14d7c0677f08c381cb8797",
+    "Provenance-default-full-counts.json": "d3f2c94ba3afb476719e5814ff3bcbbf2070c20ae48808f4db9dacfe7def9ea9",
+    "Provenance-final-parser-unit-receipt.json": "5bc832fc77c41827904bb76ee86ff9bd43b3711c26a91589cc3e1585578c9e81",
+    "Provenance-final-parser-Clippy-receipt.json": "f0c997c988020e4ed1e7a58383e34678ab3243770107f432d46b07daf7c3b2df",
+    "Provenance-Python-harness-receipt.json": "93dc72e8d4c238514f7faf5e910a1bdd6bd37416374268e908aa2111d2eef15f",
+    "Provenance-Python-tools-receipt.json": "d2b2914dbb10e3d08cffd65480108e03de91b70ee6cb4a5fc7b2c578de91353d",
+    "Provenance-production-WASM-build-receipt.json": "f1da31ff8e7332dacffbfe98b7584523decc007cda7aa19ace0e454e70da28df",
+    "provenance-final-source-binding-after-test-only-Clippy-cleanup.json": "effa3fb37e014ba28555231e732f571d6f7ff9b282f879f2e4a8a89efa2d7b1a",
+    "native-provenance/receipts.json": "641058a0a5fc709b630ed09b6630ed8c1430428be9352627eaba8c56c3e160f5",
+    "cli-provenance/receipts.json": "2f798bf78e401c8c8594ba83a9373f887725e4a17217cc3828d18f1d6ce43d63",
+    "cli-provenance/BatchNorm-default-rejection-receipt.json": "24741799c0a4f1a1fd969e3b1141f337b532f4dfa47517f3ea1b4ca6aff432c9",
+    "actual-paper-parser-audits/provenance/receipt.json": "8c41408e9f5eac6fde88b5b7e13058f1189daf0e3e19d1d6c174987851b68cc9",
+    "independent-paper-SDK-identity-summary.json": "7b67df31a02e4bcf637e2eb35545819b6684fe0062c1d54fdeb4f6d7f6e931f8",
+    "provenance-rendered-character-delta-exact-independent-SDK-identity.json": "beb2e5350d2c9571fb7b4aa722a19fe65bac476c73aed73435343feba7139e4d",
+    "provenance-source-numeric-and-header-review.json": "dd42530850655b227ef24475e093445d2ae2cb45bb433e5d3919e3f9ad8a5dd9",
+    "provenance-three-native-render-execution-receipts.json": "f0476987dea4f04e0057aab52f52b36325b8d213d9d9da89c85d564401e99f1d",
+    "provenance-native-packages-and-exact-browser-evidence-binding.json": "3b48fa393a3971c8df40c07d3622012163d88a5fb8baf57010c009d2c06a1fd6",
+    "native-GNU-current-page-count-and-pixel-comparison.json": "dc36f02a0af6ce58b243faefbd5d7e22e7120bb43e40d135b229f20788127522",
+    "provenance-pixel-regression.json": "b0951663987fcddf9e4500441769aa73c35e2890e82865b5398259b3d45eaf4d"
+  }
+}
