@@ -12,6 +12,8 @@ struct Row<'a> {
     size: f32,
     /// 水平方向に整列した通常文字。未知baselineも局所照合の拒否に使う。
     anchors: Vec<&'a ParsedTextElement>,
+    /// 長い先行boxを細い後続glyphが隠しても交差を検出する累積右端。
+    right_prefix: Vec<f32>,
 }
 
 impl<'a> Row<'a> {
@@ -35,10 +37,19 @@ impl<'a> Row<'a> {
             .filter(|t| size > 0. && t.font_size >= size * 0.95)
             .collect::<Vec<_>>();
         anchors.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+        let mut right = f32::NEG_INFINITY;
+        let right_prefix = anchors
+            .iter()
+            .map(|text| {
+                right = right.max(text.bounds.x1);
+                right
+            })
+            .collect();
         Self {
             seed_y: native_baseline::line_y(texts[0]),
             size,
             anchors,
+            right_prefix,
         }
     }
 
@@ -58,7 +69,9 @@ impl<'a> Row<'a> {
             .partition_point(|t| t.bounds.x0 < text.bounds.x0);
         let left = next.checked_sub(1).map(|i| self.anchors[i]);
         let right = self.anchors.get(next).copied();
-        if left.is_some_and(|t| t.bounds.x1 > text.bounds.x0 + 0.01)
+        if next
+            .checked_sub(1)
+            .is_some_and(|i| self.right_prefix[i] > text.bounds.x0 + 0.01)
             || right.is_some_and(|t| t.bounds.x0 < text.bounds.x1 - 0.01)
         {
             return false;
