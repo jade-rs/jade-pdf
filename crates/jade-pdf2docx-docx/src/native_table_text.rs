@@ -27,8 +27,8 @@ pub(super) fn cells(
     cells_impl(parsed, xs, ys, texts, model, false)
 }
 
-/// 独立した閉じた枠で所有を確認したセルでは、既知基線の小さい添字行も復元する。
-pub(super) fn cells_with_scripts(
+/// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
+pub(super) fn boxed_cells(
     parsed: &ParsedDocument,
     xs: &[i32],
     ys: &[i32],
@@ -45,9 +45,15 @@ fn cells_impl(
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
-    scripts: bool,
+    closed_boxes: bool,
 ) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    // 添字復元を許す呼出元は全graphicが閉じた枠と確認済みであり、枠の下辺は文字下線ではない。
+    let styling_graphics = if closed_boxes {
+        &[][..]
+    } else {
+        parsed.graphics.as_slice()
+    };
     model
         .rows
         .iter()
@@ -73,14 +79,14 @@ fn cells_impl(
                     if characters(&original) != characters(&cell.text) {
                         return None;
                     }
-                    let rows = source_rows(elements, scripts);
+                    let rows = source_rows(elements, closed_boxes);
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
                             let mut row =
                                 native_spacing::with_interior_spaces(&parsed.text_elements, row);
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                            let mut line = source_line(row, &parsed.graphics, *xs.last()? as f32)?;
+                            let mut line = source_line(row, styling_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             Some(line)
@@ -102,7 +108,7 @@ fn cells_impl(
                         left,
                         top,
                         bottom,
-                        single_line_runs: if scripts && lines.len() == 1 {
+                        single_line_runs: if closed_boxes && lines.len() == 1 {
                             lines[0].runs.clone()
                         } else if lines.len() == 1 {
                             legacy_runs(parsed, selected, &cell.text)

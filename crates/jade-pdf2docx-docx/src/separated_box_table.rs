@@ -157,7 +157,7 @@ pub(super) fn infer(
             })
             .collect(),
     };
-    let native_cells = native_table_text::cells_with_scripts(parsed, &xs, &ys, &texts, &model);
+    let native_cells = native_table_text::boxed_cells(parsed, &xs, &ys, &texts, &model);
     let fonts = texts
         .iter()
         .flatten()
