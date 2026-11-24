@@ -1414,21 +1414,40 @@ fn structured_page_layout(
         .pages
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)?;
-    let min_x = structured_page_left_x(parsed, positioned_tables, page);
-    let max_y = positioned_tables
-        .iter()
-        .filter(|table| table.page == page.page)
-        .map(|table| table.bounds.y1)
-        .chain(page.lines.iter().map(|line| line.top_y))
-        .chain(
-            parsed
-                .image_elements
-                .iter()
-                .filter(|image| image.page == page.page && !image.floating)
-                .map(|image| image.bounds.y1),
-        )
-        .filter(|value| value.is_finite())
-        .fold(f32::NEG_INFINITY, f32::max);
+    // floating画像やheader/footerだけのページにも、確認済みの原本寸法を使う。
+    // 本文flowがない場合の原点は0とし、既定A4の余白へ置き換えない。
+    let has_flow = !page.lines.is_empty()
+        || positioned_tables
+            .iter()
+            .any(|table| table.page == page.page)
+        || parsed
+            .image_elements
+            .iter()
+            .any(|image| image.page == page.page && !image.floating);
+    let display_height = parsed_page_display_size_points(parsed_page).1;
+    let min_x = if has_flow {
+        structured_page_left_x(parsed, positioned_tables, page)
+    } else {
+        0.
+    };
+    let max_y = if has_flow {
+        positioned_tables
+            .iter()
+            .filter(|table| table.page == page.page)
+            .map(|table| table.bounds.y1)
+            .chain(page.lines.iter().map(|line| line.top_y))
+            .chain(
+                parsed
+                    .image_elements
+                    .iter()
+                    .filter(|image| image.page == page.page && !image.floating)
+                    .map(|image| image.bounds.y1),
+            )
+            .filter(|value| value.is_finite())
+            .fold(f32::NEG_INFINITY, f32::max)
+    } else {
+        display_height
+    };
     if !min_x.is_finite() || !max_y.is_finite() {
         return None;
     }
@@ -1441,7 +1460,6 @@ fn structured_page_layout(
         page,
         max_y,
     );
-    let display_height = parsed_page_display_size_points(parsed_page).1;
     let top = pdf_points_to_floor_twips(
         (display_height - max_y - stroke_adjustment + text_bearing_adjustment).max(0.0),
     )
