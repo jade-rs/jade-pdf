@@ -85,6 +85,20 @@ fn unverified_roman_lookalikes_keep_existing_name_fallback() {
     }
 }
 
+/// 同じ代替familyになっても、表内の異なるfaceを一つの共通styleへ潰さない。
+#[test]
+fn mixed_roman_table_faces_do_not_become_one_style() {
+    assert_eq!(
+        common_usable_pdf_font_name(["NimbusRomNo9L-Regu", "NimbusRomNo9L-Medi"]),
+        None,
+        "mixed Roman table faces must not collapse to one shared style"
+    );
+    assert_eq!(
+        common_usable_pdf_font_name(["ABCDEF+NimbusRomNo9L-Regu", "GHIJKL+NimbusRomNo9L-Regu"]),
+        Some("ABCDEF+NimbusRomNo9L-Regu".into())
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// subset名・四face・内部styleを変えても、埋め込みfaceの属性を代替規則で変えない。
