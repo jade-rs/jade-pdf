@@ -46,13 +46,16 @@ fn drawing_operand<'a>(
 }
 
 /// 真にstrokeされるreだけを検出し、塗りのみ・取消pathの追加Resource解決を避ける。
-fn has_rectangle(content: &[u8]) -> bool {
+fn has_rectangle(budget: &DecodeBudget, content: &[u8]) -> bool {
     let mut lexer = Lexer {
         bytes: content,
         cursor: 0,
     };
     let mut rectangle = false;
     while let Some((token, span)) = lexer.next_spanned() {
+        if budget.is_stopped() {
+            return false;
+        }
         match token {
             Token::Word(b"re") => rectangle = true,
             Token::Word(b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*") if rectangle => return true,
@@ -322,6 +325,9 @@ fn joined<'a>(
     streams: &'a [(usize, Vec<u8>)],
     start: usize,
 ) -> Option<(usize, Cow<'a, [u8]>, usize)> {
+    if budget.is_stopped() {
+        return None;
+    }
     let page = streams.get(start)?.0;
     let end = start
         + streams[start..]
@@ -356,7 +362,7 @@ pub(super) fn append(
     while index < streams.len() {
         let (page, content, end) = joined(budget, streams, index)?;
         index = end;
-        if has_rectangle(&content) {
+        if has_rectangle(budget, &content) {
             first = Some((page, content));
             break;
         }
@@ -383,7 +389,7 @@ pub(super) fn append(
     while index < streams.len() {
         let (page, content, end) = joined(budget, streams, index)?;
         index = end;
-        if has_rectangle(&content) {
+        if has_rectangle(budget, &content) {
             scan(
                 budget,
                 page,

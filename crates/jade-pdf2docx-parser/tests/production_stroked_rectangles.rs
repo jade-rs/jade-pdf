@@ -1,6 +1,7 @@
 //! 元の長方形の四辺を、可視性・描画状態・構築時CTMとともに保持する。
 use jade_pdf2docx_parser::{ParsedDocument, parse_pdf_bytes};
 use proptest::prelude::*;
+#[allow(dead_code)]
 #[path = "support/page_attribute_pdf.rs"]
 mod page_attribute_pdf;
 
@@ -232,4 +233,76 @@ fn substituted_device_space_does_not_invent_black_borders() {
         parsed.graphics.is_empty(),
         "unverified DefaultGray substitution must not assert black rectangle borders"
     );
+}
+
+/// 構築済みpathはq/Qの復元対象ではなく、塗る時点の線幅だけが復元される。
+#[test]
+fn constructed_rectangle_survives_state_restore_without_rescaling_its_points() {
+    let parsed = parse_pdf_bytes(
+        "owned-restored-path.pdf",
+        &source(&["q 2 0 0 2 100 100 cm 20 30 40 10 re Q .5 w S"], "<< >>"),
+    )
+    .unwrap();
+    assert_eq!(
+        edges(&parsed),
+        vec![
+            [140, 160, 140, 180],
+            [140, 160, 220, 160],
+            [140, 180, 220, 180],
+            [220, 160, 220, 180]
+        ]
+    );
+    assert!(parsed.graphics.iter().all(|g| g.stroke_width == 0.5));
+}
+
+/// 90度回転も実際の四辺を保ち、異方的なpenの法線幅を取り違えない。
+#[test]
+fn quarter_turn_preserves_edges_and_each_normal_stroke_width() {
+    let parsed = parse_pdf_bytes(
+        "owned-quarter-turn.pdf",
+        &source(&["0 2 -3 0 300 100 cm .5 w 20 30 40 10 re S"], "<< >>"),
+    )
+    .unwrap();
+    assert_eq!(
+        edges(&parsed),
+        vec![
+            [180, 140, 180, 220],
+            [180, 140, 210, 140],
+            [180, 220, 210, 220],
+            [210, 140, 210, 220]
+        ]
+    );
+    for line in parsed.graphics {
+        assert_eq!(
+            line.stroke_width,
+            if line.bounds.x0 == line.bounds.x1 {
+                1.5
+            } else {
+                1.
+            }
+        );
+    }
+}
+
+/// 同じgs名を、異なるページの透明度と取り違えない。
+#[test]
+fn same_state_name_on_two_pages_keeps_its_own_opacity() {
+    let content = page_attribute_pdf::stream("/S gs 20 30 40 10 re S");
+    let pdf=page_attribute_pdf::pdf(&["<< /Type /Catalog /Pages 2 0 R >>".into(),"<< /Type /Pages /Count 2 /Kids [3 0 R 4 0 R] /MediaBox [0 0 500 500] >>".into(),"<< /Type /Page /Parent 2 0 R /Contents 5 0 R /Resources << /ExtGState << /S << /CA 1 >> >> >> >>".into(),"<< /Type /Page /Parent 2 0 R /Contents 6 0 R /Resources << /ExtGState << /S << /CA 0 >> >> >> >>".into(),content.clone(),content]);
+    let parsed = parse_pdf_bytes("owned-page-stroke-states.pdf", &pdf).unwrap();
+    assert_eq!(parsed.graphics.len(), 4);
+    assert!(parsed.graphics.iter().all(|g| g.page == 0));
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 一時的な白色・不明gs・dash・透明度のどれも、q/Qを越えて元の黒枠を消さない。
+    #[test]
+    fn restored_rectangle_state_is_independent_of_hidden_nested_paint(which in 0_usize..4,x in 20_i16..150) {
+        let hidden=["1 G","/Missing gs","[2 2] 0 d","/Half gs"][which];
+        let content=format!("q {hidden} {x} 30 40 10 re S Q {x} 80 40 10 re S");
+        let parsed=parse_pdf_bytes("owned-restored-rectangle.pdf",&source(&[&content],"<< /ExtGState << /Half << /CA .5 >> >> >>")).unwrap();
+        let l=i32::from(x);let r=l+40;
+        prop_assert_eq!(edges(&parsed),vec![[l,80,l,90],[l,80,r,80],[l,90,r,90],[r,80,r,90]]);
+    }
 }
