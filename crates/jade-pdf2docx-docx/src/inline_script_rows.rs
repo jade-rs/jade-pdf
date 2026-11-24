@@ -1,5 +1,5 @@
 //! 固定の行閾値から離れた小文字行を、検証済みの隣接本文へまとめて戻す。
-use super::{ParsedTextElement, inline_baseline, native_baseline};
+use super::{ParsedTextElement, inline_baseline, native_baseline, text_column_gutter::Gutter};
 
 /// 密集した候補行は曖昧と扱い、glyphごとの全行走査を避ける。
 const MAX_CANDIDATE_ROWS: usize = 16;
@@ -88,15 +88,72 @@ impl<'a> Row<'a> {
 }
 
 /// 近接する小文字群ごとに一意な本文行へ戻し、単語の分断と曖昧・入れ子の移動を避ける。
-pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
+pub(super) fn recover<'a>(
+    rows: &mut [Vec<&'a ParsedTextElement>],
+    gutter: Option<Gutter>,
+) -> Vec<bool> {
+    let mut changed = vec![false; rows.len()];
+    let mut output = vec![Vec::new(); rows.len()];
+    for region in 0..=3 {
+        let mut indices = Vec::new();
+        let mut local = Vec::new();
+        for (index, row) in rows.iter().enumerate() {
+            let texts = row
+                .iter()
+                .copied()
+                .filter(|t| {
+                    !t.text.chars().all(char::is_whitespace) && region_for(t, gutter) == region
+                })
+                .collect::<Vec<_>>();
+            if !texts.is_empty() {
+                indices.push(index);
+                local.push(texts);
+            }
+        }
+        // 段間を横断するboxには局所的な段の根拠がないため、移動させない。
+        let touched = if region == 3 {
+            vec![false; local.len()]
+        } else {
+            recover_local(&mut local)
+        };
+        for ((index, texts), touched) in indices.into_iter().zip(local).zip(touched) {
+            output[index].extend(texts);
+            changed[index] |= touched;
+        }
+    }
+    for ((row, texts), touched) in rows.iter_mut().zip(output).zip(&changed) {
+        if *touched {
+            *row = texts;
+        }
+    }
+    changed
+}
+
+/// 本文の確認済み垂直範囲内だけ左右の段を分け、範囲外は元の全幅行として扱う。
+fn region_for(text: &ParsedTextElement, gutter: Option<Gutter>) -> usize {
+    let Some(gutter) = gutter.filter(|g| g.contains(text)) else {
+        return 0;
+    };
+    if text.bounds.x1 <= gutter.x {
+        1
+    } else if text.bounds.x0 >= gutter.x {
+        2
+    } else {
+        3
+    }
+}
+
+/// 同じ段に属する行だけで移動計画を作り、変更した元行と移動先を返す。
+fn recover_local<'a>(rows: &mut [Vec<&'a ParsedTextElement>]) -> Vec<bool> {
+    let mut changed = vec![false; rows.len()];
     if rows.is_empty() || rows.iter().any(Vec::is_empty) {
-        return;
+        return changed;
     }
     let metadata = rows.iter().map(|r| Row::new(r)).collect::<Vec<_>>();
     if metadata.iter().any(|r| !r.seed_y.is_finite())
         || metadata.windows(2).any(|r| r[0].seed_y < r[1].seed_y)
     {
-        return;
+        return changed;
     }
     let mut moves = rows.iter().map(|r| vec![None; r.len()]).collect::<Vec<_>>();
     for (index, texts) in rows.iter().enumerate() {
@@ -143,6 +200,8 @@ pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
                 && !incoming[source]
             {
                 additions[*target].push(text);
+                changed[source] = true;
+                changed[*target] = true;
             } else {
                 rows[source].push(text);
             }
@@ -151,7 +210,7 @@ pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
     for (row, texts) in rows.iter_mut().zip(additions) {
         row.extend(texts);
     }
-    rows.retain(|row| !row.is_empty());
+    changed
 }
 
 /// 接した文字列は一体として扱い、離れた指数や単位の小文字群を水平座標で分ける。

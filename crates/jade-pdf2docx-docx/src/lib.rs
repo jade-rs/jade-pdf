@@ -1741,7 +1741,6 @@ fn text_lines_by_page_from_pdf_text_elements(
                     rows.push(vec![text]);
                 }
             }
-            inline_script_rows::recover(&mut rows);
             for row in &mut rows {
                 *row = native_spacing::with_interior_spaces(
                     &parsed.text_elements,
@@ -1753,6 +1752,17 @@ fn text_lines_by_page_from_pdf_text_elements(
                 && !parsed.image_elements.iter().any(|image| image.page == page))
             .then(|| text_column_gutter::infer(&rows, page_width))
             .flatten();
+            let changed = inline_script_rows::recover(&mut rows, gutter);
+            for (row, changed) in rows.iter_mut().zip(changed) {
+                if changed {
+                    *row = native_spacing::with_interior_spaces(
+                        &parsed.text_elements,
+                        std::mem::take(row),
+                    );
+                    row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+                }
+            }
+            rows.retain(|row| !row.is_empty());
             let lines = rows
                 .iter()
                 .flat_map(|row| {
