@@ -18,7 +18,11 @@ pub(super) fn augment(
         return out;
     }
     for edge in vertical.iter().filter(|b| finite(b)) {
-        let x = edge.x0.round() as i32;
+        let x = f64::from(edge.x0).round();
+        if !(f64::from(i32::MIN)..=f64::from(i32::MAX)).contains(&x) {
+            continue;
+        }
+        let x = x as i32;
         let is_left = i64::from(x) < i64::from(left) - 1;
         let is_right = i64::from(x) > i64::from(right) + 1;
         if !(is_left || is_right)
