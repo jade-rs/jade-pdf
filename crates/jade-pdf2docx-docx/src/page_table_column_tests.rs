@@ -50,7 +50,8 @@ fn table_and_columns(table_page: usize) -> String {
 
 /// 本文がない表・画像ページも、同じ本番構築・ZIP経路で検証する。
 fn packaged(mut parsed: ParsedDocument, tables: &[PositionedTable]) -> String {
-    let docx = build_structured_docx_from_owned_images(&mut parsed, &None, tables).unwrap();
+    let summary = tables.first().map(|table| table.table.clone());
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &summary, tables).unwrap();
     let bytes = pack_docx_to_bytes(docx, &[]).unwrap();
     document_xml(bytes)
 }
@@ -87,8 +88,10 @@ fn unsplit_body_row_crossing_the_gutter_does_not_enter_columns() {
     wide.text = "FULL WIDTH BODY ROW".into();
     parsed.text_elements.push(wide);
     let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
-    assert!(detected_text_columns_for_page(&parsed, &pages[0], &[]).is_none(),
-        "unsplit body row crossing the gutter must not be forced into a narrow column");
+    assert!(
+        detected_text_columns_for_page(&parsed, &pages[0], &[]).is_none(),
+        "unsplit body row crossing the gutter must not be forced into a narrow column"
+    );
 }
 
 /// 梱包済みDOCXから、Wordが解釈する本文を読み出す。
