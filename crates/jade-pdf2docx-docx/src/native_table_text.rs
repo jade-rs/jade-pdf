@@ -269,3 +269,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     }
     Some(out)
 }
+
+#[cfg(test)]
+#[path = "native_table_merge_tests.rs"]
+mod merged_tests;
