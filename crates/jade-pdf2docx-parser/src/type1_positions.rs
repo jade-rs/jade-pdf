@@ -1,15 +1,5 @@
 //! 確認済みの正立文字の間隔を、source fontを割り当てない論理空白へ戻す。
-use crate::ParsedBounds;
-
-/// 正立した派生glyphの描画行列だけから、確認済みのbaselineを返す。
-pub(super) fn baseline(matrix: [f32; 6]) -> Option<f32> {
-    (matrix.iter().all(|v| v.is_finite())
-        && matrix[0] > 0.
-        && matrix[3] > 0.
-        && matrix[1] == 0.
-        && matrix[2] == 0.)
-        .then_some(matrix[5])
-}
+use crate::{ParsedBounds, text_baseline::upright as baseline};
 
 /// 同じ正立baselineで正の距離を持つ二矩形だけから、空白のページ座標を求める。
 pub(super) fn gap(

@@ -87,6 +87,7 @@ mod syntax;
 mod test_allocations;
 mod text;
 mod text_alpha;
+mod text_baseline;
 mod text_clipping;
 mod text_draws;
 mod text_geometry;

@@ -125,3 +125,37 @@ fn unverified_axes_and_nonpositive_sizes_do_not_gain_upright_baselines() {
     assert_eq!(parsed.text_elements.len(), 1);
     assert!(parsed.text_elements[0].baseline_y.is_none());
 }
+
+/// 局所行列が反転していても、CTM合成後に正立した文字の基線は既知である。
+#[test]
+fn two_reflections_are_verified_in_page_space() {
+    let parsed = document(
+        0,
+        "q -1 0 0 -1 200 200 cm BT /F 18 Tf -1 0 0 -1 30 80 Tm (A) Tj ET Q",
+        false,
+    );
+    assert_eq!(parsed.text_elements.len(), 1);
+    assert_eq!(parsed.text_elements[0].baseline_y, Some(120.));
+}
+
+use proptest::prelude::*;
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(96))]
+    /// Font経路・平行移動・縦横倍率・文字上げ・Formを合成しても、基線は同じページ座標になる。
+    #[test]
+    fn source_matrix_baseline_is_font_independent(
+        kind in 0_u8..=2, in_form in any::<bool>(),
+        x in 30_u8..=60, y in 50_u8..=90,
+        sx in 1_u8..=2, sy in 1_u8..=2, size in 4_u8..=20, rise in -5_i8..=5,
+    ) {
+        let a = if kind == 2 { "<0041>" } else { "(A)" };
+        let content = format!("BT /F {size} Tf {sx} 0 0 {sy} {x} {y} Tm {rise} Ts {a} Tj ET");
+        let parsed = document(kind,&content,in_form);
+        prop_assert_eq!(parsed.text_elements.len(),1);
+        let (scale,origin) = if in_form { (3.,11.) } else { (1.,0.) };
+        let expected = (f32::from(y)+f32::from(sy)*f32::from(rise))*scale+origin;
+        prop_assert_eq!(parsed.text_elements[0].baseline_y,Some(expected));
+        prop_assert_eq!(parsed.text_elements[0].font_size,f32::from(size)*f32::from(sy)*scale);
+        prop_assert_eq!(parsed.text_elements[0].text.as_str(),"A");
+    }
+}

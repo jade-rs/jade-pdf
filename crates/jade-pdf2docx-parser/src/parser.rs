@@ -2621,8 +2621,10 @@ fn extract_text_elements_with_matrices<'clip>(
                     && crate::text_draws::adjacent(previous, width, current, state.size)
             })
         });
-        let positioned =
-            derived.is_some() && page_matrix.and_then(type1_positions::baseline).is_some();
+        let positioned = derived.is_some()
+            && page_matrix
+                .and_then(crate::text_baseline::upright)
+                .is_some();
         let merge = !positioned
             && !last_positioned
             && (last_sequence == Some(sequence) || adjacent)
@@ -2677,7 +2679,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
-                            baseline_y: page_matrix.and_then(type1_positions::baseline),
+                            baseline_y: page_matrix.and_then(crate::text_baseline::upright),
                             page,
                             bounds: gap,
                             font_size,
@@ -2724,9 +2726,9 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: (font_size.is_finite() && font_size > 0.)
-                            .then(|| page_matrix.and_then(type1_positions::baseline))
-                            .flatten(),
+                        baseline_y: page_matrix
+                            .filter(|_| font_size.is_finite() && font_size > 0.)
+                            .and_then(crate::text_baseline::upright),
                         page,
                         bounds,
                         font_size,
