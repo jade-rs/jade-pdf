@@ -90,8 +90,10 @@ proptest! {
         left in 10_u16..200, width in 30_u16..90, size in 6_u16..18, inset in 1_u16..10,
     ) {
         let cell = first_cell(&source_with_geometry(left, width, size, f32::from(inset)));
-        prop_assert!(cell.contains(&format!("<w:ind w:left=\"{}\"", inset * 20)));
-        prop_assert!(cell.contains(&format!("w:sz w:val=\"{}\"", size * 2)));
+        let expected_indent = format!("<w:ind w:left=\"{}\"", inset * 20);
+        let expected_size = format!("w:sz w:val=\"{}\"", size * 2);
+        prop_assert!(cell.contains(&expected_indent));
+        prop_assert!(cell.contains(&expected_size));
         prop_assert_eq!(cell.matches(">10</w:t>").count(), 1);
         assert_zero_horizontal_margins(&cell);
     }
