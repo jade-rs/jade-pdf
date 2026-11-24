@@ -60,6 +60,7 @@ mod inline_baseline;
 mod inline_script_rows;
 mod native_baseline;
 mod native_line_pitch;
+mod native_numeric_alignment;
 mod native_spacing;
 mod native_table_rows;
 mod native_table_text;

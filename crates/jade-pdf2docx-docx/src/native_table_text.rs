@@ -347,15 +347,23 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_left(0, WidthType::Dxa)
         .margin_right(0, WidthType::Dxa);
     let mut previous_bottom = cell.top;
-    for line in &cell.lines {
+    let right_anchors = native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right);
+    for (index, line) in cell.lines.iter().enumerate() {
         let before = (previous_bottom - line.top_y).max(0.0);
         let height = structured_line_max_font_size(line);
         let (before, line_twips, used) = rounding.line(before, height)?;
         if used > capacity {
             return None;
         }
-        let paragraph = paragraph_from_structured_line(line, cell.left, None, None)
+        let mut paragraph = paragraph_from_structured_line(line, cell.left, None, None)
             .line_spacing(native_line_pitch::spacing_twips(line_twips, before, 0)?);
+        if right_anchors[index] {
+            let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
+            paragraph =
+                paragraph
+                    .align(AlignmentType::Right)
+                    .indent(Some(0), None, Some(right), None);
+        }
         out = out.add_paragraph(paragraph);
         previous_bottom = line.top_y - height;
     }
