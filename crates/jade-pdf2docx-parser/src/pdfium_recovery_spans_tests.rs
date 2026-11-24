@@ -73,7 +73,7 @@ fn boundaries_and_overpaint_remain_distinct() {
 #[test]
 fn stopped_budget_never_returns_a_partial_span() {
     let budget = DecodeBudget::new(&ParseLimits::default());
-    budget.charge_metadata_workspace_bytes(usize::MAX);
+    budget.charge_metadata_workspace_bytes(u64::MAX);
     let mut previous = element("A", 10., 16.);
     assert!(
         join(
