@@ -8,6 +8,8 @@ Native conversion now recovers unreadable TrueType display names from verified e
 
 Single-entry Device color-space arrays also retain decoded image colors. The [pixel validation](corpus/validation-singleton-colorspace.json) checks the original RGB samples independently; table layout and image placement remain separate limitations.
 
+DeviceCMYK JPEG images retain PDF sample polarity, including Adobe CMYK/YCCK data, and apply source `Decode` and supported soft-mask `Matte` before RGB conversion. The existing unmanaged CMYK approximation can lose shadow detail; this does not establish color-managed reproduction. See the [CMYK image evidence and remaining limits](corpus/validation-device-cmyk-jpeg.json).
+
 ## Features
 
 - **PDF comparison:** align pages and text blocks, inspect extracted document structure, and render pages with Pdfium.
