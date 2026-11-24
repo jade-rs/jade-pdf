@@ -64,6 +64,7 @@ fn numeric_token(text: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use proptest::prelude::*;
 
     /// 所有する原本の行配置だけを与え、製品が使うfontや字間から期待値を作らない。
     fn line(text: &str, left_x: f32, right_x: f32) -> StructuredTextLine {
@@ -126,5 +127,26 @@ mod tests {
             right_anchors(&[line("9", 92., 98.), bad], 0., 100.),
             [false, false]
         );
+    }
+
+    /// 同じ右advanceでも字形末尾のsidebearingが違う外接矩形を、font emの狭い範囲で扱う。
+    #[test]
+    fn small_ink_right_sidebearing_variation_keeps_source_numeric_anchors() {
+        let lines=[line("9",92.,98.),line("1,234",70.,97.4)];
+        assert_eq!(right_anchors(&lines,0.,100.),[true,true],"small source ink sidebearings must not discard a numeric right anchor");
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(24))]
+        /// 字形端の差がemの10%未満なら保持し、それを明確に超える配置差は原点・sizeに依存せず拒否する。
+        #[test]
+        fn sidebearing_band_scales_with_font_em(origin in 0i16..500,em in 8u16..30,gap_hundredths in 1u16..10) {
+            let (origin,em)=(f32::from(origin),f32::from(em));let right=origin+em*8.;let anchor=right-em*0.25;
+            let mut lines=[line("9",anchor-em*0.5,anchor),line("1,234",anchor-em*3.,anchor-em*f32::from(gap_hundredths)/100.)];
+            for line in &mut lines {line.runs[0].style.font_size=em;}
+            prop_assert_eq!(right_anchors(&lines,origin,right),[true,true]);
+            lines[1].right_x-=em*0.15;
+            prop_assert_eq!(right_anchors(&lines,origin,right),[false,false]);
+        }
     }
 }
