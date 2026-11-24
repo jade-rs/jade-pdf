@@ -1752,6 +1752,10 @@ fn text_lines_by_page_from_pdf_text_elements(
                 && !parsed.image_elements.iter().any(|image| image.page == page))
             .then(|| text_column_gutter::infer(&rows, page_width))
             .flatten();
+            let cuts = rows
+                .iter()
+                .map(|row| text_row_cuts(row, gutter))
+                .collect::<Vec<_>>();
             let changed = inline_script_rows::recover(&mut rows, gutter);
             for (row, changed) in rows.iter_mut().zip(changed) {
                 if changed {
@@ -1762,11 +1766,11 @@ fn text_lines_by_page_from_pdf_text_elements(
                     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
                 }
             }
-            rows.retain(|row| !row.is_empty());
             let lines = rows
                 .iter()
-                .flat_map(|row| {
-                    split_text_row_segments(row, gutter)
+                .zip(&cuts)
+                .flat_map(|(row, cuts)| {
+                    split_text_row_segments(row, gutter, cuts)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
@@ -1851,11 +1855,11 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
         .map(|page| parsed_page_display_size_points(page).1)
 }
 
-/// 1 行分の text element を、段組などの大きな水平ギャップで分割する。
-fn split_text_row_segments<'a>(
-    row: &[&'a ParsedTextElement],
+/// 添字を復元する前の本文行から、元の水平分割位置を確定する。
+fn text_row_cuts(
+    row: &[&ParsedTextElement],
     gutter: Option<text_column_gutter::Gutter>,
-) -> Vec<TextRowSegment<'a>> {
+) -> Vec<f32> {
     let Some(first) = row.first() else {
         return Vec::new();
     };
@@ -1864,19 +1868,38 @@ fn split_text_row_segments<'a>(
         .map(|text| (text.bounds.y1 - text.bounds.y0).abs().max(1.0))
         .sum::<f32>()
         / row.len() as f32;
-    let split_gap = avg_height * 8.0;
-    let mut segments: Vec<Vec<&ParsedTextElement>> = vec![vec![*first]];
     let mut right = first.bounds.x1;
-    for text in row.iter().copied().skip(1) {
-        let gap = text.bounds.x0 - right;
-        if gap > split_gap
-            || gutter.is_some_and(|gutter| right < gutter.x && gutter.x < text.bounds.x0)
+    let mut cuts = Vec::new();
+    for text in row.iter().skip(1) {
+        if text.bounds.x0 - right > avg_height * 8.0
+            || gutter.is_some_and(|g| right < g.x && g.x < text.bounds.x0)
         {
+            cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
+        }
+        right = right.max(text.bounds.x1);
+    }
+    cuts
+}
+
+/// 復元した添字で尺度を再推定せず、元の行の分割位置を使う。
+fn split_text_row_segments<'a>(
+    row: &[&'a ParsedTextElement],
+    gutter: Option<text_column_gutter::Gutter>,
+    cuts: &[f32],
+) -> Vec<TextRowSegment<'a>> {
+    let Some(first) = row.first() else {
+        return Vec::new();
+    };
+    let mut segments: Vec<Vec<&ParsedTextElement>> = vec![vec![*first]];
+    let mut bin = cuts.partition_point(|cut| *cut <= first.bounds.x0);
+    for text in row.iter().copied().skip(1) {
+        let next = cuts.partition_point(|cut| *cut <= text.bounds.x0);
+        if next != bin {
             segments.push(vec![text]);
         } else if let Some(segment) = segments.last_mut() {
             segment.push(text);
         }
-        right = right.max(text.bounds.x1);
+        bin = next;
     }
     let split_from_row = segments.len() > 1 || gutter.is_some_and(|gutter| gutter.contains(first));
     segments
