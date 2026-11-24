@@ -72,3 +72,23 @@ proptest::proptest! {
         proptest::prop_assert_eq!(xml.contains("<w:b w:val=\"false\""),!bold);
     }
 }
+
+/// 既知の太字・複合styleは保持し、未知名では呼び出し側の指定を消さない。
+#[test]
+fn explicit_bold_survives_and_unknown_weight_preserves_prior_style() {
+    for name in [
+        "Helvetica-Bold",
+        "Times-BoldItalic",
+        "Arial-BoldMT",
+        "Family-Black",
+        "ABCDEF+Family-BoldOblique",
+    ] {
+        assert!(run_xml(name, false, None).contains("<w:b />"), "{name}");
+    }
+    for name in ["Family-W6", "Unknown", "Family-Unrecognized"] {
+        assert!(run_xml(name, true, None).contains("<w:b />"), "{name}");
+        let xml = run_xml(name, false, None);
+        assert!(!xml.contains("<w:b />"));
+        assert!(!xml.contains("<w:b w:val=\"false\""));
+    }
+}
