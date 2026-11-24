@@ -195,6 +195,10 @@ fn separated_box_columns_keep_their_source_rows_and_empty_cell() {
         1,
         "the editable source table must not become separate boxes or nested exponent tables"
     );
+    assert!(
+        !xml.contains("<w:u "),
+        "closed source box borders must not become text underlines"
+    );
     assert_eq!(
         xml.matches("<w:position w:val=\"10\"").count(),
         3,
