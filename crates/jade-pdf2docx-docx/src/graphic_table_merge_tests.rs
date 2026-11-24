@@ -145,3 +145,45 @@ proptest! {
         }
     }
 }
+
+/// 同じ語が二つのセルにあるとき、一つだけ残しても照合成功にしない。
+#[test]
+fn source_text_validation_counts_repeated_cells_separately() {
+    let cell = DocxTableCellModel {
+        text: "same".into(),
+        underlined: false,
+        alignment: ParagraphAlignment::Left,
+        grid_span: 2,
+        vertical_merge: None,
+        width_twips: None,
+        borders: None,
+    };
+    let model = DocxTableModel {
+        rows: vec![vec![cell]],
+    };
+    assert!(
+        !model_preserves_grid_cell_texts(&model, &[vec!["same".into(), "same".into()]]),
+        "one repeated word must not satisfy two original cell owners"
+    );
+}
+
+/// 全体の文字数が同じでも、別のセルへ値を交換したモデルは拒否する。
+#[test]
+fn source_text_validation_checks_each_physical_owner() {
+    let cell = |text: &str| DocxTableCellModel {
+        text: text.into(),
+        underlined: false,
+        alignment: ParagraphAlignment::Left,
+        grid_span: 1,
+        vertical_merge: None,
+        width_twips: None,
+        borders: None,
+    };
+    let model = DocxTableModel {
+        rows: vec![vec![cell("right"), cell("left")]],
+    };
+    assert!(
+        !model_preserves_grid_cell_texts(&model, &[vec!["left".into(), "right".into()]]),
+        "global text equality must not accept values moved to another source cell"
+    );
+}
