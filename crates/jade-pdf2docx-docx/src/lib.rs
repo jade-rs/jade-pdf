@@ -32,6 +32,7 @@ mod embedded_face;
 mod embedded_style_tests;
 #[cfg(test)]
 mod roman_fallback_tests;
+mod roman_fallback;
 mod glyph_metrics;
 mod layout_space;
 mod positioned_type1;
@@ -2139,14 +2140,17 @@ fn apply_pdf_font_name_to_run(
     });
     let normalized = font_name.to_ascii_lowercase();
     let infer = !(embedded && font_name.starts_with("JadeT1-"));
+    let compatible = (!embedded).then(|| roman_fallback::known(font_name)).flatten();
     if face.map_or(
-        infer && (normalized.contains("bold") || normalized.contains("black")),
+        infer && (normalized.contains("bold") || normalized.contains("black")
+            || compatible.is_some_and(|font| font.bold)),
         |face| face.bold,
     ) {
         run = run.bold();
     }
     if face.map_or(
-        infer && (normalized.contains("italic") || normalized.contains("oblique")),
+        infer && (normalized.contains("italic") || normalized.contains("oblique")
+            || compatible.is_some_and(|font| font.italic)),
         |face| face.italic,
     ) {
         run = run.italic();
@@ -2179,6 +2183,9 @@ fn run_fonts(font_name: &str) -> RunFonts {
 
 /// PDF の subset/PostScript フォント名を DOCX renderer が解決しやすい名前へ正規化する。
 fn docx_font_name_from_pdf_font_name(font_name: &str) -> String {
+    if let Some(compatible) = roman_fallback::known(font_name) {
+        return compatible.family.to_string();
+    }
     let stripped = font_name
         .split_once('+')
         .map(|(_, name)| name)
