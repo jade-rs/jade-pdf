@@ -2045,6 +2045,16 @@ fn structured_text_runs_from_row(
     let Some(first) = row.first() else {
         return Vec::new();
     };
+    let row_width = row
+        .iter()
+        .try_fold((f32::INFINITY, f32::NEG_INFINITY), |(left, right), text| {
+            let bounds = normalized_bounds(text.bounds);
+            (bounds.x0.is_finite() && bounds.x1.is_finite())
+                .then_some((left.min(bounds.x0), right.max(bounds.x1)))
+        })
+        .map(|(left, right)| right - left)
+        .filter(|width| width.is_finite() && *width > 0.)
+        .unwrap_or(0.);
     let mut runs = Vec::new();
     let mut right = first.bounds.x1;
     let mut height_sum = (first.bounds.y1 - first.bounds.y0).abs().max(1.0);
@@ -2073,7 +2083,11 @@ fn structured_text_runs_from_row(
                 font_embedded: false,
                 embedded_face: None,
                 fill_color: text.fill_color.clone(),
-                underlined: parsed_text_has_underline(text, page_graphics),
+                underlined: parsed_text_has_underline_with_row_width(
+                    text,
+                    page_graphics,
+                    row_width,
+                ),
                 source_bounds: text
                     .baseline_y
                     .filter(|y| {
@@ -4626,8 +4640,22 @@ fn append_cell_fragment(cell: &mut String, fragment: &str) {
 
 /// PDF text の直下にある短い水平線を文字下線として扱う。
 fn parsed_text_has_underline(text: &ParsedTextElement, graphics: &[ParsedGraphicElement]) -> bool {
+    parsed_text_has_underline_with_row_width(text, graphics, 0.)
+}
+
+/// 行内の分割前の幅を上限判定だけへ使い、各断片の直下にある線だけを下線とする。
+fn parsed_text_has_underline_with_row_width(
+    text: &ParsedTextElement,
+    graphics: &[ParsedGraphicElement],
+    row_width: f32,
+) -> bool {
     let text_bounds = normalized_bounds(text.bounds);
     let text_width = (text_bounds.x1 - text_bounds.x0).abs().max(1.0);
+    let context_width = if row_width.is_finite() && row_width > text_width {
+        row_width
+    } else {
+        text_width
+    };
     let text_height = (text_bounds.y1 - text_bounds.y0)
         .abs()
         .max(text.font_size.max(1.0));
@@ -4643,7 +4671,7 @@ fn parsed_text_has_underline(text: &ParsedTextElement, graphics: &[ParsedGraphic
             return false;
         }
         let line_width = bounds.x1 - bounds.x0;
-        if line_width < text_width * 0.35 || line_width > (text_width * 8.0).max(180.0) {
+        if line_width < text_width * 0.35 || line_width > (context_width * 8.0).max(180.0) {
             return false;
         }
         let line_y = bounds.y0;
