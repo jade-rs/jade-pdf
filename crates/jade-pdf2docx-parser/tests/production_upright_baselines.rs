@@ -26,14 +26,15 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
     };
     let objects = vec![
         "<< /Type /Catalog /Pages 2 0 R >>".into(),
-        "<< /Type /Pages /Count 1 /Kids [3 0 R] /MediaBox [0 0 600 800] /Resources << /Font << /F 5 0 R >> /XObject << /Fm 8 0 R >> >> >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] /MediaBox [0 0 600 800] /Resources << /Font << /F 5 0 R /G 10 0 R >> /XObject << /Fm 8 0 R >> >> >>".into(),
         "<< /Type /Page /Parent 2 0 R /Contents 4 0 R >>".into(),
         fixture::stream(if in_form { "/Fm Do" } else { content }),
         font,
         "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /OwnedCID /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 600 >>".into(),
         fixture::stream("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n4 beginbfchar\n<0041> <0041>\n<0032> <0032>\n<0042> <0042>\n<0043> <0043>\nendbfchar"),
-        format!("<< /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Matrix [2 0 0 3 7 11] /Resources << /Font << /F 5 0 R >> >> /Length {} >>\nstream\n{content}\nendstream",content.len()),
+        format!("<< /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Matrix [2 0 0 3 7 11] /Resources << /Font << /F 5 0 R /G 10 0 R >> >> /Length {} >>\nstream\n{content}\nendstream",content.len()),
         fixture::stream("/WMode 1 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 1 begincidchar <0041> 65 endcidchar"),
+        "<< /Type /Font /Subtype /Type0 /BaseFont /OwnedCID /Encoding /Identity-V /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>".into(),
     ];
     parse_pdf_bytes("owned-upright-baseline.pdf", &fixture::pdf(&objects)).unwrap()
 }
@@ -187,5 +188,38 @@ fn vertical_and_unverified_cmaps_do_not_gain_horizontal_baselines() {
                 "vertical or unverified writing mode must not gain a horizontal baseline"
             );
         }
+    }
+}
+
+/// 同名の水平・垂直font aliasを切り替えた断片へ、隣の確認済み基線を伝播しない。
+#[test]
+fn merged_aliases_do_not_transfer_baseline_confidence() {
+    for reverse in [false, true] {
+        let (first, second) = if reverse { ("G", "F") } else { ("F", "G") };
+        let parsed = document(
+            2,
+            &format!("BT /{first} 18 Tf 1 0 0 1 30 80 Tm <0041> Tj /{second} 18 Tf <0042> Tj ET"),
+            false,
+        );
+        assert_eq!(
+            parsed.text_elements.len(),
+            2,
+            "horizontal and vertical aliases must not merge baseline confidence"
+        );
+        assert_eq!(parsed.text_elements[0].text, "A");
+        assert_eq!(parsed.text_elements[1].text, "B");
+        let actual = parsed
+            .text_elements
+            .iter()
+            .map(|t| t.baseline_y)
+            .collect::<Vec<_>>();
+        assert_eq!(
+            actual,
+            if reverse {
+                vec![None, Some(80.)]
+            } else {
+                vec![Some(80.), None]
+            }
+        );
     }
 }
