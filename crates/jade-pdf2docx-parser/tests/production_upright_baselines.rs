@@ -11,11 +11,11 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
             "<< /Type /Font /Subtype /TrueType /BaseFont /OwnedSans /Encoding /WinAnsiEncoding /FirstChar 0 /LastChar 255 /Widths [{}] >>",
             vec!["600"; 256].join(" ")
         ),
-        2..=5 => {
+        2..=6 => {
             let encoding = match kind {
                 2 => "/Identity-H",
                 3 => "/Identity-V",
-                4 => "9 0 R",
+                4 | 6 => "9 0 R",
                 _ => "/Unknown-CMap",
             };
             format!(
@@ -33,7 +33,7 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
         "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /OwnedCID /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 600 >>".into(),
         fixture::stream("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n4 beginbfchar\n<0041> <0041>\n<0032> <0032>\n<0042> <0042>\n<0043> <0043>\nendbfchar"),
         format!("<< /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Matrix [2 0 0 3 7 11] /Resources << /Font << /F 5 0 R /G 10 0 R >> >> /Length {} >>\nstream\n{content}\nendstream",content.len()),
-        fixture::stream("/WMode 1 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 1 begincidchar <0041> 65 endcidchar"),
+        fixture::stream(&format!("/WMode {} def 1 begincodespacerange <0000> <FFFF> endcodespacerange 4 begincidchar <0041> 65 <0032> 50 <0042> 66 <0043> 67 endcidchar", if kind==6 {0} else {1})),
         "<< /Type /Font /Subtype /Type0 /BaseFont /OwnedCID /Encoding /Identity-V /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>".into(),
     ];
     parse_pdf_bytes("owned-upright-baseline.pdf", &fixture::pdf(&objects)).unwrap()
@@ -41,8 +41,8 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
 
 /// 各font経路で通常文字と上付き文字の独立した基線・文字サイズを照合する。
 fn assert_baselines(kind: u8) {
-    let a = if kind == 2 { "<0041>" } else { "(A)" };
-    let two = if kind == 2 { "<0032>" } else { "(2)" };
+    let a = if kind >= 2 { "<0041>" } else { "(A)" };
+    let two = if kind >= 2 { "<0032>" } else { "(2)" };
     let content =
         format!("BT /F 18 Tf 1 0 0 1 30 80 Tm {a} Tj /F 10 Tf 1 0 0 1 41 86 Tm {two} Tj ET");
     for in_form in [false, true] {
@@ -87,7 +87,7 @@ fn cid_keeps_verified_source_baseline() {
 #[test]
 fn coherent_text_spans_keep_their_source_baseline_when_merged() {
     for kind in 0..=2 {
-        let (a, b, c) = if kind == 2 {
+        let (a, b, c) = if kind >= 2 {
             ("<0041>", "<0042>", "<0043>")
         } else {
             ("(A)", "(B)", "(C)")
@@ -159,11 +159,12 @@ proptest! {
     /// Font経路・平行移動・縦横倍率・文字上げ・Formを合成しても、基線は同じページ座標になる。
     #[test]
     fn source_matrix_baseline_is_font_independent(
-        kind in 0_u8..=2, in_form in any::<bool>(),
+        kind_index in 0_u8..=3, in_form in any::<bool>(),
         x in 30_u8..=60, y in 50_u8..=90,
         sx in 1_u8..=2, sy in 1_u8..=2, size in 4_u8..=20, rise in -5_i8..=5,
     ) {
-        let a = if kind == 2 { "<0041>" } else { "(A)" };
+        let kind = if kind_index == 3 {6} else {kind_index};
+        let a = if kind >= 2 { "<0041>" } else { "(A)" };
         let content = format!("BT /F {size} Tf {sx} 0 0 {sy} {x} {y} Tm {rise} Ts {a} Tj ET");
         let parsed = document(kind,&content,in_form);
         prop_assert_eq!(parsed.text_elements.len(),1);
@@ -242,4 +243,10 @@ proptest! {
         prop_assert_eq!(parsed.text_elements[known].baseline_y,Some(expected));
         prop_assert_eq!(parsed.text_elements[1-known].baseline_y,None);
     }
+}
+
+/// 埋め込み水平CMapのCID経路も、名前から推測せず対応済みmetricsで基線を確認する。
+#[test]
+fn embedded_horizontal_cmap_keeps_verified_source_baseline() {
+    assert_baselines(6);
 }
