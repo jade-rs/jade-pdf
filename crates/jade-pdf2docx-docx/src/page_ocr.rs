@@ -198,7 +198,7 @@ fn convert(
     let mut docx =
         build_structured_docx_with_page_ocr(&parsed, &None, &tables, &recognized, &region_lines)?;
     if !request.clean_output {
-        docx = docx.add_paragraph(
+        docx.docx = docx.docx.add_paragraph(
             Paragraph::new().add_run(text_run(format!("source: {}", parsed.path.display()))),
         );
     }

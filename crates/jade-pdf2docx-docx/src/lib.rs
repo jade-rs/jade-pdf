@@ -24,9 +24,12 @@ pub use jade_pdf2docx_ocr::{
 };
 pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 
+mod column_frame;
 #[cfg(test)]
 mod conversion_cancellation_tests;
 mod conversion_control;
+mod prepared_docx;
+use prepared_docx::PreparedDocx;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
@@ -372,9 +375,11 @@ fn convert_pdf_file_with_check(
     {
         build_structured_docx_from_owned_images(&mut parsed, &inferred_table, &positioned_tables)?
     } else if request.clean_output && has_body_content(&request.ocr_text_lines, &inferred_table) {
-        build_body_docx(&request.ocr_text_lines, &inferred_table)?
+        build_body_docx(&request.ocr_text_lines, &inferred_table)?.into()
     } else if request.clean_output {
-        Docx::new().add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+        Docx::new()
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into()
     } else {
         let docx = Docx::new()
             .add_paragraph(Paragraph::new().add_run(text_run("minimum pdf to docx conversion")))
@@ -392,7 +397,7 @@ fn convert_pdf_file_with_check(
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     check(Stage::Built)?;
@@ -630,7 +635,9 @@ fn has_structured_pdf_content(
 }
 
 /// 最小 DOCX の本文・表・画像を組み立てる。
-fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, ConvertError> {
+fn build_minimum_docx(
+    request: &MinimumPdfToDocxBytesRequest,
+) -> Result<PreparedDocx, ConvertError> {
     let version = format!(
         "{}.{}",
         request.parsed.version.major, request.parsed.version.minor
@@ -658,10 +665,11 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
                 .clone()
                 .or_else(|| text_preview_to_body_lines(&normalized_text_preview));
             if has_body_content(&body_lines, &request.ocr_table) {
-                build_body_docx(&body_lines, &request.ocr_table)?
+                build_body_docx(&body_lines, &request.ocr_table)?.into()
             } else {
                 Docx::new()
                     .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+                    .into()
             }
         }
     } else {
@@ -682,7 +690,7 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     Ok(docx)
@@ -693,7 +701,7 @@ fn build_structured_docx_from_parsed(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_page_ocr(
         parsed,
         ocr_table,
@@ -708,7 +716,7 @@ fn build_structured_docx_from_owned_images(
     parsed: &mut ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let mut images = Some(
         parsed
             .image_elements
@@ -733,7 +741,7 @@ fn build_structured_docx_with_page_ocr(
     positioned_tables: &[PositionedTable],
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_image_payloads(
         parsed,
         ocr_table,
@@ -752,7 +760,7 @@ fn build_structured_docx_with_image_payloads(
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let pages = text_lines_by_page_from_pdf_text_elements(parsed, positioned_tables);
     let page_chrome = page_chrome::extract(parsed, &pages);
     let mut pages = page_chrome::remove(pages, &page_chrome);
@@ -777,7 +785,8 @@ fn build_structured_docx_with_image_payloads(
             .any(|page| page.lines.iter().any(|line| !line.text.trim().is_empty()));
     if !has_lines && parsed.image_elements.is_empty() && ocr_table.is_none() {
         return Ok(Docx::new()
-            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)"))));
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into());
     }
     let can_restore_multi_page_text_columns = recognized.is_empty()
         && region_lines.is_empty()
@@ -918,7 +927,13 @@ fn build_structured_docx_with_image_payloads(
         table.validate().map_err(ConvertError::InvalidOcrTable)?;
         docx = docx.add_table(docx_table_from_ocr_table(table));
     }
-    Ok(docx)
+    Ok(PreparedDocx::new(
+        docx,
+        document_text_columns
+            .into_iter()
+            .map(|layout| layout.frame)
+            .collect(),
+    ))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -1058,12 +1073,8 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     text_columns
                         .zip(page_width)
                         .and_then(|(columns, page_width)| {
-                            paragraph_anchor::column_origin_twips(
-                                page_width,
-                                origin_x,
-                                column_index,
-                                columns.len(),
-                            )
+                            let _ = columns;
+                            text_column_layout?.frame.origin(page_width, column_index)
                         });
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
@@ -1188,7 +1199,7 @@ fn build_multi_page_text_column_docx(
     page_chrome: &page_chrome::Plan,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
     image_payloads: &mut Option<Vec<Vec<u8>>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let last_page = pages
         .last()
         .expect("multi-page text layout must have pages");
@@ -1230,7 +1241,14 @@ fn build_multi_page_text_column_docx(
             image_payloads,
         )?;
     }
-    Ok(docx)
+    Ok(PreparedDocx::new(
+        docx,
+        text_columns_by_page
+            .iter()
+            .flatten()
+            .map(|layout| layout.frame.clone())
+            .collect(),
+    ))
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -1331,7 +1349,31 @@ fn detected_text_columns_for_page(
     {
         return None;
     }
+    let mut left_right = f32::NEG_INFINITY;
+    let mut right_left = f32::INFINITY;
+    let mut font_size = 0.0f32;
+    for line in page
+        .lines
+        .iter()
+        .skip(leading_single_column_line_count)
+        .take(column_line_count)
+    {
+        if column_index_for_line(line, &columns) == 0 {
+            left_right = left_right.max(line.right_x);
+        } else {
+            right_left = right_left.min(line.left_x);
+        }
+        font_size = font_size.max(structured_line_max_font_size(line));
+    }
+    let frame = column_frame::Frame::infer(
+        page_width,
+        structured_page_left_x(parsed, positioned_tables, page),
+        left_right,
+        right_left,
+        font_size,
+    )?;
     Some(DetectedTextColumnLayout {
+        frame,
         columns,
         leading_single_column_line_count,
         column_line_count,
@@ -2482,6 +2524,8 @@ struct StructuredTextPage {
 /// 単一ページ内で検出した段組本文と、その前後にある全幅行を表す。
 #[derive(Debug, Clone, PartialEq)]
 struct DetectedTextColumnLayout {
+    /// 梱包する実段幅と、本文indentに共通の段原点。
+    frame: column_frame::Frame,
     /// 段組本文の各 column 左端（pt）。
     columns: Vec<f32>,
     /// 段組本文より前に置く1段行の数。
