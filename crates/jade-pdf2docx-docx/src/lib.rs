@@ -1021,7 +1021,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     text_columns
                         .zip(page_width)
                         .and_then(|(columns, page_width)| {
-                            docx_column_origin_twips(
+                            paragraph_anchor::column_origin_twips(
                                 page_width,
                                 origin_x,
                                 column_index,
@@ -1292,26 +1292,6 @@ fn detected_text_columns_for_page(
             .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count),
         trailing_single_column_line_count,
     })
-}
-
-/// 実sectionと同じ丸め後の幅・左余白から、均等段原点のtwip座標を返す。
-fn docx_column_origin_twips(
-    page_width: f32,
-    page_origin_x: f32,
-    column_index: usize,
-    column_count: usize,
-) -> Option<f64> {
-    if column_count < 2 || column_index >= column_count {
-        return None;
-    }
-    let width = f64::from(u32::try_from(pdf_points_to_twips(page_width)?).ok()?);
-    let left = f64::from(pdf_points_to_indent_twips(page_origin_x)?);
-    let column_space = f64::from(DEFAULT_DOCX_COLUMN_SPACE_TWIPS);
-    let available = width - left - column_space * (column_count - 1) as f64;
-    if available <= 0.0 {
-        return None;
-    }
-    Some(left + column_index as f64 * (available / column_count as f64 + column_space))
 }
 
 /// DOCX 最終 section の均等段組数を設定する。

@@ -1,4 +1,25 @@
 //! 段落領域と実段組の原点をPDF座標へ合わせる。
+use super::{DEFAULT_DOCX_COLUMN_SPACE_TWIPS, pdf_points_to_indent_twips, pdf_points_to_twips};
+
+/// 実sectionと同じ丸め後の幅・左余白から、右余白0の均等段原点をtwipで返す。
+pub(super) fn column_origin_twips(
+    page_width: f32,
+    page_origin_x: f32,
+    column_index: usize,
+    column_count: usize,
+) -> Option<f64> {
+    if column_count < 2 || column_index >= column_count {
+        return None;
+    }
+    let width = f64::from(u32::try_from(pdf_points_to_twips(page_width)?).ok()?);
+    let left = f64::from(pdf_points_to_indent_twips(page_origin_x)?);
+    let column_space = f64::from(DEFAULT_DOCX_COLUMN_SPACE_TWIPS);
+    let available = width - left - column_space * (column_count - 1) as f64;
+    if available <= 0.0 {
+        return None;
+    }
+    Some(left + column_index as f64 * (available / column_count as f64 + column_space))
+}
 
 /// ページ内の原本行を、実段組原点からの符号つきindentへ変換する。
 /// 負値は段間への正当な張り出しを保ち、未確認・ページ外の座標は従来処理へ戻す。
@@ -50,7 +71,7 @@ pub(super) fn centred_indents(
 
 #[cfg(test)]
 mod tests {
-    use super::centred_indents;
+    use super::{centred_indents, column_indent, column_origin_twips};
     use proptest::prelude::*;
 
     /// 未確認・範囲外の座標から有効なindentを作らない。
@@ -72,6 +93,42 @@ mod tests {
         ] {
             let [left, right, origin, width] = geometry;
             assert_eq!(centred_indents(left, right, origin, width), None);
+        }
+    }
+
+    /// 無効な段数・幅・余白や、空の段領域を有効な原点へ丸めない。
+    #[test]
+    fn invalid_columns_keep_existing_fallback() {
+        for (width, left, index, count) in [
+            (612., 48., 0, 0),
+            (612., 48., 0, 1),
+            (612., 48., 2, 2),
+            (f32::NAN, 48., 1, 2),
+            (f32::INFINITY, 48., 1, 2),
+            (f32::MAX, 48., 1, 2),
+            (612., f32::NAN, 1, 2),
+            (612., -1., 1, 2),
+            (0., 0., 1, 2),
+            (48., 48., 1, 2),
+            (612., 48., 1, usize::MAX),
+        ] {
+            assert_eq!(column_origin_twips(width, left, index, count), None);
+        }
+        for (left, right, origin, width) in [
+            (f32::NAN, 100., 0., 612.),
+            (10., f32::INFINITY, 0., 612.),
+            (10., 100., f64::NAN, 612.),
+            (10., 100., 0., f32::NAN),
+            (-1., 100., 0., 612.),
+            (100., 100., 0., 612.),
+            (100., 99., 0., 612.),
+            (100., 700., 0., 612.),
+            (10., 100., -1., 612.),
+            (10., 100., 13000., 612.),
+            (0., 1., 1.0e10, 1.0e9),
+            (1.0e9, 1.1e9, 0., 1.2e9),
+        ] {
+            assert_eq!(column_indent(left, right, origin, width), None);
         }
     }
 
