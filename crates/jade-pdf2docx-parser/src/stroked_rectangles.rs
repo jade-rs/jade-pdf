@@ -15,7 +15,7 @@ mod paint;
 mod resources;
 
 /// q/Qで復元する長方形の描画状態。path自体は退避しない。
-#[derive(Clone, Copy, Default)]
+#[derive(Clone, Copy)]
 struct State {
     /// 現在のCTM。
     matrix: [f32; 6],
@@ -45,19 +45,23 @@ fn drawing_operand<'a>(
     }
 }
 
-/// byte列内の真のre命令だけを検出し、Resourceを使わないページの追加解決を避ける。
+/// 真にstrokeされるreだけを検出し、塗りのみ・取消pathの追加Resource解決を避ける。
 fn has_rectangle(content: &[u8]) -> bool {
     let mut lexer = Lexer {
         bytes: content,
         cursor: 0,
     };
+    let mut rectangle = false;
     while let Some((token, span)) = lexer.next_spanned() {
-        if matches!(token, Token::Word(b"re")) {
-            return true;
-        }
-        if !matches!(token, Token::Word(_)) {
-            if drawing_operand(&mut lexer, token, span.start).is_none() {
-                return false;
+        match token {
+            Token::Word(b"re") => rectangle = true,
+            Token::Word(b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*") if rectangle => return true,
+            Token::Word(b"n" | b"f" | b"F" | b"f*") => rectangle = false,
+            Token::Word(_) => {}
+            _ => {
+                if drawing_operand(&mut lexer, token, span.start).is_none() {
+                    return false;
+                }
             }
         }
     }
@@ -72,7 +76,34 @@ fn rectangle(matrix: [f32; 6], values: [f32; 4]) -> Option<ParsedBounds> {
     {
         return None;
     }
-    let b = parser::transform_rect_bounds(matrix, values[0], values[1], values[2], values[3]);
+    let [x, y, w, h] = values.map(f64::from);
+    let points = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]]
+        .map(|point| crate::content_clip::transform(point, matrix));
+    if !points
+        .iter()
+        .flatten()
+        .all(|v| v.is_finite() && v.abs() <= f64::from(f32::MAX))
+    {
+        return None;
+    }
+    let b = ParsedBounds {
+        x0: points
+            .iter()
+            .map(|p| p[0] as f32)
+            .fold(f32::INFINITY, f32::min),
+        y0: points
+            .iter()
+            .map(|p| p[1] as f32)
+            .fold(f32::INFINITY, f32::min),
+        x1: points
+            .iter()
+            .map(|p| p[0] as f32)
+            .fold(f32::NEG_INFINITY, f32::max),
+        y1: points
+            .iter()
+            .map(|p| p[1] as f32)
+            .fold(f32::NEG_INFINITY, f32::max),
+    };
     ([b.x0, b.y0, b.x1, b.y1].iter().all(|v| v.is_finite()) && b.x0 < b.x1 && b.y0 < b.y1)
         .then_some(b)
 }
@@ -134,21 +165,12 @@ fn emit(
             vertical,
         ),
     ] {
-        let padded = if bounds.y0 == bounds.y1 {
-            [
-                bounds.x0 - vertical / 2.,
-                bounds.y0 - horizontal / 2.,
-                bounds.x1 + vertical / 2.,
-                bounds.y1 + horizontal / 2.,
-            ]
-        } else {
-            [
-                bounds.x0 - vertical / 2.,
-                bounds.y0 - horizontal / 2.,
-                bounds.x1 + vertical / 2.,
-                bounds.y1 + horizontal / 2.,
-            ]
-        };
+        let padded = [
+            bounds.x0 - vertical / 2.,
+            bounds.y0 - horizontal / 2.,
+            bounds.x1 + vertical / 2.,
+            bounds.y1 + horizontal / 2.,
+        ];
         if page_clip.contains_rect(padded, [1., 0., 0., 1., 0., 0.])
             && clip.is_none_or(|clip| clip.contains_rect(padded, [1., 0., 0., 1., 0., 0.]))
         {
@@ -182,7 +204,9 @@ fn scan<'a>(
     if clips.unsupported {
         return Some(());
     }
-    let media = budget.page_media_box(page)?;
+    let Some(media) = budget.page_media_box(page) else {
+        return Some(());
+    };
     let page_clip =
         crate::form_clip::Clip::page(budget, Some(media), budget.page_crop_box(page).flatten())?;
     let mut state = State {
@@ -290,50 +314,83 @@ fn scan<'a>(
     Some(())
 }
 
-/// Contents配列を一つの本文として扱い、各ページのre描画だけを既存結果へ追加する。
+/// 一ページのContentsを、境界の字句を変えずに連続する本文へ組み立てる。
+fn joined<'a>(
+    budget: &DecodeBudget,
+    streams: &'a [(usize, Vec<u8>)],
+    start: usize,
+) -> Option<(usize, Cow<'a, [u8]>, usize)> {
+    let page = streams.get(start)?.0;
+    let end = start
+        + streams[start..]
+            .iter()
+            .take_while(|(p, _)| *p == page)
+            .count();
+    let group = &streams[start..end];
+    let content = if group.len() == 1 {
+        Cow::Borrowed(group[0].1.as_slice())
+    } else {
+        let total = group
+            .iter()
+            .try_fold(0_usize, |n, (_, s)| n.checked_add(s.len()))?;
+        let mut bytes = budget.metadata_vector(total)?;
+        for (_, chunk) in group {
+            bytes.extend_from_slice(chunk);
+        }
+        Cow::Owned(bytes)
+    };
+    Some((page, content, end))
+}
+
+/// re描画のある最初のページで索引を作り、全ページで同じResource解決cacheを使う。
 pub(super) fn append(
     budget: &DecodeBudget,
     source: &[u8],
     streams: &[(usize, Vec<u8>)],
     output: &mut Vec<ParsedGraphicElement>,
 ) -> Option<()> {
-    let mut start = 0;
-    while start < streams.len() {
-        let page = streams[start].0;
-        let end = start
-            + streams[start..]
-                .iter()
-                .take_while(|(p, _)| *p == page)
-                .count();
-        let group = &streams[start..end];
-        let content = if group.len() == 1 {
-            Cow::Borrowed(group[0].1.as_slice())
-        } else {
-            let total = group
-                .iter()
-                .try_fold(0_usize, |n, (_, s)| n.checked_add(s.len()))?;
-            let mut bytes = budget.metadata_vector(total)?;
-            for (_, chunk) in group {
-                bytes.extend_from_slice(chunk);
-            }
-            Cow::Owned(bytes)
-        };
+    let mut index = 0;
+    let mut first = None;
+    while index < streams.len() {
+        let (page, content, end) = joined(budget, streams, index)?;
+        index = end;
         if has_rectangle(&content) {
-            let objects = crate::object_index::build(budget, source)?;
-            let mut resolver = ResourceResolver::new(&objects, budget);
-            let page_resources = budget
-                .page_resources(source)
-                .and_then(|pages| pages.get(page).copied().flatten());
+            first = Some((page, content));
+            break;
+        }
+    }
+    let Some((page, content)) = first else {
+        return Some(());
+    };
+    let objects = crate::object_index::build(budget, source)?;
+    let mut resolver = ResourceResolver::new(&objects, budget);
+    let page_resources = budget.page_resources(source);
+    let resource = |page: usize| {
+        page_resources
+            .as_ref()
+            .and_then(|pages| pages.get(page).copied().flatten())
+    };
+    scan(
+        budget,
+        page,
+        &content,
+        resource(page),
+        &mut resolver,
+        output,
+    )?;
+    while index < streams.len() {
+        let (page, content, end) = joined(budget, streams, index)?;
+        index = end;
+        if has_rectangle(&content) {
             scan(
                 budget,
                 page,
                 &content,
-                page_resources,
+                resource(page),
                 &mut resolver,
                 output,
             )?;
         }
-        start = end;
     }
     Some(())
 }
