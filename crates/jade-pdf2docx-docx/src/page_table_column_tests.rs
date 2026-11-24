@@ -41,12 +41,12 @@ fn table_and_columns(table_page: usize) -> String {
     parsed
         .text_elements
         .retain(|text| text.page != table_page || text.bounds.x0 == 48.);
-    let docx = build_structured_docx_from_owned_images(
-        &mut parsed,
-        &None,
-        &[positioned_table(table_page)],
-    )
-    .unwrap();
+    packaged(parsed, &[positioned_table(table_page)])
+}
+
+/// 本文がない表・画像ページも、同じ本番構築・ZIP経路で検証する。
+fn packaged(mut parsed: ParsedDocument, tables: &[PositionedTable]) -> String {
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &None, tables).unwrap();
     let bytes = pack_docx_to_bytes(docx, &[]).unwrap();
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
@@ -56,6 +56,24 @@ fn table_and_columns(table_page: usize) -> String {
         .read_to_string(&mut xml)
         .unwrap();
     xml
+}
+
+/// 表だけのページがあっても、他のページの二段組を一列へ戻さない。
+#[test]
+fn table_only_page_preserves_later_columns() {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    let xml = packaged(parsed, &[positioned_table(0)]);
+    let sections = sections(&xml);
+    assert_eq!(
+        sections.len(),
+        2,
+        "table-only page must not disable page-local sections"
+    );
+    assert_eq!((sections[0].columns, sections[0].tables), (1, 1));
+    assert!(sections[0].text.contains("TABLE PAGE0 R1C1"));
+    assert_eq!((sections[1].columns, sections[1].tables), (2, 0));
+    assert!(sections[1].text.contains("PAGEB RIGHT 1"));
 }
 
 /// 最終ページの表のために前ページの左右段を一つの縦列へ流さない。
