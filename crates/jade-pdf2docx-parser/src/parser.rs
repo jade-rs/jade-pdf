@@ -115,6 +115,8 @@ use image_ccitt::decode as decode_ccitt_fax_as_png;
 mod image_ascii85;
 #[path = "image_codec_decode.rs"]
 mod image_codec_decode;
+#[path = "image_device_cmyk.rs"]
+mod image_device_cmyk;
 #[path = "image_filter_chain.rs"]
 mod image_filter_chain;
 #[path = "image_icc.rs"]
@@ -1820,6 +1822,12 @@ fn decode_single_filter_image(
     let dict_text = crate::metadata_input::text(decode_budget, dict)?;
     let pixel_count = width.checked_mul(height)?;
     let filter = ImageFilter::read(dict)?;
+    if filter == ImageFilter::Dct
+        && image_attribute(decode_budget, pdf_bytes, dict, b"ColorSpace")
+            .is_some_and(|color| crate::metadata::is_name(&color, b"DeviceCMYK"))
+    {
+        return image_device_cmyk::decode(decode_budget, pdf_bytes, dict, data, width, height);
+    }
     if matches!(filter, ImageFilter::Dct | ImageFilter::Jbig2)
         && (image_sample_decode::require_codec_identity(decode_budget, pdf_bytes, dict).is_none()
             || image_smask::requires_source_color(decode_budget, pdf_bytes, dict)?)
