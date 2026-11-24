@@ -108,6 +108,11 @@ impl Paint {
             };
     }
 
+    /// 現在のDevice色空間を、既定置換の検査へ渡す。
+    pub(super) fn components(self) -> Option<usize> {
+        self.components
+    }
+
     /// 通常の黒い実線を、色や透明度を推測せずに使えるかを返す。
     pub(super) fn supported(self) -> bool {
         self.black && self.solid && self.opacity == Some(1.)

@@ -289,7 +289,9 @@ fn scan<'a>(
                 }
             }
             (b"S" | b"s" | b"B" | b"B*" | b"b" | b"b*", []) => {
-                if state.paint.supported() {
+                if state.paint.supported()
+                    && resources::native_device(resolver, page_resources, state.paint.components())
+                {
                     for bounds in path.drain(..) {
                         emit(
                             budget,

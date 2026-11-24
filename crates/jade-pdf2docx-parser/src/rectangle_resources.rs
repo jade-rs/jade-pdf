@@ -73,3 +73,29 @@ pub(super) fn resolve<'a>(
     }
     Some(opacity)
 }
+
+/// Device色が既定置換されていないことを確認し、未知の色変換から黒を推測しない。
+pub(super) fn native_device<'a>(
+    resolver: &mut ResourceResolver<'_, 'a>,
+    resources: Option<&'a [u8]>,
+    components: Option<usize>,
+) -> bool {
+    let name = match components {
+        Some(1) => "DefaultGray",
+        Some(3) => "DefaultRGB",
+        Some(4) => "DefaultCMYK",
+        _ => return false,
+    };
+    let Some(raw) = resources.and_then(|r| metadata::value(r, b"ColorSpace")) else {
+        return true;
+    };
+    let Some((spaces, _)) = resolver.resolve(raw) else {
+        return false;
+    };
+    if !metadata::dictionary_entries_complete(spaces) {
+        return false;
+    }
+    metadata::entries(spaces).is_some_and(|mut entries| {
+        !entries.any(|(key, _)| crate::metadata_names::resource_name_order(key, name).is_eq())
+    })
+}
