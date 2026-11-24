@@ -64,15 +64,38 @@ fn cells_impl(
                 .map(|cell| {
                     let start = col;
                     col += cell.grid_span.max(1);
+                    if cell.vertical_merge == Some(DocxVerticalMerge::Continue) {
+                        return None;
+                    }
+                    let row_span = if cell.vertical_merge == Some(DocxVerticalMerge::Restart) {
+                        vertical_merge_row_span(model, row_index, start, model.rows.len())
+                    } else {
+                        1
+                    };
+                    // 段落の所有は結合矩形全体。継続先が異なる横幅を持つ不正なモデルでは推測しない。
+                    for next in row_index + 1..row_index.checked_add(row_span)? {
+                        let continued = docx_model_cell_at_column(model, next, start)?;
+                        if continued.grid_span.max(1) != cell.grid_span.max(1) {
+                            return None;
+                        }
+                    }
                     let band = ys.len().checked_sub(row_index + 2)?;
+                    let bottom_band = ys
+                        .len()
+                        .checked_sub(row_index.checked_add(row_span)?.checked_add(1)?)?;
                     let top = *ys.get(band + 1)? as f32;
-                    let bottom = *ys.get(band)? as f32;
+                    let bottom = *ys.get(bottom_band)? as f32;
                     let left = *xs.get(start)? as f32;
-                    let selected = texts.get(row_index)?.get(start..col)?;
-                    let elements = selected.iter().flatten().collect::<Vec<_>>();
-                    if elements.is_empty()
-                        || cell.vertical_merge == Some(DocxVerticalMerge::Continue)
-                    {
+                    let selected = texts
+                        .get(row_index..row_index.checked_add(row_span)?)?
+                        .iter()
+                        .map(|row| row.get(start..col))
+                        .collect::<Option<Vec<_>>>()?;
+                    let elements = selected
+                        .iter()
+                        .flat_map(|row| row.iter().flatten())
+                        .collect::<Vec<_>>();
+                    if elements.is_empty() {
                         return None;
                     }
                     let original = elements.iter().map(|t| t.text.as_str()).collect::<String>();
@@ -111,7 +134,11 @@ fn cells_impl(
                         single_line_runs: if closed_boxes && lines.len() == 1 {
                             lines[0].runs.clone()
                         } else if lines.len() == 1 {
-                            legacy_runs(parsed, selected, &cell.text)
+                            legacy_runs(
+                                parsed,
+                                selected.iter().flat_map(|row| row.iter().flatten()),
+                                &cell.text,
+                            )
                         } else {
                             Vec::new()
                         },
@@ -155,14 +182,14 @@ pub(super) fn source_rows(
 }
 
 /// 既存のセル文字列・断片間空白と完全一致する場合だけ、原本runのstyleを対応させる。
-fn legacy_runs(
+fn legacy_runs<'a>(
     parsed: &ParsedDocument,
-    selected: &[Vec<ParsedTextElement>],
+    selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
-    for element in selected.iter().flatten() {
+    for element in selected {
         let start = text.len();
         append_cell_fragment(&mut text, element.text.trim());
         if text.len() == start {
