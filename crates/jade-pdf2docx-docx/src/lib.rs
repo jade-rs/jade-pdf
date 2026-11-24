@@ -1017,11 +1017,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     previous_nonparagraph_bottom_y = None;
                 }
                 previous_column_index = column_index;
-                let paragraph_origin_x = text_columns
-                    .zip(page_width)
-                    .map(|(columns, page_width)| {
-                        docx_column_origin_x(page_width, origin_x, column_index, columns.len())
-                    })
+                let column_origin_twips =
+                    text_columns
+                        .zip(page_width)
+                        .and_then(|(columns, page_width)| {
+                            docx_column_origin_twips(
+                                page_width,
+                                origin_x,
+                                column_index,
+                                columns.len(),
+                            )
+                        });
+                let paragraph_origin_x = column_origin_twips
+                    .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
@@ -1032,16 +1040,17 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
-                if text_columns.is_some()
-                    && let Some(indent) = page_width.and_then(|width| {
-                        paragraph_anchor::column_indent(
-                            line.left_x,
-                            line.right_x,
-                            paragraph_origin_x,
-                            width,
-                        )
-                    })
-                    && indent != 0
+                if let Some(indent) =
+                    column_origin_twips
+                        .zip(page_width)
+                        .and_then(|(origin, width)| {
+                            paragraph_anchor::column_indent(
+                                line.left_x,
+                                line.right_x,
+                                origin,
+                                width,
+                            )
+                        })
                 {
                     paragraph = paragraph.indent(Some(indent), None, None, None);
                 }
@@ -1285,21 +1294,24 @@ fn detected_text_columns_for_page(
     })
 }
 
-/// 均等段組の指定 column が DOCX ページ上で始まる x 座標（pt）を返す。
-fn docx_column_origin_x(
+/// 実sectionと同じ丸め後の幅・左余白から、均等段原点のtwip座標を返す。
+fn docx_column_origin_twips(
     page_width: f32,
     page_origin_x: f32,
     column_index: usize,
     column_count: usize,
-) -> f32 {
-    if column_count < 2 || !page_width.is_finite() || !page_origin_x.is_finite() {
-        return page_origin_x;
+) -> Option<f64> {
+    if column_count < 2 || column_index >= column_count {
+        return None;
     }
-    let column_space = DEFAULT_DOCX_COLUMN_SPACE_TWIPS / 20.0;
-    let usable_width = (page_width - page_origin_x).max(0.0);
-    let total_space = column_space * column_count.saturating_sub(1) as f32;
-    let column_width = ((usable_width - total_space) / column_count as f32).max(0.0);
-    page_origin_x + column_index.min(column_count - 1) as f32 * (column_width + column_space)
+    let width = f64::from(u32::try_from(pdf_points_to_twips(page_width)?).ok()?);
+    let left = f64::from(pdf_points_to_indent_twips(page_origin_x)?);
+    let column_space = f64::from(DEFAULT_DOCX_COLUMN_SPACE_TWIPS);
+    let available = width - left - column_space * (column_count - 1) as f64;
+    if available <= 0.0 {
+        return None;
+    }
+    Some(left + column_index as f64 * (available / column_count as f64 + column_space))
 }
 
 /// DOCX 最終 section の均等段組数を設定する。
