@@ -144,6 +144,42 @@ fn two_valid_body_rows_leave_outlying_script_ambiguous() {
     assert_eq!(pages[0].lines.len(), 4);
 }
 
+/// 離れた不明な添字clusterを残しても、既知の数値clusterの行対応は失わない。
+#[test]
+fn independent_script_cluster_recovers_despite_unknown_neighbour_elsewhere() {
+    let mut parsed = formula_source();
+    parsed.text_elements[1].baseline_y = Some(704.5);
+    parsed.text_elements[1].bounds.y0 += 0.5;
+    parsed.text_elements[1].bounds.y1 += 0.5;
+    let mut orphan = parsed.text_elements[1].clone();
+    orphan.text = "3".into();
+    orphan.bounds.x0 = 10.;
+    orphan.bounds.x1 = 14.;
+    parsed.text_elements.push(orphan);
+    let mut unknown = parsed.text_elements[0].clone();
+    unknown.text = "π".into();
+    unknown.bounds.x0 = 5.;
+    unknown.bounds.x1 = 10.;
+    unknown.bounds.y0 = 700.;
+    unknown.bounds.y1 = 710.;
+    unknown.baseline_y = None;
+    parsed.text_elements.push(unknown);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    let body = pages[0]
+        .lines
+        .iter()
+        .find(|line| line.text.contains('A'))
+        .unwrap();
+    assert!(
+        body.text.ends_with("A2=B"),
+        "verified numeric cluster must recover independently of an unresolved script cluster"
+    );
+    assert_eq!(pages[0].lines.len(), 3);
+    let (xml, _) = package_source(parsed);
+    assert!(xml.contains("<w:position w:val=\"9\""));
+    assert!(xml.contains('3'));
+}
+
 /// ページを半分へ縮小すると、font sizeとbaseline位置も同じ物理倍率で縮小する。
 #[test]
 fn inline_offsets_follow_the_existing_word_page_fit() {
