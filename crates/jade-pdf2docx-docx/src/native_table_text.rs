@@ -266,9 +266,6 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
-    if cell.lines.len() == 1 {
-        return single_line_cell(cell);
-    }
     if cell.lines.len() < 2 {
         return None;
     }
@@ -300,22 +297,12 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     Some(out)
 }
 
-/// 一行セルは従来の字面・run・縦中央配置を保ち、水平原点へ既定の左右余白を重ねない。
-fn single_line_cell(cell: &Cell) -> Option<TableCell> {
-    let mut paragraph = single_line_paragraph(cell)?;
-    let line = cell.lines.first()?;
-    let indent = pdf_points_to_indent_twips(line.left_x - cell.left)?;
-    if indent > 0 {
-        paragraph = paragraph.indent(Some(indent), None, None, None);
+/// style対応を確認済みの一行だけ、既存段落を作り直さず水平原点の相対量を返す。
+pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
+    if cell.lines.len() != 1 || cell.single_line_runs.is_empty() {
+        return None;
     }
-    let mut out = TableCell::new()
-        .add_paragraph(paragraph)
-        .vertical_align(VAlignType::Center);
-    out.property = out
-        .property
-        .margin_left(0, WidthType::Dxa)
-        .margin_right(0, WidthType::Dxa);
-    Some(out)
+    pdf_points_to_indent_twips(cell.lines[0].left_x - cell.left)
 }
 
 #[cfg(test)]

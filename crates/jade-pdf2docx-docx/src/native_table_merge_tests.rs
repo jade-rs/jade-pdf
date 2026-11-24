@@ -118,13 +118,13 @@ fn single_line_cell_without_verified_style_or_nonnegative_origin_retains_fallbac
     let mut cell = result[0][0].as_ref().unwrap().clone();
     cell.lines.truncate(1);
     cell.single_line_runs = cell.lines[0].runs.clone();
-    assert!(single_line_cell(&cell).is_some());
+    assert!(single_line_horizontal_indent(&cell).is_some());
     let mut unknown_style = cell.clone();
     unknown_style.single_line_runs.clear();
-    assert!(single_line_cell(&unknown_style).is_none());
+    assert!(single_line_horizontal_indent(&unknown_style).is_none());
     cell.left = cell.lines[0].left_x + 1.;
     assert!(
-        single_line_cell(&cell).is_none(),
+        single_line_horizontal_indent(&cell).is_none(),
         "negative source cell inset must retain fallback"
     );
 }
