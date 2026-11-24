@@ -30,6 +30,8 @@ mod column_frame;
 mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
+#[cfg(test)]
+mod underline_fragmentation_tests;
 use prepared_docx::PreparedDocx;
 mod embedded_face;
 #[cfg(test)]
