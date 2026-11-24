@@ -25,6 +25,26 @@ struct State {
     paint: paint::Paint,
 }
 
+/// 描画では未完operandを文字抽出用の回復位置へ戻さず、偽命令の実行を止める。
+fn drawing_operand<'a>(
+    lexer: &mut Lexer<'a>,
+    token: Token<'a>,
+    start: usize,
+) -> Option<Operand<'a>> {
+    let value = operand(lexer, token, start);
+    match (token, value) {
+        (Token::Open(false), Operand::Array(_)) => Some(value),
+        (Token::Open(false), _) => None,
+        (Token::Open(true), _) => lexer.bytes[start..lexer.cursor]
+            .ends_with(b">>")
+            .then_some(value),
+        (Token::Other, _) if matches!(lexer.bytes[start], b'(' | b'<') => {
+            matches!(value, Operand::String(_)).then_some(value)
+        }
+        _ => Some(value),
+    }
+}
+
 /// byte列内の真のre命令だけを検出し、Resourceを使わないページの追加解決を避ける。
 fn has_rectangle(content: &[u8]) -> bool {
     let mut lexer = Lexer {
@@ -36,7 +56,9 @@ fn has_rectangle(content: &[u8]) -> bool {
             return true;
         }
         if !matches!(token, Token::Word(_)) {
-            operand(&mut lexer, token, span.start);
+            if drawing_operand(&mut lexer, token, span.start).is_none() {
+                return false;
+            }
         }
     }
     false
@@ -181,7 +203,9 @@ fn scan<'a>(
             return None;
         }
         let Token::Word(word) = token else {
-            let value = operand(&mut lexer, token, span.start);
+            let Some(value) = drawing_operand(&mut lexer, token, span.start) else {
+                break;
+            };
             if count < args.len() {
                 args[count] = value;
                 count += 1;
