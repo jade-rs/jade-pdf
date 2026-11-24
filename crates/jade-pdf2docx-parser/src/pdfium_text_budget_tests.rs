@@ -602,6 +602,40 @@ fn preview_comparison_preserves_repetition_unicode_and_stopped_budget() {
     assert!(!matches_preview(&budget(0), &[element], "X").unwrap());
 }
 
+/// 描画されたAをToUnicodeがCRへ対応させても、空白として捨てる復元経路へ入らない。
+#[test]
+fn indexed_recovery_rejects_painted_controls_but_keeps_generated_lines_and_hyphens() {
+    let source = pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F 5 0 R >> >> >>".into(),
+        stream("BT /F 12 Tf 20 100 Td (A) Tj ET"),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding /ToUnicode 6 0 R >>".into(),
+        stream("1 beginbfchar\n<41> <000D>\nendbfchar"),
+    ]);
+    let path = std::path::Path::new("owned-painted-control.pdf");
+    with_native_bytes(&source, |page| {
+        let text = page.text().unwrap();
+        let chars = characters(&budget(65536), &text).unwrap();
+        assert!(
+            chars
+                .iter()
+                .any(|c| c.unicode_value() == 13 && !c.is_generated().unwrap())
+        );
+        assert!(!index_preserves_controls(&budget(0), path, &chars).unwrap());
+    });
+    with_page(
+        "BT /F 12 Tf 20 100 Td (well-) Tj 0 -20 Td (known) Tj ET",
+        |text| {
+            let chars = characters(&budget(65536), text).unwrap();
+            assert!(index_preserves_controls(&budget(0), path, &chars).unwrap());
+            let stopped = budget(0);
+            stopped.charge_metadata_workspace_bytes(1);
+            assert!(index_preserves_controls(&stopped, path, &chars).is_err());
+        },
+    );
+}
+
 proptest::proptest! {
     #![proptest_config(proptest::test_runner::Config::with_cases(16))]
     /// 文字サイズ・原点を変えても、矩形の境界では文字indexを使い、本物のAAA反復を失わない。

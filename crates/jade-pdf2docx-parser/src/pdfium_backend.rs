@@ -153,7 +153,9 @@ pub(crate) fn parse_pdf(
                 &page_text,
                 &characters,
             )?;
-            if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)? {
+            if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
+                && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
+            {
                 let (_, indexed) = crate::pdfium_visible_text::extract(
                     decode_budget,
                     path,

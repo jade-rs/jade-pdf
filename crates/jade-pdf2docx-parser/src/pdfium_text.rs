@@ -101,6 +101,36 @@ pub(crate) fn matches_preview(
     Ok(expected.next().is_none())
 }
 
+/// SDKが実描画glyphを制御文字へ誤対応したページでは、文字index経路の空白除去を採用しない。
+/// 生成された改行と、別途確認した印刷hyphenだけを制御文字の例外とする。
+pub(crate) fn index_preserves_controls(
+    budget: &DecodeBudget,
+    path: &std::path::Path,
+    characters: &PdfPageTextChars<'_>,
+) -> Result<bool, ParseError> {
+    crate::metadata_workspace::ensure_active(budget)?;
+    for character in characters.iter() {
+        budget.check()?;
+        let value = character.unicode_value();
+        if value > 31 && !(127..=159).contains(&value) {
+            continue;
+        }
+        if crate::pdfium_printed_hyphens::is_printed(budget, path, &character)? {
+            continue;
+        }
+        if !character
+            .is_generated()
+            .map_err(|error| ParseError::Pdfium {
+                path: path.to_path_buf(),
+                message: error.to_string(),
+            })?
+        {
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
 /// segment.charsと同じ端点・許容幅で検索し、範囲の先頭だけを無確保で取得する。
 /// 両端が見つかる場合は依存先のinclusive範囲（end+1）と同じ空判定を行う。
 fn first_in_rect<'a>(
