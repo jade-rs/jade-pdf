@@ -2264,7 +2264,7 @@ fn docx_font_stretch_from_pdf_font_name(font_name: &str) -> Option<i32> {
 fn common_usable_pdf_font_name<'a>(
     font_names: impl IntoIterator<Item = &'a str>,
 ) -> Option<String> {
-    let mut common = None::<(String, String)>;
+    let mut common = None::<(String, String, Option<(bool, bool)>)>;
     for font_name in font_names {
         let stripped = font_name.trim().trim_start_matches('/');
         if stripped.is_empty()
@@ -2275,13 +2275,15 @@ fn common_usable_pdf_font_name<'a>(
             continue;
         }
         let normalized = docx_font_name_from_pdf_font_name(stripped);
+        // 同じ互換familyでも異なるRoman faceを表全体の一つのstyleへ統合しない。
+        let compatible_style = roman_fallback::known(stripped).map(|font| (font.bold, font.italic));
         match common.as_ref() {
-            Some((_, current)) if current != &normalized => return None,
+            Some((_, current, style)) if current != &normalized || style != &compatible_style => return None,
             Some(_) => {}
-            None => common = Some((font_name.to_string(), normalized)),
+            None => common = Some((font_name.to_string(), normalized, compatible_style)),
         }
     }
-    common.map(|(font_name, _)| font_name)
+    common.map(|(font_name, _, _)| font_name)
 }
 
 /// 表内で共通する妥当な PDF font size（pt）を返す。
