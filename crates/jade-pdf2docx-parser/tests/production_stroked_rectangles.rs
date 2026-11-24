@@ -200,3 +200,21 @@ fn malformed_literal_contents_cannot_create_rectangle_rules() {
         );
     }
 }
+
+/// Device色空間の選択で初期色へ戻り、直前の白色を引き継がない。
+#[test]
+fn selecting_device_color_space_restores_its_initial_black() {
+    for name in ["DeviceGray", "DeviceRGB", "DeviceCMYK"] {
+        let content = format!("1 G /{name} CS 20 30 40 10 re S");
+        let parsed = parse_pdf_bytes(
+            "owned-device-initial-color.pdf",
+            &source(&[&content], "<< >>"),
+        )
+        .unwrap();
+        assert_eq!(
+            parsed.graphics.len(),
+            4,
+            "known Device color space must restore initial black: {name}"
+        );
+    }
+}
