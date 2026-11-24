@@ -109,3 +109,22 @@ fn restart_cell_retains_all_source_rows_and_run_styles() {
     assert_eq!(xml.matches(">TOP</w:t>").count(), 1);
     assert_eq!(xml.matches(">lower</w:t>").count(), 1);
 }
+
+/// 一行のstyle対応が不明、または原本原点がセル外なら配置を捏造せず従来fallbackへ戻す。
+#[test]
+fn single_line_cell_without_verified_style_or_nonnegative_origin_retains_fallback() {
+    let (parsed, grouped, model) = source();
+    let result = cells(&parsed, &[0, 80], &[0, 40, 80], &grouped, &model);
+    let mut cell = result[0][0].as_ref().unwrap().clone();
+    cell.lines.truncate(1);
+    cell.single_line_runs = cell.lines[0].runs.clone();
+    assert!(single_line_cell(&cell).is_some());
+    let mut unknown_style = cell.clone();
+    unknown_style.single_line_runs.clear();
+    assert!(single_line_cell(&unknown_style).is_none());
+    cell.left = cell.lines[0].left_x + 1.;
+    assert!(
+        single_line_cell(&cell).is_none(),
+        "negative source cell inset must retain fallback"
+    );
+}
