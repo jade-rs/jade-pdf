@@ -43,6 +43,47 @@ fn native_logo_extracts_each_sdk_character_once() {
     }
 }
 
+/// 矩形の重複を回復したページでも、同じsource text objectの見出しを文字単位へ崩さない。
+#[test]
+fn native_recovery_retains_a_coherent_heading_span() {
+    let title = "A long native heading for object spans";
+    let content = format!(
+        "BT /F 12 Tf 1 0 0 1 20 150 Tm ({title}) Tj \
+         1 0 0 1 20 100 Tm (LaT) Tj 1 0 0 1 38 97.65 Tm (E) Tj \
+         1 0 0 1 44 100 Tm (X) Tj 1 0 0 1 160 40 Tm (z) Tj \
+         1 0 0 1 160 40 Tm (z) Tj ET"
+    );
+    // 同じ場所のzをSDKが一つにするため、pureとの文字数照合ではfallbackが必要になる。
+    with_page(&content, |text| {
+        assert_eq!(
+            text.all()
+                .chars()
+                .filter(|c| !c.is_whitespace())
+                .collect::<String>(),
+            format!("{}LaTEXz", title.replace(' ', ""))
+        );
+    });
+    let limits = ParseLimits::default();
+    let parsed = crate::pdfium_backend::parse_pdf(
+        std::path::Path::new("owned-coherent-native-heading.pdf"),
+        &owned_text_pdf(&content),
+        &limits,
+        &DecodeBudget::new(&limits),
+    )
+    .unwrap();
+    let heading = parsed
+        .text_elements
+        .iter()
+        .filter(|e| e.bounds.y0 > 140.)
+        .collect::<Vec<_>>();
+    assert_eq!(
+        heading.len(),
+        1,
+        "indexed recovery must retain the coherent source heading span"
+    );
+    assert_eq!(heading[0].text.trim(), title);
+}
+
 /// 照合は確保不要でも停止済み予算を尊重し、反復・並び替え・未知文字を同一視しない。
 #[test]
 fn preview_comparison_preserves_repetition_unicode_and_stopped_budget() {
