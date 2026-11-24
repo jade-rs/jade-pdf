@@ -24,6 +24,7 @@ pub use jade_pdf2docx_ocr::{
 };
 pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 
+mod column_flow;
 mod column_frame;
 #[cfg(test)]
 mod conversion_cancellation_tests;
@@ -974,9 +975,8 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
-    let mut blocks = page
-        .lines
-        .iter()
+    let mut blocks = column_flow::ordered_lines(&page.lines, text_column_layout)
+        .into_iter()
         .enumerate()
         .map(|(flow_index, line)| StructuredBlock::Paragraph {
             top_y: line.top_y,
