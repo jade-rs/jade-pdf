@@ -26,6 +26,12 @@ pub(super) fn with_interior_spaces<'a>(
         .iter()
         .map(|text| native_baseline::line_y(text))
         .fold(f32::NEG_INFINITY, f32::max);
+    let mut local = if high - low > TEXT_ROW_Y_TOLERANCE_PT {
+        row.clone()
+    } else {
+        Vec::new()
+    };
+    local.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
     row.extend(elements.iter().filter(|text| {
         let b = text.bounds;
         let baseline = native_baseline::line_y(text);
@@ -38,7 +44,8 @@ pub(super) fn with_interior_spaces<'a>(
             && b.x1 <= right
             && b.x0 < b.x1
             && b.y0 < b.y1
-            && high.max(baseline) - low.min(baseline) <= TEXT_ROW_Y_TOLERANCE_PT
+            && (high.max(baseline) - low.min(baseline) <= TEXT_ROW_Y_TOLERANCE_PT
+                || matches_adjacent_baseline(&local, text))
     }));
     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
     let mut kept = Vec::with_capacity(row.len());
@@ -70,6 +77,16 @@ pub(super) fn with_interior_spaces<'a>(
         }
     }
     kept
+}
+
+/// 添字で行全体の縦範囲が広い場合も、直近の字に沿う実空白だけを二分探索で確認する。
+fn matches_adjacent_baseline(row: &[&ParsedTextElement], space: &ParsedTextElement) -> bool {
+    let baseline = native_baseline::line_y(space);
+    let next = row.partition_point(|t| t.bounds.x0 < space.bounds.x0);
+    [next.checked_sub(1).and_then(|i| row.get(i)), row.get(next)]
+        .into_iter()
+        .flatten()
+        .any(|text| (native_baseline::line_y(text) - baseline).abs() <= TEXT_ROW_Y_TOLERANCE_PT)
 }
 
 /// 空白の極薄の字面をfontのem高と区別し、非有限・非正の尺度は採用しない。
