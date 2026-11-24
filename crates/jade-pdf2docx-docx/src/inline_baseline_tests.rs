@@ -180,6 +180,63 @@ fn independent_script_cluster_recovers_despite_unknown_neighbour_elsewhere() {
     assert!(xml.contains('3'));
 }
 
+/// 添字で縦範囲が4ptを超えても、通常単語間の実source空白を捨てない。
+#[test]
+fn recovered_script_row_preserves_main_word_space() {
+    let mut parsed = formula_source();
+    parsed.text_elements[0].text = "Alpha".into();
+    parsed.text_elements[0].bounds.x1 = 80.;
+    parsed.text_elements[1].baseline_y = Some(704.5);
+    parsed.text_elements[1].bounds.x0 = 108.2;
+    parsed.text_elements[1].bounds.x1 = 112.2;
+    parsed.text_elements[1].bounds.y0 += 0.5;
+    parsed.text_elements[1].bounds.y1 += 0.5;
+    parsed.text_elements[2].text = "Beta".into();
+    parsed.text_elements[2].bounds.x0 = 84.;
+    parsed.text_elements[2].bounds.x1 = 108.;
+    let mut end = parsed.text_elements[2].clone();
+    end.text = "=B".into();
+    end.bounds.x0 = 114.;
+    end.bounds.x1 = 128.;
+    let mut space = end.clone();
+    space.text = " ".into();
+    space.bounds.x0 = 80.;
+    space.bounds.x1 = 84.;
+    parsed.text_elements.extend([end, space]);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(
+        pages[0].lines[0].text, "Alpha Beta2=B",
+        "source word space must survive script row recovery"
+    );
+}
+
+/// 上付きの語同士の空白も、通常本文の基線へ移さず元の高さへ保持する。
+#[test]
+fn recovered_script_words_preserve_raised_space() {
+    let mut parsed = formula_source();
+    parsed.text_elements[1].text = "x".into();
+    parsed.text_elements[1].baseline_y = Some(704.5);
+    parsed.text_elements[1].bounds.y0 += 0.5;
+    parsed.text_elements[1].bounds.y1 += 0.5;
+    parsed.text_elements[2].text = "B".into();
+    parsed.text_elements[2].bounds.x0 = 68.;
+    parsed.text_elements[2].bounds.x1 = 74.;
+    let mut right = parsed.text_elements[1].clone();
+    right.text = "y".into();
+    right.bounds.x0 = 62.;
+    right.bounds.x1 = 66.;
+    let mut space = right.clone();
+    space.text = " ".into();
+    space.bounds.x0 = 60.2;
+    space.bounds.x1 = 62.;
+    parsed.text_elements.extend([right, space]);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(
+        pages[0].lines[0].text, "Ax yB",
+        "raised source word space must retain its baseline"
+    );
+}
+
 /// ページを半分へ縮小すると、font sizeとbaseline位置も同じ物理倍率で縮小する。
 #[test]
 fn inline_offsets_follow_the_existing_word_page_fit() {
