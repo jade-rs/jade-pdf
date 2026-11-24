@@ -21,7 +21,7 @@ pub(super) fn decode(
     {
         return None;
     }
-    let samples = super::image_icc::cmyk_jpeg_samples(budget, pdf, dict, data, width, height)?;
+    let mut samples = super::image_icc::cmyk_jpeg_samples(budget, pdf, dict, data, width, height)?;
     let count = usize::try_from(u64::from(width) * u64::from(height)).ok()?;
     if count == 0 || samples.len() != count.checked_mul(4)? {
         return None;
@@ -35,25 +35,26 @@ pub(super) fn decode(
     } else {
         None
     };
-    let mut rgb = budget.image_vector(count.checked_mul(3)?)?;
-    for (index, pixel) in samples.chunks_exact(4).enumerate() {
+    // 四成分を全てstackへ読んでから前方へ詰め、同時にRGB全画像を追加確保しない。
+    for index in 0..count {
         if budget.is_stopped() {
             return None;
         }
         let mut components = [0f32; 4];
         for (channel, value) in components.iter_mut().enumerate() {
-            let decoded = mapping.rgb_component(pixel[channel], channel) / 255.0;
+            let decoded = mapping.rgb_component(samples[index * 4 + channel], channel) / 255.0;
             *value = mask.as_ref().map_or(decoded, |mask| {
                 mask.source_component(decoded, index, channel)
             }) as f32;
         }
         let [c, m, y, k] = components;
-        rgb.extend_from_slice(&super::pdf_cmyk_to_rgb(c, m, y, k));
+        samples[index * 3..index * 3 + 3].copy_from_slice(&super::pdf_cmyk_to_rgb(c, m, y, k));
     }
+    samples.truncate(count.checked_mul(3)?);
     if let Some(mask) = mask {
-        let rgba = super::image_pixels::with_alpha(budget, &rgb, &mask.alpha)?;
+        let rgba = super::image_pixels::with_alpha(budget, &samples, &mask.alpha)?;
         super::encode_rgba8_png(budget, width, height, &rgba)
     } else {
-        super::encode_rgb8_png(budget, width, height, &rgb)
+        super::encode_rgb8_png(budget, width, height, &samples)
     }
 }
