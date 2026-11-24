@@ -306,3 +306,15 @@ proptest! {
         prop_assert_eq!(edges(&parsed),vec![[l,80,l,90],[l,80,r,80],[l,90,r,90],[r,80,r,90]]);
     }
 }
+
+/// 互換入力でもページの色空間置換を無視して、黒い枠を発明しない。
+#[test]
+fn legacy_resource_fallback_preserves_device_substitution_guard() {
+    let content = "0 G 20 30 40 10 re S";
+    let bytes=format!("%PDF-1.7\n1 0 obj << /Type /Page /MediaBox [0 0 500 500] /Resources << /ColorSpace << /DefaultGray [/CalGray << /WhitePoint [1 1 1] /BlackPoint [.2 .1 .1] >>] >> >> /Contents 2 0 R >> endobj\n2 0 obj << /Length {} >> stream\n{}\nendstream endobj\n%%EOF\n",content.len(),content).into_bytes();
+    let parsed = parse_pdf_bytes("owned-legacy-substituted-device.pdf", &bytes).unwrap();
+    assert!(
+        parsed.graphics.is_empty(),
+        "legacy DefaultGray must not assert black borders without resolving its page resources"
+    );
+}
