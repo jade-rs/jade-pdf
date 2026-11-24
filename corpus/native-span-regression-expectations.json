@@ -1,0 +1,18 @@
+{
+  "scope": "Prospective gates for native source span preservation; regression counts do not establish original fidelity. No source/gold changes.",
+  "rejected_head": "611ad0ff18578c413d1ea81f06eaebe7c368fab2",
+  "reference_head": "b9b2e24fb1de833e2b97fe862a8c341fc72a355c",
+  "expected": {
+    "native_nonspace_SDK_index_order": "Exactly retained for every source page",
+    "rendered_nonspace_character_count": "No decrease against reference on corresponding output pages",
+    "source_object_span_reuse": "Require matching original rectangle content, style, baseline and object geometry; otherwise preserve indexed glyphs",
+    "header": "Retain complete coherent original rectangle span"
+  },
+  "observed_rejected": {
+    "EfficientNet_output_page15_reference_nonspace_chars": 1771,
+    "EfficientNet_output_page15_candidate_nonspace_chars": 1734,
+    "all_owned_unit_tests_passed": true,
+    "reason": "Broad object coalescing can alter inferred table topology and lose output text despite unchanged parser text."
+  },
+  "rejected_render_receipt_sha256": "05a76f044dd57f25a0261206629bf2c06df4cfa1e1c9e2bb9b990253de2caa67"
+}
