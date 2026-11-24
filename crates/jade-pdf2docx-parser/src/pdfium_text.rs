@@ -81,6 +81,26 @@ pub(crate) fn extract(
     Ok(elements)
 }
 
+/// 全ページSDK本文と非空白文字の順序・件数を照合し、矩形の重複読取りを検出する。
+/// 字面の一致だけで反復を消さず、停止済み予算からも再開しない。
+pub(crate) fn matches_preview(
+    budget: &DecodeBudget,
+    elements: &[ParsedTextElement],
+    preview: &str,
+) -> Result<bool, ParseError> {
+    crate::metadata_workspace::ensure_active(budget)?;
+    let mut expected = preview.chars().filter(|ch| !ch.is_whitespace());
+    for element in elements {
+        for ch in element.text.chars() {
+            budget.check()?;
+            if !ch.is_whitespace() && expected.next() != Some(ch) {
+                return Ok(false);
+            }
+        }
+    }
+    Ok(expected.next().is_none())
+}
+
 /// segment.charsと同じ端点・許容幅で検索し、範囲の先頭だけを無確保で取得する。
 /// 両端が見つかる場合は依存先のinclusive範囲（end+1）と同じ空判定を行う。
 fn first_in_rect<'a>(
