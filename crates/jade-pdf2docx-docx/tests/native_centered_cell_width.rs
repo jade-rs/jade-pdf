@@ -56,6 +56,16 @@ fn source_centered_single_line_keeps_full_cell_width() {
     assert_zero_horizontal_margins(&cell);
 }
 
+/// 中心がセル内でも右端が越える一行には、幅を狭めるindentを追加しない。
+#[test]
+fn source_line_crossing_right_edge_keeps_legacy_horizontal_placement() {
+    let cell = first_cell(&source_with_geometry(72, 32, 16, 17.));
+    assert!(cell.contains(">10</w:t>"));
+    assert!(cell.contains("w:sz w:val=\"32\""));
+    assert!(!cell.contains("<w:ind"));
+    assert!(!cell.contains("<w:tcMar"));
+}
+
 /// 完成したDOCXの最初のセルを読み、複数の原本で同じ製品経路を検証する。
 fn first_cell(source: &[u8]) -> String {
     let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-centered-cell.pdf", source).unwrap();
