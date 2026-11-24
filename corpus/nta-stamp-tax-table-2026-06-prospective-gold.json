@@ -1,0 +1,177 @@
+{
+  "schema": "jade-pdf-prospective-visual-table-gold-v1",
+  "source": {
+    "id": "NTA-stamp-tax-table-2026-06",
+    "url": "https://www.nta.go.jp/publication/pamph/inshi/tebiki/pdf/08.pdf",
+    "sha256": "a74ef38911860b41868e5f1b7d8f870d2ff870ad2dcfd16c637a4e15abfd1e14",
+    "bytes": 604798,
+    "author": "国税庁",
+    "printed_date": "令和8年6月現在",
+    "physical_pages": 2,
+    "printed_page_labels": [
+      "35",
+      "36"
+    ],
+    "attribution": "出典：国税庁「印紙税額の一覧表」（令和8年6月現在）。本検証用goldは原本の一部を選択・加工して独立に作成。"
+  },
+  "created_utc": "2026-11-24T18:08:43.295115+00:00",
+  "candidate_source_fixed_before_collection": "7f3234b797caba8ef239793781103a72edd91886",
+  "product_used": false,
+  "prospective_scope": "Manual visible labels, amounts and row/cell association on source physical page2, rows5-14. 30 selected logical cells from a 4-column table. No product output used.",
+  "manual_source_render": {
+    "file": "source-page-2.png",
+    "sha256": "740ab70e0601caf18c1163084e7fc354996a9302d7f22d09caf20cca10442780",
+    "dimensions_px": [
+      1697,
+      2400
+    ],
+    "column_edges_px": [
+      132,
+      206,
+      742,
+      1285,
+      1572
+    ],
+    "bounds_are_approximate_region_identifiers_not_metric_gold": true
+  },
+  "expected_rows": [
+    {
+      "printed_document_number": 5,
+      "document_heading_visual_text": "合併契約書又は吸収分割契約書若しくは新設分割計画書",
+      "tax_visible_graphemes": "4万円",
+      "tax_amount_yen": 40000,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        162,
+        314
+      ]
+    },
+    {
+      "printed_document_number": 6,
+      "document_heading_visual_text": "定款",
+      "tax_visible_graphemes": "4万円",
+      "tax_amount_yen": 40000,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        314,
+        421
+      ]
+    },
+    {
+      "printed_document_number": 7,
+      "document_heading_visual_text": "継続的取引の基本となる契約書",
+      "tax_visible_graphemes": "4千円",
+      "tax_amount_yen": 4000,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        421,
+        574
+      ]
+    },
+    {
+      "printed_document_number": 8,
+      "document_heading_visual_text": "預金証書、貯金証書",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        574,
+        681
+      ]
+    },
+    {
+      "printed_document_number": 9,
+      "document_heading_visual_text": "倉荷証券、船荷証券、複合運送証券",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        681,
+        781
+      ]
+    },
+    {
+      "printed_document_number": 10,
+      "document_heading_visual_text": "保険証券",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        781,
+        821
+      ]
+    },
+    {
+      "printed_document_number": 11,
+      "document_heading_visual_text": "信用状",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        821,
+        862
+      ]
+    },
+    {
+      "printed_document_number": 12,
+      "document_heading_visual_text": "信託行為に関する契約書",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        862,
+        971
+      ]
+    },
+    {
+      "printed_document_number": 13,
+      "document_heading_visual_text": "債務の保証に関する契約書",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        971,
+        1055
+      ]
+    },
+    {
+      "printed_document_number": 14,
+      "document_heading_visual_text": "金銭又は有価証券の寄託に関する契約書",
+      "tax_visible_graphemes": "200円",
+      "tax_amount_yen": 200,
+      "physical_page": 2,
+      "row_top_bottom_px": [
+        1055,
+        1098
+      ]
+    }
+  ],
+  "selected_cells": 30,
+  "whole_document_requirements": {
+    "physical_pages": 2,
+    "visible_table_columns": 4,
+    "retain_rows_and_column_associations": true,
+    "retain_visible_Japanese_heading_vs_serif_body_contrast": true,
+    "retain_heavy_inset_borders_on_page1": true,
+    "retain_page_labels": [
+      "35",
+      "36"
+    ]
+  },
+  "limits": {
+    "visual_graphemes_do_not_prove_encoded_Unicode_scalar_identities": true,
+    "amount_numeric_semantics_and_exact_scalar_fidelity_are_separate": true,
+    "no_silent_NFKC_or_font_alias_equivalence": true,
+    "heading_visual_weight_does_not_prove_intrinsic_bold_font_bit": true,
+    "font_program_metadata_and_whole_rendering_still_require_review": true,
+    "not_full_table_or_full_document_semantic_gold": true
+  },
+  "expected_engine_constraint": {
+    "PDF_encryption_present": true,
+    "source_copy_permission_explicitly_allowed": true,
+    "pure_API_currently_rejects_encrypted_input": true,
+    "native_default_and_strict_outcomes_not_yet_observed": true
+  },
+  "whole_document_accepted": false,
+  "production_ready": false
+}
