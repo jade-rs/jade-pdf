@@ -219,6 +219,43 @@ mod tests {
     }
 
     proptest! {
+        #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 添字の上下・原点・描画順を変えても本文と添字の空白を保ち、別基線の空白を拒否する。
+        #[test]
+        fn mixed_script_baselines_keep_both_source_word_spaces(
+            half_points in 9i16..=12, raised in any::<bool>(),
+            x in 0i16..500, y in 100i16..700, reverse in any::<bool>(),
+        ) {
+            let delta = f32::from(half_points) / 2. * if raised { 1. } else { -1. };
+            let positioned = |text: &str, left: f32, width: f32, size: f32, shift: f32| {
+                let mut t = fragment(text, left + f32::from(x), width);
+                t.font_size = size;
+                t.baseline_y = Some(f32::from(y) + shift);
+                t.bounds.y0 = f32::from(y) + shift - size * 0.2;
+                t.bounds.y1 = f32::from(y) + shift + size * 0.8;
+                t
+            };
+            let texts = [
+                positioned("Alpha", 10., 25., 10., 0.),
+                positioned("Beta", 40., 20., 10., 0.),
+                positioned("max", 60.2, 10., 7., delta),
+                positioned("v", 72., 4., 7., delta),
+                positioned("=B", 78., 14., 10., 0.),
+            ];
+            let spaces = [
+                positioned(" ", 35., 5., 10., 0.),
+                positioned(" ", 70.2, 1.8, 7., delta),
+                positioned(" ", 35., 5., 10., 20.),
+                positioned(" ", 70.2, 1.8, 7., -delta),
+            ];
+            let mut row = texts.iter().collect::<Vec<_>>();
+            if reverse { row.reverse(); }
+            let kept = with_interior_spaces(&spaces, row);
+            prop_assert_eq!(kept.iter().map(|t| t.text.as_str()).collect::<String>(), "Alpha Betamax v=B");
+        }
+    }
+
+    proptest! {
         /// 実SDKと同じ極薄の空白でも、emの有界な間隔と元の本文順を保持する。
         #[test]
         fn thin_spaces_keep_word_boundaries(ink in 0.001f32..0.05,gap in 0.01f32..1.0) {
