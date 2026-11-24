@@ -776,7 +776,6 @@ fn build_structured_docx_with_image_payloads(
         && text_columns_by_page.iter().any(Option::is_some)
         && pages.iter().all(|page| !page.lines.is_empty())
         && positioned_tables.is_empty()
-        && parsed.image_elements.is_empty()
         && ocr_table.is_none();
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
@@ -785,6 +784,7 @@ fn build_structured_docx_with_image_payloads(
             positioned_tables,
             &page_chrome,
             &text_columns_by_page,
+            image_payloads,
         );
     }
 
@@ -960,6 +960,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    let block_count = blocks.len();
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
@@ -1065,7 +1066,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     paragraph = paragraph.section_property(section_property.clone());
                 }
                 if let Some(section_property) = section_refs.page_end
-                    && flow_index + 1 == page.lines.len()
+                    && block_index + 1 == block_count
                 {
                     paragraph = paragraph.section_property(section_property.clone());
                 }
@@ -1096,9 +1097,14 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_line = None;
                 previous_nonparagraph_bottom_y = Some(image.bounds.y0.min(image.bounds.y1));
-                container = container.add_structured_paragraph(
-                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image))),
-                );
+                let mut paragraph =
+                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image)));
+                if let Some(section_property) = section_refs.page_end
+                    && block_index + 1 == block_count
+                {
+                    paragraph = paragraph.section_property(section_property.clone());
+                }
+                container = container.add_structured_paragraph(paragraph);
             }
         }
     }
@@ -1112,6 +1118,7 @@ fn build_multi_page_text_column_docx(
     positioned_tables: &[PositionedTable],
     page_chrome: &RepeatedPageChrome,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
+    image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
     let last_page = pages
         .last()
@@ -1148,7 +1155,7 @@ fn build_multi_page_text_column_docx(
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
             },
-            &mut None,
+            image_payloads,
         )?;
     }
     Ok(docx)
