@@ -44,7 +44,9 @@ mod native_table_text;
 mod ocr_reconcile;
 mod output;
 mod package;
+mod page_chrome;
 mod paragraph_anchor;
+mod section_chrome_package;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -747,8 +749,8 @@ fn build_structured_docx_with_image_payloads(
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
     let pages = text_lines_by_page_from_pdf_text_elements(parsed, positioned_tables);
-    let page_chrome = extract_repeated_page_chrome(parsed, &pages);
-    let mut pages = remove_repeated_page_chrome_lines(parsed, pages, &page_chrome);
+    let page_chrome = page_chrome::extract(parsed, &pages);
+    let mut pages = page_chrome::remove(pages, &page_chrome);
     region_ocr::merge_lines(&mut pages, region_lines);
     let text_columns_by_page = pages
         .iter()
@@ -790,14 +792,22 @@ fn build_structured_docx_with_image_payloads(
         );
     }
 
-    let has_mixed_page_sizes = structured_pages_have_mixed_sizes(parsed, &pages);
+    let has_mixed_page_sizes =
+        structured_pages_have_mixed_sizes(parsed, &pages) || !page_chrome.is_uniform();
     let document_layout_page = if has_mixed_page_sizes {
         pages.last()
     } else {
         pages.first()
     };
     let mut docx = document_layout_page
-        .map(|page| structured_docx_with_page_layout(parsed, positioned_tables, page, &page_chrome))
+        .map(|page| {
+            structured_docx_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            )
+        })
         .unwrap_or_else(Docx::new);
     let base_section_property = docx.document.section_property.clone();
     let leading_single_column_section = document_text_columns
@@ -832,7 +842,9 @@ fn build_structured_docx_with_image_payloads(
             docx.document.section_property.section_type = Some(SectionType::Continuous);
         }
     }
-    docx = add_repeated_page_chrome_to_docx(docx, &page_chrome);
+    if let Some(page) = document_layout_page {
+        docx = add_repeated_page_chrome_to_docx(docx, page_chrome.page(page.page));
+    }
 
     for (page_index, page) in pages.iter().enumerate() {
         if page_index > 0 && !has_mixed_page_sizes {
@@ -840,8 +852,12 @@ fn build_structured_docx_with_image_payloads(
                 docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
         }
         if has_mixed_page_sizes && page_index + 1 < pages.len() {
-            let section =
-                structured_section_with_page_layout(parsed, positioned_tables, page, &page_chrome);
+            let section = structured_section_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            );
             let section = if let Some(lines) = recognized.get(&page.page) {
                 page_ocr::add_lines(section, lines)
             } else {
@@ -855,7 +871,7 @@ fn build_structured_docx_with_image_payloads(
                     image_payloads,
                 )?
             };
-            docx = append_section_with_repeated_chrome(docx, section, &page_chrome)?;
+            docx = append_section_with_repeated_chrome(docx, section, page_chrome.page(page.page))?;
         } else {
             let text_column_layout = (pages.len() == 1)
                 .then_some(document_text_columns.as_ref())
@@ -1144,25 +1160,28 @@ fn build_multi_page_text_column_docx(
     parsed: &ParsedDocument,
     pages: &[StructuredTextPage],
     positioned_tables: &[PositionedTable],
-    page_chrome: &RepeatedPageChrome,
+    page_chrome: &page_chrome::Plan,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
     let last_page = pages
         .last()
         .expect("multi-page text layout must have pages");
-    let mut docx = add_repeated_page_chrome_to_docx(
-        structured_docx_with_page_layout(parsed, positioned_tables, last_page, page_chrome),
-        page_chrome,
+    let mut docx = structured_docx_with_page_layout(
+        parsed,
+        positioned_tables,
+        last_page,
+        page_chrome.page(last_page.page),
     );
-    let repeated_chrome_section = docx.document.section_property.clone();
     for (page_index, page) in pages.iter().enumerate() {
-        let base_section = inherit_header_footer(
-            structured_docx_with_page_layout(parsed, positioned_tables, page, page_chrome)
+        let chrome = page_chrome.page(page.page);
+        // 各ページの見出しを登録し、その参照を同ページ内の全段組区間へ渡す。
+        docx.document.section_property =
+            structured_docx_with_page_layout(parsed, positioned_tables, page, chrome)
                 .document
-                .section_property,
-            &repeated_chrome_section,
-        );
+                .section_property;
+        docx = add_repeated_page_chrome_to_docx(docx, chrome);
+        let base_section = docx.document.section_property.clone();
         let text_column_layout = text_columns_by_page
             .get(page_index)
             .and_then(Option::as_ref);
@@ -1187,26 +1206,6 @@ fn build_multi_page_text_column_docx(
         )?;
     }
     Ok(docx)
-}
-
-/// 反復 header/footer part と参照をページ固有の section property へ継承する。
-fn inherit_header_footer(
-    mut section: SectionProperty,
-    source: &SectionProperty,
-) -> SectionProperty {
-    section.header_reference = source.header_reference.clone();
-    section.header = source.header.clone();
-    section.first_header_reference = source.first_header_reference.clone();
-    section.first_header = source.first_header.clone();
-    section.even_header_reference = source.even_header_reference.clone();
-    section.even_header = source.even_header.clone();
-    section.footer_reference = source.footer_reference.clone();
-    section.footer = source.footer.clone();
-    section.first_footer_reference = source.first_footer_reference.clone();
-    section.first_footer = source.first_footer.clone();
-    section.even_footer_reference = source.even_footer_reference.clone();
-    section.even_footer = source.even_footer.clone();
-    section
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -2482,90 +2481,10 @@ struct RepeatedPageChrome {
     header: Option<RepeatedPageChromeLine>,
     /// DOCX footer へ移す配置・style 付き反復行。
     footer: Option<RepeatedPageChromeLine>,
-}
-
-/// 全 page の boundary に反復する PDF テキストを header/footer 候補として抽出する。
-fn extract_repeated_page_chrome(
-    parsed: &ParsedDocument,
-    pages: &[StructuredTextPage],
-) -> RepeatedPageChrome {
-    if pages.len() < 2 {
-        return RepeatedPageChrome::default();
-    }
-    let page_count = pages.len();
-    let mut header_counts: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
-    let mut footer_counts: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
-    for page in pages {
-        for line in &page.lines {
-            let text = line.text.trim();
-            if text.is_empty() {
-                continue;
-            }
-            if is_pdf_header_line(parsed, page.page, line) {
-                header_counts
-                    .entry(text.to_string())
-                    .or_default()
-                    .insert(page.page);
-            }
-            if is_pdf_footer_line(parsed, page.page, line) {
-                footer_counts
-                    .entry(text.to_string())
-                    .or_default()
-                    .insert(page.page);
-            }
-        }
-    }
-    let header = repeated_text_seen_on_all_pages(header_counts, page_count)
-        .and_then(|text| repeated_chrome_line(parsed, pages, text.as_str(), true));
-    let footer = repeated_text_seen_on_all_pages(footer_counts, page_count)
-        .and_then(|text| repeated_chrome_line(parsed, pages, text.as_str(), false));
-    RepeatedPageChrome { header, footer }
-}
-
-/// 全 page で検出された反復テキストを返す。
-fn repeated_text_seen_on_all_pages(
-    counts: BTreeMap<String, BTreeSet<usize>>,
-    page_count: usize,
-) -> Option<String> {
-    counts
-        .into_iter()
-        .find_map(|(text, pages)| (pages.len() == page_count).then_some(text))
-}
-
-/// 反復テキストに対応する配置・style 付き代表行を返す。
-fn repeated_chrome_line(
-    parsed: &ParsedDocument,
-    pages: &[StructuredTextPage],
-    text: &str,
-    header: bool,
-) -> Option<RepeatedPageChromeLine> {
-    pages.iter().find_map(|page| {
-        let line = page.lines.iter().find(|line| {
-            line.text.trim() == text
-                && if header {
-                    is_pdf_header_line(parsed, page.page, line)
-                } else {
-                    is_pdf_footer_line(parsed, page.page, line)
-                }
-        })?;
-        let parsed_page = parsed
-            .pages
-            .iter()
-            .find(|parsed_page| parsed_page.page_number == page.page)?;
-        let (display_width, display_height) = parsed_page_display_size_points(parsed_page);
-        let distance_points = if header {
-            display_height - line.top_y
-        } else {
-            line.top_y - structured_line_max_font_size(line)
-        };
-        Some(RepeatedPageChromeLine {
-            line: line.clone(),
-            edge_distance_twips: pdf_points_to_floor_twips(distance_points.max(0.0))?,
-            right_indent_twips: pdf_points_to_indent_twips(
-                (display_width - line.right_x).max(0.0),
-            )?,
-        })
-    })
+    /// 先行sectionのheaderを空のpartで明示的に解除する。
+    clear_header: bool,
+    /// 先行sectionのfooterを空のpartで明示的に解除する。
+    clear_footer: bool,
 }
 
 /// structured line 内で最大の PDF font size を返す。
@@ -2590,15 +2509,39 @@ fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine
 
 /// 反復 page chrome を DOCX の header/footer part へ追加する。
 fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome) -> Docx {
-    if let Some(header) = chrome.header.as_ref() {
-        docx = docx
-            .header(Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)));
+    if let Some(header) = repeated_header(chrome) {
+        docx = docx.header(header);
     }
-    if let Some(footer) = chrome.footer.as_ref() {
-        docx = docx
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome) {
+        docx = docx.footer(footer);
     }
     docx
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空headerを作る。
+fn repeated_header(chrome: &RepeatedPageChrome) -> Option<Header> {
+    chrome
+        .header
+        .as_ref()
+        .map(|line| Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .or_else(|| {
+            chrome
+                .clear_header
+                .then(|| Header::new().add_paragraph(Paragraph::new()))
+        })
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空footerを作る。
+fn repeated_footer(chrome: &RepeatedPageChrome) -> Option<Footer> {
+    chrome
+        .footer
+        .as_ref()
+        .map(|line| Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .or_else(|| {
+            chrome
+                .clear_footer
+                .then(|| Footer::new().add_paragraph(Paragraph::new()))
+        })
 }
 
 /// 反復header/footerを順に確定し、混在ページの中間sectionへ本文とともに追加する。
@@ -2609,53 +2552,19 @@ fn append_section_with_repeated_chrome(
     mut section: Section,
     chrome: &RepeatedPageChrome,
 ) -> Result<Docx, ConvertError> {
-    if let Some(footer) = chrome.footer.as_ref() {
-        section = section
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome) {
+        section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = chrome.header.as_ref() {
+    if let Some(header) = repeated_header(chrome) {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
             ));
         };
-        docx =
-            docx.add_section(section.header(
-                Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)),
-            ));
+        docx = docx.add_section(section.header(header));
     }
     Ok(docx)
-}
-
-/// DOCX header/footer に移した PDF 行を本文 flow から除外する。
-fn remove_repeated_page_chrome_lines(
-    parsed: &ParsedDocument,
-    pages: Vec<StructuredTextPage>,
-    chrome: &RepeatedPageChrome,
-) -> Vec<StructuredTextPage> {
-    pages
-        .into_iter()
-        .map(|mut page| {
-            page.lines
-                .retain(|line| !is_repeated_page_chrome_line(parsed, page.page, line, chrome));
-            page
-        })
-        .collect()
-}
-
-/// 行が DOCX header/footer へ移した反復 page chrome か判定する。
-fn is_repeated_page_chrome_line(
-    parsed: &ParsedDocument,
-    page: usize,
-    line: &StructuredTextLine,
-    chrome: &RepeatedPageChrome,
-) -> bool {
-    chrome.header.as_ref().is_some_and(|header| {
-        line.text.trim() == header.line.text.trim() && is_pdf_header_line(parsed, page, line)
-    }) || chrome.footer.as_ref().is_some_and(|footer| {
-        line.text.trim() == footer.line.text.trim() && is_pdf_footer_line(parsed, page, line)
-    })
 }
 
 /// PDF page 上部にある header らしい行か判定する。

@@ -11,7 +11,7 @@ pub(super) fn pack_docx_to_bytes(
     docx: Docx,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
-    let mut package = docx.build();
+    let mut package = crate::section_chrome_package::build(docx)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
@@ -281,7 +281,7 @@ pub(super) fn pack_docx_to_file(
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
-    let mut package = docx.build();
+    let mut package = crate::section_chrome_package::build(docx)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     package

@@ -1,0 +1,91 @@
+{
+  "generated_utc": "2026-11-24T03:30:45.771248+00:00",
+  "scope": "Per-source-page repeated header/footer occurrences, first-page title ownership, valid section chrome package parts; not overall PDF/DOCX fidelity acceptance.",
+  "production_ready": false,
+  "qualified_runtime_head": "bed746c51e7aee77be9310cfb915e4b592bc1aca",
+  "qualified_crates_tree": "303d36906b2fdb2050602480bf5c6e40d03586a0",
+  "base_main": "144243b499da41e9183c44b504805612d5e98bd3",
+  "source": {
+    "publisher_url": "https://proceedings.mlr.press/v97/tan19a.html",
+    "pdf_url": "https://proceedings.mlr.press/v97/tan19a/tan19a.pdf",
+    "pdf_sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+    "pages": 10,
+    "first_page_title_size_pt": 14.346200000000067,
+    "later_header_size_pt": 8.966400000000021,
+    "all59_original_source_and_gold_files_unchanged": true,
+    "gold_Table1_45_numeric_values_unchanged": true,
+    "review": "Previously collected PDF and all10pages reviewed before first product conversion. Local QA only; no external PDF/font/image added to Git.",
+    "reference_timing": "Independent header reference made after observed failure before this candidate conversion; not prospective holdout."
+  },
+  "behavior": {
+    "first_title_remains_body": true,
+    "later9_headers_size_half_points": 18,
+    "header_and_footer_profile_uses_emitted_run_properties": true,
+    "only_selected_occurrence_removed_from_body": true,
+    "source_page_chrome_kept_in_column_sections": true,
+    "explicit_blank_part_clears_prior_page_inheritance": true,
+    "paragraph_sectPr_text_parts_collected": true,
+    "relationship_targets_use_numeric_part_order": true,
+    "source_unicode_font_programs_licenses_and_strict_gates_unchanged": true
+  },
+  "validation": {
+    "default_Rust": {
+      "passed": 2250,
+      "failed": 0,
+      "ignored": 29,
+      "command": "sh scripts/check_rust_features.sh default",
+      "clippy": "exited0 with existing warnings, not warning-free"
+    },
+    "new_regression_and_property_tests": 5,
+    "property_cases": "4–24pages, one/two columns, both header/footer styles and body ownership",
+    "Python_unittest": 152,
+    "format": "passed",
+    "standard_browser_chromium": 72,
+    "standard_browser_webkit": 72,
+    "actual_browser_outcomes": 24,
+    "actual_CLI_outcomes": 5,
+    "actual_CLI_default_owned_and_EfficientNet_equal_native_example": true,
+    "actual_CLI_strict_owned_EfficientNet_BERT_rejected_before_publication": true,
+    "native_BERT_owned_public3_DOCX_bytes_unchanged": true,
+    "pure_owned_public3_DOCX_bytes_unchanged": true,
+    "pure_BERT": "Only1225 w14:paraId values advanced by9 after nine additional preceding EfficientNet header paragraphs. Independent package diff proves all other XML and ZIPparts unchanged. Original failure assuming byte identity retained; no output rewrite.",
+    "pure_EfficientNet_fonts": "All18 audited embedded font assets byte-identical to previous qualified output.",
+    "both_browsers_all_generated_DOCX_bytes_identical": true,
+    "EfficientNet_body_text_nodes_equal_old_body_plus_original_title": true,
+    "EfficientNet_all12_image_anchors_and_media_unchanged": true,
+    "native_rebuilt_after_rebase_byte_identical": true,
+    "native_executable_sha256": "665e5f84658bf69455d6d6d08fcd589ee5ef71f29ca1f4d2fa43ec352e040bc6",
+    "native_CLI_sha256": "a1c3fb16e94e63c6c97b2ff5d930a0edaa8fddfec0150e2a55570716a92f9323",
+    "raw_WASM_sha256": "0b83f331f071f71ff68604698c1f91394d3210605a141189395dc170f73b52f8",
+    "distributed_WASM_sha256": "0e3d1f85ef464600439a4b9ff26f3a70d90ad67d55bc7ecd2ebd0c158ee477ad",
+    "WASM_distribution": "All4 bindings and6 notice files checked; probe/input/source hashes checked around actual browser runs.",
+    "visual_review": "All20native and20pure output pages viewed as contact sheets, pages1and15 each viewed in full. Oversized title/photo overlap resolved."
+  },
+  "remaining_failures": {
+    "whole_page_fidelity_accepted": false,
+    "EfficientNet_source_pages": 10,
+    "EfficientNet_native_and_pure_rendered_pages": 20,
+    "BERT_known_source16_output32pages": "unchanged; this candidate did not qualify whole-page layout anew",
+    "Table1_cell_structure": "still incorrect; source numeric gold unchanged",
+    "other": [
+      "horizontal header position",
+      "body/caption/label placement",
+      "vector artwork",
+      "font fallback",
+      "real Word rendering unverified"
+    ]
+  },
+  "retained_attempts": [
+    "PBT macro-capture compile failure corrected in assertions before property verification; not semantic Red.",
+    "First browser assessment wrongly assumed BERT byte identity; independent diff isolates paragraph IDs only.",
+    "Assessment tooling initially used system Python without zip(strict=True), and a wrong rendered-PDF basename; corrected tooling, same outputs retained."
+  ],
+  "local_reproduction": {
+    "qualification_directory": "corpus/wasm-runtime/page-chrome-occurrence-qualification",
+    "native_receipts": "native-7e66f68/receipts.json",
+    "native_assessment": "native-7e66f68/header-and-regression-assessment.json",
+    "browser_assessment": "actual-browser-assessment.json",
+    "independent_source_reference": "EfficientNet-independent-header-reference-before-candidate.json",
+    "qualified_source_and_manifest": "Frozen separately after documentation commit; runtime code must remain identical to qualified_runtime_head."
+  }
+}
