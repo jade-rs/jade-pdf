@@ -1,0 +1,162 @@
+{
+  "version": 1,
+  "qualified_runtime_head": "d74668cad6b92378ec74c984cd044e6c8982834e",
+  "qualified_crates_tree": "bd5511a5e29ed94d84e5cf65bf59b17d4b943e3f",
+  "base_main": "3dd3ebaac8722f93e64838bdf05b08fc13128aeb",
+  "production_ready": false,
+  "problem": "Called Form images were never placed. Supporting them exposed source-resolution loss in clipping, page-bottom coordinates used as Word top offsets, and blank default/strict success for an unchanged ReportLab ASCII85/Flate control.",
+  "change": "Recover called nested Image XObjects with local resources, inherited supported paint, composed CTM, convex clip and source/display pixel density; retain Form/unsupported-group/OCR diagnostics. Anchor positioned images to upright source-page top origin. Decode the exact direct ASCII85->Flate content chain, with bounded stages and explicit failure.",
+  "TDD": {
+    "initial_image_Red": "769f57d",
+    "initial_Green": "94fc6c4",
+    "group_alpha_Red_Green": [
+      "ffe3b17",
+      "ae88cee"
+    ],
+    "indirect_subtype_Red_Green": [
+      "75827b0",
+      "ccf3602"
+    ],
+    "small_transform_Red_Green": [
+      "030340d",
+      "532387e"
+    ],
+    "group_color_Red_Green": [
+      "07a1104",
+      "e6c126f"
+    ],
+    "image_density_Red_Green": [
+      "581ada1",
+      "7e30180"
+    ],
+    "ASCII85_content_Red_Green": [
+      "70d73d4",
+      "eff4ac1"
+    ],
+    "positioned_origin_Red_Green": [
+      "029e419",
+      "9968a3b"
+    ],
+    "final_invariant_tests": "ac20919",
+    "test_only_import_cleanup": "d74668c",
+    "new_test_count": 22,
+    "properties": "Owned rectangular clip interval arithmetic, ASCII85/Flate arbitrary-byte round trips and bounded stages, fractional page-specific image origins;64cases each for the new explicit property suites. Not exhaustive input coverage.",
+    "corrected_test_assumption": "Initial image-origin test stopped on de-duplicated asset count; corrected to2drawing anchors and independently reran semantic Red before implementation. Two legacy y assertions encoded bottom-origin offsets; corrected to source200pt-height minus70pt-upper-edge=130pt, keeping their original failure log."
+  },
+  "validation": {
+    "time_utc": "2026-11-24T02:36:17.522389+00:00",
+    "CI_parity_default": {
+      "passed": 2245,
+      "failed": 0,
+      "ignored": 29,
+      "command": "/bin/sh scripts/check_rust_features.sh default",
+      "log_sha256": "10df11779ffa2ea7fb21fcf71e3f63d421112a3a9d520f21c5e228540eb8e261",
+      "source_Rust_files_verified_before_after": 665
+    },
+    "Python_passed": 152,
+    "formatting": "pass",
+    "browser_standard": {
+      "chromium": 72,
+      "webkit": 72
+    },
+    "actual_browser_outcomes": {
+      "total": 24,
+      "default_success": 12,
+      "strict_success": 6,
+      "expected_strict_rejection": 6
+    },
+    "native_example_SHA256": "346ceea22ac5b16b6e2d93020283715e72f812b2377f044fc66094d9f5a0fc2f",
+    "native_CLI_SHA256": "328d2c775b84e94d7d50d0024064b77c2605bcd21d50b7fe0db9ca7fad244950",
+    "raw_WASM_SHA256": "bf23b0cc3a71ba26cd447f720a9804598719a8a5d8086f560e88ffea41b80109",
+    "WASM_SHA256": "64b3c857fb2e40eaa97fbf5d44708b68eacf28c7f60e1f5fa2f61f4a1fb8dd92",
+    "production_bindings_and_all6_notices_verified": true,
+    "native_and_WASM_byte_identical_after_test_only_cleanup": true,
+    "CLI": "Actual native default owned control publishes byte-identical structured DOCX; owned/EfficientNet/BERT strict runs reject before publication.4outcomes.",
+    "transient_failure": "One unmodified500ms supervisor fixture timed out before its descendant PID marker existed. Failure retained; exact focused test then full same-source2245test run passed after other processes ended. Startup scheduling is a hypothesis, not a proven root cause. No timeout, test condition or production source weakened.",
+    "final_Python_log_SHA256": "c4d12f0d600255a88d5952090c9249eca206472b535da22f0122a82569454211",
+    "final_format_log_SHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "PR31_main_postmerge_all16_success": true
+  },
+  "owned": {
+    "source_SHA256": "2d15d038085bae3e90825484de5ef94a00f2a829a8d1c3fbf70ec89ce96d721d",
+    "pages": 1,
+    "drawings_after": 3,
+    "previous_result": "Unchanged original ReportLab source was blank and accepted by strict; original source and failing outputs retained.",
+    "source_review": "All source pages and independent authored reference reviewed before first product conversion.",
+    "source_and_native_output_individually_viewed": true,
+    "actual_WASM_owned_PNG_byte_equal_viewed_native": true,
+    "remaining": "Label y placement and rasterized clip edge differ; not full page fidelity."
+  },
+  "EfficientNet": {
+    "publisher": "https://proceedings.mlr.press/v97/tan19a.html",
+    "PDF": "https://proceedings.mlr.press/v97/tan19a/tan19a.pdf",
+    "source_SHA256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+    "source_pages": 10,
+    "all10_source_pages_previously_reviewed_before_first_product_conversion": true,
+    "source_preconversion_manifest_files_unchanged": 59,
+    "source_preconversion_manifest_SHA256": "8afe8ecbae91d72327f44236c16f9b0218746b786358a2e4613cee023bdec0a8",
+    "selected_Table1_gold_SHA256": "f3a7c8068a23f9843e22f53cacf8728318a559f78a6ca9775fd8872bacd9312e",
+    "selected_table_expected": "9rows x5columns;45numeric values. Gold unchanged, row/column layout still fails.",
+    "image_drawings_before_after": [
+      0,
+      12
+    ],
+    "original_source_RGB_samples_correctly_clipped": 12,
+    "source_anchor_position_error_pt_upper_bound": 0.01,
+    "maximum_extent_rounding_error_pt": 0.35443200000003117,
+    "same_result_native_and_both_actual_browser_bindings": true,
+    "strict_issues_after": 14,
+    "rendered_pages_before_after": [
+      20,
+      20
+    ],
+    "all20_native_output_pages_viewed_as_contact_thumbnails": true,
+    "output_page15_individually_viewed": true,
+    "text_nodes_unchanged_within_native_and_pure_backend": true,
+    "pure18font_asset_payloads_identical_to_prior_independently_reviewed_assets": true,
+    "reference_limits": "Initial PDFMiner reference omitted clipping. Post-observation independent source operation/rect-clip reference gives6intentional cropped maze images; original reference, failed comparisons, source and table gold preserved. Not a prospective holdout pass.",
+    "accepted": false,
+    "remaining": "Recovered images overlap a preexisting oversized repeated title.10->20pages, column/table/vector/font and full-page failures remain."
+  },
+  "BERT": {
+    "PDF": "https://aclanthology.org/N19-1423.pdf",
+    "source_SHA256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+    "source_pages": 16,
+    "source_previously_reviewed": true,
+    "new_image_drawings": 38,
+    "unique_image_assets": 16,
+    "rendered_pages_before_after": [
+      32,
+      32
+    ],
+    "native_output_pages_reviewed_as_thumbnails": 32,
+    "output_pages5and29_individually_viewed": true,
+    "text_nodes_unchanged_within_native_and_pure_backend": true,
+    "pure_font_assets_byte_identical_to_prior": true,
+    "strict_issues_after": 25,
+    "comparison_correction": "First QA accidentally selected the old diagnostic DOCX as BERT baseline. That failed assessment is retained and superseded by the verified structured baseline9c8f37663bb63bdbe337c6679db7d660de9bec284cbb50485183aaa55469e596.",
+    "accepted": false,
+    "remaining": "Recovered bitmap components include shadows; vector fills, labels, columns, tables and page flow remain incomplete."
+  },
+  "public_controls": {
+    "original_public_PDFs": 3,
+    "native_DOCX_bytes_unchanged": true,
+    "both_browser_default_DOCXs_byte_equal_native": true,
+    "tracked_PDF_count": 3
+  },
+  "policy": "No new dependencies, tracked PDF/font source data, original program/source/gold changes, font-permission changes or strict/OCR bypass. New source data and outputs remain ignored research artifacts, not corpus/fixture registrations.",
+  "limits": [
+    "All Form/OCR quality diagnostics remain; strict still rejects these image cases.",
+    "Complete Form artwork, group compositing, paint order, nonconvex/curved clip and all rotations are not qualified.",
+    "Full page fidelity remains rejected; Microsoft Word rendering unverified.",
+    "Current new binding-specific cases are manually run qualification inputs; committed Rust pure-parser/DOCX tests provide persistent regression/property coverage.",
+    "Production readiness is false."
+  ],
+  "local_evidence_root": "corpus/wasm-runtime/form-image-recovery-qualification",
+  "manifest": {
+    "path": "corpus/wasm-runtime/form-image-recovery-qualification/qualification-manifest-as-of-d74668c.json",
+    "files": 1222,
+    "SHA256": "6379e533006f56c18c214448de4820dc28656091245af8fb5bcf562be39a1ce8",
+    "scope": "Local ignored runtime/source/code/qualification artifacts, exact hash/size. Mutable current checkpoint and build caches excluded. Report/docs committed separately; no source PDF/font added toGit."
+  }
+}
