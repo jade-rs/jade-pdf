@@ -38,7 +38,11 @@ fn parts(mut parsed: ParsedDocument) -> BTreeMap<String, String> {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let names: Vec<_> = zip
         .file_names()
-        .filter(|name| *name == "word/document.xml" || name.starts_with("word/header"))
+        .filter(|name| {
+            *name == "word/document.xml"
+                || *name == "word/_rels/document.xml.rels"
+                || name.starts_with("word/header")
+        })
         .map(str::to_owned)
         .collect();
     names
@@ -52,6 +56,86 @@ fn parts(mut parsed: ParsedDocument) -> BTreeMap<String, String> {
             (name, xml)
         })
         .collect()
+}
+
+/// 属性順序に依存せず、対象タグの属性を読む。
+fn attribute(xml: &str, element: &[u8], key: &[u8]) -> Option<String> {
+    let mut reader = quick_xml::Reader::from_str(xml);
+    loop {
+        match reader.read_event().unwrap() {
+            quick_xml::events::Event::Start(e) | quick_xml::events::Event::Empty(e)
+                if e.local_name().as_ref() == element =>
+            {
+                return e
+                    .attributes()
+                    .map(Result::unwrap)
+                    .find(|a| a.key.as_ref() == key)
+                    .map(|a| String::from_utf8(a.value.to_vec()).unwrap());
+            }
+            quick_xml::events::Event::Eof => return None,
+            _ => (),
+        }
+    }
+}
+
+/// sectionのheader参照を実際のZIP部品へ解決する。
+fn header_part<'a>(parts: &'a BTreeMap<String, String>, section: &str) -> Option<&'a str> {
+    let id = attribute(section, b"headerReference", b"r:id")?;
+    let relationships = &parts["word/_rels/document.xml.rels"];
+    let mut reader = quick_xml::Reader::from_str(relationships);
+    let target = loop {
+        match reader.read_event().unwrap() {
+            quick_xml::events::Event::Empty(e) if e.local_name().as_ref() == b"Relationship" => {
+                let attributes: BTreeMap<_, _> = e
+                    .attributes()
+                    .map(Result::unwrap)
+                    .map(|a| {
+                        (
+                            a.key.as_ref().to_vec(),
+                            String::from_utf8(a.value.to_vec()).unwrap(),
+                        )
+                    })
+                    .collect();
+                if attributes.get(b"Id".as_slice()) == Some(&id) {
+                    break attributes[b"Target".as_slice()].clone();
+                }
+            }
+            quick_xml::events::Event::Eof => panic!("missing header relationship"),
+            _ => (),
+        }
+    };
+    Some(
+        parts
+            .get(&format!("word/{target}"))
+            .expect("header relationship must resolve"),
+    )
+}
+
+/// 前ページに見出しがあっても、本文題名だけのページに引き継がせない。
+#[test]
+fn singleton_title_between_running_headers_explicitly_clears_inheritance() {
+    let mut parsed = title_and_running_headers();
+    for text in &mut parsed.text_elements {
+        if text.text == "SHARED TITLE" {
+            let size = if text.page == 1 { 18. } else { 9. };
+            text.font_size = size;
+            text.bounds.y1 = 752.;
+            text.bounds.y0 = 752. - size;
+            text.baseline_y = Some(752. - size);
+        }
+    }
+    let parts = parts(parsed);
+    let sections: Vec<_> = parts["word/document.xml"]
+        .split("<w:sectPr")
+        .skip(1)
+        .map(|part| part.split("</w:sectPr>").next().unwrap())
+        .collect();
+    let middle = header_part(&parts, sections[1]);
+    assert!(
+        middle.is_some(),
+        "middle title page must explicitly clear header inheritance"
+    );
+    assert!(!middle.unwrap().contains("SHARED TITLE"));
 }
 
 /// 初ページの本文題名を共有headerへ移さず、後続ページに9ptの見出しを持たせる。
