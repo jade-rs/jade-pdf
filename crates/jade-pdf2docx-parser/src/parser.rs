@@ -1086,7 +1086,7 @@ fn extract_image_elements_from_pdf_bytes(
     let mut placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
     if streams.iter().any(|stream| {
         crate::metadata::value(stream.dictionary, b"Subtype")
-            .is_some_and(|v| crate::metadata::is_name(v, b"Form"))
+            .is_some_and(|v| !crate::metadata::is_name(v, b"Image"))
     }) {
         crate::form_content::visit_images(
             decode_budget,
