@@ -47,6 +47,8 @@ mod paragraph_anchor;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
+#[cfg(test)]
+mod page_column_isolation_tests;
 mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
