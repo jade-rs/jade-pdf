@@ -5,7 +5,7 @@ use proptest::prelude::*;
 /// Font programなしの標準Helveticaと任意の文字描画operandだけを持つ所有PDFを作る。
 fn pdf(show: &str, encoding: bool, unicode: bool) -> Vec<u8> {
     let content = format!("BT /F1 12 Tf 72 700 Td 14 TL {show} ET");
-    let cmap = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /OwnedOverride def /CMapType 2 def 1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfchar <97> <2603> endbfchar endcmap CMapName currentdict /CMap defineresource pop end end";
+    let cmap = "/CIDInit /ProcSet findresource begin 12 dict begin begincmap /CIDSystemInfo << /Registry (Adobe) /Ordering (UCS) /Supplement 0 >> def /CMapName /OwnedOverride def /CMapType 2 def 1 begincodespacerange\n<00> <FF>\nendcodespacerange\n1 beginbfchar\n<97> <2603>\nendbfchar endcmap CMapName currentdict /CMap defineresource pop end end";
     let mut objects = vec![
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".into(),
