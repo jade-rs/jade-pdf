@@ -7,11 +7,19 @@ pub(super) fn spacing(height: f32, before: u32, after: u32) -> Option<LineSpacin
     if !twips.is_finite() || !(1.0..=f64::from(i32::MAX)).contains(&twips) {
         return None;
     }
+    spacing_twips(twips as i32, before, after)
+}
+
+/// 累積末端から確定済みの正の整数行高を、再度pointへ戻して丸めずに出力する。
+pub(super) fn spacing_twips(height: i32, before: u32, after: u32) -> Option<LineSpacing> {
+    if height <= 0 {
+        return None;
+    }
     Some(
         LineSpacing::new()
             .before(before)
             .after(after)
-            .line(twips as i32)
+            .line(height)
             .line_rule(LineSpacingType::Exact),
     )
 }

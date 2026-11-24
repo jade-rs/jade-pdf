@@ -52,6 +52,7 @@ mod source_table_pagination_tests;
 mod source_typography_tests;
 mod table_opening;
 
+mod cell_line_rounding;
 mod html_table;
 mod image_anchor;
 mod inline_baseline;
