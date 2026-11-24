@@ -4,9 +4,9 @@
   "reference_head": "b9b2e24fb1de833e2b97fe862a8c341fc72a355c",
   "expected": {
     "native_nonspace_SDK_index_order": "Exactly retained for every source page",
-    "rendered_nonspace_character_count": "No decrease against reference on corresponding output pages",
     "source_object_span_reuse": "Require matching original rectangle content, style, baseline and object geometry; otherwise preserve indexed glyphs",
-    "header": "Retain complete coherent original rectangle span"
+    "header": "Retain complete coherent original rectangle span",
+    "rendered_character_delta": "For each of9changed original source pages, corresponding output-page character multiplicity delta must exactly equal independently confirmed SDK-index versus repeated-rectangle delta. All unaffected output pages retain counts."
   },
   "observed_rejected": {
     "EfficientNet_output_page15_reference_nonspace_chars": 1771,
@@ -14,5 +14,15 @@
     "all_owned_unit_tests_passed": true,
     "reason": "Broad object coalescing can alter inferred table topology and lose output text despite unchanged parser text."
   },
-  "rejected_render_receipt_sha256": "05a76f044dd57f25a0261206629bf2c06df4cfa1e1c9e2bb9b990253de2caa67"
+  "rejected_render_receipt_sha256": "05a76f044dd57f25a0261206629bf2c06df4cfa1e1c9e2bb9b990253de2caa67",
+  "historical_unpublished_b9_count_gate": "No decrease against reference on corresponding output pages",
+  "historical_gate_resolution": "Unpublished b9 EfficientNet inferred-table rendering introduced both extra and missing letters. Its total count is not source gold. Preserve this failed diagnostic, use exact per-codepoint source-bound delta below.",
+  "source_bound_resolution": {
+    "runtime_head": "b61a972c03c0807e7f18470facde496b72191560",
+    "EfficientNet_removed_duplicates": 42,
+    "BERT_removed_duplicates": 24,
+    "all9source_page_groups_exact": true,
+    "receipt_sha256": "beb2e5350d2c9571fb7b4aa722a19fe65bac476c73aed73435343feba7139e4d",
+    "scope": "Text inventory, not reading order or visual fidelity. Original source/gold unchanged."
+  }
 }

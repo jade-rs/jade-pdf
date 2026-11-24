@@ -121,6 +121,8 @@ Within a `TJ` array, a forward gap of at least 0.2 em between word-spaced charac
 
 Native conversion preserves physically printed line-end hyphens. Pdfium's control-code representation is restored only for characters that its hyphen API verifies; literal control codes keep their identity. Public PDF tests compare original word boundaries and punctuation without deleting source hyphens.
 
+Native extraction checks rectangular text segments against the SDK's complete page text. When overlapping rectangles repeat adjacent glyphs, it can recover text by SDK character index, retaining every indexed character once. Coherent source spans retain their geometry only when their complete text, style and object bounds also match an original rectangle. Pages with painted control codes keep the existing path; verified printed hyphens and SDK-generated line breaks remain distinct. This corrects duplicated text and the tested GNU page overflow without guessing Unicode. See the [native text guide](docs/native_text.md) and [qualification ledger](corpus/validation-native-segment-identity.json).
+
 The bytes parser preserves empty `bfchar` destinations and empty elements in `bfrange` destination arrays. These entries produce empty text and keep later character mappings aligned. Incomplete UTF-16 destinations are rejected as whole mappings.
 
 When the built-in program is unavailable, the existing ToUnicode map stays shared and unmapped codes remain explicitly unverified in the quality report; normal best-effort output may still contain fallback text. Strict mode rejects any painted unverified code.
