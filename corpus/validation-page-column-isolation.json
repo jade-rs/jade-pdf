@@ -1,0 +1,102 @@
+{
+  "version": 1,
+  "qualified_runtime_head": "bb48769a7ea602f614465af427b638764a8fd5f3",
+  "qualified_crates_tree": "8a017b7af2ab848abc6e35d1c15099fbf4cc1492",
+  "base_main": "8d06986ce28f88adc3b42ea800891209d677ace2",
+  "production_ready": false,
+  "problem": "An image on another text page disabled real two-column sections; restoring columns exposed clamping of negative column displacement and mismatched fractional section rounding.",
+  "change": "Keep per-page column sections across images on other text pages; carry owned image payloads and end sections on the final text/image block. Compute column origins from emitted Word section units and retain signed source offsets only within verified columns.",
+  "TDD": {
+    "image_regression_commits": [
+      "de9cabe",
+      "ca83b46"
+    ],
+    "image_Green": "b40f368",
+    "image_refactor": "3823e17",
+    "column_displacement_Red": "9e7fe26",
+    "column_displacement_Green": "c767d80",
+    "fractional_Red": "a8f4765",
+    "fractional_Green": "cffc05c",
+    "final_refactor": "bb48769a7ea602f614465af427b638764a8fd5f3",
+    "fractional_saved_seed": "crates/jade-pdf2docx-docx/proptest-regressions/page_column_isolation_tests.txt"
+  },
+  "validation": {
+    "time_utc": "2026-11-24T00:43:14.197879+00:00",
+    "runtime_head": "bb48769a7ea602f614465af427b638764a8fd5f3",
+    "crates_tree": "8a017b7af2ab848abc6e35d1c15099fbf4cc1492",
+    "default": {
+      "passed": 2223,
+      "failed": 0,
+      "ignored": 29
+    },
+    "Python": 152,
+    "browser_standard": {
+      "chromium": 72,
+      "webkit": 72
+    },
+    "manual_browser_outcomes": 28,
+    "native_binary_sha256": "f16f8bc8379ea70d803f6bc1d97f8d3ea6786db7b24e823841b42a3a1cb2a1fc",
+    "raw_WASM_sha256": "74bcfa945b7526a122061da98d57b70172d090e53b26af1e652a8fd8878a1816",
+    "WASM_sha256": "dd60cf928c07bc6a8db737efcf7622a702b98ef3bba15be26d289c3e53579687",
+    "all6_notices_verified": true,
+    "source_views_and_rendering": "Six owned native output pages individually viewed;2 actual WASM first-image PNGs byte-identical to viewed native. Other known public/BERT outputs unchanged byte-for-byte in their respective backend.",
+    "remaining_fidelity": "Image-containing page itself stays legacy layout; baseline/font substitution remains. BERT16->32 unchanged; full production readiness false.",
+    "production_ready": false
+  },
+  "owned_render": {
+    "source_pages_each": 2,
+    "native_cases": 3,
+    "native_render_pages_reviewed": 6,
+    "right_column_source_x_pt": 330.0,
+    "intermediate_render_x_pt": 340.75,
+    "final_render_x_pt": 330.1,
+    "final_selected_x_error_pt": 0.1,
+    "image_first_and_last_page_membership_preserved": true,
+    "image_page2_PNG_unchanged_from_intermediate": true,
+    "baseline_difference_remains_about_pt": 2.156,
+    "scope": "Selected authored labels, columns on image-free pages and image section membership; not full image-page layout or arbitrary-font fidelity."
+  },
+  "public_controls": {
+    "original_public_PDFs": 3,
+    "native_DOCX_bytes_equal_PR30": true,
+    "pure_browser_DOCX_bytes_equal_reviewed_native": true,
+    "tracked_input_PDF_count": 3
+  },
+  "BERT": {
+    "source": "https://aclanthology.org/N19-1423.pdf",
+    "source_sha256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+    "source_pages": 16,
+    "previous_render_pages": 32,
+    "current_native_and_pure_DOCX_bytes_equal_previous": true,
+    "strict_issues": 23,
+    "accepted": false,
+    "full_source_gold": false,
+    "scope": "Previously reviewed development paper, not a new holdout. Original selected Table1 gold and font-policy exclusions preserved; this change does not solve the paper."
+  },
+  "browser_artifact_evidence": {
+    "default_native_exact_DOCX_matches": 10,
+    "first_image_default_DOCX_files": 2,
+    "first_image_browser_DOCX_bytes_equal_each_other": true,
+    "first_image_actual_WASM_PNGs_equal_native": 2,
+    "BERT_default_pure_DOCX_unchanged": 2,
+    "expected_default_successes": 14,
+    "expected_strict_successes": 8,
+    "expected_strict_rejections": 6,
+    "note": "First-image DOCX relationship IDs differ from fresh native process after earlier browser conversions. Actual WASM render is checked instead of claiming byte equality."
+  },
+  "limits": [
+    "Narrow-gutter papers and inferred-table/prose ambiguity remain unresolved",
+    "Pages containing images or tables themselves keep legacy layout",
+    "Documents with positioned tables or OCR are outside this multipage-column path",
+    "Image-only/blank-page mixtures and Microsoft Word rendering remain unqualified",
+    "Font substitution and first-baseline offsets persist; no full geometry or production-readiness claim"
+  ],
+  "evidence": {
+    "manifest": "corpus/wasm-runtime/page-column-isolation-qualification/qualification-manifest-as-of-bb48769.json",
+    "manifest_sha256": "6d3a6859287078edf136c4fc427780c996cc888213654224243a0c1a5c44a109",
+    "files": 281,
+    "source_and_gold_modified": false,
+    "own_generated_inputs_only": "External source PDFs remain ignored; only existing3 public PDFs tracked.",
+    "timing_record_correction": "Owned first-image source views and authored reference/hash preceded browser launch; a later JSON incorrectly claimed no conversion yet. Original recording error and explicit correction retained; not used as a holdout timing proof."
+  }
+}

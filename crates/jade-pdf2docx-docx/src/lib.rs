@@ -47,6 +47,9 @@ mod paragraph_anchor;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
+#[cfg(test)]
+mod page_column_isolation_tests;
+mod page_end;
 mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
@@ -774,7 +777,6 @@ fn build_structured_docx_with_image_payloads(
         && text_columns_by_page.iter().any(Option::is_some)
         && pages.iter().all(|page| !page.lines.is_empty())
         && positioned_tables.is_empty()
-        && parsed.image_elements.is_empty()
         && ocr_table.is_none();
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
@@ -783,6 +785,7 @@ fn build_structured_docx_with_image_payloads(
             positioned_tables,
             &page_chrome,
             &text_columns_by_page,
+            image_payloads,
         );
     }
 
@@ -958,6 +961,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    let block_count = blocks.len();
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
@@ -1013,11 +1017,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     previous_nonparagraph_bottom_y = None;
                 }
                 previous_column_index = column_index;
-                let paragraph_origin_x = text_columns
-                    .zip(page_width)
-                    .map(|(columns, page_width)| {
-                        docx_column_origin_x(page_width, origin_x, column_index, columns.len())
-                    })
+                let column_origin_twips =
+                    text_columns
+                        .zip(page_width)
+                        .and_then(|(columns, page_width)| {
+                            paragraph_anchor::column_origin_twips(
+                                page_width,
+                                origin_x,
+                                column_index,
+                                columns.len(),
+                            )
+                        });
+                let paragraph_origin_x = column_origin_twips
+                    .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
@@ -1028,6 +1040,20 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
+                if let Some(indent) =
+                    column_origin_twips
+                        .zip(page_width)
+                        .and_then(|(origin, width)| {
+                            paragraph_anchor::column_indent(
+                                line.left_x,
+                                line.right_x,
+                                origin,
+                                width,
+                            )
+                        })
+                {
+                    paragraph = paragraph.indent(Some(indent), None, None, None);
+                }
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {
                         previous_nonparagraph_bottom_y.and_then(|bottom_y| {
@@ -1062,11 +1088,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 {
                     paragraph = paragraph.section_property(section_property.clone());
                 }
-                if let Some(section_property) = section_refs.page_end
-                    && flow_index + 1 == page.lines.len()
-                {
-                    paragraph = paragraph.section_property(section_property.clone());
-                }
+                paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
+                );
                 container = container.add_structured_paragraph(paragraph);
                 previous_line = Some(line);
                 previous_nonparagraph_bottom_y = None;
@@ -1094,9 +1120,14 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_line = None;
                 previous_nonparagraph_bottom_y = Some(image.bounds.y0.min(image.bounds.y1));
-                container = container.add_structured_paragraph(
-                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image))),
+                let paragraph =
+                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image)));
+                let paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
                 );
+                container = container.add_structured_paragraph(paragraph);
             }
         }
     }
@@ -1110,6 +1141,7 @@ fn build_multi_page_text_column_docx(
     positioned_tables: &[PositionedTable],
     page_chrome: &RepeatedPageChrome,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
+    image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<Docx, ConvertError> {
     let last_page = pages
         .last()
@@ -1146,7 +1178,7 @@ fn build_multi_page_text_column_docx(
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
             },
-            &mut None,
+            image_payloads,
         )?;
     }
     Ok(docx)
@@ -1260,23 +1292,6 @@ fn detected_text_columns_for_page(
             .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count),
         trailing_single_column_line_count,
     })
-}
-
-/// 均等段組の指定 column が DOCX ページ上で始まる x 座標（pt）を返す。
-fn docx_column_origin_x(
-    page_width: f32,
-    page_origin_x: f32,
-    column_index: usize,
-    column_count: usize,
-) -> f32 {
-    if column_count < 2 || !page_width.is_finite() || !page_origin_x.is_finite() {
-        return page_origin_x;
-    }
-    let column_space = DEFAULT_DOCX_COLUMN_SPACE_TWIPS / 20.0;
-    let usable_width = (page_width - page_origin_x).max(0.0);
-    let total_space = column_space * column_count.saturating_sub(1) as f32;
-    let column_width = ((usable_width - total_space) / column_count as f32).max(0.0);
-    page_origin_x + column_index.min(column_count - 1) as f32 * (column_width + column_space)
 }
 
 /// DOCX 最終 section の均等段組数を設定する。
