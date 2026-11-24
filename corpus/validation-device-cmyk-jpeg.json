@@ -1,0 +1,62 @@
+{
+  "created_utc": "2026-11-24T10:56:00.646998+00:00",
+  "scope": "Prospective source-polarity gate for DeviceCMYK DCT JPEG. No product fix/test run yet.",
+  "production_ready": false,
+  "discovery_original_source": "https://science.nasa.gov/wp-content/uploads/2024/08/webbfactsheet.pdf",
+  "discovery_source_sha256": "84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e",
+  "source_profile": "Both original2pages reviewed before firstconversion in separate public-holdout worktree. Background DeviceCMYK JPEG APP14transform2(YCCK), noDecodearray; current native renders blue/gray instead of original gold/dark.",
+  "owned_controls": {
+    "time_utc": "2026-11-24T10:55:02.371196+00:00",
+    "fixtures": [
+      {
+        "name": "CMYK",
+        "jpeg_sha256": "02a54e174eb7acb09915f4fdc2a7790d40f9677c4425cdc42a1111509b19ad43",
+        "jpeg_bytes": 398,
+        "source_pdf_sha256": "b9d95ea7cb9cbab5927475849efbc8cc940742ab799fb01082dc45bf31538a61",
+        "APP14_transform": 0,
+        "source_Poppler_RGB_centres": [
+          [
+            246,
+            135,
+            17
+          ],
+          [
+            22,
+            111,
+            192
+          ]
+        ],
+        "first_product_test_executed": false
+      },
+      {
+        "name": "YCCK",
+        "jpeg_sha256": "78655a8bad14f7ef4770a7039d2f5c829544074d99d87cf7c4b3e03f83cb933a",
+        "jpeg_bytes": 406,
+        "source_pdf_sha256": "fcf1fdf3b5c374968f9d76aaab6fcdff61e51d7545fffc8d849f56e9fb68672c",
+        "APP14_transform": 2,
+        "source_Poppler_RGB_centres": [
+          [
+            245,
+            134,
+            18
+          ],
+          [
+            22,
+            111,
+            192
+          ]
+        ],
+        "first_product_test_executed": false
+      }
+    ],
+    "scope": "Owned images only. Independent PDFshell and Poppler use exact sameJPEGbytes as future public-parser test; no product parsing yet. Source numerical RGB may be managed by Poppler, acceptance initially tests orange/cyan polarity rather than colorimetric identity.",
+    "all_owned_source_pages_individually_viewed": [
+      "CMYK.pdf:1",
+      "YCCK.pdf:1"
+    ],
+    "expected_polarity_before_first_product_test": "First pixel orange, second blue. ReferenceRGBs≈[246,135,17]/[22,111,192]; test allows unmanagedDeviceCMYK versus managedPoppler differences, does not claim exact colorimetry.",
+    "source_rights": "Entirely owned2pixels and independent minimalPDFshells. No external image/font assets in test code.",
+    "first_product_test_executed": false
+  },
+  "private_evidence_root": "Ignored corpus/wasm-runtime/cmyk-jpeg-qualification; only3existingPDFfixtures tracked."
+}
