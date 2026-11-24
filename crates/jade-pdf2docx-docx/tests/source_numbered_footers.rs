@@ -3,6 +3,7 @@ use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
 use proptest::prelude::*;
 use proptest::test_runner::FileFailurePersistence;
 use quick_xml::{Reader, events::Event};
+use std::collections::{BTreeMap, BTreeSet};
 use std::io::{Cursor, Read};
 
 /// Standard14の実em dashをWinAnsiのoctalで描き、外部fontなしで複数ページの所有PDFを作る。
@@ -91,7 +92,34 @@ fn texts(xml: &str) -> String {
     }
 }
 
-/// 公開byte APIが出力した本文とすべてのfooter partを取り出す。
+/// XMLの指定要素から属性を読み、関係IDとpart名を文字列中の偶然の一致で判断しない。
+fn attributes(xml: &str, element: &[u8]) -> Vec<BTreeMap<String, String>> {
+    let mut reader = Reader::from_str(xml);
+    let mut found = Vec::new();
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(t) | Event::Empty(t) if t.name().as_ref() == element => {
+                found.push(
+                    t.attributes()
+                        .map(|a| {
+                            let a = a.unwrap();
+                            (
+                                String::from_utf8(a.key.as_ref().to_vec()).unwrap(),
+                                a.decode_and_unescape_value(reader.decoder())
+                                    .unwrap()
+                                    .into_owned(),
+                            )
+                        })
+                        .collect(),
+                );
+            }
+            Event::Eof => return found,
+            _ => {}
+        }
+    }
+}
+
+/// 公開byte APIのfooterを、part名の番号ではなく本文のsection参照順で取り出す。
 fn package(numbers: &[u32], size: u16, y: u16, shift: i16) -> (String, Vec<String>) {
     let input = source(numbers, size, y, shift);
     let parsed = jade_pdf2docx_parser::parse_pdf_bytes(
@@ -123,14 +151,42 @@ fn package(numbers: &[u32], size: u16, y: u16, shift: i16) -> (String, Vec<Strin
         .filter(|n| n.starts_with("word/footer") && n.ends_with(".xml"))
         .map(str::to_owned)
         .collect::<Vec<_>>();
-    let footers = names
+    let parts: BTreeMap<_, _> = names
         .into_iter()
         .map(|n| {
             let mut xml = String::new();
             zip.by_name(&n).unwrap().read_to_string(&mut xml).unwrap();
-            xml
+            (n, xml)
         })
         .collect();
+    let mut rels = String::new();
+    zip.by_name("word/_rels/document.xml.rels")
+        .unwrap()
+        .read_to_string(&mut rels)
+        .unwrap();
+    let targets: BTreeMap<_, _> = attributes(&rels, b"Relationship")
+        .into_iter()
+        .map(|a| (a["Id"].clone(), a["Target"].clone()))
+        .collect();
+    let refs = attributes(&document, b"w:footerReference");
+    let mut used = BTreeSet::new();
+    let footers = refs
+        .into_iter()
+        .map(|a| {
+            assert_eq!(a["w:type"], "default");
+            let name = format!("word/{}", targets[&a["r:id"]]);
+            assert!(
+                used.insert(name.clone()),
+                "source pages must have distinct raw footer parts"
+            );
+            parts[&name].clone()
+        })
+        .collect();
+    assert_eq!(
+        used.len(),
+        parts.len(),
+        "every footer part must be referenced exactly once"
+    );
     (document, footers)
 }
 
@@ -153,6 +209,11 @@ fn assert_numbered_footers(numbers: &[u32], size: u16, y: u16, shift: i16) {
         let label = format!("— {number} —");
         assert!(!body.contains(&label));
         assert_eq!(all.matches(&label).count(), 1);
+        assert_eq!(
+            texts(&footers[i]),
+            label,
+            "source page order must resolve to its own literal footer"
+        );
         assert_eq!(body.matches(&format!("Body{i}")).count(), 1);
     }
     assert!(
