@@ -196,3 +196,24 @@ fn tiny_partial_image_is_not_discarded_as_singular() {
         "finite nonzero clipped image must survive"
     );
 }
+
+/// RGB画素を変換せず、Grayのグループ色空間を再現できたと扱わない。
+#[test]
+fn group_color_conversion_is_not_bypassed() {
+    let pdf = fixture(
+        "/Fm Do",
+        "8 0 0 6 1 2 cm /Im Do",
+        "/Group << /S /Transparency /CS /DeviceGray >>",
+    );
+    let parsed = parse_pdf_bytes("owned-gray-group.pdf", &pdf).unwrap();
+    assert!(
+        parsed.quality.issues.iter().any(|issue| matches!(
+            issue,
+            QualityIssue::ImageReplaced {
+                object_number: Some(6),
+                ..
+            }
+        )),
+        "unimplemented group color conversion must be diagnosed"
+    );
+}
