@@ -143,3 +143,56 @@ fn another_pages_image_preserves_columns_and_stays_before_its_section_boundary()
         );
     }
 }
+
+/// 対象の所有テキスト段落から、符号つき左indentを独立して読む。
+fn indent_for_text(xml: &str, target: &str) -> i32 {
+    use quick_xml::{Reader, events::Event};
+    let mut reader = Reader::from_str(xml);
+    let mut text = String::new();
+    let mut indent = 0;
+    let mut in_text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(e) if e.name().as_ref() == b"w:p" => {
+                text.clear();
+                indent = 0;
+            }
+            Event::Start(e) if e.name().as_ref() == b"w:t" => in_text = true,
+            Event::Empty(e) if e.name().as_ref() == b"w:ind" => {
+                for attr in e.attributes() {
+                    let attr = attr.unwrap();
+                    if attr.key.as_ref() == b"w:left" {
+                        indent = std::str::from_utf8(&attr.value).unwrap().parse().unwrap();
+                    }
+                }
+            }
+            Event::Text(e) if in_text => text.push_str(&e.decode().unwrap()),
+            Event::End(e) if e.name().as_ref() == b"w:t" => in_text = false,
+            Event::End(e) if e.name().as_ref() == b"w:p" && text == target => return indent,
+            Event::Eof => panic!("missing owned paragraph {target}"),
+            _ => {}
+        }
+    }
+}
+
+/// 均等段の開始点より左・右の原本行を、符号を保ったindentで配置する。
+#[test]
+fn unequal_source_gutter_keeps_signed_right_column_displacement() {
+    // Word領域:幅12240twip、左960、右0、段間425。右段原点は6812.5twip。
+    for (source_left, expected_indent) in [(330., -213), (360., 388)] {
+        let mut parsed = source(2, &[1]);
+        for text in &mut parsed.text_elements {
+            if text.text.contains("RIGHT") {
+                let shift = source_left - text.bounds.x0;
+                text.bounds.x0 += shift;
+                text.bounds.x1 += shift;
+            }
+        }
+        let (xml, _) = package_source(parsed);
+        assert_eq!(
+            indent_for_text(&xml, "PAGEA RIGHT 1"),
+            expected_indent,
+            "source column x={source_left} must survive Word column placement"
+        );
+    }
+}
