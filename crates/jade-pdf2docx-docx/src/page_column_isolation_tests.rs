@@ -18,6 +18,9 @@ mod narrow_gutters;
 #[path = "column_flow_tests.rs"]
 mod column_flow;
 
+#[path = "inline_baseline_tests.rs"]
+mod inline_baselines;
+
 /// 外部資料を使わず、二つの段と別ページの所有画像を持つ解析結果を作る。
 fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
     assert!((2..=5).contains(&page_count));
