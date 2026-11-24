@@ -462,7 +462,7 @@ fn underlined_run_texts(xml: &str) -> Vec<String> {
                     .is_some_and(|a| a.value.as_ref() != b"none");
             }
             Event::End(tag) if tag.name().as_ref() == b"w:r" && underlined => {
-                out.push(text.trim().to_string());
+                out.push(text.to_string());
             }
             Event::Eof => return out,
             _ => {}
