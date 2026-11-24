@@ -27,3 +27,8 @@ family名に含まれる`black`や`bold`、Gothicというfamily、不明なW番
 参照リポジトリは[独自ライセンス](https://github.com/bokuweb/lawrenceanum/blob/8322ad7895d8e15f7002c80e3f67c993edce99fd/LICENSE)であり、
 ソースコードのコピーや再ライセンス、官報PDFの取り込み、依存の追加は行っていない。
 官報専用の記事先頭の太字化は、一般PDFの内容からは判断せず適用しない。
+
+`docx-rs 0.4.22`の`BoldCs`出力は内部のfalseをXMLへ反映しないため、完成パッケージでも確認する。
+同じ`w:rPr`に`w:b=false`が明示されている場合だけ、既存の`w:bCs`もfalseへ直す。
+本文・header・footerに同じ処理を使い、隣のrun、本文文字列、添字位置は変更しない。
+XML検査に失敗した場合は部分ファイルを公開しない。
