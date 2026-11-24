@@ -20,16 +20,24 @@ pub(super) fn after_table(
     section: Option<&SectionProperty>,
     is_last_block: bool,
 ) -> Option<Paragraph> {
-    (is_last_block).then_some(section).flatten().map(|section| {
-        Paragraph::new()
-            .size(1)
-            .line_spacing(
-                LineSpacing::new()
-                    .before(0)
-                    .after(0)
-                    .line(1)
-                    .line_rule(LineSpacingType::Exact),
-            )
-            .section_property(section.clone())
-    })
+    if !is_last_block {
+        return None;
+    }
+    section.map(|section| empty_page(Some(section)))
+}
+
+/// 見出しだけのページにも最小のflowを置き、最終ページを含む境界とpart参照を残す。
+pub(super) fn empty_page(section: Option<&SectionProperty>) -> Paragraph {
+    let paragraph = Paragraph::new().size(1).line_spacing(
+        LineSpacing::new()
+            .before(0)
+            .after(0)
+            .line(1)
+            .line_rule(LineSpacingType::Exact),
+    );
+    if let Some(section) = section {
+        paragraph.section_property(section.clone())
+    } else {
+        paragraph
+    }
 }

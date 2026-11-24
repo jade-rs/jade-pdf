@@ -991,6 +991,9 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     }
     blocks.sort_by(compare_structured_blocks);
     let block_count = blocks.len();
+    if block_count == 0 {
+        return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
+    }
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
