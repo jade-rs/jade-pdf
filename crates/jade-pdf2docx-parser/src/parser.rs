@@ -101,6 +101,9 @@ mod form_images;
 #[path = "image_raster.rs"]
 mod image_raster;
 
+#[path = "content_ascii85.rs"]
+mod content_ascii85;
+
 #[path = "image_ccitt.rs"]
 mod image_ccitt;
 #[cfg(test)]
@@ -3266,6 +3269,9 @@ fn decode_content_stream_payload(
     dict: &[u8],
     data: &[u8],
 ) -> Option<Vec<u8>> {
+    if content_ascii85::handles(dict) {
+        return content_ascii85::decode(decode_budget, dict, data);
+    }
     if crate::metadata::value(dict, b"Filter")
         .is_some_and(|filter| crate::metadata::is_name(filter, b"LZWDecode"))
     {
