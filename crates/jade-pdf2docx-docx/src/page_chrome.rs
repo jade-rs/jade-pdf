@@ -18,7 +18,10 @@ impl Plan {
 
     /// 全ページが同じWord見出しと端からの距離を共有できるか判定する。
     pub(super) fn is_uniform(&self) -> bool {
-        let mut keys = self.pages.values().map(output_key);
+        let mut keys = self
+            .pages
+            .values()
+            .map(|chrome| (chrome.clear_header, chrome.clear_footer, output_key(chrome)));
         let first = keys.next();
         keys.all(|key| Some(key) == first)
     }
@@ -38,16 +41,32 @@ fn profile(line: &StructuredTextLine) -> (String, Vec<(Vec<u8>, String)>) {
     (format!("{:?}", line.alignment), runs)
 }
 
-/// 原本固有のboundsを除き、Wordに出力する段落と縦位置を比較する。
-fn output_key(chrome: &RepeatedPageChrome) -> Vec<Option<(Vec<u8>, i32)>> {
+/// 自動生成される段落IDを含めず、書式とページ絶対位置を比較する。
+#[derive(PartialEq, Eq)]
+struct OutputLine {
+    /// 実際に出力するrunの書式・文字列と段落の整列。
+    style: (String, Vec<(Vec<u8>, String)>),
+    /// 原本ページ端からの縦距離。
+    edge: i32,
+    /// 原本の左端をWordと同じ単位へ丸めた値。
+    left: Option<i32>,
+    /// 原本の右端をWordと同じ単位へ丸めた値。
+    right: Option<i32>,
+    /// sectionと同じ表示ページ幅。
+    width: Option<u32>,
+}
+
+/// 書式と位置が同じ出現だけを、共有可能な見出しとして扱う。
+fn output_key(chrome: &RepeatedPageChrome) -> Vec<Option<OutputLine>> {
     [&chrome.header, &chrome.footer]
         .into_iter()
         .map(|line| {
-            line.as_ref().map(|line| {
-                (
-                    paragraph_from_repeated_page_chrome_line(line, None).build(),
-                    line.edge_distance_twips,
-                )
+            line.as_ref().map(|line| OutputLine {
+                style: profile(&line.line),
+                edge: line.edge_distance_twips,
+                left: pdf_points_to_indent_twips(line.line.left_x),
+                right: pdf_points_to_indent_twips(line.line.right_x),
+                width: line.page_width_twips,
             })
         })
         .collect()
