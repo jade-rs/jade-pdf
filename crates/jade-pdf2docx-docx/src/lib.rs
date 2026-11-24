@@ -1308,13 +1308,29 @@ fn detected_text_columns_for_page(
         infer_text_columns(&page.lines, page_width).filter(|columns| columns.len() == 2)?;
     let leading_single_column_line_count = leading_single_column_line_count(&page.lines);
     let trailing_single_column_line_count = trailing_single_column_line_count(&page.lines);
+    let column_line_count = page
+        .lines
+        .len()
+        .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count);
+    // 少数の大きな行間だけで列候補ができても、本文が次列へ横断するなら実段組へ入れない。
+    if page
+        .lines
+        .iter()
+        .skip(leading_single_column_line_count)
+        .take(column_line_count)
+        .any(|line| {
+            let column = column_index_for_line(line, &columns);
+            columns
+                .get(column + 1)
+                .is_some_and(|next_left| line.right_x > *next_left)
+        })
+    {
+        return None;
+    }
     Some(DetectedTextColumnLayout {
         columns,
         leading_single_column_line_count,
-        column_line_count: page
-            .lines
-            .len()
-            .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count),
+        column_line_count,
         trailing_single_column_line_count,
     })
 }
