@@ -168,9 +168,20 @@ fn recover_local<'a>(rows: &mut [Vec<&'a ParsedTextElement>]) -> Vec<bool> {
             continue;
         }
         for cluster in clusters(texts, source.size) {
+            let left = cluster
+                .iter()
+                .map(|i| texts[*i].bounds.x0)
+                .fold(f32::INFINITY, f32::min);
+            let right = cluster
+                .iter()
+                .map(|i| texts[*i].bounds.x1)
+                .fold(f32::NEG_INFINITY, f32::max);
             let mut target = None;
             for (candidate, row) in metadata.iter().enumerate().take(end).skip(start) {
-                if candidate != index && cluster.iter().all(|i| row.accepts(texts[*i])) {
+                if candidate != index
+                    && right - left <= row.size * 2.
+                    && cluster.iter().all(|i| row.accepts(texts[*i]))
+                {
                     if target.is_some() {
                         target = None;
                         break;
@@ -213,7 +224,7 @@ fn recover_local<'a>(rows: &mut [Vec<&'a ParsedTextElement>]) -> Vec<bool> {
     changed
 }
 
-/// 接した文字列は一体として扱い、離れた指数や単位の小文字群を水平座標で分ける。
+/// 通常の単語空白でつながる小文字群は一体として扱い、長い脚注の一部だけを動かさない。
 fn clusters(texts: &[&ParsedTextElement], size: f32) -> Vec<Vec<usize>> {
     let mut order = (0..texts.len()).collect::<Vec<_>>();
     order.sort_by(|a, b| texts[*a].bounds.x0.total_cmp(&texts[*b].bounds.x0));
@@ -221,7 +232,7 @@ fn clusters(texts: &[&ParsedTextElement], size: f32) -> Vec<Vec<usize>> {
     let mut right = f32::NEG_INFINITY;
     for index in order {
         let bounds = texts[index].bounds;
-        if bounds.x0 - right > size * 0.25 {
+        if bounds.x0 - right > size * 0.8 {
             groups.push(vec![index]);
             right = bounds.x1;
         } else {
