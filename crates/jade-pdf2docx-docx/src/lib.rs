@@ -1032,6 +1032,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
+                if text_columns.is_some()
+                    && let Some(indent) = page_width.and_then(|width| {
+                        paragraph_anchor::column_indent(
+                            line.left_x,
+                            line.right_x,
+                            paragraph_origin_x,
+                            width,
+                        )
+                    })
+                    && indent != 0
+                {
+                    paragraph = paragraph.indent(Some(indent), None, None, None);
+                }
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {
                         previous_nonparagraph_bottom_y.and_then(|bottom_y| {

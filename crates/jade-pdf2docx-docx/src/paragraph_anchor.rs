@@ -1,4 +1,23 @@
-//! 中央寄せの段落領域をPDFの実中心へ合わせる。
+//! 段落領域と実段組の原点をPDF座標へ合わせる。
+
+/// ページ内の原本行を、実段組原点からの符号つきindentへ変換する。
+/// 負値は段間への正当な張り出しを保ち、未確認・ページ外の座標は従来処理へ戻す。
+pub(super) fn column_indent(left: f32, right: f32, origin: f32, width: f32) -> Option<i32> {
+    if ![left, right, origin, width].iter().all(|v| v.is_finite())
+        || left < 0.0
+        || right <= left
+        || right > width
+        || origin < 0.0
+        || origin > width
+    {
+        return None;
+    }
+    let offset = ((f64::from(left) - f64::from(origin)) * 20.0).round();
+    if offset < f64::from(i32::MIN) || offset > f64::from(i32::MAX) {
+        return None;
+    }
+    Some(offset as i32)
+}
 
 /// 従来の書き込み幅を保ったまま実中心へ移動する符号つき左右indentを返す。
 /// 本文の右ページ余白が0の配置専用。寸法不明・範囲外なら従来処理へ戻す。
