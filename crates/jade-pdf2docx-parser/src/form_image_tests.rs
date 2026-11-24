@@ -10,19 +10,23 @@ fn stream(dictionary: &str, bytes: &[u8]) -> Vec<u8> {
     out
 }
 
-/// 赤い一画素と局所名 Im を持つ Form を、正規のページ木から二回描く。
-fn fixture(page: &str, form: &str, attributes: &str) -> Vec<u8> {
+/// 赤い一画素と局所名Imを持つ、編集可能な所有object列を返す。
+fn objects(page: &str, form: &str, attributes: &str) -> Vec<Vec<u8>> {
     let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
     encoder.write_all(&[255, 0, 0]).unwrap();
     let pixels = encoder.finish().unwrap();
-    let objects = [
+    vec![
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Count 1 /Kids [3 0 R] >>".to_vec(),
         b"<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 300] /Resources << /XObject << /Fm 5 0 R /Unused 6 0 R >> /ExtGState << /Half << /ca .5 >> >> >> /Contents 4 0 R >>".to_vec(),
         stream("", page.as_bytes()),
         stream(&format!("/Type /XObject /Subtype /Form /BBox [0 0 10 10] /Matrix [2 0 0 3 4 5] /Resources << /XObject << /Im 6 0 R >> >> {attributes}"), form.as_bytes()),
         stream("/Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode", &pixels),
-    ];
+    ]
+}
+
+/// 参照を変えてもxrefとLengthを正しく再生成する。
+fn document(objects: &[Vec<u8>]) -> Vec<u8> {
     let mut out = b"%PDF-1.7\n".to_vec();
     let mut offsets = vec![0];
     for (index, object) in objects.iter().enumerate() {
@@ -44,6 +48,11 @@ fn fixture(page: &str, form: &str, attributes: &str) -> Vec<u8> {
         .as_bytes(),
     );
     out
+}
+
+/// 通常のForm画像入力を所有object列から組み立てる。
+fn fixture(page: &str, form: &str, attributes: &str) -> Vec<u8> {
+    document(&objects(page, form, attributes))
 }
 
 /// 未描画のページ別名だけで、Form 内の実描画を除外しない。
@@ -152,5 +161,22 @@ fn unsupported_group_compositing_keeps_replacement_diagnostic() {
             }
         )),
         "group compositing must not be guessed as per-image opacity"
+    );
+}
+
+/// 間接Subtypeも検証済みのFormとして探索し、直接名の最適化で読み飛ばさない。
+#[test]
+fn indirect_form_subtype_is_not_skipped() {
+    let mut objects = objects("/Fm Do", "8 0 0 6 1 2 cm /Im Do", "");
+    objects[4] = stream(
+        "/Type /XObject /Subtype 7 0 R /BBox [0 0 10 10] /Resources << /XObject << /Im 6 0 R >> >>",
+        b"8 0 0 6 1 2 cm /Im Do",
+    );
+    objects.push(b"/Form".to_vec());
+    let parsed = parse_pdf_bytes("owned-indirect-form.pdf", &document(&objects)).unwrap();
+    assert_eq!(
+        parsed.image_elements.len(),
+        1,
+        "indirect Form subtype must retain its image"
     );
 }
