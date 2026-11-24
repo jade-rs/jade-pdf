@@ -23,23 +23,40 @@ fn owned_source() -> Vec<u8> {
     for offset in offsets {
         bytes.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
     }
-    bytes.extend_from_slice(format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes());
+    bytes.extend_from_slice(
+        format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
+    );
     bytes
 }
 
-/// 公開byte変換が作るセルの原本fontと中央揃えを保ち、左右余白を明示的にゼロにする。
+/// 公開byte変換が作るセルに、原本の水平原点を明示し、既定余白を重ねない。
 #[test]
 fn source_centered_single_line_keeps_full_cell_width() {
     let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-centered-cell.pdf", &owned_source())
         .unwrap();
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
-    zip.by_name("word/document.xml").unwrap().read_to_string(&mut xml).unwrap();
+    zip.by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
     let start = xml.find("<w:tc>").unwrap();
     let end = start + xml[start..].find("</w:tc>").unwrap();
     let cell = &xml[start..end];
-    assert!(cell.contains("w:val=\"center\""), "owned number must be centered: {cell}");
-    assert!(cell.contains("w:sz w:val=\"32\""), "source size must be preserved: {cell}");
-    assert!(cell.contains("<w:left w:w=\"0\" w:type=\"dxa\""), "source centered line must retain full cell width: {cell}");
-    assert!(cell.contains("<w:right w:w=\"0\" w:type=\"dxa\""), "source centered line must retain full cell width: {cell}");
+    assert!(
+        cell.contains("w:sz w:val=\"32\""),
+        "source size must be preserved: {cell}"
+    );
+    assert!(
+        cell.contains("<w:ind w:left=\"82\""),
+        "source single-line horizontal origin must be preserved: {cell}"
+    );
+    assert!(
+        cell.contains("<w:left w:w=\"0\" w:type=\"dxa\""),
+        "source centered line must retain full cell width: {cell}"
+    );
+    assert!(
+        cell.contains("<w:right w:w=\"0\" w:type=\"dxa\""),
+        "source centered line must retain full cell width: {cell}"
+    );
 }
