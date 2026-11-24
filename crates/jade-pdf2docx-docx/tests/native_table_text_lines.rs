@@ -228,6 +228,20 @@ fn cell_line_boxes_exceeding_source_height_keep_legacy_layout() {
     assert_eq!(p[0].0, "Alpha Beta");
 }
 
+/// 行boxが収まらず旧配置へ戻っても、照合済みの原本runの文字サイズを失わない。
+#[test]
+fn overfull_source_cell_keeps_native_run_sizes_in_legacy_layout() {
+    let p = paragraphs(&first_cell_from_source(&overfull_cell_source(6, 14)));
+    assert_eq!(p.len(), 1);
+    assert_eq!(p[0].0, "Alpha Beta");
+    assert_eq!(
+        p[0].3,
+        [20, 28],
+        "overfull source cell must retain its exact native run sizes"
+    );
+    assert_eq!(p[0].1, 280, "fallback line box must fit its largest source run");
+}
+
 proptest! {
     #![proptest_config(ProptestConfig {
         cases: 16,
