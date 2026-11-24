@@ -45,6 +45,7 @@ mod source_font_weight;
 mod source_table_pagination_tests;
 #[cfg(test)]
 mod source_typography_tests;
+mod table_opening;
 
 mod html_table;
 mod image_anchor;
@@ -3132,7 +3133,7 @@ fn docx_table_from_ocr_table(table: &OcrTable) -> Table {
             .collect();
         rows.push(TableRow::new(cells));
     }
-    Table::new(rows)
+    table_opening::keep_with_next(Table::new(rows))
 }
 
 /// 公開 `OcrTable` の span 情報を DOCX 出力用モデルへ変換する。
@@ -3568,7 +3569,7 @@ fn docx_table_from_model_with_row_height_and_nested(
             table_row
         })
         .collect::<Vec<_>>();
-    Table::without_borders(rows)
+    table_opening::keep_with_next(Table::without_borders(rows))
 }
 
 /// 親表セルに含まれる子表を返す。
