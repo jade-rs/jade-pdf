@@ -54,6 +54,56 @@ fn raised_source_glyph_stays_with_its_base_line() {
     assert!(!xml.contains("JadeBaseline_"));
 }
 
+/// 固定4ptの行閾値を超える指数も、確認済みの隣接本文と同じ行へ保持する。
+#[test]
+fn raised_script_beyond_fixed_tolerance_retains_numeric_row() {
+    let mut parsed = formula_source();
+    let script = &mut parsed.text_elements[1];
+    script.baseline_y = Some(704.5);
+    script.bounds.y0 += 0.5;
+    script.bounds.y1 += 0.5;
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(
+        pages[0].lines.len(),
+        2,
+        "verified4.5pt source exponent must remain in its numeric row"
+    );
+    assert_eq!(pages[0].lines[0].text, "A2=B");
+    let (xml, _) = package_source(parsed);
+    assert!(xml.contains("<w:position w:val=\"9\""));
+}
+
+/// 直下の小さい本文行は、上の本文と水平に重なるので添字として吸収しない。
+#[test]
+fn nearby_small_text_line_remains_separate() {
+    let mut parsed = formula_source();
+    let mut note = parsed.text_elements[1].clone();
+    note.text = "note".into();
+    note.bounds.x0 = 50.;
+    note.bounds.x1 = 76.;
+    note.bounds.y0 = 693.1;
+    note.bounds.y1 = 700.1;
+    note.baseline_y = Some(694.5);
+    parsed.text_elements.push(note);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(pages[0].lines.len(), 3);
+    assert_eq!(pages[0].lines[1].text, "note");
+}
+
+/// 基線不明の離れた文字は、矩形だけから数値行の指数へ変更しない。
+#[test]
+fn unverified_outlying_script_remains_separate() {
+    let mut parsed = formula_source();
+    let script = &mut parsed.text_elements[1];
+    script.baseline_y = None;
+    script.bounds.y0 = 704.5;
+    script.bounds.y1 = 711.5;
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(pages[0].lines.len(), 3);
+    let (xml, _) = package_source(parsed);
+    assert!(!xml.contains("<w:position"));
+}
+
 /// ページを半分へ縮小すると、font sizeとbaseline位置も同じ物理倍率で縮小する。
 #[test]
 fn inline_offsets_follow_the_existing_word_page_fit() {
