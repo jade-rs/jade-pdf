@@ -35,6 +35,7 @@ mod layout_space;
 mod positioned_type1;
 
 mod html_table;
+mod image_anchor;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
@@ -1120,8 +1121,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_line = None;
                 previous_nonparagraph_bottom_y = Some(image.bounds.y0.min(image.bounds.y1));
-                let paragraph =
-                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image)));
+                let source_page = parsed
+                    .pages
+                    .iter()
+                    .find(|page| page.page_number == image.page);
+                let paragraph = Paragraph::new()
+                    .add_run(Run::new().add_image(image_anchor::picture(image, source_page)));
                 let paragraph = page_end::paragraph(
                     paragraph,
                     section_refs.page_end,
@@ -1562,26 +1567,6 @@ fn pdf_points_to_floor_twips(points: f32) -> Option<i32> {
         return None;
     }
     Some((points * 20.0).floor() as i32)
-}
-
-/// parser の画像要素から DOCX picture を構築する。
-fn pic_from_parsed_image(mut image: ParsedImageElement) -> Pic {
-    let mut pic = Pic::new_with_dimensions(
-        std::mem::take(&mut image.png_bytes),
-        image.width_px,
-        image.height_px,
-    );
-    if image.floating || image.rotation_degrees != 0 {
-        pic = pic
-            .floating()
-            .offset_x(pdf_points_to_emu(image.bounds.x0).unwrap_or(0))
-            .offset_y(pdf_points_to_emu(image.bounds.y0).unwrap_or(0))
-            .overlapping();
-        if image.rotation_degrees != 0 {
-            pic = pic.rotate(image.rotation_degrees);
-        }
-    }
-    pic
 }
 
 /// PDF point 座標を EMU に変換する。

@@ -38,7 +38,7 @@ pub(super) fn append(
                         object_number,
                         page,
                         bounds,
-                        floating: clipped || matrix_has_rotation_or_skew(matrix),
+                        floating: true,
                         rotation_degrees: rotation_degrees_from_matrix(matrix),
                         matrix,
                         paint,
