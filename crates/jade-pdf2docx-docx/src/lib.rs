@@ -58,6 +58,7 @@ mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
 mod text_column_gutter;
+mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -1754,7 +1755,7 @@ fn text_lines_by_page_from_pdf_text_elements(
             .flatten();
             let cuts = rows
                 .iter()
-                .map(|row| text_row_cuts(row, gutter))
+                .map(|row| text_row_segments::cuts(row, gutter))
                 .collect::<Vec<_>>();
             let changed = inline_script_rows::recover(&mut rows, gutter);
             for (row, changed) in rows.iter_mut().zip(changed) {
@@ -1770,7 +1771,7 @@ fn text_lines_by_page_from_pdf_text_elements(
                 .iter()
                 .zip(&cuts)
                 .flat_map(|(row, cuts)| {
-                    split_text_row_segments(row, gutter, cuts)
+                    text_row_segments::split(row, gutter, cuts)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
@@ -1853,62 +1854,6 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
         .iter()
         .find(|parsed_page| parsed_page.page_number == page)
         .map(|page| parsed_page_display_size_points(page).1)
-}
-
-/// 添字を復元する前の本文行から、元の水平分割位置を確定する。
-fn text_row_cuts(
-    row: &[&ParsedTextElement],
-    gutter: Option<text_column_gutter::Gutter>,
-) -> Vec<f32> {
-    let Some(first) = row.first() else {
-        return Vec::new();
-    };
-    let avg_height = row
-        .iter()
-        .map(|text| (text.bounds.y1 - text.bounds.y0).abs().max(1.0))
-        .sum::<f32>()
-        / row.len() as f32;
-    let mut right = first.bounds.x1;
-    let mut cuts = Vec::new();
-    for text in row.iter().skip(1) {
-        if text.bounds.x0 - right > avg_height * 8.0
-            || gutter.is_some_and(|g| right < g.x && g.x < text.bounds.x0)
-        {
-            cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
-        }
-        right = right.max(text.bounds.x1);
-    }
-    cuts
-}
-
-/// 復元した添字で尺度を再推定せず、元の行の分割位置を使う。
-fn split_text_row_segments<'a>(
-    row: &[&'a ParsedTextElement],
-    gutter: Option<text_column_gutter::Gutter>,
-    cuts: &[f32],
-) -> Vec<TextRowSegment<'a>> {
-    let Some(first) = row.first() else {
-        return Vec::new();
-    };
-    let mut segments: Vec<Vec<&ParsedTextElement>> = vec![vec![*first]];
-    let mut bin = cuts.partition_point(|cut| *cut <= first.bounds.x0);
-    for text in row.iter().copied().skip(1) {
-        let next = cuts.partition_point(|cut| *cut <= text.bounds.x0);
-        if next != bin {
-            segments.push(vec![text]);
-        } else if let Some(segment) = segments.last_mut() {
-            segment.push(text);
-        }
-        bin = next;
-    }
-    let split_from_row = segments.len() > 1 || gutter.is_some_and(|gutter| gutter.contains(first));
-    segments
-        .into_iter()
-        .map(|texts| TextRowSegment {
-            texts,
-            split_from_row,
-        })
-        .collect()
 }
 
 /// text row segment を DOCX 出力用の structured line に変換する。
