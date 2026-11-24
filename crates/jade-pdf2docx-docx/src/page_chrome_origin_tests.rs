@@ -76,3 +76,43 @@ fn chrome_anchors_use_page_coordinates_instead_of_body_origin() {
         }
     }
 }
+
+/// 書式と文字列が同じでも、ページごとに異なる中央位置を統合しない。
+#[test]
+fn different_source_centres_get_their_own_section_and_anchor() {
+    let mut parsed = source_with_chrome(190., 350.);
+    for line in &mut parsed.text_elements {
+        if line.page == 1 && line.text.starts_with("RUNNING") {
+            line.bounds.x0 += 60.;
+            line.bounds.x1 += 60.;
+        }
+    }
+    let parts = parts(parsed);
+    let sections: Vec<_> = parts["word/document.xml"]
+        .split("<w:sectPr")
+        .skip(1)
+        .map(|part| part.split("</w:sectPr>").next().unwrap())
+        .collect();
+    assert_eq!(
+        sections.len(),
+        2,
+        "different source centres require separate sections"
+    );
+    for (section, expected) in sections.iter().zip([270., 330.]) {
+        for reference in [b"headerReference".as_slice(), b"footerReference".as_slice()] {
+            let part = chrome_part(&parts, section, reference).unwrap();
+            assert!((word_anchor(part, section) / 20. - expected).abs() <= 0.025);
+        }
+    }
+}
+
+/// 同じ見出しの比較時に一時段落IDを生成して、不要なsection差を作らない。
+#[test]
+fn uniform_chrome_reuses_one_section() {
+    let parts = parts(source_with_chrome(190., 350.));
+    assert_eq!(
+        parts["word/document.xml"].matches("<w:sectPr").count(),
+        1,
+        "uniform chrome should share one section"
+    );
+}
