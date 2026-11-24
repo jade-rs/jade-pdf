@@ -1,0 +1,56 @@
+{
+  "scope": "Source-relative horizontal placement for verified single-line cells whose original extents fit their source cell",
+  "qualified_source": "87ed67d4e30b28bd4b7e15e989b53036a1200958",
+  "Rust_source_files": 718,
+  "default_feature": {
+    "clippy_passed": true,
+    "passed": 2395,
+    "failed": 0,
+    "ignored": 32,
+    "test_groups": 130
+  },
+  "owned_regressions": {
+    "property_cases": 32,
+    "26pt_cell_with_16pt_two_digit_text_now_single_line": true,
+    "unknown_style_or_left_or_right_overhang_retains_legacy_horizontal_placement": true
+  },
+  "native": {
+    "outcomes": 18,
+    "successful_DOCX": 15,
+    "changed_cells": 165,
+    "changes_restricted_to_single_line_horizontal_origin_and_margins": true,
+    "assets_fonts_headers_and_other_XML_unchanged": true,
+    "selected_output_pages_bound_by_DOCX_identity": 59,
+    "fresh_final_candidate_pages": 28,
+    "pages_reused_by_DOCX_identity": 31,
+    "changed_pages_individually_viewed": 13,
+    "BERT_new_wrap_regression_resolved": true
+  },
+  "browsers": [
+    {
+      "engine": "chromium",
+      "cases": 17,
+      "outcomes": 34,
+      "successful_packages": 23,
+      "expected_rejections_exact_parent": 11
+    },
+    {
+      "engine": "webkit",
+      "cases": 17,
+      "outcomes": 34,
+      "successful_packages": 23,
+      "expected_rejections_exact_parent": 11
+    }
+  ],
+  "reviewed_Japanese_source": {
+    "registration": "corpus/manifest-japanese-table-holdout.json",
+    "all30_selected_logical_cells_retained": true,
+    "exact_unicode_identity_claimed": false,
+    "numbers10_through20_and_number_heading_single_line": true,
+    "large_cell_fallback_clipping_remains": true,
+    "strict_rejects4_existing_quality_issues": true,
+    "whole_document_accepted": false
+  },
+  "new_source_PDF_or_fonts_redistributed": false,
+  "production_ready": false
+}

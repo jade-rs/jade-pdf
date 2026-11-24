@@ -141,3 +141,5 @@ Verified small-glyph baseline differences are retained as signed DOCX run positi
 PDF由来の太字・通常体と表の先頭行の改ページについては、[書体と表の先頭行](docs/source_typography_and_table_opening.md)を参照してください。
 
 部分clip付きの短い文字objectが多いnative解析では、一意な所属の共有索引で既定のmetadata予算内の処理を改善しています。曖昧な所属の扱いと検証範囲は、[native clipの文字索引](docs/native_clip_workspace.md)を参照してください。
+
+原本で一行の表セルは、確認できた水平原点へ既定の左右余白を重ねずに配置します。適用条件と残る表示上の問題は、[一行セルの水平位置](docs/native_single_line_cell_origin.md)を参照してください。

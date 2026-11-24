@@ -109,3 +109,39 @@ fn restart_cell_retains_all_source_rows_and_run_styles() {
     assert_eq!(xml.matches(">TOP</w:t>").count(), 1);
     assert_eq!(xml.matches(">lower</w:t>").count(), 1);
 }
+
+/// 一行のstyle対応が不明、または原本原点がセル外なら配置を捏造せず従来fallbackへ戻す。
+#[test]
+fn single_line_cell_without_verified_style_or_nonnegative_origin_retains_fallback() {
+    let (parsed, grouped, model) = source();
+    let result = cells(&parsed, &[0, 80], &[0, 40, 80], &grouped, &model);
+    let mut cell = result[0][0].as_ref().unwrap().clone();
+    cell.lines.truncate(1);
+    cell.single_line_runs = cell.lines[0].runs.clone();
+    assert!(single_line_horizontal_indent(&cell).is_some());
+    let mut unknown_style = cell.clone();
+    unknown_style.single_line_runs.clear();
+    assert!(single_line_horizontal_indent(&unknown_style).is_none());
+    cell.left = cell.lines[0].left_x + 1.;
+    assert!(
+        single_line_horizontal_indent(&cell).is_none(),
+        "negative source cell inset must retain fallback"
+    );
+}
+
+/// 元の一行が右罫線を越える推定gridでは、indentで残り幅を減らして折り返さない。
+#[test]
+fn single_line_cell_crossing_source_right_edge_retains_fallback() {
+    let (parsed, grouped, model) = source();
+    for (right, fits) in [(35, false), (40, true), (80, true)] {
+        let result = cells(&parsed, &[0, right], &[0, 40, 80], &grouped, &model);
+        let mut cell = result[0][0].as_ref().unwrap().clone();
+        cell.lines.truncate(1);
+        cell.single_line_runs = cell.lines[0].runs.clone();
+        assert_eq!(
+            single_line_horizontal_indent(&cell).is_some(),
+            fits,
+            "source single-line right edge must fit its source cell before applying indent"
+        );
+    }
+}

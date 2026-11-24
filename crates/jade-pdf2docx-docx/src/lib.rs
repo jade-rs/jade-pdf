@@ -3477,12 +3477,23 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let native_paragraph =
                         native_cell.and_then(native_table_text::single_line_paragraph);
                     let has_native_paragraph = native_paragraph.is_some();
+                    let source_indent = native_cell
+                        .filter(|_| has_native_paragraph)
+                        .and_then(native_table_text::single_line_horizontal_indent);
                     let mut paragraph =
                         native_paragraph.unwrap_or_else(|| Paragraph::new().add_run(run));
-                    paragraph = match cell.alignment {
-                        ParagraphAlignment::Left => paragraph,
-                        ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
-                        ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
+                    paragraph = if let Some(indent) = source_indent {
+                        if indent > 0 {
+                            paragraph.indent(Some(indent), None, None, None)
+                        } else {
+                            paragraph
+                        }
+                    } else {
+                        match cell.alignment {
+                            ParagraphAlignment::Left => paragraph,
+                            ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
+                            ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
+                        }
                     };
                     if parent.is_some() && !has_native_paragraph {
                         paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
@@ -3490,6 +3501,12 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(VAlignType::Center);
+                    }
+                    if source_indent.is_some() {
+                        table_cell.property = table_cell
+                            .property
+                            .margin_left(0, WidthType::Dxa)
+                            .margin_right(0, WidthType::Dxa);
                     }
                     if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
                         table_cell = native;
