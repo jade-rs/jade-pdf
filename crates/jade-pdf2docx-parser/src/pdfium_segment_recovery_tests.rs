@@ -1,6 +1,6 @@
 //! native矩形抽出の重複回復・反復保持・制御glyph保護を確認する。
 use super::budget_tests::{budget, owned_text_pdf, with_native_bytes, with_page};
-use super::{index_preserves_controls, matches_preview};
+use super::{DecodeBudget, characters, index_preserves_controls, matches_preview};
 use crate::{
     ParseLimits, ParsedTextElement,
     page_attribute_fixture::{pdf, stream},
