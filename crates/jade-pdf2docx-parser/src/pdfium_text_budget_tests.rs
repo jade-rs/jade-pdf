@@ -573,6 +573,60 @@ fn native_logo_extracts_each_sdk_character_once() {
     }
 }
 
+/// 照合は確保不要でも停止済み予算を尊重し、反復・並び替え・未知文字を同一視しない。
+#[test]
+fn preview_comparison_preserves_repetition_unicode_and_stopped_budget() {
+    let mut element = ParsedTextElement {
+        baseline_y: Some(100.),
+        page: 0,
+        bounds: crate::ParsedBounds {
+            x0: 20.,
+            y0: 95.,
+            x1: 100.,
+            y1: 110.,
+        },
+        font_size: 12.,
+        font_name: None,
+        fill_color: None,
+        text: "AAA α一😀".into(),
+    };
+    assert!(matches_preview(&budget(0), &[element.clone()], "AAA\nα\t一😀").unwrap());
+    for different in ["AA α一😀", "AAAA α一😀", "AAA 一α😀", "AAA α一�"] {
+        assert!(!matches_preview(&budget(0), &[element.clone()], different).unwrap());
+    }
+    let stopped = budget(0);
+    stopped.charge_metadata_workspace_bytes(1);
+    assert!(matches_preview(&stopped, &[], "").is_err());
+    assert!(matches_preview(&stopped, &[element.clone()], &element.text).is_err());
+    element.text.clear();
+    assert!(!matches_preview(&budget(0), &[element], "X").unwrap());
+}
+
+proptest::proptest! {
+    #![proptest_config(proptest::test_runner::Config::with_cases(16))]
+    /// 文字サイズ・原点を変えても、矩形の境界では文字indexを使い、本物のAAA反復を失わない。
+    #[test]
+    fn native_lowered_glyphs_preserve_real_repetitions(
+        x in 10u16..50, y in 70u16..140, size in 8u16..18,
+    ) {
+        let (x, y, size) = (f32::from(x), f32::from(y), f32::from(size));
+        let content = format!(
+            "BT /F {size} Tf 1 0 0 1 {x} {y} Tm (AAA) Tj 1 0 0 1 {} {y} Tm (LaT) Tj 1 0 0 1 {} {} Tm (E) Tj 1 0 0 1 {} {y} Tm (X) Tj ET",
+            x + size * 3., x + size * 4.5, y - size * 0.19583333, x + size * 5.,
+        );
+        with_page(&content, |text| {
+            assert_eq!(text.all().chars().filter(|c| !c.is_whitespace()).collect::<String>(), "AAALaTEX");
+        });
+        let limits = ParseLimits::default();
+        let parsed = crate::pdfium_backend::parse_pdf(
+            std::path::Path::new("owned-repeated-lowered-glyphs.pdf"),
+            &owned_text_pdf(&content), &limits, &DecodeBudget::new(&limits),
+        ).unwrap();
+        let actual = parsed.text_elements.iter().flat_map(|e| e.text.chars()).filter(|c| !c.is_whitespace()).collect::<String>();
+        proptest::prop_assert_eq!(actual, "AAALaTEX");
+    }
+}
+
 /// baselineを報告しても元のink矩形は変えず、回転文字へ水平座標を推測しない。
 #[test]
 fn baseline_metadata_preserves_ink_and_rejects_rotated_glyphs() {
