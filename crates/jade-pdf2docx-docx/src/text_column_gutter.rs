@@ -29,7 +29,7 @@ impl Gutter {
     }
 }
 
-/// 四行以上が共有し、その本文区間を他の文字が横断しない空白帯だけを返す。
+/// 四行以上が共有する候補が一帯だけあり、本文区間を他の文字が横断しない場合だけ返す。
 /// 通常の広い段間判定は変更せず、狭い段間の補助として使用する。
 /// 各rowはx座標順で、同じbaselineの断片が一つのrowへ集約されていること。
 pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutter> {
@@ -216,8 +216,11 @@ mod tests {
                     .collect::<Vec<_>>()
             })
             .collect::<Vec<_>>();
-        assert_eq!(infer_owned(&source, 612.), None,
-            "multiple sustained gutters must not be forced into two columns");
+        assert_eq!(
+            infer_owned(&source, 612.),
+            None,
+            "multiple sustained gutters must not be forced into two columns"
+        );
     }
 
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
