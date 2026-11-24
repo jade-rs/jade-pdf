@@ -1,0 +1,1374 @@
+{
+  "time_utc": "2026-11-24T13:59:08.747931+00:00",
+  "source_sha256": "88558ac7687b0fd8e8ad3885fc72d9f835ca6c7340d5239f7793662fc798cffa",
+  "baseline_candidate_fixed_before_collection": "237559930019178b4941e2e6a66ecb2ce029abc3",
+  "product_outputs_seen": false,
+  "all_source_pages_individually_viewed": [
+    1
+  ],
+  "source_page_size_pt": [
+    841.89,
+    1190.55
+  ],
+  "columns": [
+    "FACTOR",
+    "NAME",
+    "SYMBOL",
+    "MULTIPLYING FACTOR"
+  ],
+  "rows": [
+    {
+      "physical_row": 1,
+      "name": "quetta",
+      "symbol": "Q",
+      "exponent": 30,
+      "multiplying_factor_without_whitespace": "1000000000000000000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1030",
+          "text_without_whitespace": "1030",
+          "bounds_top_origin_pt": [
+            20.797,
+            245.90499999999997,
+            134.183,
+            274.251
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "quetta",
+          "text_without_whitespace": "quetta",
+          "bounds_top_origin_pt": [
+            152.569,
+            245.90499999999997,
+            265.955,
+            274.251
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "Q",
+          "text_without_whitespace": "Q",
+          "bounds_top_origin_pt": [
+            284.216,
+            245.90499999999997,
+            377.759,
+            274.251
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            245.90499999999997,
+            819.311,
+            274.251
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 2,
+      "name": "ronna",
+      "symbol": "R",
+      "exponent": 27,
+      "multiplying_factor_without_whitespace": "1000000000000000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1027",
+          "text_without_whitespace": "1027",
+          "bounds_top_origin_pt": [
+            20.797,
+            284.881,
+            134.183,
+            313.227
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "ronna",
+          "text_without_whitespace": "ronna",
+          "bounds_top_origin_pt": [
+            152.569,
+            284.881,
+            265.955,
+            313.227
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "R",
+          "text_without_whitespace": "R",
+          "bounds_top_origin_pt": [
+            284.216,
+            284.881,
+            377.759,
+            313.227
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            284.881,
+            819.311,
+            313.227
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 3,
+      "name": "yotta",
+      "symbol": "Y",
+      "exponent": 24,
+      "multiplying_factor_without_whitespace": "1000000000000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1024",
+          "text_without_whitespace": "1024",
+          "bounds_top_origin_pt": [
+            20.797,
+            323.85799999999995,
+            134.183,
+            352.20399999999995
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "yotta",
+          "text_without_whitespace": "yotta",
+          "bounds_top_origin_pt": [
+            152.569,
+            323.85799999999995,
+            265.955,
+            352.20399999999995
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "Y",
+          "text_without_whitespace": "Y",
+          "bounds_top_origin_pt": [
+            284.216,
+            323.85799999999995,
+            377.759,
+            352.20399999999995
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            323.85799999999995,
+            819.311,
+            352.20399999999995
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 4,
+      "name": "zetta",
+      "symbol": "Z",
+      "exponent": 21,
+      "multiplying_factor_without_whitespace": "1000000000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1021",
+          "text_without_whitespace": "1021",
+          "bounds_top_origin_pt": [
+            20.797,
+            362.83399999999995,
+            134.183,
+            391.17999999999995
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "zetta",
+          "text_without_whitespace": "zetta",
+          "bounds_top_origin_pt": [
+            152.569,
+            362.83399999999995,
+            265.955,
+            391.17999999999995
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "Z",
+          "text_without_whitespace": "Z",
+          "bounds_top_origin_pt": [
+            284.216,
+            362.83399999999995,
+            377.759,
+            391.17999999999995
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            362.83399999999995,
+            819.311,
+            391.17999999999995
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994100000000003
+    },
+    {
+      "physical_row": 5,
+      "name": "exa",
+      "symbol": "E",
+      "exponent": 18,
+      "multiplying_factor_without_whitespace": "1000000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1018",
+          "text_without_whitespace": "1018",
+          "bounds_top_origin_pt": [
+            20.797,
+            401.80999999999995,
+            134.183,
+            430.15599999999995
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "exa",
+          "text_without_whitespace": "exa",
+          "bounds_top_origin_pt": [
+            152.569,
+            401.80999999999995,
+            265.955,
+            430.15599999999995
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "E",
+          "text_without_whitespace": "E",
+          "bounds_top_origin_pt": [
+            284.216,
+            401.80999999999995,
+            377.759,
+            430.15599999999995
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            401.80999999999995,
+            819.311,
+            430.15599999999995
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 6,
+      "name": "peta",
+      "symbol": "P",
+      "exponent": 15,
+      "multiplying_factor_without_whitespace": "1000000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1015",
+          "text_without_whitespace": "1015",
+          "bounds_top_origin_pt": [
+            20.797,
+            440.7869999999999,
+            134.183,
+            469.1329999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "peta",
+          "text_without_whitespace": "peta",
+          "bounds_top_origin_pt": [
+            152.569,
+            440.7869999999999,
+            265.955,
+            469.1329999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "P",
+          "text_without_whitespace": "P",
+          "bounds_top_origin_pt": [
+            284.216,
+            440.7869999999999,
+            377.759,
+            469.1329999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000 000",
+          "text_without_whitespace": "1000000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            440.7869999999999,
+            819.311,
+            469.1329999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 7,
+      "name": "tera",
+      "symbol": "T",
+      "exponent": 12,
+      "multiplying_factor_without_whitespace": "1000000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "1012",
+          "text_without_whitespace": "1012",
+          "bounds_top_origin_pt": [
+            20.797,
+            479.7629999999999,
+            134.183,
+            508.1089999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "tera",
+          "text_without_whitespace": "tera",
+          "bounds_top_origin_pt": [
+            152.569,
+            479.7629999999999,
+            265.955,
+            508.1089999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "T",
+          "text_without_whitespace": "T",
+          "bounds_top_origin_pt": [
+            284.216,
+            479.7629999999999,
+            377.759,
+            508.1089999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000 000",
+          "text_without_whitespace": "1000000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            479.7629999999999,
+            819.311,
+            508.1089999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 8,
+      "name": "giga",
+      "symbol": "G",
+      "exponent": 9,
+      "multiplying_factor_without_whitespace": "1000000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "109",
+          "text_without_whitespace": "109",
+          "bounds_top_origin_pt": [
+            20.797,
+            518.7389999999999,
+            134.183,
+            547.0849999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "giga",
+          "text_without_whitespace": "giga",
+          "bounds_top_origin_pt": [
+            152.569,
+            518.7389999999999,
+            265.955,
+            547.0849999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "G",
+          "text_without_whitespace": "G",
+          "bounds_top_origin_pt": [
+            284.216,
+            518.7389999999999,
+            377.759,
+            547.0849999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000 000",
+          "text_without_whitespace": "1000000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            518.7389999999999,
+            819.311,
+            547.0849999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 9,
+      "name": "mega",
+      "symbol": "M",
+      "exponent": 6,
+      "multiplying_factor_without_whitespace": "1000000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "106",
+          "text_without_whitespace": "106",
+          "bounds_top_origin_pt": [
+            20.797,
+            557.7159999999999,
+            134.183,
+            586.0619999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "mega",
+          "text_without_whitespace": "mega",
+          "bounds_top_origin_pt": [
+            152.569,
+            557.7159999999999,
+            265.955,
+            586.0619999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "M",
+          "text_without_whitespace": "M",
+          "bounds_top_origin_pt": [
+            284.216,
+            557.7159999999999,
+            377.759,
+            586.0619999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000 000",
+          "text_without_whitespace": "1000000",
+          "bounds_top_origin_pt": [
+            396.021,
+            557.7159999999999,
+            819.311,
+            586.0619999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994100000000003
+    },
+    {
+      "physical_row": 10,
+      "name": "kilo",
+      "symbol": "k",
+      "exponent": 3,
+      "multiplying_factor_without_whitespace": "1000",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "103",
+          "text_without_whitespace": "103",
+          "bounds_top_origin_pt": [
+            20.797,
+            596.692,
+            134.183,
+            625.038
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "kilo",
+          "text_without_whitespace": "kilo",
+          "bounds_top_origin_pt": [
+            152.569,
+            596.692,
+            265.955,
+            625.038
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "k",
+          "text_without_whitespace": "k",
+          "bounds_top_origin_pt": [
+            284.216,
+            596.692,
+            377.759,
+            625.038
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "1 000",
+          "text_without_whitespace": "1000",
+          "bounds_top_origin_pt": [
+            396.021,
+            596.692,
+            819.311,
+            625.038
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.9939999999999145
+    },
+    {
+      "physical_row": 11,
+      "name": "hecto",
+      "symbol": "h",
+      "exponent": 2,
+      "multiplying_factor_without_whitespace": "100",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "102",
+          "text_without_whitespace": "102",
+          "bounds_top_origin_pt": [
+            20.797,
+            635.669,
+            134.183,
+            664.015
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "hecto",
+          "text_without_whitespace": "hecto",
+          "bounds_top_origin_pt": [
+            152.569,
+            635.669,
+            265.955,
+            664.015
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "h",
+          "text_without_whitespace": "h",
+          "bounds_top_origin_pt": [
+            284.216,
+            635.669,
+            377.759,
+            664.015
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "100",
+          "text_without_whitespace": "100",
+          "bounds_top_origin_pt": [
+            396.021,
+            635.669,
+            819.311,
+            664.015
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 12,
+      "name": "deca",
+      "symbol": "da",
+      "exponent": 1,
+      "multiplying_factor_without_whitespace": "10",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "101",
+          "text_without_whitespace": "101",
+          "bounds_top_origin_pt": [
+            20.797,
+            674.645,
+            134.183,
+            702.991
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "deca",
+          "text_without_whitespace": "deca",
+          "bounds_top_origin_pt": [
+            152.569,
+            674.645,
+            265.955,
+            702.991
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "da",
+          "text_without_whitespace": "da",
+          "bounds_top_origin_pt": [
+            284.216,
+            674.645,
+            377.759,
+            702.991
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "10",
+          "text_without_whitespace": "10",
+          "bounds_top_origin_pt": [
+            396.021,
+            674.645,
+            819.311,
+            702.991
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.993999999999971
+    },
+    {
+      "physical_row": 13,
+      "name": "deci",
+      "symbol": "d",
+      "exponent": -1,
+      "multiplying_factor_without_whitespace": "0.1",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−1",
+          "text_without_whitespace": "10−1",
+          "bounds_top_origin_pt": [
+            20.797,
+            713.6209999999999,
+            134.183,
+            741.9669999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "deci",
+          "text_without_whitespace": "deci",
+          "bounds_top_origin_pt": [
+            152.569,
+            713.6209999999999,
+            265.955,
+            741.9669999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "d",
+          "text_without_whitespace": "d",
+          "bounds_top_origin_pt": [
+            284.216,
+            713.6209999999999,
+            377.759,
+            741.9669999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.1",
+          "text_without_whitespace": "0.1",
+          "bounds_top_origin_pt": [
+            396.021,
+            713.6209999999999,
+            819.311,
+            741.9669999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 14,
+      "name": "centi",
+      "symbol": "c",
+      "exponent": -2,
+      "multiplying_factor_without_whitespace": "0.01",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−2",
+          "text_without_whitespace": "10−2",
+          "bounds_top_origin_pt": [
+            20.797,
+            752.598,
+            134.183,
+            780.944
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "centi",
+          "text_without_whitespace": "centi",
+          "bounds_top_origin_pt": [
+            152.569,
+            752.598,
+            265.955,
+            780.944
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "c",
+          "text_without_whitespace": "c",
+          "bounds_top_origin_pt": [
+            284.216,
+            752.598,
+            377.759,
+            780.944
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.01",
+          "text_without_whitespace": "0.01",
+          "bounds_top_origin_pt": [
+            396.021,
+            752.598,
+            819.311,
+            780.944
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 15,
+      "name": "milli",
+      "symbol": "m",
+      "exponent": -3,
+      "multiplying_factor_without_whitespace": "0.001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−3",
+          "text_without_whitespace": "10−3",
+          "bounds_top_origin_pt": [
+            20.797,
+            791.574,
+            134.183,
+            819.92
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "milli",
+          "text_without_whitespace": "milli",
+          "bounds_top_origin_pt": [
+            152.569,
+            791.574,
+            265.955,
+            819.92
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "m",
+          "text_without_whitespace": "m",
+          "bounds_top_origin_pt": [
+            284.216,
+            791.574,
+            377.759,
+            819.92
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.001",
+          "text_without_whitespace": "0.001",
+          "bounds_top_origin_pt": [
+            396.021,
+            791.574,
+            819.311,
+            819.92
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.9938999999999965
+    },
+    {
+      "physical_row": 16,
+      "name": "micro",
+      "symbol": "μ",
+      "exponent": -6,
+      "multiplying_factor_without_whitespace": "0.000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−6",
+          "text_without_whitespace": "10−6",
+          "bounds_top_origin_pt": [
+            20.797,
+            830.55,
+            134.183,
+            858.896
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "micro",
+          "text_without_whitespace": "micro",
+          "bounds_top_origin_pt": [
+            152.569,
+            830.55,
+            265.955,
+            858.896
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "μ",
+          "text_without_whitespace": "μ",
+          "bounds_top_origin_pt": [
+            284.216,
+            830.55,
+            377.759,
+            858.896
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 001",
+          "text_without_whitespace": "0.000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            830.55,
+            819.311,
+            858.896
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 17,
+      "name": "nano",
+      "symbol": "n",
+      "exponent": -9,
+      "multiplying_factor_without_whitespace": "0.000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−9",
+          "text_without_whitespace": "10−9",
+          "bounds_top_origin_pt": [
+            20.797,
+            869.5269999999999,
+            134.183,
+            897.8729999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "nano",
+          "text_without_whitespace": "nano",
+          "bounds_top_origin_pt": [
+            152.569,
+            869.5269999999999,
+            265.955,
+            897.8729999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "n",
+          "text_without_whitespace": "n",
+          "bounds_top_origin_pt": [
+            284.216,
+            869.5269999999999,
+            377.759,
+            897.8729999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 001",
+          "text_without_whitespace": "0.000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            869.5269999999999,
+            819.311,
+            897.8729999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.994000000000028
+    },
+    {
+      "physical_row": 18,
+      "name": "pico",
+      "symbol": "p",
+      "exponent": -12,
+      "multiplying_factor_without_whitespace": "0.000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−12",
+          "text_without_whitespace": "10−12",
+          "bounds_top_origin_pt": [
+            20.797,
+            908.5029999999999,
+            134.183,
+            936.8489999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "pico",
+          "text_without_whitespace": "pico",
+          "bounds_top_origin_pt": [
+            152.569,
+            908.5029999999999,
+            265.955,
+            936.8489999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "p",
+          "text_without_whitespace": "p",
+          "bounds_top_origin_pt": [
+            284.216,
+            908.5029999999999,
+            377.759,
+            936.8489999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 001",
+          "text_without_whitespace": "0.000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            908.5029999999999,
+            819.311,
+            936.8489999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494000000000028,
+      "source_exponent_baseline_delta_pt": 5.993999999999971
+    },
+    {
+      "physical_row": 19,
+      "name": "femto",
+      "symbol": "f",
+      "exponent": -15,
+      "multiplying_factor_without_whitespace": "0.000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−15",
+          "text_without_whitespace": "10−15",
+          "bounds_top_origin_pt": [
+            20.797,
+            947.48,
+            134.183,
+            975.826
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "femto",
+          "text_without_whitespace": "femto",
+          "bounds_top_origin_pt": [
+            152.569,
+            947.48,
+            265.955,
+            975.826
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "f",
+          "text_without_whitespace": "f",
+          "bounds_top_origin_pt": [
+            284.216,
+            947.48,
+            377.759,
+            975.826
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            947.48,
+            819.311,
+            975.826
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 17.99999999999997,
+      "source_script_font_size_pt": 10.494,
+      "source_exponent_baseline_delta_pt": 5.994
+    },
+    {
+      "physical_row": 20,
+      "name": "atto",
+      "symbol": "a",
+      "exponent": -18,
+      "multiplying_factor_without_whitespace": "0.000000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−18",
+          "text_without_whitespace": "10−18",
+          "bounds_top_origin_pt": [
+            20.797,
+            986.4559999999999,
+            134.183,
+            1014.8019999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "atto",
+          "text_without_whitespace": "atto",
+          "bounds_top_origin_pt": [
+            152.569,
+            986.4559999999999,
+            265.955,
+            1014.8019999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "a",
+          "text_without_whitespace": "a",
+          "bounds_top_origin_pt": [
+            284.216,
+            986.4559999999999,
+            377.759,
+            1014.8019999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            986.4559999999999,
+            819.311,
+            1014.8019999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 17.99999999999997,
+      "source_script_font_size_pt": 10.494,
+      "source_exponent_baseline_delta_pt": 5.994
+    },
+    {
+      "physical_row": 21,
+      "name": "zepto",
+      "symbol": "z",
+      "exponent": -21,
+      "multiplying_factor_without_whitespace": "0.000000000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−21",
+          "text_without_whitespace": "10−21",
+          "bounds_top_origin_pt": [
+            20.797,
+            1025.432,
+            134.183,
+            1053.778
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "zepto",
+          "text_without_whitespace": "zepto",
+          "bounds_top_origin_pt": [
+            152.569,
+            1025.432,
+            265.955,
+            1053.778
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "z",
+          "text_without_whitespace": "z",
+          "bounds_top_origin_pt": [
+            284.216,
+            1025.432,
+            377.759,
+            1053.778
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            1025.432,
+            819.311,
+            1053.778
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494,
+      "source_exponent_baseline_delta_pt": 5.994
+    },
+    {
+      "physical_row": 22,
+      "name": "yocto",
+      "symbol": "y",
+      "exponent": -24,
+      "multiplying_factor_without_whitespace": "0.000000000000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−24",
+          "text_without_whitespace": "10−24",
+          "bounds_top_origin_pt": [
+            20.797,
+            1064.4089999999999,
+            134.183,
+            1092.7549999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "yocto",
+          "text_without_whitespace": "yocto",
+          "bounds_top_origin_pt": [
+            152.569,
+            1064.4089999999999,
+            265.955,
+            1092.7549999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "y",
+          "text_without_whitespace": "y",
+          "bounds_top_origin_pt": [
+            284.216,
+            1064.4089999999999,
+            377.759,
+            1092.7549999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            1064.4089999999999,
+            819.311,
+            1092.7549999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494,
+      "source_exponent_baseline_delta_pt": 5.994
+    },
+    {
+      "physical_row": 23,
+      "name": "ronto",
+      "symbol": "r",
+      "exponent": -27,
+      "multiplying_factor_without_whitespace": "0.000000000000000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−27",
+          "text_without_whitespace": "10−27",
+          "bounds_top_origin_pt": [
+            20.797,
+            1103.385,
+            134.183,
+            1131.731
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "ronto",
+          "text_without_whitespace": "ronto",
+          "bounds_top_origin_pt": [
+            152.569,
+            1103.385,
+            265.955,
+            1131.731
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "r",
+          "text_without_whitespace": "r",
+          "bounds_top_origin_pt": [
+            284.216,
+            1103.385,
+            377.759,
+            1131.731
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            1103.385,
+            819.311,
+            1131.731
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 18.0,
+      "source_script_font_size_pt": 10.494,
+      "source_exponent_baseline_delta_pt": 5.994
+    },
+    {
+      "physical_row": 24,
+      "name": "quecto",
+      "symbol": "q",
+      "exponent": -30,
+      "multiplying_factor_without_whitespace": "0.000000000000000000000000000001",
+      "source_cells": [
+        {
+          "column": 1,
+          "source_text": "10−30",
+          "text_without_whitespace": "10−30",
+          "bounds_top_origin_pt": [
+            20.797,
+            1142.3619999999999,
+            134.183,
+            1170.7079999999999
+          ]
+        },
+        {
+          "column": 2,
+          "source_text": "quecto",
+          "text_without_whitespace": "quecto",
+          "bounds_top_origin_pt": [
+            152.569,
+            1142.3619999999999,
+            265.955,
+            1170.7079999999999
+          ]
+        },
+        {
+          "column": 3,
+          "source_text": "q",
+          "text_without_whitespace": "q",
+          "bounds_top_origin_pt": [
+            284.216,
+            1142.3619999999999,
+            377.759,
+            1170.7079999999999
+          ]
+        },
+        {
+          "column": 4,
+          "source_text": "0.000 000 000 000 000 000 000 000 000 001",
+          "text_without_whitespace": "0.000000000000000000000000000001",
+          "bounds_top_origin_pt": [
+            396.021,
+            1142.3619999999999,
+            819.311,
+            1170.7079999999999
+          ]
+        }
+      ],
+      "source_main_font_size_pt": 17.999999999999996,
+      "source_script_font_size_pt": 10.494000000000003,
+      "source_exponent_baseline_delta_pt": 5.994000000000003
+    }
+  ],
+  "acceptance_criteria": [
+    "All24rows preserve four source-cell associations and order; whole-document numeric substring presence is insufficient.",
+    "Case-sensitive symbols and exact Greek mu/source minus characters; no Unicode aliases silently substituted.",
+    "All24power exponents preserve complete signed values and independently measured source-relative baseline offsets/font sizes within half-point output quantization after documented page scaling.",
+    "Explicit cell geometry/colors/borders and table layout reviewed against original; onepage matching alone insufficient.",
+    "Logos/publisher and SI wheel images retain source identity and correct intended location; no endorsement claim or public derivative redistribution.",
+    "Default/strict reports recorded without font-permission/unknown-Unicode/clip overrides.",
+    "Keep unresolved failures in results; no retrospective gold changes based on product outputs."
+  ]
+}
