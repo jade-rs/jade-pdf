@@ -49,6 +49,7 @@ pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
 #[cfg(test)]
 mod page_column_isolation_tests;
+mod page_end;
 mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
@@ -1065,11 +1066,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 {
                     paragraph = paragraph.section_property(section_property.clone());
                 }
-                if let Some(section_property) = section_refs.page_end
-                    && block_index + 1 == block_count
-                {
-                    paragraph = paragraph.section_property(section_property.clone());
-                }
+                paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
+                );
                 container = container.add_structured_paragraph(paragraph);
                 previous_line = Some(line);
                 previous_nonparagraph_bottom_y = None;
@@ -1097,13 +1098,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_line = None;
                 previous_nonparagraph_bottom_y = Some(image.bounds.y0.min(image.bounds.y1));
-                let mut paragraph =
+                let paragraph =
                     Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image)));
-                if let Some(section_property) = section_refs.page_end
-                    && block_index + 1 == block_count
-                {
-                    paragraph = paragraph.section_property(section_property.clone());
-                }
+                let paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
+                );
                 container = container.add_structured_paragraph(paragraph);
             }
         }
