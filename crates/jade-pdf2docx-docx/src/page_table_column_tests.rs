@@ -79,3 +79,97 @@ fn table_on_last_page_preserves_earlier_columns_and_cells() {
     }
     assert!(xml.contains("PAGEA LEFT 1") && xml.contains("PAGEA RIGHT 1"));
 }
+
+/// 原本ページに対応するsectionの内容と段数。
+#[derive(Debug)]
+struct Evidence {
+    /// このsectionに所属する本文とセルの文字。
+    text: String,
+    /// Wordのsection段数。未指定時は1。
+    columns: usize,
+    /// 直接bodyに属する表の個数。
+    tables: usize,
+}
+
+impl Default for Evidence {
+    /// Word既定の1段から検証を始める。
+    fn default() -> Self {
+        Self {
+            text: String::new(),
+            columns: 1,
+            tables: 0,
+        }
+    }
+}
+
+/// pPrのsectPrも、その段落自身を含めて前のsource sectionへ所属させる。
+fn sections(xml: &str) -> Vec<Evidence> {
+    use quick_xml::events::Event;
+    let mut reader = quick_xml::Reader::from_str(xml);
+    let mut stack: Vec<Vec<u8>> = Vec::new();
+    let mut pending = Evidence::default();
+    let mut result = Vec::new();
+    let mut boundary = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(e) => {
+                let tag = e.local_name().as_ref().to_vec();
+                if tag == b"tbl" && stack.len() == 2 {
+                    pending.tables += 1;
+                }
+                if tag == b"sectPr" && stack.len() == 4 && stack[2] == b"p" {
+                    boundary = true;
+                }
+                stack.push(tag);
+            }
+            Event::Empty(e) if e.local_name().as_ref() == b"cols" => {
+                pending.columns = e
+                    .attributes()
+                    .map(Result::unwrap)
+                    .find(|a| a.key.local_name().as_ref() == b"num")
+                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap())
+                    .unwrap_or(1);
+            }
+            Event::Text(e) if stack.last().is_some_and(|tag| tag == b"t") => {
+                pending
+                    .text
+                    .push_str(std::str::from_utf8(e.as_ref()).unwrap());
+                pending.text.push('\n');
+            }
+            Event::End(e) => {
+                let tag = e.local_name();
+                let paragraph_end = tag.as_ref() == b"p" && stack.len() == 3 && boundary;
+                let document_end = tag.as_ref() == b"sectPr" && stack.len() == 3;
+                if paragraph_end || document_end {
+                    result.push(std::mem::take(&mut pending));
+                    boundary = false;
+                }
+                stack.pop().unwrap();
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    result
+}
+
+/// 表が最後のblockでも、次ページの実段組に表や本文を取り残さない。
+#[test]
+fn table_at_page_end_keeps_its_own_section_before_later_columns() {
+    let xml = table_and_columns(0);
+    let sections = sections(&xml);
+    assert_eq!(
+        sections.len(),
+        2,
+        "last table must retain its source page boundary"
+    );
+    assert_eq!((sections[0].columns, sections[0].tables), (1, 1));
+    assert!(sections[0].text.contains("TABLE PAGE0 R1C1"));
+    assert!(sections[0].text.contains("PAGEA LEFT 1"));
+    assert!(!sections[0].text.contains("PAGEB"));
+    assert_eq!((sections[1].columns, sections[1].tables), (2, 0));
+    assert!(
+        sections[1].text.contains("PAGEB LEFT 1") && sections[1].text.contains("PAGEB RIGHT 1")
+    );
+    assert!(!sections[1].text.contains("TABLE PAGE0"));
+}
