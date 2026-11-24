@@ -38,6 +38,7 @@ mod glyph_metrics;
 mod graphic_table_cells;
 #[cfg(test)]
 mod graphic_table_merge_tests;
+mod graphic_table_outer_edges;
 mod graphic_table_ownership;
 mod layout_space;
 mod normal_weight_package;
@@ -4406,6 +4407,7 @@ fn infer_positioned_table_from_graphics(
     {
         ys = augmented_ys;
     }
+    xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
     xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
     ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
     let mut text_augmented_columns = false;
