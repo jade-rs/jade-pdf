@@ -54,13 +54,14 @@ pub(super) fn model(
                 }
                 span += 1;
             }
+            // 横結合の上下は全小区間で同じと検証済み。接した複数線分も一つの辺として保つ。
             let borders = DocxCellBorders {
-                top: has_horizontal_boundary_in_column_band(graphics, top, xs[col], xs[col + span]),
+                top: has_horizontal_boundary_in_column_band(graphics, top, xs[col], xs[col + 1]),
                 bottom: has_horizontal_boundary_in_column_band(
                     graphics,
                     bottom,
                     xs[col],
-                    xs[col + span],
+                    xs[col + 1],
                 ),
                 left: has_vertical_boundary_in_band(graphics, xs[col], bottom, top),
                 right: has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top),
