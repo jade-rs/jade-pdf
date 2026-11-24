@@ -2278,7 +2278,9 @@ fn common_usable_pdf_font_name<'a>(
         // 同じ互換familyでも異なるRoman faceを表全体の一つのstyleへ統合しない。
         let compatible_style = roman_fallback::known(stripped).map(|font| (font.bold, font.italic));
         match common.as_ref() {
-            Some((_, current, style)) if current != &normalized || style != &compatible_style => return None,
+            Some((_, current, style)) if current != &normalized || style != &compatible_style => {
+                return None;
+            }
             Some(_) => {}
             None => common = Some((font_name.to_string(), normalized, compatible_style)),
         }

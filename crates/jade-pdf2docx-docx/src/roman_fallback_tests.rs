@@ -117,4 +117,19 @@ proptest! {
         prop_assert_eq!(xml.contains("<w:b />"), style & 1 != 0);
         prop_assert_eq!(xml.contains("<w:i />"), style & 2 != 0);
     }
+
+    /// subset名が異なっても同faceだけを共通化し、四face間のstyle差は常に保持する。
+    #[test]
+    fn table_family_inference_preserves_roman_face_distinctions(
+        first_prefix in "[A-Z]{6}",
+        second_prefix in "[A-Z]{6}",
+        first in 0usize..4,
+        second in 0usize..4,
+    ) {
+        let names = ["NimbusRomNo9L-Regu", "NimbusRomNo9L-Medi", "NimbusRomNo9L-ReguItal", "NimbusRomNo9L-MediItal"];
+        let a = format!("{first_prefix}+{}", names[first]);
+        let b = format!("{second_prefix}+{}", names[second]);
+        let actual = common_usable_pdf_font_name([a.as_str(), b.as_str()]);
+        prop_assert_eq!(actual, (first == second).then_some(a));
+    }
 }
