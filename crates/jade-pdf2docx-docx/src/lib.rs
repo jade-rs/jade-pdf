@@ -57,6 +57,7 @@ mod page_chrome;
 mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
+mod separated_box_table;
 mod text_column_gutter;
 mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
@@ -3824,6 +3825,9 @@ fn infer_positioned_tables_from_pdf_graphics_page(
         .filter(|graphic| graphic.page == page)
         .cloned()
         .collect::<Vec<_>>();
+    if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
+        return vec![table];
+    }
     let loose_component_candidates =
         positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 2.0);
     let strict_component_candidates =

@@ -24,6 +24,29 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, false)
+}
+
+/// 独立した閉じた枠で所有を確認したセルでは、既知基線の小さい添字行も復元する。
+pub(super) fn cells_with_scripts(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, true)
+}
+
+/// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
+fn cells_impl(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+    scripts: bool,
+) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     model
         .rows
@@ -40,7 +63,7 @@ pub(super) fn cells(
                     let bottom = *ys.get(band)? as f32;
                     let left = *xs.get(start)? as f32;
                     let selected = texts.get(row_index)?.get(start..col)?;
-                    let mut elements = selected.iter().flatten().collect::<Vec<_>>();
+                    let elements = selected.iter().flatten().collect::<Vec<_>>();
                     if elements.is_empty()
                         || cell.vertical_merge == Some(DocxVerticalMerge::Continue)
                     {
@@ -50,23 +73,7 @@ pub(super) fn cells(
                     if characters(&original) != characters(&cell.text) {
                         return None;
                     }
-                    elements.sort_by(|a, b| {
-                        native_baseline::line_y(b)
-                            .total_cmp(&native_baseline::line_y(a))
-                            .then(a.bounds.x0.total_cmp(&b.bounds.x0))
-                    });
-                    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
-                    for element in elements {
-                        if let Some(row) = rows.last_mut().filter(|row| {
-                            (native_baseline::line_y(row[0]) - native_baseline::line_y(element))
-                                .abs()
-                                <= TEXT_ROW_Y_TOLERANCE_PT
-                        }) {
-                            row.push(element);
-                        } else {
-                            rows.push(vec![element]);
-                        }
-                    }
+                    let rows = source_rows(elements, scripts);
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
@@ -95,7 +102,9 @@ pub(super) fn cells(
                         left,
                         top,
                         bottom,
-                        single_line_runs: if lines.len() == 1 {
+                        single_line_runs: if scripts && lines.len() == 1 {
+                            lines[0].runs.clone()
+                        } else if lines.len() == 1 {
                             legacy_runs(parsed, selected, &cell.text)
                         } else {
                             Vec::new()
@@ -106,6 +115,37 @@ pub(super) fn cells(
                 .collect()
         })
         .collect()
+}
+
+/// 元の行分割を保ち、確認済み局所基線だけから添字を同じセル内の行へ戻す。
+pub(super) fn source_rows(
+    mut elements: Vec<&ParsedTextElement>,
+    scripts: bool,
+) -> Vec<Vec<&ParsedTextElement>> {
+    elements.sort_by(|a, b| {
+        native_baseline::line_y(b)
+            .total_cmp(&native_baseline::line_y(a))
+            .then(a.bounds.x0.total_cmp(&b.bounds.x0))
+    });
+    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
+    for element in elements {
+        if let Some(row) = rows.last_mut().filter(|row| {
+            (native_baseline::line_y(row[0]) - native_baseline::line_y(element)).abs()
+                <= TEXT_ROW_Y_TOLERANCE_PT
+        }) {
+            row.push(element);
+        } else {
+            rows.push(vec![element]);
+        }
+    }
+    if scripts {
+        inline_script_rows::recover(&mut rows, None);
+    }
+    rows.retain(|row| !row.is_empty());
+    for row in &mut rows {
+        row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+    }
+    rows
 }
 
 /// 既存のセル文字列・断片間空白と完全一致する場合だけ、原本runのstyleを対応させる。
