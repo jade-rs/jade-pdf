@@ -1,0 +1,148 @@
+{
+  "generated_utc": "2026-11-24T05:14:16.502603+00:00",
+  "scope": "Preserve detected text columns on pages unaffected by positioned tables, including table-only/floating-only/header-only source pages and production inferred-table summaries; reject unsafe column candidates with unsplit spanning body rows.",
+  "production_ready": false,
+  "qualified_runtime_head": "df529dede7cbd6b2be8c155f3daffb17a5e73dce",
+  "qualified_crates_tree": "1b370f45f47922e7da04080b2a6447fc48a1bf8c",
+  "parent_PR34_head": "2a1a86a2991f5771304e2fa7633b235eadea58a4",
+  "publication_status": "Local qualified candidate; PR34 merge and own rebase/qualification pending. No PR35 created yet.",
+  "behavior": {
+    "page_isolation": "A positioned table or lack of body lines on one source page does not globally disable another page columns.",
+    "production_metadata": "File/bytes conversion also passes a compatibility summary of the first inferred table. Its presence is distinguished from an unpositioned explicit OCR table.",
+    "last_table": "A minimal exact1twip paragraph OUTSIDE the final table carries the source page section boundary; never hides sectPr inside a table cell.",
+    "empty_flow": "A header-only/floating-image-only page receives a minimal body paragraph and retains verified source dimensions. No defaultA4 geometry invented when actual dimensions are available.",
+    "column_safety": "Reject a two-column candidate when a body row assigned to a column crosses the next column left edge; a few large horizontal gaps do not establish safe whole-page columns.",
+    "policies_unchanged": "No new dependencies, Unicode overrides, fontprogram/license edits, source/gold mutation, OCR/strict bypass or additional trackedPDFfixtures."
+  },
+  "validation": {
+    "new_tests": 8,
+    "TDD": "7 distinct semantic Red regressions committed before corresponding runtime fixes; plus randomized page/table/image/bodyless ownership property. Compile/macro/format wrapper mistakes retained separately, not counted as semantic Reds.",
+    "default_Rust": {
+      "passed": 2263,
+      "failed": 0,
+      "ignored": 29,
+      "command": "sh scripts/check_rust_features.sh default",
+      "clippy": "passed with existing warnings; no warning-free claim",
+      "final_all672_Rust_source_hashes_verified": true
+    },
+    "Python_tests": 152,
+    "Python_tools": 86,
+    "format": "passed",
+    "browser_standard_chromium": 72,
+    "browser_standard_webkit": 72,
+    "actual_browser_expected_outcomes": 36,
+    "actual_browser_source_count": 9,
+    "actual_browser_modes": [
+      "default",
+      "strict"
+    ],
+    "actual_browser_engines": [
+      "chromium",
+      "webkit"
+    ],
+    "actual_browser_byte_identity_across_engines": true,
+    "native_CLI_expected_outcomes": 5,
+    "native_CLI_default_owned_EfficientNet_equals_example": true,
+    "native_CLI_strict_owned_EfficientNet_BERT_rejected_without_output": true,
+    "native_example_sha256": "918103ecca89ea782f7fc7eba3aa670df6f3c07dd2bb3cfaa68d562cd92a1793",
+    "native_CLI_sha256": "1de8ce69656e81fe5b64d1ceb8b321fee3265fa02f0dc674f6c0f1f217163acc",
+    "distributed_WASM_sha256": "79530562cfaa24a8f2268ff3b00a36a53d6ebf8e25c10c32beebffa8b20ab589",
+    "raw_WASM_sha256": "1dbc9009d7aa047a12a17fb57786cf59cf8fccd29145cebc895dfead6baecf9b",
+    "artifact_rebind": "Actually rebuilt native example, ordinary CLI alone and productionWASM at finaltestedhead; allbytes equal actual tested38fd04f artifacts. Only testhelper andformatting changed between these commits."
+  },
+  "owned_sources": [
+    {
+      "id": "owned-table-columns",
+      "PDF_sha256": "2191582bd49337d592aead632ffd60e5d3e9a7af413fcdb4c394b4e9ea36e7f6",
+      "source_files_manifest_sha256": "da5d6804f0793cb34f0577750ba7ed36f3b7186a99d6926942c2cbe2902378fc",
+      "source_pages": 3,
+      "rights_privacy_review": "Self-authored synthetic labels and vector grid. All3originalpages viewed; no external assets or embedded fontprograms. Frozen before first product conversion.",
+      "output_pages_native": 3,
+      "output_pages_pure": 3,
+      "source_section_column_sequence": [
+        1,
+        2,
+        1
+      ],
+      "table_count": 2,
+      "source_cell_count_preserved": 8,
+      "whole_page_fidelity_accepted": false
+    },
+    {
+      "id": "owned-full-height-table",
+      "PDF_sha256": "0d7386fb8caa7e5c3331a9484ebb02dfffed723e7ab561ec4aef2ce61361346d",
+      "source_files_manifest_sha256": "d70d9909aba127a4e46bb2e87d5e2aca4fe6085a9d1c7c9943369027eb037bb0",
+      "source_pages": 3,
+      "rights_privacy_review": "Self-authored synthetic labels and vector grid. All3originalpages viewed; no external assets or embedded fontprograms. Frozen before first product conversion.",
+      "output_pages_native": 5,
+      "output_pages_pure": 5,
+      "source_section_column_sequence": [
+        1,
+        2,
+        1
+      ],
+      "table_count": 2,
+      "source_cell_count_preserved": 8,
+      "whole_page_fidelity_accepted": false
+    }
+  ],
+  "selected_column_geometry": {
+    "prospective_gold_sha256": "b6e4da66e5633ad69f606339008d181d4de06738f455d46a7be2cac4d2ceb76a",
+    "label_count": 24,
+    "baseline_native_max_abs_baseline_error_pt": 222.8,
+    "candidate_native_max_abs_baseline_error_pt": 2.2000000000000455,
+    "candidate_pure_max_abs_baseline_error_pt": 2.2000000000000455,
+    "candidate_max_abs_x_error_pt": 0.10000000000002274,
+    "measurement": "Independent pdfplumber rendered glyph matrices and positions, comparing24original left/right labels. Whole table glyph positions remain wrong.",
+    "visual_review": "All3comfortable native output pages in full; all5fullheight prototype pages in full and later column page3 in full; all8pure outputpage thumbnails and comfortable column page2 in full. Existing paper output bytes identical to already reviewed qualified artifacts."
+  },
+  "existing_sources": {
+    "native_six_DOCX_bytes_unchanged": true,
+    "pure_six_DOCX_bytes_unchanged": true,
+    "EfficientNet": {
+      "official_publisher": "https://proceedings.mlr.press/v97/tan19a.html",
+      "PDF_sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+      "all59_source_and_gold_files_unchanged": true,
+      "source_pages": 10,
+      "output_pages": 20,
+      "accuracy_pass": false
+    },
+    "BERT": {
+      "official_publisher": "https://aclanthology.org/N19-1423/",
+      "PDF_sha256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+      "source_pages": 16,
+      "output_pages": 32,
+      "accuracy_pass": false
+    },
+    "BatchNorm": {
+      "official_publisher": "https://proceedings.mlr.press/v37/ioffe15.html",
+      "PDF_sha256": "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27",
+      "all40_frozen_original_source_review_gold_files_unchanged": true,
+      "native": "Same clip-overlap guard rejection before publication.",
+      "pure": "Default byte-identical to qualifiedPR34; strict rejects19issues.9→18pages,59replacementcharacters and table/header/vector defects unchanged.",
+      "accuracy_pass": false
+    },
+    "rights": "Previously reviewed official sources retained only in ignored localQA. No source PDFs or original fontprograms committed/redistributed. Exactly3trackedfixtures retained."
+  },
+  "retained_rejected_prototypes": [
+    {
+      "head": "2d6a4a2aab9610514d6b95345ca58bf278c48ec8",
+      "observation": "Global table gate removed but production summary still disabled columns. EfficientNet20/BERT32pages unchanged.",
+      "status": "Insufficient real fidelity improvement; retained."
+    },
+    {
+      "head": "366722aeddfc98c81f469eddb1cef59493a6a9c1",
+      "observation": "Production summary fix exposed unsplit body rows entering narrow columns. EfficientNet27/BERT87pages.",
+      "status": "Rejected; artifacts retained unchanged. Added semantic Red and spanning-row guard before final candidate."
+    }
+  ],
+  "remaining": [
+    "Sustained narrow gutters and rows with unaligned baselines need column detection; do not blindly reduce all word-gap thresholds.",
+    "Full-height table rows/flow still cause3→5pages; ordinarytablecellverticalcentering differsfromsource.",
+    "All-header-only documents, trueblankpages, and mixedsource margins without detectedcolumns remain incompletely covered.",
+    "Real paper table topology, body/caption positions, vector artwork, math Unicode/glyphs/fontfallback, header membership and pagination still fail.",
+    "Native BatchNorm overlap guard requires object-level audit before any relaxation.",
+    "No Microsoft Word rendering validation."
+  ],
+  "local_evidence": "corpus/wasm-runtime/page-table-column-qualification (ignored research/source and artifacts); immutable qualification manifest prepared before publication."
+}
