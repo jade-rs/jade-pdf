@@ -132,3 +132,25 @@ fn nested_image_inherits_parent_opacity() {
     .unwrap();
     assert_eq!(pixels.rgba, [255, 0, 0, 128]);
 }
+
+/// グループ単位の合成を画像ごとのalphaで代用し、検証済みと扱わない。
+#[test]
+fn unsupported_group_compositing_keeps_replacement_diagnostic() {
+    let pdf = fixture(
+        "/Half gs /Fm Do",
+        "8 0 0 6 1 2 cm /Im Do",
+        "/Group << /S /Transparency >>",
+    );
+    let parsed = parse_pdf_bytes("owned-group-alpha.pdf", &pdf).unwrap();
+    assert_eq!(parsed.image_elements.len(), 1);
+    assert!(
+        parsed.quality.issues.iter().any(|issue| matches!(
+            issue,
+            QualityIssue::ImageReplaced {
+                object_number: Some(6),
+                ..
+            }
+        )),
+        "group compositing must not be guessed as per-image opacity"
+    );
+}
