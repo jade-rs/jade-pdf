@@ -89,7 +89,7 @@ impl<'a> Index<'a> {
 }
 
 /// 無効な値をkeyにせず、符号付きゼロだけを同じ幾何として扱う。
-fn key<'a>(object: &impl PdfPageObjectCommon<'a>) -> Option<Key> {
+fn key(object: &PdfPageTextObject<'_>) -> Option<Key> {
     let rect = object.bounds().ok()?.to_rect();
     let matrix = object.matrix().ok()?;
     let values = [
