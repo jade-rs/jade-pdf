@@ -49,7 +49,7 @@ fn column_source(local_formula: bool) -> ParsedDocument {
             let x = 50. + index as f32 * 6.;
             add(&text.to_string(), x, x + 6., 690., 9.);
         }
-        add("2", 292., 297., 690., 9.);
+        add("2", 294., 299., 690., 9.);
         add("H", 315., 325., 684.5, 12.);
     }
     parsed
