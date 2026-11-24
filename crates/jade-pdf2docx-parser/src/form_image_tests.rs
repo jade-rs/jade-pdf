@@ -220,3 +220,26 @@ fn group_color_conversion_is_not_bypassed() {
         "unimplemented group color conversion must be diagnosed"
     );
 }
+
+/// 表示寸法が小さくても、切り抜き前の元画像の画素密度を保つ。
+#[test]
+fn clipped_image_preserves_source_pixel_density() {
+    let mut objects = objects("/Fm Do", "0 0 .5 1 re W n /Im Do", "");
+    let mut encoder = flate2::write::ZlibEncoder::new(Vec::new(), flate2::Compression::default());
+    encoder.write_all(&[255, 0, 0].repeat(100 * 80)).unwrap();
+    objects[5] = stream(
+        "/Type /XObject /Subtype /Image /Width 100 /Height 80 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Filter /FlateDecode",
+        &encoder.finish().unwrap(),
+    );
+    let parsed = parse_pdf_bytes("owned-high-density-crop.pdf", &document(&objects)).unwrap();
+    let pixels = decode_filter0_png_to_rgba(
+        &DecodeBudget::default(),
+        &parsed.image_elements[0].png_bytes,
+    )
+    .unwrap();
+    assert_eq!(
+        (pixels.width, pixels.height),
+        (50, 80),
+        "clipped bitmap must preserve source pixel density"
+    );
+}
