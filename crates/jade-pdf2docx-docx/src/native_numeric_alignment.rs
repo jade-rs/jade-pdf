@@ -42,8 +42,9 @@ pub(super) fn right_anchors(lines: &[StructuredTextLine], left: f32, right: f32)
         max_right = max_right.max(line.right_x);
         max_em = max_em.max(em);
     }
+    // 右端はadvanceでなく字面の外接矩形なので、emの10%未満のsidebearing差だけを許す。
     // 同じ幅の行は左右どちらの揃えとも解釈できるので変更しない。
-    if max_right - min_right <= 0.5 && max_left - min_left >= max_em * 0.5 {
+    if max_right - min_right < max_em * 0.1 && max_left - min_left >= max_em * 0.5 {
         for (index, _) in numeric {
             out[index] = true;
         }
@@ -132,8 +133,12 @@ mod tests {
     /// 同じ右advanceでも字形末尾のsidebearingが違う外接矩形を、font emの狭い範囲で扱う。
     #[test]
     fn small_ink_right_sidebearing_variation_keeps_source_numeric_anchors() {
-        let lines=[line("9",92.,98.),line("1,234",70.,97.4)];
-        assert_eq!(right_anchors(&lines,0.,100.),[true,true],"small source ink sidebearings must not discard a numeric right anchor");
+        let lines = [line("9", 92., 98.), line("1,234", 70., 97.4)];
+        assert_eq!(
+            right_anchors(&lines, 0., 100.),
+            [true, true],
+            "small source ink sidebearings must not discard a numeric right anchor"
+        );
     }
 
     proptest! {
