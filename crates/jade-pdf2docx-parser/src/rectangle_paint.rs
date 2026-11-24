@@ -69,7 +69,7 @@ impl Paint {
                     }
                     _ => None,
                 };
-                self.black = false;
+                self.black = self.components.is_some();
             }
             b"SC" | b"SCN" => self.color(args),
             b"d" => {
