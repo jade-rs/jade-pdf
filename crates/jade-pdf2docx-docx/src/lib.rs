@@ -24,15 +24,22 @@ pub use jade_pdf2docx_ocr::{
 };
 pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 
+mod column_flow;
+mod column_frame;
 #[cfg(test)]
 mod conversion_cancellation_tests;
 mod conversion_control;
+mod prepared_docx;
+use prepared_docx::PreparedDocx;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
 mod glyph_metrics;
 mod layout_space;
 mod positioned_type1;
+mod roman_fallback;
+#[cfg(test)]
+mod roman_fallback_tests;
 
 mod html_table;
 mod image_anchor;
@@ -48,6 +55,7 @@ mod page_chrome;
 mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
+mod text_column_gutter;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -368,9 +376,11 @@ fn convert_pdf_file_with_check(
     {
         build_structured_docx_from_owned_images(&mut parsed, &inferred_table, &positioned_tables)?
     } else if request.clean_output && has_body_content(&request.ocr_text_lines, &inferred_table) {
-        build_body_docx(&request.ocr_text_lines, &inferred_table)?
+        build_body_docx(&request.ocr_text_lines, &inferred_table)?.into()
     } else if request.clean_output {
-        Docx::new().add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+        Docx::new()
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into()
     } else {
         let docx = Docx::new()
             .add_paragraph(Paragraph::new().add_run(text_run("minimum pdf to docx conversion")))
@@ -388,7 +398,7 @@ fn convert_pdf_file_with_check(
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     check(Stage::Built)?;
@@ -626,7 +636,9 @@ fn has_structured_pdf_content(
 }
 
 /// 最小 DOCX の本文・表・画像を組み立てる。
-fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, ConvertError> {
+fn build_minimum_docx(
+    request: &MinimumPdfToDocxBytesRequest,
+) -> Result<PreparedDocx, ConvertError> {
     let version = format!(
         "{}.{}",
         request.parsed.version.major, request.parsed.version.minor
@@ -654,10 +666,11 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
                 .clone()
                 .or_else(|| text_preview_to_body_lines(&normalized_text_preview));
             if has_body_content(&body_lines, &request.ocr_table) {
-                build_body_docx(&body_lines, &request.ocr_table)?
+                build_body_docx(&body_lines, &request.ocr_table)?.into()
             } else {
                 Docx::new()
                     .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+                    .into()
             }
         }
     } else {
@@ -678,7 +691,7 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     Ok(docx)
@@ -689,7 +702,7 @@ fn build_structured_docx_from_parsed(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_page_ocr(
         parsed,
         ocr_table,
@@ -704,7 +717,7 @@ fn build_structured_docx_from_owned_images(
     parsed: &mut ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let mut images = Some(
         parsed
             .image_elements
@@ -729,7 +742,7 @@ fn build_structured_docx_with_page_ocr(
     positioned_tables: &[PositionedTable],
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_image_payloads(
         parsed,
         ocr_table,
@@ -748,7 +761,7 @@ fn build_structured_docx_with_image_payloads(
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let pages = text_lines_by_page_from_pdf_text_elements(parsed, positioned_tables);
     let page_chrome = page_chrome::extract(parsed, &pages);
     let mut pages = page_chrome::remove(pages, &page_chrome);
@@ -773,7 +786,8 @@ fn build_structured_docx_with_image_payloads(
             .any(|page| page.lines.iter().any(|line| !line.text.trim().is_empty()));
     if !has_lines && parsed.image_elements.is_empty() && ocr_table.is_none() {
         return Ok(Docx::new()
-            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)"))));
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into());
     }
     let can_restore_multi_page_text_columns = recognized.is_empty()
         && region_lines.is_empty()
@@ -914,7 +928,13 @@ fn build_structured_docx_with_image_payloads(
         table.validate().map_err(ConvertError::InvalidOcrTable)?;
         docx = docx.add_table(docx_table_from_ocr_table(table));
     }
-    Ok(docx)
+    Ok(PreparedDocx::new(
+        docx,
+        document_text_columns
+            .into_iter()
+            .map(|layout| layout.frame)
+            .collect(),
+    ))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -955,9 +975,8 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
-    let mut blocks = page
-        .lines
-        .iter()
+    let mut blocks = column_flow::ordered_lines(&page.lines, text_column_layout)
+        .into_iter()
         .enumerate()
         .map(|(flow_index, line)| StructuredBlock::Paragraph {
             top_y: line.top_y,
@@ -1051,16 +1070,9 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_column_index = column_index;
                 let column_origin_twips =
-                    text_columns
-                        .zip(page_width)
-                        .and_then(|(columns, page_width)| {
-                            paragraph_anchor::column_origin_twips(
-                                page_width,
-                                origin_x,
-                                column_index,
-                                columns.len(),
-                            )
-                        });
+                    text_columns.zip(page_width).and_then(|(_, page_width)| {
+                        text_column_layout?.frame.origin(page_width, column_index)
+                    });
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
@@ -1184,7 +1196,7 @@ fn build_multi_page_text_column_docx(
     page_chrome: &page_chrome::Plan,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
     image_payloads: &mut Option<Vec<Vec<u8>>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let last_page = pages
         .last()
         .expect("multi-page text layout must have pages");
@@ -1226,7 +1238,14 @@ fn build_multi_page_text_column_docx(
             image_payloads,
         )?;
     }
-    Ok(docx)
+    Ok(PreparedDocx::new(
+        docx,
+        text_columns_by_page
+            .iter()
+            .flatten()
+            .map(|layout| layout.frame.clone())
+            .collect(),
+    ))
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -1327,7 +1346,15 @@ fn detected_text_columns_for_page(
     {
         return None;
     }
+    let frame = column_frame::Frame::for_lines(
+        page_width,
+        structured_page_left_x(parsed, positioned_tables, page),
+        &page.lines[leading_single_column_line_count
+            ..leading_single_column_line_count + column_line_count],
+        &columns,
+    )?;
     Some(DetectedTextColumnLayout {
+        frame,
         columns,
         leading_single_column_line_count,
         column_line_count,
@@ -1712,15 +1739,21 @@ fn text_lines_by_page_from_pdf_text_elements(
                     rows.push(vec![text]);
                 }
             }
+            for row in &mut rows {
+                *row = native_spacing::with_interior_spaces(
+                    &parsed.text_elements,
+                    std::mem::take(row),
+                );
+                row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+            }
+            let gutter = (!positioned_tables.iter().any(|table| table.page == page)
+                && !parsed.image_elements.iter().any(|image| image.page == page))
+            .then(|| text_column_gutter::infer(&rows, page_width))
+            .flatten();
             let lines = rows
-                .iter_mut()
+                .iter()
                 .flat_map(|row| {
-                    *row = native_spacing::with_interior_spaces(
-                        &parsed.text_elements,
-                        std::mem::take(row),
-                    );
-                    row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                    split_text_row_segments(row)
+                    split_text_row_segments(row, gutter)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
@@ -1806,7 +1839,10 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
 }
 
 /// 1 行分の text element を、段組などの大きな水平ギャップで分割する。
-fn split_text_row_segments<'a>(row: &[&'a ParsedTextElement]) -> Vec<TextRowSegment<'a>> {
+fn split_text_row_segments<'a>(
+    row: &[&'a ParsedTextElement],
+    gutter: Option<text_column_gutter::Gutter>,
+) -> Vec<TextRowSegment<'a>> {
     let Some(first) = row.first() else {
         return Vec::new();
     };
@@ -1820,14 +1856,16 @@ fn split_text_row_segments<'a>(row: &[&'a ParsedTextElement]) -> Vec<TextRowSegm
     let mut right = first.bounds.x1;
     for text in row.iter().copied().skip(1) {
         let gap = text.bounds.x0 - right;
-        if gap > split_gap {
+        if gap > split_gap
+            || gutter.is_some_and(|gutter| right < gutter.x && gutter.x < text.bounds.x0)
+        {
             segments.push(vec![text]);
         } else if let Some(segment) = segments.last_mut() {
             segment.push(text);
         }
         right = right.max(text.bounds.x1);
     }
-    let split_from_row = segments.len() > 1;
+    let split_from_row = segments.len() > 1 || gutter.is_some_and(|gutter| gutter.contains(first));
     segments
         .into_iter()
         .map(|texts| TextRowSegment {
@@ -2125,14 +2163,23 @@ fn apply_pdf_font_name_to_run(
     });
     let normalized = font_name.to_ascii_lowercase();
     let infer = !(embedded && font_name.starts_with("JadeT1-"));
+    let compatible = (!embedded)
+        .then(|| roman_fallback::known(font_name))
+        .flatten();
     if face.map_or(
-        infer && (normalized.contains("bold") || normalized.contains("black")),
+        infer
+            && (normalized.contains("bold")
+                || normalized.contains("black")
+                || compatible.is_some_and(|font| font.bold)),
         |face| face.bold,
     ) {
         run = run.bold();
     }
     if face.map_or(
-        infer && (normalized.contains("italic") || normalized.contains("oblique")),
+        infer
+            && (normalized.contains("italic")
+                || normalized.contains("oblique")
+                || compatible.is_some_and(|font| font.italic)),
         |face| face.italic,
     ) {
         run = run.italic();
@@ -2165,6 +2212,9 @@ fn run_fonts(font_name: &str) -> RunFonts {
 
 /// PDF の subset/PostScript フォント名を DOCX renderer が解決しやすい名前へ正規化する。
 fn docx_font_name_from_pdf_font_name(font_name: &str) -> String {
+    if let Some(compatible) = roman_fallback::known(font_name) {
+        return compatible.family.to_string();
+    }
     let stripped = font_name
         .split_once('+')
         .map(|(_, name)| name)
@@ -2237,7 +2287,7 @@ fn docx_font_stretch_from_pdf_font_name(font_name: &str) -> Option<i32> {
 fn common_usable_pdf_font_name<'a>(
     font_names: impl IntoIterator<Item = &'a str>,
 ) -> Option<String> {
-    let mut common = None::<(String, String)>;
+    let mut common = None::<(String, String, Option<(bool, bool)>)>;
     for font_name in font_names {
         let stripped = font_name.trim().trim_start_matches('/');
         if stripped.is_empty()
@@ -2248,13 +2298,17 @@ fn common_usable_pdf_font_name<'a>(
             continue;
         }
         let normalized = docx_font_name_from_pdf_font_name(stripped);
+        // 同じ互換familyでも異なるRoman faceを表全体の一つのstyleへ統合しない。
+        let compatible_style = roman_fallback::known(stripped).map(|font| (font.bold, font.italic));
         match common.as_ref() {
-            Some((_, current)) if current != &normalized => return None,
+            Some((_, current, style)) if current != &normalized || style != &compatible_style => {
+                return None;
+            }
             Some(_) => {}
-            None => common = Some((font_name.to_string(), normalized)),
+            None => common = Some((font_name.to_string(), normalized, compatible_style)),
         }
     }
-    common.map(|(font_name, _)| font_name)
+    common.map(|(font_name, _, _)| font_name)
 }
 
 /// 表内で共通する妥当な PDF font size（pt）を返す。
@@ -2435,7 +2489,7 @@ fn column_index_for_line(line: &StructuredTextLine, columns: &[f32]) -> usize {
 struct TextRowSegment<'a> {
     /// segment 内の text element。
     texts: Vec<&'a ParsedTextElement>,
-    /// 元 row が複数 segment に分割されたか。
+    /// rowの分割、または複数行で確認した空白帯の本文区間に由来するか。
     split_from_row: bool,
 }
 
@@ -2451,6 +2505,8 @@ struct StructuredTextPage {
 /// 単一ページ内で検出した段組本文と、その前後にある全幅行を表す。
 #[derive(Debug, Clone, PartialEq)]
 struct DetectedTextColumnLayout {
+    /// 梱包する実段幅と、本文indentに共通の段原点。
+    frame: column_frame::Frame,
     /// 段組本文の各 column 左端（pt）。
     columns: Vec<f32>,
     /// 段組本文より前に置く1段行の数。
@@ -2512,7 +2568,7 @@ struct StructuredTextLine {
     alignment: ParagraphAlignment,
     /// PDF text element ごとの DOCX run。
     runs: Vec<StructuredTextRun>,
-    /// 大きな水平ギャップで分割された row に由来するか。
+    /// 水平ギャップでのrow分割、または確認済みの段組み本文区間に由来するか。
     split_from_row: bool,
     /// 行テキスト。
     text: String,

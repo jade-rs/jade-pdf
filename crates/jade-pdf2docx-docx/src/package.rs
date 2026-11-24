@@ -1,6 +1,6 @@
 //! DOCXの梱包とPDF subset font埋め込みを担当する。
 use crate::ConvertError;
-use docx_rs::Docx;
+use crate::prepared_docx::PreparedDocx;
 use jade_pdf2docx_parser::ParsedEmbeddedFont;
 use std::io::{Cursor, Read, Seek, Write};
 #[path = "font_usage.rs"]
@@ -8,10 +8,15 @@ mod font_usage;
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
 pub(super) fn pack_docx_to_bytes(
-    docx: Docx,
+    docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
+    let PreparedDocx {
+        docx,
+        column_frames,
+    } = docx.into();
     let mut package = crate::section_chrome_package::build(docx)?;
+    crate::column_frame::apply(&mut package.document, &column_frames)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
@@ -276,12 +281,17 @@ fn escape_xml_attribute(value: &str) -> String {
 /// ファイル変換では梱包済みZIP全体をVecへ保持せず、削除保証付き一時ファイルへ保存する。
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn pack_docx_to_file(
-    docx: Docx,
+    docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
+    let PreparedDocx {
+        docx,
+        column_frames,
+    } = docx.into();
     let mut package = crate::section_chrome_package::build(docx)?;
+    crate::column_frame::apply(&mut package.document, &column_frames)?;
     crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     package
