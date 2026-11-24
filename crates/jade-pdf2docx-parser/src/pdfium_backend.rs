@@ -162,7 +162,7 @@ pub(crate) fn parse_pdf(
                     page_number,
                     &characters,
                     &tags,
-                    &excluded,
+                    &elements,
                 )?;
                 if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
                     elements = indexed;

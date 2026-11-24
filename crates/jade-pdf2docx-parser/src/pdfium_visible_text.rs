@@ -135,7 +135,7 @@ pub(crate) fn extract(
     tags: &crate::pdfium_font_tags::Tagged,
     excluded: &[bool],
 ) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
-    extract_mode(budget, path, page, characters, tags, excluded, false)
+    extract_mode(budget, path, page, characters, tags, excluded, None)
 }
 
 /// 通常ページの矩形重複回復では、同じsource objectの水平連続文字をまとめる。
@@ -145,9 +145,9 @@ pub(crate) fn extract_recovery_spans(
     page: usize,
     characters: &PdfPageTextChars<'_>,
     tags: &crate::pdfium_font_tags::Tagged,
-    excluded: &[bool],
+    original: &[ParsedTextElement],
 ) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
-    extract_mode(budget, path, page, characters, tags, excluded, true)
+    extract_mode(budget, path, page, characters, tags, &[], Some(original))
 }
 
 /// 不可視・clip経路の文字単位抽出を保ち、通常の回復時だけ連続spanを保持する。
@@ -158,12 +158,13 @@ fn extract_mode(
     characters: &PdfPageTextChars<'_>,
     tags: &crate::pdfium_font_tags::Tagged,
     excluded: &[bool],
-    recover_spans: bool,
+    original: Option<&[ParsedTextElement]>,
 ) -> Result<(String, Vec<ParsedTextElement>), ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
     let mut preview = String::new();
     let mut elements: Vec<ParsedTextElement> = Vec::new();
     let mut previous_key = None;
+    let mut keys = Vec::new();
     let mut characters = characters.iter().peekable();
     while let Some(character) = characters.next() {
         if excluded.get(character.index()).copied().unwrap_or(false) || hidden(&character, tags) {
@@ -241,18 +242,21 @@ fn extract_mode(
             fill_color,
             text,
         };
-        let key = recover_spans
-            .then(|| recovery_spans::key(&character))
-            .flatten();
-        let joined = if let Some(previous) = elements.last_mut() {
-            recovery_spans::join(budget, previous, &element, previous_key, key)?
-        } else {
-            false
-        };
-        if !joined {
-            crate::metadata_workspace::push(budget, &mut elements, element)?;
+        if original.is_some() {
+            let key = recovery_spans::key(&character);
+            crate::metadata_workspace::push(
+                budget,
+                &mut keys,
+                (key, key.is_some() && key == previous_key),
+            )?;
+            previous_key = key;
         }
-        previous_key = key;
+        crate::metadata_workspace::push(budget, &mut elements, element)?;
     }
+    let elements = if let Some(original) = original {
+        recovery_spans::retain(budget, elements, &keys, original)?
+    } else {
+        elements
+    };
     Ok((preview, elements))
 }

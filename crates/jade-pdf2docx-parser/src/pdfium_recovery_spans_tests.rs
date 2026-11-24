@@ -29,21 +29,18 @@ fn element(text: &str, left: f32, right: f32) -> ParsedTextElement {
 
 /// 同じ文字列でもobject・paint・baseline・pageが異なれば結合しない。
 #[test]
-fn boundaries_and_overpaint_remain_distinct() {
+fn style_and_baseline_boundaries_remain_distinct() {
     let budget = DecodeBudget::new(&ParseLimits::default());
     let source = element("AA", 10., 22.);
     let adjacent = element("AA", 22., 34.);
-    let mut variants = vec![adjacent.clone(); 9];
+    let mut variants = vec![adjacent.clone(); 7];
     variants[0].page = 1;
     variants[1].baseline_y = Some(91.);
     variants[2].baseline_y = None;
     variants[3].font_name = Some("OtherFont".into());
     variants[4].fill_color = Some("FF0000".into());
     variants[5].font_size = 11.;
-    variants[6].bounds = source.bounds; // 実際の重ね描き。
-    variants[7].bounds.x0 = 50.;
-    variants[7].bounds.x1 = 62.; // 離れたcolumn。
-    variants[8].bounds.x0 = f32::NAN;
+    variants[6].bounds.x0 = f32::NAN;
     for next in variants {
         let mut previous = source.clone();
         assert!(
@@ -106,4 +103,43 @@ proptest::proptest! {
         proptest::prop_assert_eq!(output.bounds.x0, x);
         proptest::prop_assert_eq!(output.bounds.x1, x + count as f32 * w);
     }
+}
+
+/// 同じ字面が別位置にあるだけでは結合せず、全文・幾何が一致する元矩形だけを復元する。
+#[test]
+fn only_complete_original_rectangle_spans_are_retained() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let a = element("A", 10., 22.);
+    let b = element("B", 22., 34.);
+    let key = Some(Key {
+        geometry: [10., 90., 34., 102., 1., 0., 0., 1., 0., 0.],
+    });
+    let keys = [(key, false), (key, true)];
+    let original = element("AB", 10., 34.);
+    let output = retain(
+        &budget,
+        vec![a.clone(), b.clone()],
+        &keys,
+        &[original.clone()],
+    )
+    .unwrap();
+    assert_eq!(output.len(), 1);
+    assert_eq!(output[0].text, "AB");
+    assert_eq!(output[0].bounds.x1, 34.);
+    for source in [
+        element("ABC", 10., 34.),
+        element("AB", 50., 74.),
+        element("AA", 10., 34.),
+    ] {
+        let output = retain(&budget, vec![a.clone(), b.clone()], &keys, &[source]).unwrap();
+        assert_eq!(output.len(), 2);
+        assert_eq!(output[0].text, "A");
+        assert_eq!(output[1].text, "B");
+    }
+    let output = retain(&budget, vec![a.clone(), a], &keys, &[original]).unwrap();
+    assert_eq!(
+        output.len(),
+        2,
+        "Unverified overpaint must remain separate indexed glyphs"
+    );
 }
