@@ -39,6 +39,7 @@ mod image_anchor;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
+mod text_column_gutter;
 mod native_table_rows;
 mod native_table_text;
 mod ocr_reconcile;
@@ -1712,15 +1713,21 @@ fn text_lines_by_page_from_pdf_text_elements(
                     rows.push(vec![text]);
                 }
             }
+            for row in &mut rows {
+                *row = native_spacing::with_interior_spaces(
+                    &parsed.text_elements,
+                    std::mem::take(row),
+                );
+                row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+            }
+            let gutter = (!positioned_tables.iter().any(|table| table.page == page)
+                && !parsed.image_elements.iter().any(|image| image.page == page))
+            .then(|| text_column_gutter::infer(&rows, page_width))
+            .flatten();
             let lines = rows
-                .iter_mut()
+                .iter()
                 .flat_map(|row| {
-                    *row = native_spacing::with_interior_spaces(
-                        &parsed.text_elements,
-                        std::mem::take(row),
-                    );
-                    row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                    split_text_row_segments(row)
+                    split_text_row_segments(row, gutter)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
@@ -1806,7 +1813,10 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
 }
 
 /// 1 行分の text element を、段組などの大きな水平ギャップで分割する。
-fn split_text_row_segments<'a>(row: &[&'a ParsedTextElement]) -> Vec<TextRowSegment<'a>> {
+fn split_text_row_segments<'a>(
+    row: &[&'a ParsedTextElement],
+    gutter: Option<text_column_gutter::Gutter>,
+) -> Vec<TextRowSegment<'a>> {
     let Some(first) = row.first() else {
         return Vec::new();
     };
@@ -1820,14 +1830,16 @@ fn split_text_row_segments<'a>(row: &[&'a ParsedTextElement]) -> Vec<TextRowSegm
     let mut right = first.bounds.x1;
     for text in row.iter().copied().skip(1) {
         let gap = text.bounds.x0 - right;
-        if gap > split_gap {
+        if gap > split_gap
+            || gutter.is_some_and(|gutter| right < gutter.x && gutter.x < text.bounds.x0)
+        {
             segments.push(vec![text]);
         } else if let Some(segment) = segments.last_mut() {
             segment.push(text);
         }
         right = right.max(text.bounds.x1);
     }
-    let split_from_row = segments.len() > 1;
+    let split_from_row = segments.len() > 1 || gutter.is_some_and(|gutter| gutter.contains(first));
     segments
         .into_iter()
         .map(|texts| TextRowSegment {
