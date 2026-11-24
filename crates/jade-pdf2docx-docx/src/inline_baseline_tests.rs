@@ -89,8 +89,13 @@ fn distant_unknown_formula_glyph_does_not_flatten_verified_exponent() {
     unknown.text = "π".into();
     unknown.bounds.x0 = 5.;
     unknown.bounds.x1 = 11.;
+    unknown.bounds.y0 = 700.;
+    unknown.bounds.y1 = 710.;
     unknown.baseline_y = None;
     parsed.text_elements.push(unknown);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(pages[0].lines.len(), 2);
+    assert!(pages[0].lines[0].text.contains('π'));
     let (xml, _) = package_source(parsed);
     assert!(
         xml.contains("<w:position w:val=\"8\""),
@@ -108,8 +113,13 @@ fn adjacent_unknown_anchor_still_blocks_a_guessed_offset() {
     unknown.text = "π".into();
     unknown.bounds.x0 = 60.5;
     unknown.bounds.x1 = 61.5;
+    unknown.bounds.y0 = 700.;
+    unknown.bounds.y1 = 710.;
     unknown.baseline_y = None;
     parsed.text_elements.push(unknown);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(pages[0].lines.len(), 2);
+    assert!(pages[0].lines[0].text.contains('π'));
     let (xml, _) = package_source(parsed);
     assert!(!xml.contains("<w:position"));
     assert!(xml.contains("π"));
