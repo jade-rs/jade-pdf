@@ -81,6 +81,30 @@ fn unknown_or_ambiguous_baselines_keep_existing_run_formatting() {
     }
 }
 
+/// ファイルAPIの一時ZIPでも、privateなstyle名を公開せずbytesと同じ位置へ変換する。
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn file_output_compiles_the_same_source_offset_as_bytes() {
+    use std::io::Read;
+    let mut parsed = formula_source();
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &None, &[]).unwrap();
+    let file = package::pack_docx_to_file(docx, &[]).unwrap();
+    let mut archive = zip::ZipArchive::new(file).unwrap();
+    let mut xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert!(
+        !xml.contains("JadeBaseline_"),
+        "file output must compile baseline markers"
+    );
+    assert!(xml.contains("<w:position w:val=\"8\""));
+    let (bytes_xml, _) = package_source(formula_source());
+    assert_eq!(xml, bytes_xml);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 原点の平行移動や上下の符号によらず、文字順とfont sizeを保ち相対half-point位置を残す。
