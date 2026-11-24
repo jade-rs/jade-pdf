@@ -55,6 +55,22 @@ fn packaged(mut parsed: ParsedDocument, tables: &[PositionedTable]) -> String {
     document_xml(bytes)
 }
 
+/// 本番file/bytes経路が渡す推定表の互換要約も、他ページの段組を無効化しない。
+#[test]
+fn inferred_table_summary_preserves_other_pages_columns() {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    let table = positioned_table(0);
+    let summary = Some(table.table.clone());
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &summary, &[table]).unwrap();
+    let xml = document_xml(pack_docx_to_bytes(docx, &[]).unwrap());
+    let sections = sections(&xml);
+    assert_eq!(sections.len(), 2, "inferred table summary must preserve source sections");
+    assert_eq!((sections[0].columns, sections[0].tables), (1, 1));
+    assert_eq!((sections[1].columns, sections[1].tables), (2, 0));
+    assert!(sections[1].text.contains("PAGEB RIGHT 1"));
+}
+
 /// 梱包済みDOCXから、Wordが解釈する本文を読み出す。
 fn document_xml(bytes: Vec<u8>) -> String {
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
