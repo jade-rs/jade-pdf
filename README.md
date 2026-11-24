@@ -35,7 +35,7 @@ Native file conversion also accepts standard encrypted PDFs that open without a 
 
 Whole-page OCR preserves supplied line rectangles as page-anchored text frames and keeps the recognizer’s reading order. OCR does not recover the original fonts or page artwork.
 
-Repeated boundary text keeps its per-page header/footer style. A first-page title with a unique style stays in the editable body, even when later running headers use the same text. See [page chrome behavior and limits](docs/page_chrome.md).
+Repeated boundary text keeps its per-page header/footer style and source anchor across section margins. A first-page title with a unique style stays in the editable body, even when later running headers use the same text. See [page chrome behavior and limits](docs/page_chrome.md).
 
 Strict mode rejects detected quality loss instead of publishing the output. OCR is opt-in and requires the `ocr-onnx` feature, external model files, and `pdftoppm`; see the [OCR setup guide](docs/ocr_runtime.md).
 
