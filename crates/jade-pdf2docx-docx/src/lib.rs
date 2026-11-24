@@ -30,12 +30,12 @@ mod conversion_control;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
-#[cfg(test)]
-mod roman_fallback_tests;
-mod roman_fallback;
 mod glyph_metrics;
 mod layout_space;
 mod positioned_type1;
+mod roman_fallback;
+#[cfg(test)]
+mod roman_fallback_tests;
 
 mod html_table;
 mod image_anchor;
@@ -2140,17 +2140,23 @@ fn apply_pdf_font_name_to_run(
     });
     let normalized = font_name.to_ascii_lowercase();
     let infer = !(embedded && font_name.starts_with("JadeT1-"));
-    let compatible = (!embedded).then(|| roman_fallback::known(font_name)).flatten();
+    let compatible = (!embedded)
+        .then(|| roman_fallback::known(font_name))
+        .flatten();
     if face.map_or(
-        infer && (normalized.contains("bold") || normalized.contains("black")
-            || compatible.is_some_and(|font| font.bold)),
+        infer
+            && (normalized.contains("bold")
+                || normalized.contains("black")
+                || compatible.is_some_and(|font| font.bold)),
         |face| face.bold,
     ) {
         run = run.bold();
     }
     if face.map_or(
-        infer && (normalized.contains("italic") || normalized.contains("oblique")
-            || compatible.is_some_and(|font| font.italic)),
+        infer
+            && (normalized.contains("italic")
+                || normalized.contains("oblique")
+                || compatible.is_some_and(|font| font.italic)),
         |face| face.italic,
     ) {
         run = run.italic();

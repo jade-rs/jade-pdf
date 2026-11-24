@@ -14,10 +14,15 @@ pub(super) struct Font {
 /// 既知四faceの完全一致だけを対応させ、未確認の派生名や部分一致は推測しない。
 pub(super) fn known(name: &str) -> Option<Font> {
     let name = match name.split_once('+') {
-        Some((prefix, name)) if prefix.len() == 6 && prefix.bytes().all(|b| b.is_ascii_uppercase()) => name,
+        Some((prefix, name))
+            if prefix.len() == 6 && prefix.bytes().all(|b| b.is_ascii_uppercase()) =>
+        {
+            name
+        }
         Some(_) => return None,
         None => name,
-    }.trim();
+    }
+    .trim();
     let (bold, italic) = if name.eq_ignore_ascii_case("NimbusRomNo9L-Regu") {
         (false, false)
     } else if name.eq_ignore_ascii_case("NimbusRomNo9L-Medi") {
@@ -29,5 +34,9 @@ pub(super) fn known(name: &str) -> Option<Font> {
     } else {
         return None;
     };
-    Some(Font {family: "Times New Roman", bold, italic})
+    Some(Font {
+        family: "Times New Roman",
+        bold,
+        italic,
+    })
 }
