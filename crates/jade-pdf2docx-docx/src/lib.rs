@@ -40,6 +40,8 @@ mod positioned_type1;
 mod roman_fallback;
 #[cfg(test)]
 mod roman_fallback_tests;
+#[cfg(test)]
+mod source_typography_tests;
 
 mod html_table;
 mod image_anchor;
