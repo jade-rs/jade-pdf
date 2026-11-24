@@ -2,6 +2,10 @@
 use super::Font;
 use std::fmt::{self, Write};
 
+#[cfg(test)]
+#[path = "type1_outline_cff_real_tests.rs"]
+mod real_tests;
+
 /// 全glyphで共有するnominalWidthX=32768。他のPrivate項目は既定値を使う。
 pub(super) const PRIVATE: &[u8] = &[29, 0, 0, 128, 0, 21];
 
@@ -45,11 +49,9 @@ impl Dict {
         if !value.is_finite() {
             return None;
         }
-        let mut text = Text {
-            bytes: [0; 64],
-            len: 0,
-        };
+        let mut text = Text::new();
         write!(&mut text, "{value:e}").ok()?;
+        text.integer_significand()?;
         let mut nibbles = [15_u8; 66];
         let mut count = 0;
         let mut index = 0;
@@ -91,6 +93,40 @@ struct Text {
     /// 書込み済みの長さ。
     len: usize,
 }
+
+impl Text {
+    /// 数値の表示に必要な固定容量を、heap確保なしで用意する。
+    fn new() -> Self {
+        Self {
+            bytes: [0; 64],
+            len: 0,
+        }
+    }
+
+    /// 小数点を指数の補正へ移し、有効数字を減らさず整数仮数へ変換する。
+    fn integer_significand(&mut self) -> Option<()> {
+        let text = &self.bytes[..self.len];
+        let exponent = text.iter().position(|b| matches!(b, b'e' | b'E'))?;
+        let Some(point) = text[..exponent].iter().position(|&b| b == b'.') else {
+            return Some(());
+        };
+        let power = std::str::from_utf8(&text[exponent + 1..])
+            .ok()?
+            .parse::<i32>()
+            .ok()?
+            .checked_sub(i32::try_from(exponent - point - 1).ok()?)?;
+        let mut normalized = Self::new();
+        for &byte in &text[..exponent] {
+            if byte != b'.' {
+                normalized.write_char(char::from(byte)).ok()?;
+            }
+        }
+        write!(&mut normalized, "e{power}").ok()?;
+        *self = normalized;
+        Some(())
+    }
+}
+
 impl Write for Text {
     /// formatterから受け取る文字列も、容量確認後だけコピーする。
     fn write_str(&mut self, s: &str) -> fmt::Result {

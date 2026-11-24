@@ -1,5 +1,6 @@
 //! 対応する相手行がない本文でも、実段組を行単位で往復しない回帰。
-use super::*;
+use super::{package_source, source};
+use crate::ParsedDocument;
 use proptest::prelude::*;
 
 /// 上下二行だけ両段にあり、その間に片段だけの本文が続く所有入力。
