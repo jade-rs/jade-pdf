@@ -2724,8 +2724,9 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: derived
-                            .and_then(|_| page_matrix.and_then(type1_positions::baseline)),
+                        baseline_y: (font_size.is_finite() && font_size > 0.)
+                            .then(|| page_matrix.and_then(type1_positions::baseline))
+                            .flatten(),
                         page,
                         bounds,
                         font_size,
