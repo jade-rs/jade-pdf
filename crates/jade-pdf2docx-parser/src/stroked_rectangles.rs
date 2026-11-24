@@ -372,12 +372,18 @@ pub(super) fn append(
     };
     let objects = crate::object_index::build(budget, source)?;
     let mut resolver = ResourceResolver::new(&objects, budget);
-    let page_resources = budget.page_resources(source);
-    let resource = |page: usize| {
-        page_resources
-            .as_ref()
-            .and_then(|pages| pages.get(page).copied().flatten())
+    let page_resources = match budget.page_resources(source) {
+        Some(pages) => pages,
+        None => {
+            let dictionaries = budget.page_dictionaries(source);
+            let mut pages = budget.metadata_vector(dictionaries.len())?;
+            for page in dictionaries {
+                pages.push(resources::inherited(budget, &mut resolver, page)?);
+            }
+            pages
+        }
     };
+    let resource = |page: usize| page_resources.get(page).copied().flatten();
     scan(
         budget,
         page,

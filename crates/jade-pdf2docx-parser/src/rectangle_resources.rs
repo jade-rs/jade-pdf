@@ -99,3 +99,38 @@ pub(super) fn native_device<'a>(
         !entries.any(|(key, _)| crate::metadata_names::resource_name_order(key, name).is_eq())
     })
 }
+
+/// 互換入力でも最寄りの非null Resourcesを親から解決し、循環と世代違いを拒否する。
+pub(super) fn inherited<'a>(
+    budget: &DecodeBudget,
+    resolver: &mut ResourceResolver<'_, 'a>,
+    mut node: &'a [u8],
+) -> Option<Option<&'a [u8]>> {
+    let mut visited = crate::metadata_workspace::Set::default();
+    loop {
+        if budget.is_stopped() {
+            return None;
+        }
+        if let Some(raw) = metadata::value(node, b"Resources") {
+            let (resources, _) = resolver.resolve(raw)?;
+            if !crate::page_attributes::is_null(resources) {
+                return metadata::dictionary_entries_complete(resources).then_some(Some(resources));
+            }
+        }
+        let Some(parent) = metadata::value(node, b"Parent") else {
+            return Some(None);
+        };
+        if crate::page_attributes::is_null(parent) {
+            return Some(None);
+        }
+        let reference = metadata::reference_with_generation(parent)?;
+        if !visited.try_insert(budget, reference)? {
+            return None;
+        }
+        let (next, _) = resolver.resolve(parent)?;
+        if !metadata::dictionary_entries_complete(next) {
+            return None;
+        }
+        node = next;
+    }
+}
