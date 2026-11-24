@@ -1,6 +1,5 @@
 //! PDF下端原点の画像を、ページ上端原点のWord anchorへ変換する回帰。
 use super::*;
-use proptest::prelude::*;
 
 /// margin原点を混ぜず、各所属ページの高さから画像上端の位置を求める。
 #[test]
