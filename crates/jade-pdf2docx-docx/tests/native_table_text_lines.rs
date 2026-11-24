@@ -337,8 +337,13 @@ proptest! {
 
 /// 行boxが収まらない所有表で、同じ字形の上付き・下付き文字を別の原本位置に描く。
 fn overfull_script_source(rise: u32) -> Vec<u8> {
+    overfull_script_source_with_underline(rise, "")
+}
+
+/// 表gridの端点へ届かない独立した下線を、原本の本文へ追加できる。
+fn overfull_script_source_with_underline(rise: u32, underline: &str) -> Vec<u8> {
     owned_pdf_content(&format!(
-        "1 w 72 660 m 272 660 l S 72 700 m 272 700 l S 72 660 m 72 700 l S 172 660 m 172 700 l S 272 660 m 272 700 l S BT /F1 10 Tf 82 680 Td (Alpha) Tj ET BT /F1 5 Tf 110 {} Td (2) Tj ET BT /F1 14 Tf 92 674 Td (Beta) Tj ET BT /F1 10 Tf 82 665 Td (Gamma) Tj ET BT /F1 5 Tf 122 {} Td (2) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
+        "{underline} 1 w 72 660 m 272 660 l S 72 700 m 272 700 l S 72 660 m 72 700 l S 172 660 m 172 700 l S 272 660 m 272 700 l S BT /F1 10 Tf 82 680 Td (Alpha) Tj ET BT /F1 5 Tf 110 {} Td (2) Tj ET BT /F1 14 Tf 92 674 Td (Beta) Tj ET BT /F1 10 Tf 82 665 Td (Gamma) Tj ET BT /F1 5 Tf 122 {} Td (2) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
         680 + rise,
         665 - rise,
     ))
@@ -420,4 +425,18 @@ fn overfull_source_grid_border_does_not_become_run_underline() {
         !cell.contains("<w:u "),
         "verified source grid border must not become restored run underline: {cell}"
     );
+}
+
+/// 表罫線を除外しても、gridの端点へ届かない独立した本文下線は保持する。
+#[test]
+fn overfull_source_keeps_independent_text_underline() {
+    let cell = first_cell_from_source(&overfull_script_source_with_underline(
+        3,
+        "0.5 w 83 664 m 116 664 l S",
+    ));
+    assert!(
+        cell.contains("<w:u "),
+        "independent source underline must survive: {cell}"
+    );
+    assert_eq!(paragraphs(&cell)[0].0, "Alpha 2 Beta Gamma 2");
 }
