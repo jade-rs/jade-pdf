@@ -132,3 +132,5 @@ When the built-in program is unavailable, the existing ToUnicode map stays share
 The production DOCX WASM build helper bundles and verifies the Adobe Glyph List, fontTools, and [ReportLab notices](crates/jade-pdf2docx-parser/licenses/reportlab.txt). ReportLab contributes static PDF encoding glyph names and is not a runtime dependency. Distribute the complete generated directory; see the [WASM build guide](tools/wasm-docx-smoke/README.md). Native converter distributions must also include all three parser notices.
 
 Verified small-glyph baseline differences are retained as signed DOCX run positions without changing the source font size. Bounded row recovery uses each verified source column independently and keeps ambiguous or overlapping cases unchanged. This improves tested scientific exponents; it does not establish equation, table, pagination or Microsoft Word fidelity. See the [inline baseline guide](docs/inline_baselines.md).
+
+PDF由来の太字・通常体と表の先頭行の改ページについては、[書体と表の先頭行](docs/source_typography_and_table_opening.md)を参照してください。
