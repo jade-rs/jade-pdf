@@ -181,4 +181,43 @@ proptest! {
         prop_assert!(xml.contains("<w:sz w:val=\"14\""));
         prop_assert!(!xml.contains("JadeBaseline_"));
     }
+
+    /// 他の式の未知記号が増えても、平行移動した局所の数値と指数の位置は変わらない。
+    #[test]
+    fn nonlocal_unknown_symbols_preserve_translated_signed_offsets(
+        count in 1usize..20, x in 0i16..200, y in 100i16..700,
+        half_points in (-8i32..=8).prop_filter("nonzero", |value| *value != 0),
+    ) {
+        let mut parsed = formula_source();
+        let delta = half_points as f32 / 2. - 4.;
+        let script = &mut parsed.text_elements[1];
+        script.baseline_y = script.baseline_y.map(|base| base + delta);
+        script.bounds.y0 += delta;
+        script.bounds.y1 += delta;
+        for index in 0..count {
+            let mut unknown = parsed.text_elements[0].clone();
+            unknown.text = "π".into();
+            unknown.bounds.x0 = 1. + index as f32 * 1.5;
+            unknown.bounds.x1 = unknown.bounds.x0 + 1.;
+            unknown.bounds.y0 = 700.;
+            unknown.bounds.y1 = 710.;
+            unknown.baseline_y = None;
+            parsed.text_elements.push(unknown);
+        }
+        for text in &mut parsed.text_elements {
+            let dx = f32::from(x);
+            let dy = f32::from(y) - 700.;
+            text.bounds.x0 += dx;
+            text.bounds.x1 += dx;
+            text.bounds.y0 += dy;
+            text.bounds.y1 += dy;
+            text.baseline_y = text.baseline_y.map(|base| base + dy);
+        }
+        let (xml, _) = package_source(parsed);
+        let expected = format!("<w:position w:val=\"{half_points}\"");
+        prop_assert!(xml.contains(&expected));
+        prop_assert_eq!(xml.matches('π').count(), count);
+        prop_assert!(xml.contains("<w:sz w:val=\"14\""));
+        prop_assert!(!xml.contains("JadeBaseline_"));
+    }
 }
