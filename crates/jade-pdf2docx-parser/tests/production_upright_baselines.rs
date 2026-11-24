@@ -18,7 +18,7 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
         fixture::stream(if in_form { "/Fm Do" } else { content }),
         font,
         "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /OwnedCID /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 600 >>".into(),
-        fixture::stream("4 beginbfchar <0041> <0041> <0032> <0032> <0042> <0042> <0043> <0043> endbfchar"),
+        fixture::stream("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n4 beginbfchar\n<0041> <0041>\n<0032> <0032>\n<0042> <0042>\n<0043> <0043>\nendbfchar"),
         format!("<< /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Matrix [2 0 0 3 7 11] /Resources << /Font << /F 5 0 R >> >> /Length {} >>\nstream\n{content}\nendstream",content.len()),
     ];
     parse_pdf_bytes("owned-upright-baseline.pdf", &fixture::pdf(&objects)).unwrap()
