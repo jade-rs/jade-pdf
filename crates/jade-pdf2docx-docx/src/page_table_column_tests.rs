@@ -48,6 +48,11 @@ fn table_and_columns(table_page: usize) -> String {
 fn packaged(mut parsed: ParsedDocument, tables: &[PositionedTable]) -> String {
     let docx = build_structured_docx_from_owned_images(&mut parsed, &None, tables).unwrap();
     let bytes = pack_docx_to_bytes(docx, &[]).unwrap();
+    document_xml(bytes)
+}
+
+/// 梱包済みDOCXから、Wordが解釈する本文を読み出す。
+fn document_xml(bytes: Vec<u8>) -> String {
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
     archive
@@ -230,4 +235,53 @@ fn floating_image_only_page_keeps_source_size_and_later_columns() {
     );
     assert_eq!((sections[0].columns, sections[0].drawings), (1, 1));
     assert_eq!((sections[1].columns, sections[1].drawings), (2, 0));
+}
+
+/// 全ページに同じ上下見出しを持ち、最初だけ本文が空の原本を作る。
+fn header_only_first_page() -> ParsedDocument {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    let template = parsed.text_elements[0].clone();
+    for page in 0..2 {
+        for (text, top) in [("RUNNING HEADER", 752.), ("RUNNING FOOTER", 40.)] {
+            let mut line = template.clone();
+            line.page = page;
+            line.text = text.into();
+            line.font_size = 9.;
+            line.bounds = ParsedBounds {
+                x0: 190.,
+                x1: 350.,
+                y0: top - 9.,
+                y1: top,
+            };
+            line.baseline_y = Some(top - 9.);
+            parsed.text_elements.push(line);
+        }
+    }
+    parsed
+}
+
+/// 見出し移動後に本文が空でも、source pageとそのpart参照を捨てない。
+#[test]
+fn header_only_page_keeps_source_boundary_before_later_columns() {
+    let mut parsed = header_only_first_page();
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &None, &[]).unwrap();
+    let bytes = pack_docx_to_bytes(docx, &[]);
+    assert!(
+        bytes.is_ok(),
+        "header-only page must preserve source section and parts: {:?}",
+        bytes.as_ref().err()
+    );
+    let xml = document_xml(bytes.unwrap());
+    let sections = sections(&xml);
+    assert_eq!(
+        sections.len(),
+        2,
+        "header-only page must preserve source section and parts"
+    );
+    assert_eq!((sections[0].width, sections[0].height), (12240, 15840));
+    assert!(sections[0].text.is_empty());
+    assert_eq!((sections[0].columns, sections[1].columns), (1, 2));
+    assert!(sections[1].text.contains("PAGEB RIGHT 1"));
+    assert!(!xml.contains("RUNNING HEADER") && !xml.contains("RUNNING FOOTER"));
 }
