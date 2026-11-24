@@ -81,6 +81,45 @@ fn assert_rectangular_continuations(model: &DocxTableModel, cols: usize) {
     }
 }
 
+/// 結合矩形の外周だけを展開し、元の全小区間の罫線を欠落・追加なしで照合する。
+fn assert_original_edges(model: &DocxTableModel, vertical: &[Vec<bool>], horizontal: &[Vec<bool>]) {
+    let rows = vertical.len();
+    let cols = horizontal[0].len();
+    let mut v = vec![vec![false; cols + 1]; rows];
+    let mut h = vec![vec![false; cols]; rows + 1];
+    for (ri, row) in model.rows.iter().enumerate() {
+        let mut col = 0;
+        for cell in row {
+            let span = cell.grid_span;
+            if cell.vertical_merge != Some(DocxVerticalMerge::Continue) {
+                let height = if cell.vertical_merge == Some(DocxVerticalMerge::Restart) {
+                    vertical_merge_row_span(model, ri, col, rows)
+                } else {
+                    1
+                };
+                let b = cell.borders.unwrap();
+                for c in col..col + span {
+                    h[ri][c] |= b.top;
+                    h[ri + height][c] |= b.bottom;
+                }
+                for r in ri..ri + height {
+                    v[r][col] |= b.left;
+                    v[r][col + span] |= b.right;
+                }
+            }
+            col += span;
+        }
+    }
+    assert_eq!(
+        h, horizontal,
+        "model must preserve each original atomic border"
+    );
+    assert_eq!(
+        v, vertical,
+        "model must preserve each original atomic border"
+    );
+}
+
 /// T字の接合で上の横結合と下の縦結合を重ねず、欠けた辺を追加しない。
 #[test]
 fn t_junction_does_not_create_an_orphan_vertical_continuation() {
@@ -139,6 +178,8 @@ proptest! {
         let cells=(0..3).map(|r|(0..3).map(|c|if bits&(1<<(12+r*3+c))==0 {String::new()}else{format!("R{r}C{c}")}).collect::<Vec<_>>()).collect::<Vec<_>>();
         if let Some(model)=docx_table_model_from_grid(&g,&xs,&ys,&cells,&vec![vec![false;3];3]) {
             assert_rectangular_continuations(&model,3);
+            assert_original_edges(&model,&vertical,&horizontal);
+            prop_assert!(model_preserves_grid_cell_texts(&model,&cells));
             let expected=cells.iter().flatten().filter(|s|!s.is_empty()).cloned().collect::<BTreeSet<_>>();
             let actual=model.rows.iter().flatten().flat_map(|c|c.text.split_whitespace()).map(str::to_owned).collect::<Vec<_>>();
             prop_assert_eq!(actual.len(),expected.len());prop_assert_eq!(actual.into_iter().collect::<BTreeSet<_>>(),expected);
