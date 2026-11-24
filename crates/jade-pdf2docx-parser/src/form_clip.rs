@@ -6,12 +6,24 @@ use std::borrow::Cow;
 pub(crate) type Point = [f64; 2];
 
 /// 呼び出し時に固定する可視領域。None は互換入力の未指定領域。
+#[derive(Debug)]
 pub(crate) struct Clip {
     /// 反時計回りの頂点。空配列は不可視領域を表す。
     polygon: Option<Vec<Point>>,
 }
 
 impl Clip {
+    /// ページ空間の画素中心を凸clipの各半平面で判定する。
+    pub(crate) fn contains_point(&self, point: Point) -> bool {
+        self.polygon.as_ref().is_none_or(|polygon| {
+            !polygon.is_empty()
+                && polygon
+                    .iter()
+                    .zip(polygon.iter().cycle().skip(1))
+                    .all(|(a, b)| side(*a, *b, point) >= 0.)
+        })
+    }
+
     /// 変換後の矩形の全頂点がclip内にあり、glyph分割を省略できるかを返す。
     pub(crate) fn contains_rect(&self, rect: [f32; 4], matrix: [f32; 6]) -> bool {
         let Some(polygon) = &self.polygon else {

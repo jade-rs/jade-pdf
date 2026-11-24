@@ -140,7 +140,7 @@ mod image_sample_decode_tests;
 mod image_smask_tests;
 
 #[path = "image_draws.rs"]
-mod image_draws;
+pub(crate) mod image_draws;
 #[path = "image_pixels.rs"]
 mod image_pixels;
 #[path = "image_png.rs"]
@@ -1083,7 +1083,49 @@ fn extract_image_elements_from_pdf_bytes(
     streams: &[crate::structure::StreamSpan<'_>],
     quality: &mut QualityReport,
 ) -> Vec<ParsedImageElement> {
-    let placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
+    let mut placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
+    if streams.iter().any(|stream| {
+        crate::metadata::value(stream.dictionary, b"Subtype")
+            .is_some_and(|v| crate::metadata::is_name(v, b"Form"))
+    }) {
+        crate::form_content::visit_images(
+            decode_budget,
+            bytes,
+            quality,
+            |page, object_number, matrix, paint, clip| {
+                if !matrix.iter().all(|v| v.is_finite()) {
+                    return Some(());
+                }
+                let Some(bounds) = clip.transformed_bounds(decode_budget, [0., 0., 1., 1.], matrix)
+                else {
+                    return (!decode_budget.is_stopped()).then_some(());
+                };
+                let clipped = !clip.contains_rect([0., 0., 1., 1.], matrix);
+                let clip = if clipped {
+                    Some(clip.intersection(decode_budget, clip)?)
+                } else {
+                    None
+                };
+                crate::metadata_workspace::try_push(
+                    decode_budget,
+                    &mut placements,
+                    ImagePlacement {
+                        object_number,
+                        page,
+                        bounds,
+                        floating: clipped || matrix_has_rotation_or_skew(matrix),
+                        rotation_degrees: rotation_degrees_from_matrix(matrix),
+                        matrix,
+                        paint,
+                        clip,
+                    },
+                )
+            },
+        );
+        if decode_budget.is_stopped() {
+            return Vec::new();
+        }
+    }
     let mut placed_object_numbers = crate::metadata_workspace::Set::default();
     for placement in &placements {
         if placed_object_numbers
@@ -1209,6 +1251,7 @@ fn extract_image_elements_from_pdf_bytes(
         if matching_placements.peek().is_none() {
             if placements.is_empty() {
                 let placement = ImagePlacement {
+                    clip: None,
                     object_number: stream.object_number.unwrap_or(0),
                     page: 0,
                     bounds: ParsedBounds {
@@ -1294,9 +1337,9 @@ fn is_extracted_image_stream(
             || stream
                 .object_number
                 .is_some_and(|number| placed_object_numbers.contains(&number)))
-        && !stream
-            .object_number
-            .is_some_and(|number| unpainted_object_numbers.contains(&number))
+        && !stream.object_number.is_some_and(|number| {
+            unpainted_object_numbers.contains(&number) && !placed_object_numbers.contains(&number)
+        })
 }
 
 /// PDF 内の Image XObject stream 数が閾値を超えるか判定する。
@@ -1396,7 +1439,15 @@ impl ImageStreamEntry {
             paint,
             matrix,
             ..
-        } = *placement;
+        } = placement;
+        let (page, bounds, floating, rotation_degrees, paint, matrix) = (
+            *page,
+            *bounds,
+            *floating,
+            *rotation_degrees,
+            *paint,
+            *matrix,
+        );
         let matrix = Some(matrix);
         if decode_budget.is_stopped() {
             return None;
@@ -1423,19 +1474,31 @@ impl ImageStreamEntry {
             self.png_bytes.as_slice()
         };
         let has_shear = matrix.is_some_and(matrix_has_shear);
-        let png_bytes = matrix
-            .filter(|matrix| matrix_has_shear(*matrix))
-            .and_then(|matrix| {
-                warp_png_to_ctm_bounds(
-                    decode_budget,
-                    source,
-                    matrix,
-                    bounds,
-                    display_width,
-                    display_height,
-                )
-            })
-            .or_else(|| image_png::copy(decode_budget, source))?;
+        let png_bytes = if let Some(clip) = &placement.clip {
+            warp_png_to_clipped_bounds(
+                decode_budget,
+                source,
+                matrix?,
+                bounds,
+                display_width,
+                display_height,
+                Some(clip),
+            )?
+        } else {
+            matrix
+                .filter(|matrix| matrix_has_shear(*matrix))
+                .and_then(|matrix| {
+                    warp_png_to_ctm_bounds(
+                        decode_budget,
+                        source,
+                        matrix,
+                        bounds,
+                        display_width,
+                        display_height,
+                    )
+                })
+                .or_else(|| image_png::copy(decode_budget, source))?
+        };
         Some(ParsedImageElement {
             page,
             bounds,
@@ -1443,7 +1506,11 @@ impl ImageStreamEntry {
             width_px: display_width,
             height_px: display_height,
             floating,
-            rotation_degrees: if has_shear { 0 } else { rotation_degrees },
+            rotation_degrees: if has_shear || placement.clip.is_some() {
+                0
+            } else {
+                rotation_degrees
+            },
         })
     }
 }
@@ -1542,6 +1609,27 @@ fn warp_png_to_ctm_bounds(
     dst_width: u32,
     dst_height: u32,
 ) -> Option<Vec<u8>> {
+    warp_png_to_clipped_bounds(
+        decode_budget,
+        png,
+        matrix,
+        bounds,
+        dst_width,
+        dst_height,
+        None,
+    )
+}
+
+/// 変換画像の各画素へForm BBoxと通常clipを適用し、外側は透明のまま残す。
+fn warp_png_to_clipped_bounds(
+    decode_budget: &DecodeBudget,
+    png: &[u8],
+    matrix: [f32; 6],
+    bounds: ParsedBounds,
+    dst_width: u32,
+    dst_height: u32,
+    clip: Option<&crate::form_clip::Clip>,
+) -> Option<Vec<u8>> {
     decode_budget.check_image_pixels(dst_width, dst_height)?;
     let source = decode_filter0_png_to_rgba(decode_budget, png)?;
     let [a, b, c, d, e, f] = matrix;
@@ -1558,6 +1646,9 @@ fn warp_png_to_ctm_bounds(
         let pdf_y = bounds.y1 - ((y as f32 + 0.5) / dst_height as f32) * bounds_height;
         for x in 0..dst_width {
             let pdf_x = bounds.x0 + ((x as f32 + 0.5) / dst_width as f32) * bounds_width;
+            if clip.is_some_and(|clip| !clip.contains_point([pdf_x as f64, pdf_y as f64])) {
+                continue;
+            }
             let rel_x = pdf_x - e;
             let rel_y = pdf_y - f;
             let u = (d * rel_x - c * rel_y) / determinant;
@@ -1581,8 +1672,10 @@ fn warp_png_to_ctm_bounds(
 }
 
 /// content stream 内の Image XObject 配置。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 struct ImagePlacement {
+    /// 部分的に可視なForm画像だけに保存するページ空間の切り抜き。
+    clip: Option<crate::form_clip::Clip>,
     /// Do時の非stroke色と透明度。
     paint: image_draws::ImagePaint,
     /// 対象ページ番号。
@@ -1631,6 +1724,7 @@ fn extract_image_placements_from_pdf_bytes(
                 decode_budget,
                 &mut placements,
                 ImagePlacement {
+                    clip: None,
                     paint,
                     page,
                     object_number: *object_number,

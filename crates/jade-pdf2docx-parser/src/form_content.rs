@@ -20,6 +20,8 @@ const IDENTITY: [f32; 6] = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0];
 
 /// q/Qで退避する行列・選択Font・文字状態。
 struct Saved<'a> {
+    /// Form画像へ継承する非stroke描画状態。
+    paint: parser::image_draws::paint::Paint,
     /// 呼び出し元の座標変換。
     matrix: [f32; 6],
     /// 未対応Fontの診断用選択。
@@ -32,6 +34,8 @@ struct Saved<'a> {
 
 /// 一つのページまたは Form の非再帰走査状態。
 struct Frame<'a> {
+    /// Form画像の色・透明度を呼び出しごとに保持する。
+    paint: parser::image_draws::paint::Paint,
     /// Form の有効 object 番号。ページ本文には番号を持たせない。
     number: Option<u32>,
     /// decode 済み本文を描画間で共有する。
@@ -78,6 +82,7 @@ impl<'a> Frame<'a> {
     ) -> Self {
         let clips = crate::content_clip::scan(budget, &content, matrix);
         Self {
+            paint: Default::default(),
             number,
             end: safe_prefix(&content).len(),
             content,
@@ -121,7 +126,38 @@ pub(crate) fn visit(
     budget: &DecodeBudget,
     bytes: &[u8],
     report: &mut QualityReport,
+    visitor: impl FnMut(usize, &[u8], &[u8], [f32; 6], &Clip, crate::form_text_state::Inherited<'_>),
+) {
+    visit_inner(budget, bytes, report, visitor, None);
+}
+
+/// Form内で実行された画像だけを、局所参照・継承状態・最終clip付きで通知する。
+pub(crate) fn visit_images(
+    budget: &DecodeBudget,
+    bytes: &[u8],
+    report: &mut QualityReport,
+    mut images: impl FnMut(usize, u32, [f32; 6], parser::image_draws::ImagePaint, &Clip) -> Option<()>,
+) {
+    visit_inner(
+        budget,
+        bytes,
+        report,
+        |_, _, _, _, _, _| {},
+        Some(&mut images),
+    );
+}
+
+/// 画像通知の借用期間を探索中だけに制限する。
+type Images<'a> =
+    dyn FnMut(usize, u32, [f32; 6], parser::image_draws::ImagePaint, &Clip) -> Option<()> + 'a;
+
+/// 共通の有限探索を使い、画像探索では文字診断を重複計上しない。
+fn visit_inner(
+    budget: &DecodeBudget,
+    bytes: &[u8],
+    report: &mut QualityReport,
     mut visitor: impl FnMut(usize, &[u8], &[u8], [f32; 6], &Clip, crate::form_text_state::Inherited<'_>),
+    mut images: Option<&mut Images<'_>>,
 ) {
     let source = parser::parser_source_with_compressed_objects(budget, bytes);
     let Some(objects) = crate::object_index::build(budget, &source) else {
@@ -186,30 +222,35 @@ pub(crate) fn visit(
                 stack.pop();
                 continue;
             };
-            if let Some(selection) = frame.fonts.observe(
-                budget,
-                bytes,
-                &offsets,
-                token,
-                content,
-                span.clone(),
-                frame.resources,
-                &mut resolver,
-            ) && frame.text.rendering.uses_glyph_shape_for(
-                selection.reason == crate::UnsupportedFontReason::Type3,
-                budget.is_pdf20(),
-            ) && seen_fonts.record(budget, report, page, selection).is_none()
+            if images.is_none()
+                && let Some(selection) = frame.fonts.observe(
+                    budget,
+                    bytes,
+                    &offsets,
+                    token,
+                    content,
+                    span.clone(),
+                    frame.resources,
+                    &mut resolver,
+                )
+                && frame.text.rendering.uses_glyph_shape_for(
+                    selection.reason == crate::UnsupportedFontReason::Type3,
+                    budget.is_pdf20(),
+                )
+                && seen_fonts.record(budget, report, page, selection).is_none()
             {
                 return;
             }
-            if frame.text_operands.observe(
-                budget,
-                &mut frame.text,
-                token,
-                span.clone(),
-                content,
-                |name| crate::text_alpha::resolve(frame.resources, name, &mut resolver),
-            ) {
+            if images.is_none()
+                && frame.text_operands.observe(
+                    budget,
+                    &mut frame.text,
+                    token,
+                    span.clone(),
+                    content,
+                    |name| crate::text_alpha::resolve(frame.resources, name, &mut resolver),
+                )
+            {
                 frame.font_resources = frame.resources;
             }
             match token {
@@ -251,6 +292,30 @@ pub(crate) fn visit(
                     let Some((dictionary, Some(number))) = resolver.resolve(value) else {
                         continue;
                     };
+                    if let Some(draw) = images.as_mut()
+                        && frame.number.is_some()
+                        && metadata::value(dictionary, b"Subtype")
+                            .and_then(|v| resolver.resolve(v))
+                            .is_some_and(|(v, _)| metadata::is_name(v, b"Image"))
+                    {
+                        let combined = match frame.clips.get(span.start) {
+                            Some(path) => frame.clip.intersection(budget, path),
+                            None => None,
+                        };
+                        if budget.is_stopped()
+                            || draw(
+                                page,
+                                number,
+                                frame.matrix,
+                                frame.paint.snapshot(),
+                                combined.as_ref().unwrap_or(&frame.clip),
+                            )
+                            .is_none()
+                        {
+                            return;
+                        }
+                        continue;
+                    }
                     if !metadata::value(dictionary, b"Subtype")
                         .and_then(|v| resolver.resolve(v))
                         .is_some_and(|(v, _)| metadata::is_name(v, b"Form"))
@@ -277,6 +342,7 @@ pub(crate) fn visit(
                         continue;
                     };
                     let parent = stack.last().unwrap();
+                    let paint = parent.paint;
                     let combined = match parent.clips.get(span.start) {
                         Some(path) => parent.clip.intersection(budget, path),
                         None => None,
@@ -320,6 +386,7 @@ pub(crate) fn visit(
                     }
                     let mut child =
                         Frame::new(budget, Some(number), content, local_resources, matrix, clip);
+                    child.paint = paint;
                     child.fonts = State::inherited(selected);
                     let Some(text) = stack.last().unwrap().text.saved(budget) else {
                         return;
@@ -350,6 +417,22 @@ pub(crate) fn visit(
                     {
                         frame.operands.push(value);
                     } else {
+                        if images.is_some() {
+                            let name = frame.name.as_ref().map(|range| &content[range.clone()]);
+                            if word == b"gs" {
+                                let parameters = name.and_then(|name| {
+                                    parser::image_draws::resources::resolve_state(
+                                        budget,
+                                        &mut resolver,
+                                        Some(frame.resources),
+                                        name,
+                                    )
+                                });
+                                frame.paint.apply_state(parameters);
+                            } else {
+                                frame.paint.apply(word, frame.operands.as_slice(), name);
+                            }
+                        }
                         match word {
                             b"q" => {
                                 if budget
@@ -365,6 +448,7 @@ pub(crate) fn visit(
                                     budget,
                                     &mut frame.saved,
                                     Saved {
+                                        paint: frame.paint,
                                         matrix: frame.matrix,
                                         selected: frame.fonts.selected,
                                         text,
@@ -378,6 +462,7 @@ pub(crate) fn visit(
                             }
                             b"Q" => {
                                 if let Some(saved) = frame.saved.pop() {
+                                    frame.paint = saved.paint;
                                     frame.matrix = saved.matrix;
                                     frame.fonts.selected = saved.selected;
                                     frame.text = saved.text;

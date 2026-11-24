@@ -51,7 +51,7 @@ pub(crate) fn visit(
 }
 
 /// ページ内の名前だけを照合し、未解決・欠落・停止をno-opと見なさない。
-fn resolve_state<'a>(
+pub(crate) fn resolve_state<'a>(
     budget: &DecodeBudget,
     resolver: &mut ResourceResolver<'_, 'a>,
     resources: Option<&'a [u8]>,

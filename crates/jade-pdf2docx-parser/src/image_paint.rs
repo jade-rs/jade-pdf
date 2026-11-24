@@ -2,7 +2,7 @@
 
 /// 非stroke色の現在値と、scに必要なDevice色空間。
 #[derive(Clone, Copy)]
-pub(super) struct Paint {
+pub(crate) struct Paint {
     /// 対応色空間の成分数。未対応色空間ではNone。
     components: Option<usize>,
     /// 色成分をRGB8へ写した塗り色。
@@ -12,7 +12,7 @@ pub(super) struct Paint {
 }
 
 /// 対応済みExtGStateによる差分。省略されたalphaは現在値を保持する。
-pub(super) struct Parameters {
+pub(crate) struct Parameters {
     /// 明示された非stroke alpha。Noneは既存値の保持。
     pub(super) opacity: Option<f64>,
 }
@@ -30,7 +30,7 @@ impl Default for Paint {
 
 impl Paint {
     /// 色と透明状態を分離し、通常画像へ未対応色を伝播しない。
-    pub(super) fn snapshot(&self) -> super::ImagePaint {
+    pub(crate) fn snapshot(&self) -> super::ImagePaint {
         super::ImagePaint {
             color: self.rgb,
             opacity: self.opacity,
@@ -38,7 +38,7 @@ impl Paint {
     }
 
     /// 色operatorだけを解釈し、stroke色や本文operatorでは状態を変えない。
-    pub(super) fn apply(&mut self, word: &[u8], values: &[f32], name: Option<&[u8]>) {
+    pub(crate) fn apply(&mut self, word: &[u8], values: &[f32], name: Option<&[u8]>) {
         match word {
             b"g" => {
                 self.components = Some(1);
@@ -82,7 +82,7 @@ impl Paint {
     }
 
     /// alphaは置換し、省略時は保持する。未知状態はq/Qで戻るまで保持する。
-    pub(super) fn apply_state(&mut self, parameters: Option<Parameters>) {
+    pub(crate) fn apply_state(&mut self, parameters: Option<Parameters>) {
         match parameters {
             Some(parameters) if self.opacity.is_some() => {
                 if let Some(opacity) = parameters.opacity {
