@@ -90,3 +90,36 @@ fn first_title_and_later_running_headers_keep_their_page_and_style() {
             .all(|section| section.contains("w:headerReference"))
     );
 }
+
+/// 本文が二段組でも初ページの題名を後続ページのheaderから切り離す。
+#[test]
+fn column_sections_do_not_inherit_later_pages_running_header_on_first_page() {
+    let mut parsed = title_and_running_headers();
+    let right: Vec<_> = parsed
+        .text_elements
+        .iter()
+        .filter(|line| line.text.starts_with("PAGE"))
+        .cloned()
+        .map(|mut line| {
+            line.text = line.text.replace("LEFT", "RIGHT");
+            line.bounds.x0 += 282.;
+            line.bounds.x1 += 282.;
+            line
+        })
+        .collect();
+    parsed.text_elements.extend(right);
+    let parts = parts(parsed);
+    let body = &parts["word/document.xml"];
+    assert!(body.contains("w:num=\"2\""), "source columns must survive");
+    let first = body
+        .split("<w:sectPr")
+        .nth(1)
+        .unwrap()
+        .split("</w:sectPr>")
+        .next()
+        .unwrap();
+    assert!(
+        !first.contains("w:headerReference"),
+        "first-page column sections must not inherit a later running header"
+    );
+}
