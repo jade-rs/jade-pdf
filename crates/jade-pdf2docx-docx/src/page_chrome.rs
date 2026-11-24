@@ -45,7 +45,7 @@ fn output_key(chrome: &RepeatedPageChrome) -> Vec<Option<(Vec<u8>, i32)>> {
         .map(|line| {
             line.as_ref().map(|line| {
                 (
-                    paragraph_from_repeated_page_chrome_line(line).build(),
+                    paragraph_from_repeated_page_chrome_line(line, None).build(),
                     line.edge_distance_twips,
                 )
             })
@@ -132,6 +132,7 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
                 line: line.clone(),
                 edge_distance_twips,
                 right_indent_twips,
+                page_width_twips: parsed_page_size_twips(parsed_page).map(|size| size.0),
             };
             let target = plan.pages.get_mut(&page.page).expect("source page exists");
             if header {
