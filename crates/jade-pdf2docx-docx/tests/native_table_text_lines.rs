@@ -411,3 +411,13 @@ proptest! {
         prop_assert_eq!(script_run_positions(&cell), expected);
     }
 }
+
+/// 原本の表下辺は文字の下線ではなく、旧配置の書式復元でも下線を新設しない。
+#[test]
+fn overfull_source_grid_border_does_not_become_run_underline() {
+    let cell = first_cell_from_source(&overfull_script_source(3));
+    assert!(
+        !cell.contains("<w:u "),
+        "verified source grid border must not become restored run underline: {cell}"
+    );
+}
