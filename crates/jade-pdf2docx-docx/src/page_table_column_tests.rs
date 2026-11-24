@@ -65,7 +65,11 @@ fn inferred_table_summary_preserves_other_pages_columns() {
     let docx = build_structured_docx_from_owned_images(&mut parsed, &summary, &[table]).unwrap();
     let xml = document_xml(pack_docx_to_bytes(docx, &[]).unwrap());
     let sections = sections(&xml);
-    assert_eq!(sections.len(), 2, "inferred table summary must preserve source sections");
+    assert_eq!(
+        sections.len(),
+        2,
+        "inferred table summary must preserve source sections"
+    );
     assert_eq!((sections[0].columns, sections[0].tables), (1, 1));
     assert_eq!((sections[1].columns, sections[1].tables), (2, 0));
     assert!(sections[1].text.contains("PAGEB RIGHT 1"));
@@ -199,7 +203,9 @@ fn header_only_page_keeps_source_boundary_before_later_columns() {
         "header-only page must preserve source section and parts: {:?}",
         bytes.as_ref().err()
     );
-    let xml = document_xml(bytes.unwrap());
+    let bytes = bytes.unwrap();
+    evidence::assert_chrome_relationships(&bytes);
+    let xml = document_xml(bytes);
     let sections = sections(&xml);
     assert_eq!(
         sections.len(),

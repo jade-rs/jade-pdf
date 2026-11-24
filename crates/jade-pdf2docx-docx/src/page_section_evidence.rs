@@ -1,4 +1,90 @@
 //! 実際のWord本文XMLから、境界段落自身を含むsection所属を独立して読む。
+use std::{
+    collections::BTreeMap,
+    io::{Cursor, Read},
+};
+
+/// XML要素の属性を辞書化し、属性順に依存しない参照検証に使う。
+fn attributes(element: &quick_xml::events::BytesStart<'_>) -> BTreeMap<String, String> {
+    element
+        .attributes()
+        .map(Result::unwrap)
+        .map(|a| {
+            (
+                String::from_utf8(a.key.as_ref().to_vec()).unwrap(),
+                String::from_utf8(a.value.to_vec()).unwrap(),
+            )
+        })
+        .collect()
+}
+
+/// 実際のZIP内で、各sectionの上下見出し参照が正しい型のpartへ解決することを確認する。
+pub(super) fn assert_chrome_relationships(bytes: &[u8]) {
+    use quick_xml::events::Event;
+    let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let names: Vec<_> = archive.file_names().map(str::to_owned).collect();
+    let parts: BTreeMap<_, _> = names
+        .into_iter()
+        .filter(|name| name.ends_with(".xml") || name.ends_with(".rels"))
+        .map(|name| {
+            let mut xml = String::new();
+            archive
+                .by_name(&name)
+                .unwrap()
+                .read_to_string(&mut xml)
+                .unwrap();
+            (name, xml)
+        })
+        .collect();
+    let mut relationships = BTreeMap::new();
+    let mut reader = quick_xml::Reader::from_str(&parts["word/_rels/document.xml.rels"]);
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(e) if e.local_name().as_ref() == b"Relationship" => {
+                let a = attributes(&e);
+                relationships.insert(a["Id"].clone(), (a["Target"].clone(), a["Type"].clone()));
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    let mut references = 0;
+    let mut reader = quick_xml::Reader::from_str(&parts["word/document.xml"]);
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(e)
+                if matches!(
+                    e.local_name().as_ref(),
+                    b"headerReference" | b"footerReference"
+                ) =>
+            {
+                let a = attributes(&e);
+                let (target, kind) = &relationships[&a["r:id"]];
+                let edge = if e.local_name().as_ref() == b"headerReference" {
+                    "header"
+                } else {
+                    "footer"
+                };
+                assert!(kind.ends_with(&format!("/{edge}")));
+                let part = &parts[&format!("word/{target}")];
+                assert!(part.contains(if edge == "header" {
+                    "RUNNING HEADER"
+                } else {
+                    "RUNNING FOOTER"
+                }));
+                assert!(parts["[Content_Types].xml"].contains(&format!("/word/{target}")));
+                references += 1;
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    assert_eq!(
+        references, 4,
+        "both source sections need their header and footer relationships"
+    );
+}
+
 /// 原本ページに対応するsectionの内容と段数。
 #[derive(Debug)]
 pub(super) struct Evidence {
