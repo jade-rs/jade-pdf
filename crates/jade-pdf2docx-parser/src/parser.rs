@@ -91,6 +91,10 @@ mod image_draw_budget_tests;
 #[path = "image_storage_budget_tests.rs"]
 mod image_storage_budget_tests;
 
+#[cfg(test)]
+#[path = "form_image_tests.rs"]
+mod form_image_tests;
+
 #[path = "image_ccitt.rs"]
 mod image_ccitt;
 #[cfg(test)]
