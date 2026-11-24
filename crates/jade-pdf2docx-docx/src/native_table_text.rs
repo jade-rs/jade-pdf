@@ -58,8 +58,8 @@ fn cells_impl(
     } else {
         parsed.graphics.as_slice()
     };
-    // 新しく復元する旧配置runでは、確認済みgridと同じ端点・高さの線を文字下線にしない。
-    let fallback_graphics = styling_graphics
+    // 一行・複数行・旧配置のいずれも、確認済みgridと同じ端点・高さの線を文字下線にしない。
+    let text_graphics = styling_graphics
         .iter()
         .filter(|graphic| !is_grid_border(graphic, xs, ys))
         .cloned()
@@ -128,7 +128,7 @@ fn cells_impl(
                             let mut row =
                                 native_spacing::with_interior_spaces(&parsed.text_elements, row);
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                            let mut line = source_line(row, styling_graphics, *xs.last()? as f32)?;
+                            let mut line = source_line(row, &text_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             Some(line)
@@ -158,7 +158,7 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
-                                styling_graphics,
+                                &text_graphics,
                                 &offsets,
                             )
                         } else {
@@ -169,7 +169,7 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
-                                &fallback_graphics,
+                                &text_graphics,
                                 &offsets,
                             )
                         } else {
