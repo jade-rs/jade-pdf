@@ -86,3 +86,42 @@ fn local_script_uses_its_own_column_font_scale() {
         "the other column heading must not hide the local script's main font"
     );
 }
+
+use proptest::prelude::*;
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+    /// 段の平行移動・描画順・上付き下付きが変わっても、対応先と全文字を保つ。
+    #[test]
+    fn column_script_association_preserves_all_glyphs(
+        x in -10_i32..=10, y in -50_i32..=20,
+        formula in any::<bool>(), reverse in any::<bool>(), below in any::<bool>(),
+        heading_size in 12_u8..=16,
+    ) {
+        let mut parsed = column_source(formula);
+        for text in &mut parsed.text_elements {
+            if formula && below && text.baseline_y == Some(704.5) {
+                text.baseline_y = Some(695.5);
+                text.bounds.y0 -= 9.;
+                text.bounds.y1 -= 9.;
+            }
+            if text.text == "H" { text.font_size = f32::from(heading_size); }
+            text.bounds.x0 += x as f32;
+            text.bounds.x1 += x as f32;
+            text.bounds.y0 += y as f32;
+            text.bounds.y1 += y as f32;
+            text.baseline_y = text.baseline_y.map(|b| b + y as f32);
+        }
+        if reverse { parsed.text_elements.reverse(); }
+        let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+        let owner = if formula { "base" } else { "entry" };
+        let line = pages[0].lines.iter().find(|l| l.text.contains(owner)).unwrap();
+        prop_assert!(line.text.contains('2'));
+        let mut before = parsed.text_elements.iter().flat_map(|t| t.text.chars())
+            .filter(|c| !c.is_whitespace()).collect::<Vec<_>>();
+        let mut after = pages[0].lines.iter().flat_map(|l| l.text.chars())
+            .filter(|c| !c.is_whitespace()).collect::<Vec<_>>();
+        before.sort_unstable(); after.sort_unstable();
+        prop_assert_eq!(before, after);
+    }
+}
