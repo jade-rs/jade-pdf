@@ -58,6 +58,12 @@ fn cells_impl(
     } else {
         parsed.graphics.as_slice()
     };
+    // 新しく復元する旧配置runでは、確認済みgridと同じ端点・高さの線を文字下線にしない。
+    let fallback_graphics = styling_graphics
+        .iter()
+        .filter(|graphic| !is_grid_border(graphic, xs, ys))
+        .cloned()
+        .collect::<Vec<_>>();
     model
         .rows
         .iter()
@@ -163,7 +169,7 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
-                                styling_graphics,
+                                &fallback_graphics,
                                 &offsets,
                             )
                         } else {
@@ -364,3 +370,13 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[cfg(test)]
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
+
+/// 水平線の両端と高さが量子化済みの原本gridへ一致する場合だけ、表の境界と確認する。
+fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
+    let b = normalized_bounds(graphic.bounds);
+    [b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite())
+        && is_horizontal_line(&b)
+        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 0.5)
+        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 0.5)
+        && ys.iter().any(|y| (b.y0 - *y as f32).abs() <= 0.5)
+}
