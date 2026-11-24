@@ -40,10 +40,17 @@ mod graphic_table_cells;
 mod graphic_table_merge_tests;
 mod graphic_table_ownership;
 mod layout_space;
+mod normal_weight_package;
 mod positioned_type1;
 mod roman_fallback;
 #[cfg(test)]
 mod roman_fallback_tests;
+mod source_font_weight;
+#[cfg(test)]
+mod source_table_pagination_tests;
+#[cfg(test)]
+mod source_typography_tests;
+mod table_opening;
 
 mod html_table;
 mod image_anchor;
@@ -2157,14 +2164,17 @@ fn apply_pdf_font_name_to_run(
     let compatible = (!embedded)
         .then(|| roman_fallback::known(font_name))
         .flatten();
-    if face.map_or(
-        infer
-            && (normalized.contains("bold")
-                || normalized.contains("black")
-                || compatible.is_some_and(|font| font.bold)),
-        |face| face.bold,
-    ) {
-        run = run.bold();
+    let named_weight = infer
+        .then(|| source_font_weight::weight(font_name))
+        .flatten();
+    let weight = face
+        .map(|face| face.bold)
+        .or_else(|| compatible.map(|font| font.bold))
+        .or(named_weight);
+    match weight {
+        Some(true) => run = run.bold(),
+        Some(false) => run = run.disable_bold(),
+        None => {}
     }
     if face.map_or(
         infer
@@ -3097,7 +3107,7 @@ fn docx_table_from_ocr_table(table: &OcrTable) -> Table {
             .collect();
         rows.push(TableRow::new(cells));
     }
-    Table::new(rows)
+    table_opening::keep_with_next(Table::new(rows))
 }
 
 /// 公開 `OcrTable` の span 情報を DOCX 出力用モデルへ変換する。
@@ -3533,7 +3543,7 @@ fn docx_table_from_model_with_row_height_and_nested(
             table_row
         })
         .collect::<Vec<_>>();
-    Table::without_borders(rows)
+    table_opening::keep_with_next(Table::without_borders(rows))
 }
 
 /// 親表セルに含まれる子表を返す。
