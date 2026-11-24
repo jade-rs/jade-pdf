@@ -246,3 +246,17 @@ fn clipped_image_preserves_source_pixel_density() {
         "clipped bitmap must preserve source pixel density"
     );
 }
+
+/// Form内の画像は、本文inlineの順序へ置き換えず局所配置を保持する。
+#[test]
+fn form_image_without_crop_still_uses_floating_placement() {
+    let parsed = parse_pdf_bytes(
+        "owned-positioned-form-image.pdf",
+        &fixture("/Fm Do", "/Im Do", ""),
+    )
+    .unwrap();
+    assert!(
+        parsed.image_elements[0].floating,
+        "Form image must preserve positioned placement"
+    );
+}
