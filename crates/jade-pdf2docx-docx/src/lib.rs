@@ -779,7 +779,8 @@ fn build_structured_docx_with_image_payloads(
         && region_lines.is_empty()
         && pages.len() > 1
         && text_columns_by_page.iter().any(Option::is_some)
-        && ocr_table.is_none();
+        // 推定表はpositioned_tablesと互換要約の両方で渡される。位置のないOCR表だけを除外する。
+        && (ocr_table.is_none() || !positioned_tables.is_empty());
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
             parsed,
