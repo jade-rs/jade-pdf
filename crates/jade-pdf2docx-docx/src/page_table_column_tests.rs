@@ -107,6 +107,12 @@ struct Evidence {
     columns: usize,
     /// 直接bodyに属する表の個数。
     tables: usize,
+    /// このsection内の画像描画の個数。
+    drawings: usize,
+    /// Wordページの表示幅（twips）。
+    width: usize,
+    /// Wordページの表示高さ（twips）。
+    height: usize,
 }
 
 impl Default for Evidence {
@@ -116,8 +122,20 @@ impl Default for Evidence {
             text: String::new(),
             columns: 1,
             tables: 0,
+            drawings: 0,
+            width: 0,
+            height: 0,
         }
     }
+}
+
+/// 実際のWord要素の整数属性を、prefixの表記順に依存せず読む。
+fn integer(e: &quick_xml::events::BytesStart<'_>, name: &[u8], fallback: usize) -> usize {
+    e.attributes()
+        .map(Result::unwrap)
+        .find(|a| a.key.local_name().as_ref() == name)
+        .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap())
+        .unwrap_or(fallback)
 }
 
 /// pPrのsectPrも、その段落自身を含めて前のsource sectionへ所属させる。
@@ -135,18 +153,20 @@ fn sections(xml: &str) -> Vec<Evidence> {
                 if tag == b"tbl" && stack.len() == 2 {
                     pending.tables += 1;
                 }
+                if tag == b"drawing" {
+                    pending.drawings += 1;
+                }
                 if tag == b"sectPr" && stack.len() == 4 && stack[2] == b"p" {
                     boundary = true;
                 }
                 stack.push(tag);
             }
             Event::Empty(e) if e.local_name().as_ref() == b"cols" => {
-                pending.columns = e
-                    .attributes()
-                    .map(Result::unwrap)
-                    .find(|a| a.key.local_name().as_ref() == b"num")
-                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap())
-                    .unwrap_or(1);
+                pending.columns = integer(&e, b"num", 1);
+            }
+            Event::Empty(e) if e.local_name().as_ref() == b"pgSz" => {
+                pending.width = integer(&e, b"w", 0);
+                pending.height = integer(&e, b"h", 0);
             }
             Event::Text(e) if stack.last().is_some_and(|tag| tag == b"t") => {
                 pending
@@ -190,4 +210,24 @@ fn table_at_page_end_keeps_its_own_section_before_later_columns() {
         sections[1].text.contains("PAGEB LEFT 1") && sections[1].text.contains("PAGEB RIGHT 1")
     );
     assert!(!sections[1].text.contains("TABLE PAGE0"));
+}
+
+/// 本文のないfloating画像ページも、A4既定値へ変えず原本寸法で保持する。
+#[test]
+fn floating_image_only_page_keeps_source_size_and_later_columns() {
+    let mut parsed = source(2, &[0]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    parsed.image_elements[0].floating = true;
+    parsed.pages[0].width = 420.;
+    parsed.pages[0].height = 300.;
+    let xml = packaged(parsed, &[]);
+    let sections = sections(&xml);
+    assert_eq!(sections.len(), 2);
+    assert_eq!(
+        (sections[0].width, sections[0].height),
+        (8400, 6000),
+        "floating-only source page must retain its own dimensions"
+    );
+    assert_eq!((sections[0].columns, sections[0].drawings), (1, 1));
+    assert_eq!((sections[1].columns, sections[1].drawings), (2, 0));
 }
