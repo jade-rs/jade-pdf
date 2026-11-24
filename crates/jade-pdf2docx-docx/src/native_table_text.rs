@@ -16,6 +16,8 @@ pub(super) struct Cell {
     lines: Vec<StructuredTextLine>,
     /// 単一行セルの既存本文と完全に一致する、描画順のstyle付きrun。
     single_line_runs: Vec<StructuredTextRun>,
+    /// 複数行の配置が収まらない場合も、旧本文と完全一致するrunの書式は保持する。
+    fallback_runs: Vec<StructuredTextRun>,
 }
 
 /// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
@@ -142,6 +144,17 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
+                                styling_graphics,
+                            )
+                        } else {
+                            Vec::new()
+                        },
+                        fallback_runs: if lines.len() > 1 {
+                            legacy_runs(
+                                parsed,
+                                selected.iter().flat_map(|row| row.iter().flatten()),
+                                &cell.text,
+                                styling_graphics,
                             )
                         } else {
                             Vec::new()
@@ -190,6 +203,7 @@ fn legacy_runs<'a>(
     parsed: &ParsedDocument,
     selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
+    graphics: &[ParsedGraphicElement],
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
@@ -199,8 +213,7 @@ fn legacy_runs<'a>(
         if text.len() == start {
             continue;
         }
-        let Some(mut run) = structured_text_runs_from_row(&[element], &parsed.graphics).pop()
-        else {
+        let Some(mut run) = structured_text_runs_from_row(&[element], graphics).pop() else {
             return Vec::new();
         };
         run.text = text[start..].to_string();
@@ -227,6 +240,29 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     let spacing = native_line_pitch::spacing(height, 0, 0)?;
     Some(
         cell.single_line_runs
+            .iter()
+            .fold(Paragraph::new(), |p, run| {
+                p.add_run(docx_run_from_structured_run(run))
+            })
+            .line_spacing(spacing),
+    )
+}
+
+/// 複数行boxの配置が失敗しても、照合済みの旧本文を原本runと最大em高の一段落へ保つ。
+pub(super) fn fallback_paragraph(cell: &Cell) -> Option<Paragraph> {
+    if cell.fallback_runs.is_empty() {
+        return None;
+    }
+    let height = cell.fallback_runs.iter().try_fold(0.0f32, |height, run| {
+        pdf_font_size_to_half_points(run.style.font_size)?;
+        Some(height.max(run.style.font_size))
+    })?;
+    if pdf_points_to_twips(height)? > pdf_points_to_twips(cell.top - cell.bottom)? {
+        return None;
+    }
+    let spacing = native_line_pitch::spacing(height, 0, 0)?;
+    Some(
+        cell.fallback_runs
             .iter()
             .fold(Paragraph::new(), |p, run| {
                 p.add_run(docx_run_from_structured_run(run))

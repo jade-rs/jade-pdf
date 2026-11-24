@@ -3474,8 +3474,9 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if cell.underlined && !text.trim().is_empty() {
                         run = run.underline("single");
                     }
-                    let native_paragraph =
-                        native_cell.and_then(native_table_text::single_line_paragraph);
+                    let native_paragraph = native_cell
+                        .and_then(native_table_text::single_line_paragraph)
+                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph));
                     let has_native_paragraph = native_paragraph.is_some();
                     let source_indent = native_cell
                         .filter(|_| has_native_paragraph)
