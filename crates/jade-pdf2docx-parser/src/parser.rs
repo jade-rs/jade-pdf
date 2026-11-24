@@ -98,6 +98,9 @@ mod form_image_tests;
 #[path = "form_images.rs"]
 mod form_images;
 
+#[path = "image_raster.rs"]
+mod image_raster;
+
 #[path = "image_ccitt.rs"]
 mod image_ccitt;
 #[cfg(test)]
@@ -1430,13 +1433,15 @@ impl ImageStreamEntry {
         };
         let has_shear = matrix_has_shear(matrix);
         let png_bytes = if let Some(clip) = &placement.clip {
+            let (raster_width, raster_height) =
+                image_raster::dimensions(matrix, bounds, self.width, self.height);
             warp_png_to_clipped_bounds(
                 decode_budget,
                 source,
                 matrix,
                 bounds,
-                display_width,
-                display_height,
+                raster_width.max(display_width),
+                raster_height.max(display_height),
                 Some(clip),
             )?
         } else {
