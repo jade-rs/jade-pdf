@@ -6,6 +6,8 @@ use super::*;
 pub(super) struct Cell {
     /// セル左端のPDF座標。
     left: f32,
+    /// セル右端。原本の文字が越える場合は一行の水平原点を補正しない。
+    right: f32,
     /// セル上端のPDF座標。
     top: f32,
     /// 原本gridが割り当てたセル下端。段落列が収まらないときは旧配置へ戻す。
@@ -86,6 +88,7 @@ fn cells_impl(
                     let top = *ys.get(band + 1)? as f32;
                     let bottom = *ys.get(bottom_band)? as f32;
                     let left = *xs.get(start)? as f32;
+                    let right = *xs.get(col)? as f32;
                     let selected = texts
                         .get(row_index..row_index.checked_add(row_span)?)?
                         .iter()
@@ -129,6 +132,7 @@ fn cells_impl(
                         }))
                     .then(|| Cell {
                         left,
+                        right,
                         top,
                         bottom,
                         single_line_runs: if closed_boxes && lines.len() == 1 {
@@ -302,7 +306,11 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
     if cell.lines.len() != 1 || cell.single_line_runs.is_empty() {
         return None;
     }
-    pdf_points_to_indent_twips(cell.lines[0].left_x - cell.left)
+    let line = &cell.lines[0];
+    if !line.right_x.is_finite() || line.right_x > cell.right || line.right_x < line.left_x {
+        return None;
+    }
+    pdf_points_to_indent_twips(line.left_x - cell.left)
 }
 
 #[cfg(test)]
