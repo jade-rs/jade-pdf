@@ -92,3 +92,33 @@ fn explicit_bold_survives_and_unknown_weight_preserves_prior_style() {
         assert!(!xml.contains("<w:b w:val=\"false\""));
     }
 }
+
+/// 最終ZIPでは通常体をLatinと複雑書字の両方へ明示し、隣の太字は保持する。
+#[test]
+fn packaged_source_regular_disables_complex_script_bold_as_well() {
+    use std::io::{Cursor, Read};
+    let regular =
+        apply_pdf_font_name_to_run(Run::new().add_text("normal"), "Source-Regular", false, None);
+    let bold = apply_pdf_font_name_to_run(Run::new().add_text("bold"), "Source-Bold", false, None);
+    let p = Paragraph::new().add_run(regular).add_run(bold);
+    let docx = Docx::new()
+        .header(Header::new().add_paragraph(p.clone()))
+        .footer(Footer::new().add_paragraph(p.clone()))
+        .add_paragraph(p);
+    let bytes = pack_docx_to_bytes(docx, &[]).unwrap();
+    let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    for name in ["word/document.xml", "word/header1.xml", "word/footer1.xml"] {
+        let mut xml = String::new();
+        zip.by_name(name).unwrap().read_to_string(&mut xml).unwrap();
+        assert!(xml.contains("<w:b w:val=\"false\""), "{name}: {xml}");
+        assert!(
+            xml.contains("<w:bCs w:val=\"false\""),
+            "packaged source regular must disable complex-script bold: {name}: {xml}"
+        );
+        assert_eq!(
+            xml.matches("<w:bCs />").count(),
+            1,
+            "the neighbouring source bold must survive: {name}: {xml}"
+        );
+    }
+}
