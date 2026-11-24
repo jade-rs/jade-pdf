@@ -3,10 +3,11 @@ use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
 use std::io::{Cursor, Read};
 
 /// セル下辺の近くに文字を置き、必要なら別の短い本文下線も描く所有PDFを作る。
-fn source(multiline: bool, independent: bool) -> Vec<u8> {
+fn source(multiline: bool, independent: bool, overhang: bool) -> Vec<u8> {
     let y = if multiline { 628 } else { 602 };
+    let (x0, x1) = if overhang { (71.4, 272.6) } else { (72., 272.) };
     let mut content = format!(
-        "1 w 72 600 m 272 600 l S 72 650 m 272 650 l S 72 600 m 72 650 l S 172 600 m 172 650 l S 272 600 m 272 650 l S BT /F1 10 Tf 82 {y} Td (Alpha) Tj ET BT /F1 10 Tf 182 625 Td (Control) Tj ET "
+        "1 w {x0} 600 m {x1} 600 l S {x0} 650 m {x1} 650 l S 72 600 m 72 650 l S 172 600 m 172 650 l S 272 600 m 272 650 l S BT /F1 10 Tf 82 {y} Td (Alpha) Tj ET BT /F1 10 Tf 182 625 Td (Control) Tj ET "
     );
     if multiline {
         content.push_str("BT /F1 10 Tf 82 602 Td (Omega) Tj ET ");
@@ -40,9 +41,14 @@ fn source(multiline: bool, independent: bool) -> Vec<u8> {
 
 /// 公開byte APIが返す先頭セルだけを読み、表のborder指定をrunの下線と混同しない。
 fn cell(multiline: bool, independent: bool) -> String {
+    cell_with_overhang(multiline, independent, false)
+}
+
+/// 縦辺と横辺の端点が別々に量子化されるケースも、同じ公開製品経路で読む。
+fn cell_with_overhang(multiline: bool, independent: bool, overhang: bool) -> String {
     let bytes = convert_minimum_pdf_bytes_to_docx_bytes(
         "owned-bounded-cell-grid-underline.pdf",
-        &source(multiline, independent),
+        &source(multiline, independent, overhang),
     )
     .unwrap();
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
@@ -85,6 +91,18 @@ fn bounded_native_cells_keep_independent_text_underlines() {
         assert!(run(&xml, "Alpha").contains("<w:u "));
         if multiline {
             assert!(!run(&xml, "Omega").contains("<w:u "));
+        }
+    }
+}
+
+/// 横辺が縦辺からわずかに延び、各端点の丸め後に1pt違っても、高さが同じgrid辺を下線にしない。
+#[test]
+fn independently_quantized_grid_endpoints_do_not_underline_text() {
+    for multiline in [false, true] {
+        for independent in [false, true] {
+            let xml=cell_with_overhang(multiline, independent, true);
+            assert_eq!(run(&xml,"Alpha").contains("<w:u "),independent,"separately rounded grid endpoints must not become text underlines");
+            if multiline {assert!(!run(&xml,"Omega").contains("<w:u "));}
         }
     }
 }
