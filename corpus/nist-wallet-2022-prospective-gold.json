@@ -1,0 +1,438 @@
+{
+  "created_utc_before_first_conversion": "2026-11-24T10:21:46.128556+00:00",
+  "source_url": "https://physics.nist.gov/cuu/pdf/wallet_2022.pdf",
+  "source_sha256": "1e7d5131229b2d189932825ce8bbfa2c6a153a990ba034b443286bfe4e420de5",
+  "source_pages": 2,
+  "source_page_size_pt": [
+    612,
+    792
+  ],
+  "page_tables_expected": 2,
+  "columns": [
+    "Quantity",
+    "Symbol",
+    "Numerical value",
+    "Unit"
+  ],
+  "numeric_rows": [
+    {
+      "page": 1,
+      "physical_numeric_row": 1,
+      "quantity_label": "133Cs hyperfine transition frequency",
+      "decimal_or_integer": "9192631770",
+      "power_of_ten": null,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "Hz",
+      "source_value_text": "9192631770",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        191.12614440000004,
+        402.16830000000004,
+        201.0887444000001
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 2,
+      "quantity_label": "speed of light in vacuum",
+      "decimal_or_integer": "299792458",
+      "power_of_ten": null,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "m s^-1",
+      "source_value_text": "299792458",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        203.67914440000004,
+        395.52324580000004,
+        213.6417444000001
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 3,
+      "quantity_label": "Planck constant",
+      "decimal_or_integer": "6.62607015",
+      "power_of_ten": -34,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "J Hz^-1",
+      "source_value_text": "6.62607015×10−34",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        214.4281172000001,
+        434.60315820000005,
+        225.59774440000012
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 4,
+      "quantity_label": "",
+      "decimal_or_integer": "1.054571817",
+      "power_of_ten": -34,
+      "continues_with_ellipsis": true,
+      "unit_semantics": "J s",
+      "source_value_text": "1.054571817...×10−34",
+      "source_value_bounds_top_origin_pt": [
+        347.374,
+        226.38311720000013,
+        452.86715820000006,
+        237.55274440000017
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 5,
+      "quantity_label": "elementary charge",
+      "decimal_or_integer": "1.602176634",
+      "power_of_ten": -19,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "C",
+      "source_value_text": "1.602176634×10−19",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        238.33911720000015,
+        439.58415820000005,
+        249.5077444000002
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 6,
+      "quantity_label": "Avogadro constant",
+      "decimal_or_integer": "6.02214076",
+      "power_of_ten": 23,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "mol^-1",
+      "source_value_text": "6.02214076×1023",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        250.2941172000002,
+        428.3761582000001,
+        261.46274440000025
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 7,
+      "quantity_label": "Boltzmann constant",
+      "decimal_or_integer": "1.380649",
+      "power_of_ten": -23,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "J K^-1",
+      "source_value_text": "1.380649×10−23",
+      "source_value_bounds_top_origin_pt": [
+        347.374,
+        262.2491172000002,
+        422.98015819999995,
+        273.4177444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 8,
+      "quantity_label": "luminous efficacy",
+      "decimal_or_integer": "683",
+      "power_of_ten": null,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "lm W^-1",
+      "source_value_text": "683",
+      "source_value_bounds_top_origin_pt": [
+        347.3739999999999,
+        275.41014440000026,
+        362.3178999999999,
+        285.3727444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 9,
+      "quantity_label": "electron volt",
+      "decimal_or_integer": "1.602176634",
+      "power_of_ten": -19,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "J",
+      "source_value_text": "1.602176634×10−19",
+      "source_value_bounds_top_origin_pt": [
+        347.3712780399999,
+        286.1591172000003,
+        439.5841581999999,
+        297.3287444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 10,
+      "quantity_label": "Josephson constant",
+      "decimal_or_integer": "483597.8484",
+      "power_of_ten": 9,
+      "continues_with_ellipsis": true,
+      "unit_semantics": "Hz V^-1",
+      "source_value_text": "483597.8484...×109",
+      "source_value_bounds_top_origin_pt": [
+        347.3739999999999,
+        298.1141172000003,
+        442.66957909999996,
+        309.2837444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 11,
+      "quantity_label": "von Klitzing constant",
+      "decimal_or_integer": "25812.80745",
+      "power_of_ten": null,
+      "continues_with_ellipsis": true,
+      "unit_semantics": "ohm",
+      "source_value_text": "25812.80745...",
+      "source_value_bounds_top_origin_pt": [
+        347.374,
+        311.2761444000003,
+        416.55637664,
+        321.2387444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 12,
+      "quantity_label": "molar gas constant",
+      "decimal_or_integer": "8.314462618",
+      "power_of_ten": null,
+      "continues_with_ellipsis": true,
+      "unit_semantics": "J mol^-1 K^-1",
+      "source_value_text": "8.314462618...",
+      "source_value_bounds_top_origin_pt": [
+        347.374,
+        323.2311444000003,
+        416.55637664,
+        333.1937444000003
+      ]
+    },
+    {
+      "page": 1,
+      "physical_numeric_row": 13,
+      "quantity_label": "Stefan-Boltzmann const.",
+      "decimal_or_integer": "5.670374419",
+      "power_of_ten": -8,
+      "continues_with_ellipsis": true,
+      "unit_semantics": "W m^-2 K^-4",
+      "source_value_text": "5.670374419...×10−8",
+      "source_value_bounds_top_origin_pt": [
+        347.3740000000001,
+        334.5611172000003,
+        448.89557910000013,
+        345.7307444000003
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 1,
+      "quantity_label": "(unified) atomic mass unit",
+      "decimal_or_integer": "1.66053906892(52)",
+      "power_of_ten": -27,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "kg",
+      "source_value_text": "1.66053906892(52)×10−27",
+      "source_value_bounds_top_origin_pt": [
+        341.58975462,
+        149.2391172,
+        463.13915819999994,
+        160.40874440000005
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 2,
+      "quantity_label": "Newtonian constant of gravitation",
+      "decimal_or_integer": "6.67430(15)",
+      "power_of_ten": -11,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "m^3 kg^-1 s^-2",
+      "source_value_text": "6.67430(15)×10−11",
+      "source_value_bounds_top_origin_pt": [
+        341.59399999999994,
+        161.19511720000003,
+        429.9301582,
+        172.3637444000001
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 3,
+      "quantity_label": "fine-structure constant",
+      "decimal_or_integer": "7.2973525643(11)",
+      "power_of_ten": -3,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "",
+      "source_value_text": "7.2973525643(11)×10−3",
+      "source_value_bounds_top_origin_pt": [
+        341.594,
+        173.15011720000007,
+        452.5255791000001,
+        184.31874440000013
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 4,
+      "quantity_label": "inverse fine-structure constant",
+      "decimal_or_integer": "137.035999177(21)",
+      "power_of_ten": null,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "",
+      "source_value_text": "137.035999177(21)",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000001,
+        186.3111444000001,
+        425.1667560800001,
+        196.27374440000017
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 5,
+      "quantity_label": "Rydberg frequency",
+      "decimal_or_integer": "3.2898419602500(36)",
+      "power_of_ten": 15,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "Hz",
+      "source_value_text": "3.2898419602500(36)×1015",
+      "source_value_bounds_top_origin_pt": [
+        341.59400000000005,
+        197.06011720000015,
+        466.87515820000004,
+        208.2287444000002
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 6,
+      "quantity_label": "vac. magnetic permeability",
+      "decimal_or_integer": "1.25663706127(20)",
+      "power_of_ten": -6,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "N A^-2",
+      "source_value_text": "1.25663706127(20)×10−6",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000001,
+        209.0151172000002,
+        459.16757910000007,
+        220.18474440000023
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 7,
+      "quantity_label": "vac. electric permittivity",
+      "decimal_or_integer": "8.8541878188(14)",
+      "power_of_ten": -12,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "F m^-1",
+      "source_value_text": "8.8541878188(14)×10−12",
+      "source_value_bounds_top_origin_pt": [
+        341.594,
+        220.97011720000023,
+        456.49715820000006,
+        232.13974440000027
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 8,
+      "quantity_label": "electron mass",
+      "decimal_or_integer": "9.1093837139(28)",
+      "power_of_ten": -31,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "kg",
+      "source_value_text": "9.1093837139(28)×10−31",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000001,
+        234.5201172000002,
+        456.4971582000002,
+        245.68874440000025
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 9,
+      "quantity_label": "proton mass",
+      "decimal_or_integer": "1.67262192595(52)",
+      "power_of_ten": -27,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "kg",
+      "source_value_text": "1.67262192595(52)×10−27",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000002,
+        246.47511720000023,
+        463.13915820000017,
+        257.6437444000003
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 10,
+      "quantity_label": "proton-electron mass ratio",
+      "decimal_or_integer": "1836.152673426(32)",
+      "power_of_ten": null,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "",
+      "source_value_text": "1836.152673426(32)",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000002,
+        259.63614440000026,
+        430.1477560800002,
+        269.5987444000003
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 11,
+      "quantity_label": "reduced Compton wavelength",
+      "decimal_or_integer": "3.8615926744(12)",
+      "power_of_ten": -13,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "m",
+      "source_value_text": "3.8615926744(12)×10−13",
+      "source_value_bounds_top_origin_pt": [
+        341.594,
+        270.38511719999997,
+        456.49715820000006,
+        281.55374439999997
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 12,
+      "quantity_label": "Bohr radius",
+      "decimal_or_integer": "5.29177210544(82)",
+      "power_of_ten": -11,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "m",
+      "source_value_text": "5.29177210544(82)×10−11",
+      "source_value_bounds_top_origin_pt": [
+        341.59400000000005,
+        282.3401172,
+        463.13915820000005,
+        293.5097444
+      ]
+    },
+    {
+      "page": 2,
+      "physical_numeric_row": 13,
+      "quantity_label": "Bohr magneton",
+      "decimal_or_integer": "9.2740100657(29)",
+      "power_of_ten": -24,
+      "continues_with_ellipsis": false,
+      "unit_semantics": "J T^-1",
+      "source_value_text": "9.2740100657(29)×10−24",
+      "source_value_bounds_top_origin_pt": [
+        341.5940000000001,
+        294.2951172,
+        456.4971582000002,
+        305.4647444
+      ]
+    }
+  ],
+  "physical_numeric_rows": 26,
+  "scope": "Source-bound numeric row/column and visual math expectations, not just global substring presence. Blank Planck continuation quantity is intentional. Decimal grouping spaces may vary; mantissa digits, uncertainty parentheses, sign/exponent, ellipsis, unit power and quantity association must retain meaning. Mathematical symbols are not guessed/flattened for acceptance.",
+  "first_product_conversion_executed": false
+}

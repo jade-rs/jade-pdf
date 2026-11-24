@@ -1,0 +1,59 @@
+{
+  "created_utc_before_first_conversion": "2026-11-24T10:21:46.128556+00:00",
+  "source_url": "https://science.nasa.gov/wp-content/uploads/2024/08/webbfactsheet.pdf",
+  "source_sha256": "84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e",
+  "source_pages": 2,
+  "source_page_size_pt": [
+    612,
+    792
+  ],
+  "page1": "Fullbleed dark/gold telescope image, white body, gold headings and vertical identifier; no invented table.",
+  "page2": "Labelled telescope image above main left column and separate Quick Facts right column. Preserve foreground contrast, diagram and relative positions.",
+  "page2_fact_expectations": [
+    {
+      "label": "PRIMARY MIRROR SIZE",
+      "numbers": [
+        "21.3",
+        "6.5"
+      ],
+      "meaning": "feet and meters across"
+    },
+    {
+      "label": "MIRROR SHAPE",
+      "numbers": [
+        "18"
+      ],
+      "meaning": "segments"
+    },
+    {
+      "label": "SUNSHIELD",
+      "meaning": "five-layer deployable sunshield"
+    },
+    {
+      "label": "INSTRUMENTS",
+      "meaning": "four instruments; retain listed acronyms and guidance sensor"
+    },
+    {
+      "label": "WAVELENGTHS",
+      "numbers": [
+        "0.6",
+        "28.5"
+      ],
+      "meaning": "micrometers range"
+    },
+    {
+      "label": "TRAVEL DISTANCE",
+      "numbers": [
+        "1",
+        "1.5"
+      ],
+      "meaning": "million miles / million kilometers"
+    },
+    {
+      "label": "LOCATION IN SPACE",
+      "meaning": "Sun orbit near second Lagrange point L2"
+    }
+  ],
+  "scope": "Historical source sheet, not current astronomy guidance. Numeric/column/foreground/image expectations fixed before product use; no NASA/ESA/CSA brand assets or fontprograms added to code.",
+  "first_product_conversion_executed": false
+}
