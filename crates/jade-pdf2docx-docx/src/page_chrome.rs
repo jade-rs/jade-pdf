@@ -72,6 +72,28 @@ fn output_key(chrome: &RepeatedPageChrome) -> Vec<Option<OutputLine>> {
         .collect()
 }
 
+/// 原本の一出現について、文字・書式と各ページ端からの距離を共通の方法で保持する。
+fn occurrence(
+    parsed: &ParsedDocument,
+    page: usize,
+    line: &StructuredTextLine,
+    header: bool,
+) -> Option<RepeatedPageChromeLine> {
+    let parsed_page = parsed.pages.iter().find(|p| p.page_number == page)?;
+    let (width, height) = parsed_page_display_size_points(parsed_page);
+    let distance = if header {
+        height - line.top_y
+    } else {
+        line.top_y - structured_line_max_font_size(line)
+    };
+    Some(RepeatedPageChromeLine {
+        line: line.clone(),
+        edge_distance_twips: pdf_points_to_floor_twips(distance.max(0.))?,
+        right_indent_twips: pdf_points_to_indent_twips((width - line.right_x).max(0.))?,
+        page_width_twips: parsed_page_size_twips(parsed_page).map(|size| size.0),
+    })
+}
+
 /// 全ページで見つかる文字列のうち、同じ書式が複数ページにある行だけを移す。
 pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> Plan {
     let mut plan = Plan {
@@ -130,34 +152,30 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
             else {
                 continue;
             };
-            let Some(parsed_page) = parsed.pages.iter().find(|p| p.page_number == page.page) else {
+            let Some(chrome) = occurrence(parsed, page.page, line, header) else {
                 continue;
-            };
-            let (width, height) = parsed_page_display_size_points(parsed_page);
-            let distance = if header {
-                height - line.top_y
-            } else {
-                line.top_y - structured_line_max_font_size(line)
-            };
-            let Some(edge_distance_twips) = pdf_points_to_floor_twips(distance.max(0.)) else {
-                continue;
-            };
-            let Some(right_indent_twips) =
-                pdf_points_to_indent_twips((width - line.right_x).max(0.))
-            else {
-                continue;
-            };
-            let chrome = RepeatedPageChromeLine {
-                line: line.clone(),
-                edge_distance_twips,
-                right_indent_twips,
-                page_width_twips: parsed_page_size_twips(parsed_page).map(|size| size.0),
             };
             let target = plan.pages.get_mut(&page.page).expect("source page exists");
             if header {
                 target.header = Some(chrome);
             } else {
                 target.footer = Some(chrome);
+            }
+        }
+    }
+    // 既存の反復footerと競合させず、全出現を組み立てられた場合にだけ連番footerを採用する。
+    if plan.pages.values().all(|chrome| chrome.footer.is_none()) {
+        let selected = numbered_page_footers::select(parsed, pages);
+        let occurrences = selected
+            .iter()
+            .map(|(page, line)| occurrence(parsed, *page, line, false).map(|c| (*page, c)))
+            .collect::<Option<Vec<_>>>();
+        if let Some(occurrences) = occurrences {
+            for (page, footer) in occurrences {
+                plan.pages
+                    .get_mut(&page)
+                    .expect("source page exists")
+                    .footer = Some(footer);
             }
         }
     }
