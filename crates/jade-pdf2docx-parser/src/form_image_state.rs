@@ -41,10 +41,7 @@ pub(crate) fn enter<'a>(
                 let valid = match index {
                     0 => metadata::is_name(value, b"Group"),
                     1 => metadata::is_name(value, b"Transparency"),
-                    2 => {
-                        metadata::is_name(value, b"DeviceRGB")
-                            || metadata::is_name(value, b"DeviceGray")
-                    }
+                    2 => metadata::is_name(value, b"DeviceRGB"),
                     // 分離・knockoutを伴うグループは描画順全体の合成が必要。
                     3 | 4 => {
                         let mut lexer = crate::syntax::Lexer {
