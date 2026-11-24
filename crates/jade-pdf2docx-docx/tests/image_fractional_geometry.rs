@@ -6,11 +6,19 @@ use std::io::{Cursor, Read};
 
 /// 単一のRGB画素を小数pointの全ページへ描く、外部資産のないPDFを作る。
 fn source(width: f32, height: f32) -> Vec<u8> {
+    source_with_crop(width, height, None)
+}
+
+/// CropBoxも所有するobject生成時に指定し、binary streamとxrefを壊さず組み立てる。
+fn source_with_crop(width: f32, height: f32, crop: Option<(f32, f32)>) -> Vec<u8> {
     let paint = format!("q {width} 0 0 {height} 0 0 cm /Im0 Do Q");
+    let crop = crop
+        .map(|(w, h)| format!(" /CropBox [0 0 {w} {h}]"))
+        .unwrap_or_default();
     let objects=vec![
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_vec(),
-        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>").into_bytes(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}]{crop} /Resources << /XObject << /Im0 5 0 R >> >> /Contents 4 0 R >>").into_bytes(),
         format!("<< /Length {} >>\nstream\n{paint}\nendstream",paint.len()).into_bytes(),
         [b"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceRGB /BitsPerComponent 8 /Length 3 >>\nstream\n".as_slice(), &[16,128,240],b"\nendstream"].concat(),
     ];
@@ -73,13 +81,7 @@ fn extents_pdf(pdf: &[u8]) -> Vec<(u64, u64)> {
 /// この場合の既存clip配置の忠実度は別課題とし、従来のdisplay寸法を維持する。
 #[test]
 fn cropped_bounds_do_not_claim_uncropped_payload_physical_extent() {
-    let pdf = String::from_utf8(source(150., 210.))
-        .unwrap()
-        .replace(
-            "/MediaBox [0 0 150 210]",
-            "/MediaBox [0 0 150 210] /CropBox [0 0 100 180]",
-        )
-        .into_bytes();
+    let pdf = source_with_crop(150., 210., Some((100., 180.)));
     assert_eq!(
         extents_pdf(&pdf),
         vec![(1_905_000, 2_667_000); 2],
