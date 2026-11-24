@@ -241,6 +241,37 @@ fn file_output_compiles_the_same_source_offset_as_bytes() {
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 固定閾値を越える上下の添字でも、原点に依存せず行・文字順・元fontを保つ。
+    #[test]
+    fn outlying_scripts_recover_under_translation_and_both_signs(
+        half_points in 9i32..=12, raised in any::<bool>(),
+        x in 0i16..200, y in 100i16..700,
+    ) {
+        let mut parsed = formula_source();
+        let signed = if raised { half_points } else { -half_points };
+        let delta = signed as f32 / 2. - 4.;
+        parsed.text_elements[1].baseline_y = Some(700. + signed as f32 / 2.);
+        parsed.text_elements[1].bounds.y0 += delta;
+        parsed.text_elements[1].bounds.y1 += delta;
+        for text in &mut parsed.text_elements {
+            let dx = f32::from(x);
+            let dy = f32::from(y) - 700.;
+            text.bounds.x0 += dx;
+            text.bounds.x1 += dx;
+            text.bounds.y0 += dy;
+            text.bounds.y1 += dy;
+            text.baseline_y = text.baseline_y.map(|base| base + dy);
+        }
+        let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+        prop_assert_eq!(pages[0].lines.len(), 2);
+        prop_assert_eq!(&pages[0].lines[0].text, "A2=B");
+        let (xml, _) = package_source(parsed);
+        let expected = format!("<w:position w:val=\"{signed}\"");
+        prop_assert!(xml.contains(&expected));
+        prop_assert!(xml.contains("<w:sz w:val=\"14\""));
+        prop_assert!(!xml.contains("JadeBaseline_"));
+    }
+
     /// 原点の平行移動や上下の符号によらず、文字順とfont sizeを保ち相対half-point位置を残す。
     #[test]
     fn signed_offsets_are_invariant_under_source_translation(
