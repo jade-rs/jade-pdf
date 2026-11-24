@@ -35,11 +35,12 @@ fn source(width: f32, height: f32) -> Vec<u8> {
 
 /// 実際のZIP内から、画像の外枠と変換行列が使う二つの寸法を読む。
 fn extents(width: f32, height: f32) -> Vec<(u64, u64)> {
-    let bytes = convert_minimum_pdf_bytes_to_docx_bytes(
-        "owned-fractional-image.pdf",
-        &source(width, height),
-    )
-    .unwrap();
+    extents_pdf(&source(width, height))
+}
+
+/// 原本PDFを公開byte変換へ通し、ZIPから寸法を独立に読む。
+fn extents_pdf(pdf: &[u8]) -> Vec<(u64, u64)> {
+    let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-image.pdf", pdf).unwrap();
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = Vec::new();
     zip.by_name("word/document.xml")
@@ -66,6 +67,24 @@ fn extents(width: f32, height: f32) -> Vec<(u64, u64)> {
         }
     }
     out
+}
+
+/// CropBoxで矩形だけが短くなった場合、未cropのPNGを小さい矩形へ押し込まない。
+/// この場合の既存clip配置の忠実度は別課題とし、従来のdisplay寸法を維持する。
+#[test]
+fn cropped_bounds_do_not_claim_uncropped_payload_physical_extent() {
+    let pdf = String::from_utf8(source(150., 210.))
+        .unwrap()
+        .replace(
+            "/MediaBox [0 0 150 210]",
+            "/MediaBox [0 0 150 210] /CropBox [0 0 100 180]",
+        )
+        .into_bytes();
+    assert_eq!(
+        extents_pdf(&pdf),
+        vec![(1_905_000, 2_667_000); 2],
+        "clipped bounds must not rescale the uncropped PNG payload"
+    );
 }
 
 /// 整数pixelにすると高さが0.25pointずれる画像でも、元の物理寸法を使う。
