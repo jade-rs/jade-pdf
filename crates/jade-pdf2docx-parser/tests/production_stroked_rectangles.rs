@@ -179,3 +179,24 @@ proptest! {
         for line in parsed.graphics {prop_assert_eq!(line.stroke_width,0.5*f32::from(if line.bounds.x0==line.bounds.x1 {sx}else{sy}));}
     }
 }
+
+/// 未完の文字列・配列の回復処理から、実行していないre/Sを発明しない。
+#[test]
+fn malformed_literal_contents_cannot_create_rectangle_rules() {
+    for content in [
+        "(20 30 40 10 re S",
+        "<ZZ 20 30 40 10 re S",
+        "[ BT 20 30 40 10 re S",
+    ] {
+        let parsed = parse_pdf_bytes(
+            "owned-malformed-rectangle.pdf",
+            &source(&[content], "<< >>"),
+        )
+        .unwrap();
+        assert!(
+            parsed.graphics.is_empty(),
+            "malformed literal must not invent a stroked rectangle: {content}: {:?}",
+            parsed.graphics
+        );
+    }
+}
