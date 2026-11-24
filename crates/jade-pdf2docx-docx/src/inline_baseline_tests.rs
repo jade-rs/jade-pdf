@@ -81,6 +81,40 @@ fn unknown_or_ambiguous_baselines_keep_existing_run_formatting() {
     }
 }
 
+/// 離れた数式記号の未知baselineが、通常数字に囲まれた指数の既知位置を失わせない。
+#[test]
+fn distant_unknown_formula_glyph_does_not_flatten_verified_exponent() {
+    let mut parsed = formula_source();
+    let mut unknown = parsed.text_elements[0].clone();
+    unknown.text = "π".into();
+    unknown.bounds.x0 = 5.;
+    unknown.bounds.x1 = 11.;
+    unknown.baseline_y = None;
+    parsed.text_elements.push(unknown);
+    let (xml, _) = package_source(parsed);
+    assert!(
+        xml.contains("<w:position w:val=\"8\""),
+        "nearby verified main glyphs must retain the exponent despite a distant unknown baseline"
+    );
+    assert!(xml.contains("π"));
+    assert!(!xml.contains("JadeBaseline_"));
+}
+
+/// 指数に隣接する通常文字の基線が不明なら、遠い正常な文字から補完しない。
+#[test]
+fn adjacent_unknown_anchor_still_blocks_a_guessed_offset() {
+    let mut parsed = formula_source();
+    let mut unknown = parsed.text_elements[0].clone();
+    unknown.text = "π".into();
+    unknown.bounds.x0 = 60.5;
+    unknown.bounds.x1 = 61.5;
+    unknown.baseline_y = None;
+    parsed.text_elements.push(unknown);
+    let (xml, _) = package_source(parsed);
+    assert!(!xml.contains("<w:position"));
+    assert!(xml.contains("π"));
+}
+
 /// ファイルAPIの一時ZIPでも、privateなstyle名を公開せずbytesと同じ位置へ変換する。
 #[cfg(not(target_arch = "wasm32"))]
 #[test]
