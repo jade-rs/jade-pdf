@@ -386,12 +386,12 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
 
-/// 水平線の両端と高さが量子化済みの原本gridへ一致する場合だけ、表の境界と確認する。
+/// 別々に量子化する横辺・縦辺の端点差は1ptまで、高さは従来の半point以内でgridと照合する。
 fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
     let b = normalized_bounds(graphic.bounds);
     [b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite())
         && is_horizontal_line(&b)
-        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 0.5)
-        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 0.5)
+        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 1.0)
+        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 1.0)
         && ys.iter().any(|y| (b.y0 - *y as f32).abs() <= 0.5)
 }

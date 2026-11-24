@@ -100,9 +100,15 @@ fn bounded_native_cells_keep_independent_text_underlines() {
 fn independently_quantized_grid_endpoints_do_not_underline_text() {
     for multiline in [false, true] {
         for independent in [false, true] {
-            let xml=cell_with_overhang(multiline, independent, true);
-            assert_eq!(run(&xml,"Alpha").contains("<w:u "),independent,"separately rounded grid endpoints must not become text underlines");
-            if multiline {assert!(!run(&xml,"Omega").contains("<w:u "));}
+            let xml = cell_with_overhang(multiline, independent, true);
+            assert_eq!(
+                run(&xml, "Alpha").contains("<w:u "),
+                independent,
+                "separately rounded grid endpoints must not become text underlines"
+            );
+            if multiline {
+                assert!(!run(&xml, "Omega").contains("<w:u "));
+            }
         }
     }
 }
