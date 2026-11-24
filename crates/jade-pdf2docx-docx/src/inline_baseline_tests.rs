@@ -108,7 +108,8 @@ proptest! {
         prop_assert_eq!(pages[0].lines.len(), 2);
         prop_assert_eq!(&pages[0].lines[0].text, "A2=B");
         let (xml, _) = package_source(parsed);
-        prop_assert!(xml.contains(&format!("<w:position w:val=\"{half_points}\"")));
+        let expected = format!("<w:position w:val=\"{half_points}\"");
+        prop_assert!(xml.contains(&expected));
         prop_assert!(xml.contains("<w:sz w:val=\"14\""));
         prop_assert!(!xml.contains("JadeBaseline_"));
     }
