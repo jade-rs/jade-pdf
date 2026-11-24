@@ -67,3 +67,61 @@ fn truetype_keeps_verified_source_baseline() {
 fn cid_keeps_verified_source_baseline() {
     assert_baselines(2);
 }
+
+/// 同一基線のTJ断片と隣接描画は、従来のspan結合と本文を保つ。
+#[test]
+fn coherent_text_spans_keep_their_source_baseline_when_merged() {
+    for kind in 0..=2 {
+        let (a, b, c) = if kind == 2 {
+            ("<0041>", "<0042>", "<0043>")
+        } else {
+            ("(A)", "(B)", "(C)")
+        };
+        let parsed = document(
+            kind,
+            &format!("BT /F 18 Tf 1 0 0 1 30 80 Tm [{a} 0 {b}] TJ {c} Tj ET"),
+            false,
+        );
+        assert_eq!(parsed.text_elements.len(), 1);
+        assert_eq!(parsed.text_elements[0].text, "ABC");
+        assert_eq!(parsed.text_elements[0].baseline_y, Some(80.));
+    }
+}
+
+/// 文字上げを変えた同じfontの描画を別spanに保ち、各描画原点を区別する。
+#[test]
+fn text_rise_preserves_distinct_baselines() {
+    let parsed = document(
+        0,
+        "BT /F 18 Tf 1 0 0 1 30 80 Tm (A) Tj 6 Ts (B) Tj 0 Ts (C) Tj ET",
+        false,
+    );
+    assert_eq!(parsed.text_elements.len(), 3);
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|t| t.baseline_y)
+            .collect::<Vec<_>>(),
+        [Some(80.), Some(86.), Some(80.)]
+    );
+}
+
+/// 回転・反転・斜交と負の文字サイズを、正立文字の基線として公開しない。
+#[test]
+fn unverified_axes_and_nonpositive_sizes_do_not_gain_upright_baselines() {
+    for matrix in ["0 1 -1 0", "-1 0 0 1", "1 0 0 -1", "1 0.1 0 1", "1 0 0.1 1"] {
+        for in_form in [false, true] {
+            let parsed = document(
+                0,
+                &format!("BT /F 18 Tf {matrix} 80 80 Tm (A) Tj ET"),
+                in_form,
+            );
+            assert_eq!(parsed.text_elements.len(), 1);
+            assert!(parsed.text_elements[0].baseline_y.is_none());
+        }
+    }
+    let parsed = document(0, "BT /F -18 Tf 1 0 0 1 80 80 Tm (A) Tj ET", false);
+    assert_eq!(parsed.text_elements.len(), 1);
+    assert!(parsed.text_elements[0].baseline_y.is_none());
+}
