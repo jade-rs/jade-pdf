@@ -1,6 +1,5 @@
 //! 離れた黒枠と枠なしの値を、元の行・列へ一意に対応させる回帰。
 use super::*;
-use proptest::prelude::*;
 
 /// 四つのデータ欄のうち三欄だけに独立した枠を持つ、所有された表IRを作る。
 fn boxed_source(
@@ -255,4 +254,77 @@ fn a_fragment_crossing_two_physical_cells_rejects_the_new_model() {
         separated_box_table::infer(&parsed, 0, &parsed.graphics).is_none(),
         "ambiguous source glyphs must not be assigned across a cell edge"
     );
+}
+
+/// 欠けた辺・余分な線・縦の白帯の本文・反復しない枠は、閉じた表の証拠に使わない。
+#[test]
+fn incomplete_or_nonrepeating_boxes_retain_the_existing_fallback() {
+    for case in 0..5 {
+        let (mut parsed, _, _, _) = boxed_source(3, 20., 16.);
+        match case {
+            0 => {
+                parsed.graphics.remove(0);
+            }
+            1 => {
+                let mut extra = parsed.graphics[0].clone();
+                extra.bounds.y0 = 100.;
+                extra.bounds.y1 = 100.;
+                parsed.graphics.push(extra);
+            }
+            2 => {
+                let mut text = parsed.text_elements[0].clone();
+                text.bounds.y0 = 888.;
+                text.bounds.y1 = 896.;
+                text.baseline_y = Some(888.);
+                parsed.text_elements.push(text);
+            }
+            3 => {
+                for g in &mut parsed.graphics[..4] {
+                    g.bounds.x0 += 2.;
+                    g.bounds.x1 += 2.;
+                }
+            }
+            _ => {
+                parsed.text_elements.clear();
+            }
+        }
+        assert!(
+            separated_box_table::infer(&parsed, 0, &parsed.graphics).is_none(),
+            "uncertain source grid case {case} must not manufacture a table"
+        );
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 同じ文字列が別の欄に反復しても、paint順に依存せず物理位置で所有を決める。
+    #[test]
+    fn repeated_values_and_paint_order_keep_source_cell_identity(rotation in 0_usize..97, reverse in any::<bool>()) {
+        let (mut parsed,mut expected,xs,ys)=boxed_source(4,20.,16.);
+        for row in &mut expected { row[1]="same".into(); }
+        for text in &mut parsed.text_elements {if text.text.starts_with("name"){text.text="same".into();}}
+        let len=parsed.graphics.len();parsed.graphics.rotate_left(rotation%len);
+        let len=parsed.text_elements.len();parsed.text_elements.rotate_left(rotation%len);
+        if reverse {parsed.graphics.reverse();parsed.text_elements.reverse();}
+        assert_source_cells(&parsed,&expected,xs,&ys);
+        let tables=infer_positioned_tables_from_pdf_graphics(&parsed);
+        let table=&tables[0];
+        let model=table.docx_table.as_ref().unwrap();
+        prop_assert_eq!(model.rows.len(),7);
+        prop_assert_eq!(&table.column_widths_twips,&vec![1600,400,1600,2000,5600]);
+        for (row, cells) in model.rows.iter().enumerate() {
+            for (col,cell) in cells.iter().enumerate() {
+                let b=cell.borders.unwrap();
+                // 実データ行には三つの黒い枠。縦の白帯には縦罫線を足さない。
+                if row%2==0 {
+                    prop_assert_eq!((b.top,b.bottom),if col%2==0{(true,true)}else{(false,false)});
+                    prop_assert!(b.left && b.right);
+                } else {
+                    prop_assert!(!b.left && !b.right);
+                    prop_assert_eq!((b.top,b.bottom),if col%2==0{(true,true)}else{(false,false)});
+                }
+                prop_assert_eq!(b.size_eighths_pt,4);
+            }
+        }
+    }
 }
