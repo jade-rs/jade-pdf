@@ -239,7 +239,10 @@ fn overfull_source_cell_keeps_native_run_sizes_in_legacy_layout() {
         [20, 28],
         "overfull source cell must retain its exact native run sizes"
     );
-    assert_eq!(p[0].1, 280, "fallback line box must fit its largest source run");
+    assert_eq!(
+        p[0].1, 280,
+        "fallback line box must fit its largest source run"
+    );
 }
 
 proptest! {
@@ -254,6 +257,8 @@ proptest! {
         let p = paragraphs(&first_cell_from_source(&overfull_cell_source(gap, second_size)));
         prop_assert_eq!(p.len(), 1);
         prop_assert_eq!(&p[0].0, "Alpha Beta");
+        prop_assert_eq!(&p[0].3, &[20, second_size * 2]);
+        prop_assert_eq!(p[0].1, second_size * 20);
     }
 }
 
