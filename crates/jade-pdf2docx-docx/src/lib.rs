@@ -44,6 +44,7 @@ mod roman_fallback_tests;
 mod html_table;
 mod image_anchor;
 mod inline_baseline;
+mod inline_script_rows;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
@@ -1740,6 +1741,7 @@ fn text_lines_by_page_from_pdf_text_elements(
                     rows.push(vec![text]);
                 }
             }
+            inline_script_rows::recover(&mut rows);
             for row in &mut rows {
                 *row = native_spacing::with_interior_spaces(
                     &parsed.text_elements,

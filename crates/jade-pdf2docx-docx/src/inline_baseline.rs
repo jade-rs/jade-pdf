@@ -87,7 +87,7 @@ pub(super) fn offsets(row: &[&ParsedTextElement]) -> Vec<Option<i32>> {
 }
 
 /// 存在する左右の隣接文字が全て既知かつ同じ基線の場合だけ、局所的な基準を返す。
-fn neighbouring_reference(
+pub(super) fn neighbouring_reference(
     size: f32,
     left: Option<&ParsedTextElement>,
     right: Option<&ParsedTextElement>,
