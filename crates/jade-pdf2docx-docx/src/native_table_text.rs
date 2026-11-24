@@ -108,6 +108,14 @@ fn cells_impl(
                         return None;
                     }
                     let rows = source_rows(elements, closed_boxes);
+                    // 同じ字形・fontでも別断片の位置を混同せず、確認済み行内の基線差だけを渡す。
+                    let offsets = rows
+                        .iter()
+                        .flat_map(|row| row.iter().copied().zip(inline_baseline::offsets(row)))
+                        .filter_map(|(element, offset)| {
+                            offset.map(|value| (std::ptr::from_ref(element), value))
+                        })
+                        .collect::<BTreeMap<_, _>>();
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
@@ -145,6 +153,7 @@ fn cells_impl(
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
                                 styling_graphics,
+                                &offsets,
                             )
                         } else {
                             Vec::new()
@@ -155,6 +164,7 @@ fn cells_impl(
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
                                 styling_graphics,
+                                &offsets,
                             )
                         } else {
                             Vec::new()
@@ -204,6 +214,7 @@ fn legacy_runs<'a>(
     selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
     graphics: &[ParsedGraphicElement],
+    offsets: &BTreeMap<*const ParsedTextElement, i32>,
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
@@ -217,6 +228,7 @@ fn legacy_runs<'a>(
             return Vec::new();
         };
         run.text = text[start..].to_string();
+        run.style.baseline_offset = offsets.get(&std::ptr::from_ref(element)).copied();
         run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|name| {
             parsed
                 .embedded_fonts
