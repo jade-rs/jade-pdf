@@ -1136,6 +1136,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     .map_err(ConvertError::InvalidOcrTable)?;
                 container = container
                     .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                if let Some(boundary) =
+                    page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
+                {
+                    container = container.add_structured_paragraph(boundary);
+                }
                 if gap_after_block[block_index] {
                     container = container.add_structured_paragraph(table_gap_paragraph());
                 }
