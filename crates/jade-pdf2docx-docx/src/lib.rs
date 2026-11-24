@@ -780,7 +780,6 @@ fn build_structured_docx_with_image_payloads(
         && pages.len() > 1
         && text_columns_by_page.iter().any(Option::is_some)
         && pages.iter().all(|page| !page.lines.is_empty())
-        && positioned_tables.is_empty()
         && ocr_table.is_none();
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
