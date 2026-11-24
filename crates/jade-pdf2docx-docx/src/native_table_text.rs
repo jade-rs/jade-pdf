@@ -304,7 +304,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
 fn single_line_cell(cell: &Cell) -> Option<TableCell> {
     let mut paragraph = single_line_paragraph(cell)?;
     let line = cell.lines.first()?;
-    let indent = pdf_points_to_indent_twips((line.left_x - cell.left).max(0.0))?;
+    let indent = pdf_points_to_indent_twips(line.left_x - cell.left)?;
     if indent > 0 {
         paragraph = paragraph.indent(Some(indent), None, None, None);
     }
