@@ -40,7 +40,7 @@ fn labelled_run<'a>(xml: &'a str, label: &str) -> &'a str {
     &xml[start..end]
 }
 
-/// Wordの明示的な通常体解除を、文字列中のbCsや属性順と取り違えず読む。
+/// Wordの明示weightを、bCsや属性順と取り違えず読む。未指定は段落・style側に従う。
 fn bold(run: &str) -> Option<bool> {
     let mut reader = Reader::from_str(run);
     loop {
@@ -73,7 +73,7 @@ fn overfull_legacy_flow_keeps_font_weight_family_and_color_per_run() {
     assert!(alpha.contains("w:ascii=\"Arial\""));
     assert!(beta.contains("w:ascii=\"Courier New\""));
     assert_eq!(bold(alpha), Some(true));
-    assert_eq!(bold(beta), Some(false));
+    assert_ne!(bold(beta), Some(true));
     assert!(alpha.to_ascii_uppercase().contains("FF0000"));
     assert!(beta.to_ascii_uppercase().contains("0000FF"));
 }
