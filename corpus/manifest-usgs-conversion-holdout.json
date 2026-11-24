@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "purpose": "Prospective private original-source holdout registration before first product use. Three tracked fixture PDFs unchanged.",
+  "case": {
+    "id": "USGS-conversion-factors-1976",
+    "source_url": "https://pubs.usgs.gov/gip/70039401/report.pdf",
+    "landing_url": "https://pubs.usgs.gov/publication/70039401",
+    "bytes": 196113,
+    "sha256": "adba1cb0cb0a12dc5d4da18f4d0a947c912dba68e984cef590352aff8b22bd58",
+    "physical_pages": 5,
+    "rights_policy": "https://www.usgs.gov/information-policies-and-instructions/copyrights-and-credits",
+    "rights_assessment": "USGS-produced government chart under agency U.S. public-domain policy; all5 visible pages reviewed for third-party exceptions, none observed. Credit retained. This is not a blanket CC0 or separate font license assertion.",
+    "credit": "U.S. Geological Survey, Chart of Conversion Factors, printed INF-76-16 / U.S. Government Printing Office 1976. Credit: U.S. Geological Survey, Department of the Interior.",
+    "all_original_pages_individually_reviewed_before_first_product_use": true,
+    "privacy_review_passed": true,
+    "prospective_gold": "corpus/usgs-conversion-factors-1976-prospective-gold.json",
+    "prospective_gold_sha256": "6f90e9425d155c691d249104ea653dcaaaf10c79690a3ace6908d7e651427547",
+    "selected_cells": 56,
+    "fixed_candidate_before_collection": "e603044564411ac2c1fc59d20a6232688102a6d6",
+    "first_product_use": false,
+    "historical_registration_snapshot_not_to_be_reclassified_after_use": true,
+    "original_PDF_and_images_not_distributed": true,
+    "whole_document_accepted": false
+  }
+}
