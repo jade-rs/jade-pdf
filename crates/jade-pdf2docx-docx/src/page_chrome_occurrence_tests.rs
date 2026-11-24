@@ -42,6 +42,7 @@ fn parts(mut parsed: ParsedDocument) -> BTreeMap<String, String> {
             *name == "word/document.xml"
                 || *name == "word/_rels/document.xml.rels"
                 || name.starts_with("word/header")
+                || name.starts_with("word/footer")
         })
         .map(str::to_owned)
         .collect();
@@ -80,7 +81,16 @@ fn attribute(xml: &str, element: &[u8], key: &[u8]) -> Option<String> {
 
 /// sectionのheader参照を実際のZIP部品へ解決する。
 fn header_part<'a>(parts: &'a BTreeMap<String, String>, section: &str) -> Option<&'a str> {
-    let id = attribute(section, b"headerReference", b"r:id")?;
+    chrome_part(parts, section, b"headerReference")
+}
+
+/// sectionのheader/footer参照を、実際のrelationship targetへ解決する。
+fn chrome_part<'a>(
+    parts: &'a BTreeMap<String, String>,
+    section: &str,
+    reference: &[u8],
+) -> Option<&'a str> {
+    let id = attribute(section, reference, b"r:id")?;
     let relationships = &parts["word/_rels/document.xml.rels"];
     let mut reader = quick_xml::Reader::from_str(relationships);
     let target = loop {
@@ -257,5 +267,37 @@ fn twelve_page_headers_resolve_to_the_correct_styles() {
             header.contains(&format!("w:sz w:val=\"{size}\"")),
             "header part style must match source page {page}"
         );
+    }
+}
+
+proptest! {
+    /// 原本ページ数と段組数を変えても、本文所属と両端の見出し書式を保持する。
+    #[test]
+    fn prop_chrome_parts_match_source_pages(count in 4usize..25, columns in any::<bool>()) {
+        let mut parsed = alternating_headers(count, columns);
+        let footers: Vec<_> = parsed.text_elements.iter()
+            .filter(|text| text.text == "SHARED TITLE").cloned()
+            .map(|mut text| {
+                text.text = "SHARED FOOTER".into();
+                text.bounds.y1 = 40.;
+                text.bounds.y0 = 40. - text.font_size;
+                text.baseline_y = Some(text.bounds.y0);
+                text
+            }).collect();
+        parsed.text_elements.extend(footers);
+        let parts = parts(parsed);
+        let body = &parts["word/document.xml"];
+        prop_assert!(!body.contains("SHARED TITLE") && !body.contains("SHARED FOOTER"));
+        let sections: Vec<_> = body.split("<w:sectPr").skip(1)
+            .map(|part| part.split("</w:sectPr>").next().unwrap()).collect();
+        prop_assert_eq!(sections.len(), count);
+        for (page, section) in sections.iter().enumerate() {
+            for reference in [b"headerReference".as_slice(), b"footerReference".as_slice()] {
+                let part = chrome_part(&parts, section, reference).unwrap();
+                let size = if page % 2 == 0 { 18 } else { 20 };
+                prop_assert!(part.contains(&format!("w:sz w:val=\"{size}\"")), "source page style mismatch");
+            }
+            prop_assert!(body.contains(&format!("PAGE{page} LEFT 1")), "source page body missing");
+        }
     }
 }
