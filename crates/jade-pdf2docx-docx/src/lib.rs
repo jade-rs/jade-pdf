@@ -30,6 +30,9 @@ mod conversion_control;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
+mod glyph_metrics;
+mod layout_space;
+mod positioned_type1;
 
 mod html_table;
 mod native_baseline;
@@ -1603,6 +1606,7 @@ fn text_lines_by_page_from_pdf_text_elements(
     parsed: &ParsedDocument,
     positioned_tables: &[PositionedTable],
 ) -> Vec<StructuredTextPage> {
+    let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     let page_numbers = parsed
         .text_elements
         .iter()
@@ -1667,7 +1671,11 @@ fn text_lines_by_page_from_pdf_text_elements(
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
                                 .map(|mut line| {
-                                    mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts);
+                                    mark_embedded_fonts_in_line(
+                                        &mut line,
+                                        &parsed.embedded_fonts,
+                                        &space_family,
+                                    );
                                     line
                                 })
                         })
@@ -1972,6 +1980,15 @@ fn structured_text_runs_from_row(
                 embedded_face: None,
                 fill_color: text.fill_color.clone(),
                 underlined: parsed_text_has_underline(text, page_graphics),
+                source_bounds: text
+                    .baseline_y
+                    .filter(|y| {
+                        y.is_finite()
+                            && *y == text.bounds.y0
+                            && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() < 0.001
+                    })
+                    .map(|_| text.bounds),
+                placement: None,
             },
         });
         right = right.max(text.bounds.x1);
@@ -1994,6 +2011,7 @@ fn row_fragment_text(text: &str, index: usize, len: usize) -> &str {
 fn mark_embedded_fonts_in_line(
     line: &mut StructuredTextLine,
     embedded_fonts: &[ParsedEmbeddedFont],
+    space_family: &str,
 ) {
     for run in &mut line.runs {
         let font = run
@@ -2004,11 +2022,17 @@ fn mark_embedded_fonts_in_line(
         run.style.font_embedded = font.is_some();
         run.style.embedded_face = font.and_then(|font| embedded_face::Face::read(&font.bytes));
     }
+    positioned_type1::prepare(line, embedded_fonts, space_family);
 }
 
 /// structured run から DOCX run を作る。
 fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     let mut run = text_run(structured_run.text.as_str());
+    if let Some(placement) = structured_run.style.placement {
+        run = run
+            .stretch(placement.stretch)
+            .character_spacing(placement.spacing);
+    }
     if let Some(size) = pdf_font_size_to_half_points(structured_run.style.font_size) {
         run = run.size(size);
     }
@@ -2674,6 +2698,10 @@ struct StructuredTextStyle {
     fill_color: Option<String>,
     /// PDF の短い水平線から推定した下線。
     underlined: bool,
+    /// 正立baselineとem高が確認できた、未加工のsource glyph矩形。
+    source_bounds: Option<ParsedBounds>,
+    /// 検証済みglyph advanceに基づくDOCXの字間と幅指定。
+    placement: Option<positioned_type1::Placement>,
 }
 
 impl Default for StructuredTextStyle {
@@ -2685,6 +2713,8 @@ impl Default for StructuredTextStyle {
             embedded_face: None,
             fill_color: None,
             underlined: false,
+            source_bounds: None,
+            placement: None,
         }
     }
 }

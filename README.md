@@ -52,7 +52,7 @@ The comparison command writes JSON to stdout and exits with `0` when there are n
 
 PDF comparison uses the pinned Pdfium runtime described in the [comparison guide](docs/pdf_diff.md). For PDF→DOCX rendering with a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
 
-Native file parsing also exposes `ParsedTextElement::baseline_y` for a finite origin reported by the SDK for the first horizontal glyph. DOCX row grouping uses this separately from `bounds`, which remains unchanged. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping; pure bytes/WASM parsing leaves it unset.
+`ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright generated Type1 glyph's drawing matrix in the bytes/WASM parser. DOCX row grouping uses this separately from `bounds`. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping.
 
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
@@ -106,6 +106,8 @@ For embedded Type1 FontFile fonts without an explicit PDF BaseEncoding, the byte
 If a nonstandard Type1 font has no usable built-in font program and no per-code Unicode mapping, its painted codes are unverified; strict conversion rejects them. Optional null or unresolved Encoding values use the built-in default, as required by PDF null-object semantics. The existing non-embedded Standard 14 font path is preserved.
 
 Supported static Type1 drawing programs can now be converted to embedded OpenType/CFF faces by the pure Rust parser, including the bytes/WASM conversion path. Original code widths and verified Unicode mappings select each face; source rights and notices are retained. Native reconciliation preserves those selections on matching pages. DOCX uses intrinsic bold/italic attributes and respects the no-subsetting flag. This is partial Type1 support, and does not establish page-layout or Microsoft Word fidelity. See the [Type1 support and qualification guide](docs/type1_fonts.md).
+
+Upright generated Type1 text retains one element per source glyph, including separate elements for ordinary letters that share a font. Verified upright elements expose their baseline; logical TJ word gaps can have independent bounds and no source font. For fully measured lines, DOCX uses glyph advances and character spacing, with an owned nonprinting font for logical spaces. Font-size and renderer rounding still limit positioning accuracy. Converter distributions must also include the pinned [ttf-parser MIT notice](crates/jade-pdf2docx-docx/licenses/ttf-parser-0.25.1.txt).
 
 Within a `TJ` array, a forward gap of at least 0.2 em between word-spaced characters restores one missing word separator without changing glyph positions. Explicit spaces, small kerning adjustments, CJK tracking, and separate show operators retain their existing behavior. This bounded spacing heuristic does not establish font substitution or pagination fidelity.
 

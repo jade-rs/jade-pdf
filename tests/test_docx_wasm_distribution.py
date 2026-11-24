@@ -29,6 +29,10 @@ class DocxWasmDistributionTest(unittest.TestCase):
         ]:
             (self.probe / target).write_bytes(
                 (ROOT / 'crates/jade-pdf2docx-parser/licenses' / source).read_bytes())
+        (self.probe / 'LICENSE-ttf-parser-0.25.1.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-docx/licenses/ttf-parser-0.25.1.txt').read_bytes())
+        (self.probe / 'LICENSE-jade-layout-font.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-docx/licenses/jade-layout-font.txt').read_bytes())
         self.record_hashes()
 
     def record_hashes(self):
@@ -60,6 +64,34 @@ class DocxWasmDistributionTest(unittest.TestCase):
         (self.probe / 'LICENSE-reportlab.txt').write_bytes(b'changed license')
         self.record_hashes()
         with self.assertRaisesRegex(AssertionError, 'License notice mismatch: LICENSE-reportlab.txt'):
+            self.module.check(self.probe)
+
+    def test_missing_font_reader_notice_is_rejected(self):
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes())
+        (self.probe / 'LICENSE-ttf-parser-0.25.1.txt').unlink()
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'LICENSE-ttf-parser-0.25.1.txt'):
+            self.module.check(self.probe)
+
+    def test_owned_font_notice_preserves_the_repository_license(self):
+        self.assertEqual((self.probe / 'LICENSE-jade-layout-font.txt').read_bytes(),
+                         (ROOT / 'LICENSE').read_bytes())
+
+    def test_missing_owned_font_notice_is_rejected(self):
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes())
+        (self.probe / 'LICENSE-jade-layout-font.txt').unlink()
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'LICENSE-jade-layout-font.txt'):
+            self.module.check(self.probe)
+
+    def test_updated_manifest_does_not_hide_modified_font_reader_notice(self):
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes())
+        (self.probe / 'LICENSE-ttf-parser-0.25.1.txt').write_bytes(b'changed license')
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'License notice mismatch: LICENSE-ttf-parser-0.25.1.txt'):
             self.module.check(self.probe)
 
 

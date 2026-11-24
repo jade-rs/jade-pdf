@@ -3,6 +3,8 @@ use crate::ConvertError;
 use docx_rs::Docx;
 use jade_pdf2docx_parser::ParsedEmbeddedFont;
 use std::io::{Cursor, Read, Seek, Write};
+#[path = "font_usage.rs"]
+mod font_usage;
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
 pub(super) fn pack_docx_to_bytes(
@@ -10,6 +12,7 @@ pub(super) fn pack_docx_to_bytes(
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
     let mut package = docx.build();
+    crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
@@ -56,19 +59,16 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
     embedded_fonts: &[ParsedEmbeddedFont],
     output: W,
 ) -> Result<bool, ConvertError> {
-    let document_xml = {
-        let mut entry = archive
-            .by_name("word/document.xml")
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        let mut xml = String::new();
-        entry
-            .read_to_string(&mut xml)
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        xml
-    };
+    let usage = font_usage::read(archive, embedded_fonts)?;
+    let space_font = usage.space_family.map(|space_name| ParsedEmbeddedFont {
+        bytes: crate::layout_space::font(&space_name),
+        font_name: space_name,
+    });
     let used_fonts = embedded_fonts
         .iter()
-        .filter(|font| document_xml.contains(font.font_name.as_str()))
+        .zip(usage.source_fonts)
+        .filter_map(|(font, used)| used.then_some(font))
+        .chain(space_font.iter())
         .collect::<Vec<_>>();
     if used_fonts.is_empty() {
         return Ok(false);
@@ -282,6 +282,7 @@ pub(super) fn pack_docx_to_file(
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
     let mut package = docx.build();
+    crate::layout_space::preserve_advance(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     package
         .pack(&mut output)

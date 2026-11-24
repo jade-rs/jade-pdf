@@ -154,6 +154,8 @@ mod embedded_fonts;
 mod font_descriptor_cmaps;
 #[path = "type1_fonts.rs"]
 pub(crate) mod type1_fonts;
+#[path = "type1_positions.rs"]
+mod type1_positions;
 #[path = "type1_runs.rs"]
 mod type1_runs;
 
@@ -2393,6 +2395,8 @@ fn extract_text_elements_with_matrices<'clip>(
     let mut elements = Vec::<ParsedTextElement>::new();
     let mut last_sequence = None;
     let mut last_draw = None;
+    let mut last_derived = false;
+    let mut last_positioned = false;
     let mut current_sequence = None;
     let mut current_geometry = None;
     let mut emit = |begin: usize,
@@ -2546,7 +2550,11 @@ fn extract_text_elements_with_matrices<'clip>(
                     && crate::text_draws::adjacent(previous, width, current, state.size)
             })
         });
-        let merge = (last_sequence == Some(sequence) || adjacent)
+        let positioned =
+            derived.is_some() && page_matrix.and_then(type1_positions::baseline).is_some();
+        let merge = !positioned
+            && !last_positioned
+            && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
                     && previous.font_name.as_deref() == font_name
@@ -2568,22 +2576,58 @@ fn extract_text_elements_with_matrices<'clip>(
                     .all(|ch| ch.is_whitespace() && !ch.is_control())))
             && let Some(bounds) = bounds
         {
-            if merge && let Some(previous) = elements.last_mut() {
-                let separator = page_matrix
-                    .and_then(|current| {
-                        let (last_begin, matrix, width) = last_draw?;
-                        (last_begin == begin && last_sequence == Some(sequence))
-                            .then(|| crate::text_draws::gap(matrix, width, current))
-                            .flatten()
-                    })
-                    .is_some_and(|gap| {
+            let separator = page_matrix
+                .and_then(|current| {
+                    let (last_begin, matrix, width) = last_draw?;
+                    (last_begin == begin && last_sequence == Some(sequence))
+                        .then(|| crate::text_draws::gap(matrix, width, current))
+                        .flatten()
+                })
+                .is_some_and(|gap| {
+                    elements.last().is_some_and(|previous| {
                         crate::text_word_gap::needs_separator(
                             &previous.text,
                             &text,
                             gap,
                             state.size,
                         )
-                    });
+                    })
+                });
+            if !merge && derived.is_some() && last_derived && separator {
+                let gap = elements.last().and_then(|previous| {
+                    type1_positions::gap(previous.bounds, bounds, page_matrix?)
+                });
+                if let Some(gap) = gap {
+                    let Some(space) = crate::text_result_storage::copy(budget, Some(" ")).flatten()
+                    else {
+                        return 0.;
+                    };
+                    if crate::metadata_workspace::try_push(
+                        budget,
+                        &mut elements,
+                        ParsedTextElement {
+                            baseline_y: page_matrix.and_then(type1_positions::baseline),
+                            page,
+                            bounds: gap,
+                            font_size,
+                            font_name: None,
+                            fill_color: None,
+                            text: space,
+                        },
+                    )
+                    .is_none()
+                    {
+                        return 0.;
+                    }
+                } else if let Some(previous) = elements.last_mut() {
+                    // 未対応の文字軸では位置を推測せず、従来の論理的な境界だけを保つ。
+                    if crate::text_result_storage::extend(budget, &mut previous.text, " ").is_none()
+                    {
+                        return 0.;
+                    }
+                }
+            }
+            if merge && let Some(previous) = elements.last_mut() {
                 if separator
                     && crate::text_result_storage::extend(budget, &mut previous.text, " ").is_none()
                 {
@@ -2609,7 +2653,8 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: None,
+                        baseline_y: derived
+                            .and_then(|_| page_matrix.and_then(type1_positions::baseline)),
                         page,
                         bounds,
                         font_size,
@@ -2624,9 +2669,13 @@ fn extract_text_elements_with_matrices<'clip>(
                 }
             }
             last_sequence = Some(sequence);
+            last_derived = derived.is_some();
+            last_positioned = positioned;
             last_draw = page_matrix.map(|matrix| (begin, matrix, layout.advance));
         } else {
             last_sequence = None;
+            last_derived = false;
+            last_positioned = false;
             last_draw = None;
         }
         layout.advance * state.horizontal_scale

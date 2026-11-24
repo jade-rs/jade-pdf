@@ -122,18 +122,19 @@ pub(crate) fn verified_single_byte_cmap<'a>(
 mod type1;
 pub(crate) use type1::{Mapping as Type1Mapping, build as type1_mapping};
 
-/// ページ・Formの可視本文を借用し、文書全体の重複除去・文字数制限を適用する。
+#[path = "positioned_preview.rs"]
+mod positioned_preview;
+
+/// 可視本文を借用し、位置付きglyphの行を戻してから重複除去・文字数制限を適用する。
 pub(crate) fn preview_from_text_elements(
     budget: &DecodeBudget,
     elements: &[crate::ParsedTextElement],
 ) -> String {
     let mut builder = preview_result::Builder::default();
-    for element in elements {
-        match builder.push_decoded(budget, &element.text) {
-            Some(true) => {}
-            Some(false) => break,
-            None => return String::new(),
-        }
+    if positioned_preview::visit(budget, elements, |text| builder.push_decoded(budget, text))
+        .is_none()
+    {
+        return String::new();
     }
     builder.finish(budget).unwrap_or_default()
 }

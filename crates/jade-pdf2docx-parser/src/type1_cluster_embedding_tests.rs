@@ -1,5 +1,48 @@
 //! 同じUnicode文字列でも異なる元glyph列を、実PDFから失わずに出力へ渡す。
 use crate::type1_embedding_tests::{charstring, encrypt};
+use proptest::prelude::*;
+
+/// glyphごとの位置を保存しても、previewを一文字ずつ重複除去して原文を壊さない。
+#[test]
+fn positioned_type1_preview_preserves_repeated_letters_and_logical_gaps() {
+    for (content, expected) in [
+        ("BT /F1 20 Tf 20 80 Td (BAAB) Tj ET", "ffffff"),
+        ("BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET", "f f"),
+        ("BT /F1 20 Tf 20 80 Td (B) Tj 0 -40 Td (AA) Tj ET", "ff"),
+        ("BT /F1 20 Tf 0 1 -1 0 100 20 Tm (AAAA) Tj ET", "ffff"),
+    ] {
+        let parsed = crate::parse_pdf_bytes(
+            "owned-positioned-preview.pdf",
+            &pdf_with_content(content.as_bytes(), None),
+        )
+        .unwrap();
+        assert_eq!(parsed.text_preview, expected, "{content}");
+    }
+}
+
+proptest! {
+    /// Tc・Tzと負のTJが変わっても、元glyphの幅と各原点をUnicode字数から独立に保つ。
+    #[test]
+    fn original_glyph_origins_survive_spacing_and_horizontal_scale(
+        codes in prop::collection::vec(any::<bool>(), 2..12),
+        tc in -2i32..3, scale in 40i32..181, tj in 0i32..71,
+    ) {
+        let operand = codes.iter().map(|b| if *b { "(B)" } else { "(A)" }).collect::<Vec<_>>().join(&format!(" {tj} "));
+        let content = format!("BT /F1 20 Tf {tc} Tc {scale} Tz 20 80 Td [{operand}] TJ ET");
+        let parsed = crate::parse_pdf_bytes("owned-glyph-positions.pdf", &pdf_with_content(content.as_bytes(), None)).unwrap();
+        prop_assert_eq!(parsed.text_elements.len(), codes.len());
+        let factor = scale as f32 / 100.;
+        prop_assert_eq!(&parsed.text_preview,&"f".repeat(codes.iter().map(|ligature| 1 + usize::from(*ligature)).sum()));
+        let mut x = 20.;
+        for (e, ligature) in parsed.text_elements.iter().zip(codes) {
+            let width = if ligature { 10. } else { 6. };
+            prop_assert_eq!(e.text.as_str(), if ligature { "ff" } else { "f" });
+            prop_assert!((e.bounds.x0 - x).abs() < 0.002, "{:?}, expected x={}", e, x);
+            prop_assert!((e.bounds.x1 - e.bounds.x0 - width * factor).abs() < 0.002);
+            x += (width + tc as f32 - tj as f32 * 0.02) * factor;
+        }
+    }
+}
 
 /// 既知の小整数を、テスト側の独立Type1 encoderで書く。
 fn number(out: &mut Vec<u8>, value: i32) {
@@ -89,6 +132,52 @@ pub(crate) fn pdf_with_content(content: &[u8], second_width: Option<u16>) -> Vec
     encode_objects(objects(content, second_width))
 }
 
+/// TJによる論理空白を、元fontのcode32へ割り当てず独立した位置として保つ。
+#[test]
+fn positioned_type1_keeps_tj_space_geometry() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(A) -400 (A)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-gap.pdf", &input).unwrap();
+    let text = &parsed.text_elements;
+    assert!(text.iter().all(|e| e.baseline_y == Some(80.)));
+    assert_eq!(
+        text.iter().map(|e| e.text.as_str()).collect::<Vec<_>>(),
+        ["f", " ", "f"]
+    );
+    assert_eq!(text[1].font_name, None);
+    assert!((text[1].bounds.x0 - 26.).abs() < 0.001);
+    assert!((text[1].bounds.x1 - 34.).abs() < 0.001);
+    assert!((text[2].bounds.x0 - 34.).abs() < 0.001);
+    assert_eq!(text[0].font_name, text[2].font_name);
+}
+
+/// 合字faceから通常faceへの切り替えでも、TJの単語境界を保持する。
+#[test]
+fn positioned_type1_keeps_space_across_face_changes() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(B) -400 (A)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-face-gap.pdf", &input).unwrap();
+    let text = &parsed.text_elements;
+    assert_eq!(
+        text.iter().map(|e| e.text.as_str()).collect::<Vec<_>>(),
+        ["ff", " ", "f"]
+    );
+    assert!((text[1].bounds.x0 - 30.).abs() < 0.001);
+    assert!((text[1].bounds.x1 - 38.).abs() < 0.001);
+    assert_ne!(text[0].font_name, text[2].font_name);
+}
+
+/// 小さな字間調整を論理空白へ変えず、同じface内の元glyph位置を残す。
+#[test]
+fn positioned_type1_preserves_glyph_origins_inside_one_face() {
+    let input = pdf_with_content(b"BT /F1 20 Tf 20 80 Td [(AA) -50 (AA)] TJ ET", None);
+    let parsed = crate::parse_pdf_bytes("owned-positioned-kerning.pdf", &input).unwrap();
+    assert_eq!(parsed.text_elements.len(), 4);
+    for (element, x) in parsed.text_elements.iter().zip([20., 26., 33., 39.]) {
+        assert_eq!(element.text, "f");
+        assert!((element.bounds.x0 - x).abs() < 0.001, "{element:?}");
+        assert!((element.bounds.x1 - element.bounds.x0 - 6.).abs() < 0.001);
+    }
+}
+
 /// stream長と原本fontを保った、拡張可能な所有object列。
 fn objects(content: &[u8], second_width: Option<u16>) -> Vec<Vec<u8>> {
     let (font, first, second, third) = font_program();
@@ -154,20 +243,23 @@ fn form_local_and_inherited_font_routes_preserve_resource_scope() {
         objects.push(stream(form,"/Type /XObject /Subtype /Form /FormType 1 /BBox [0 0 200 120] /Resources << /Font << /F1 9 0 R >> >>"));
         let parsed =
             crate::parse_pdf_bytes("owned-scoped-form.pdf", &encode_objects(objects)).unwrap();
-        assert_eq!(parsed.text_elements.len(), 2);
-        let e = &parsed.text_elements[1];
-        assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001, "{e:?}");
-        if inherit {
-            assert_eq!(e.font_name, expected);
-        } else {
-            assert_ne!(e.font_name, parsed.text_elements[0].font_name);
+        assert_eq!(parsed.text_elements.len(), if inherit { 3 } else { 4 });
+        let form = &parsed.text_elements[2..];
+        assert!((form.last().unwrap().bounds.x1 - form[0].bounds.x0 - width).abs() < 0.001);
+        for e in form {
+            if inherit {
+                assert_eq!(e.font_name, expected);
+            } else {
+                assert_ne!(e.font_name, parsed.text_elements[0].font_name);
+                assert!((e.bounds.x1 - e.bounds.x0 - 9.).abs() < 0.001);
+            }
+            assert!(
+                parsed
+                    .embedded_fonts
+                    .iter()
+                    .any(|f| Some(&f.font_name) == e.font_name.as_ref())
+            );
         }
-        assert!(
-            parsed
-                .embedded_fonts
-                .iter()
-                .any(|f| Some(&f.font_name) == e.font_name.as_ref())
-        );
     }
 }
 
@@ -220,12 +312,14 @@ fn unused_resource_fonts_do_not_exhaust_the_published_font_limit() {
     let parsed =
         crate::parse_pdf_bytes("owned-unused-resource-fonts.pdf", &encode_objects(objects))
             .unwrap();
-    assert_eq!(parsed.text_elements.len(), 1);
-    assert_eq!(parsed.text_elements[0].text, "ff");
+    assert_eq!(parsed.text_elements.len(), 2);
+    assert!(parsed.text_elements.iter().all(|e| e.text == "f"));
     assert_eq!(parsed.embedded_fonts.len(), 1);
-    assert_eq!(
-        parsed.text_elements[0].font_name.as_deref(),
-        Some(parsed.embedded_fonts[0].font_name.as_str())
+    assert!(
+        parsed
+            .text_elements
+            .iter()
+            .all(|e| e.font_name.as_deref() == Some(parsed.embedded_fonts[0].font_name.as_str()))
     );
 }
 
@@ -239,27 +333,28 @@ fn mixed_source_clusters_in_one_operand_keep_distinct_routes_and_positions() {
             &pdf_with_content(content.as_bytes(), None),
         )
         .unwrap();
-        assert_eq!(parsed.text_elements.len(), 3, "{operand}");
+        assert_eq!(parsed.text_elements.len(), 4, "{operand}");
         assert_eq!(
             parsed
                 .text_elements
                 .iter()
                 .map(|e| e.text.as_str())
                 .collect::<Vec<_>>(),
-            ["ff", "ff", "ff"]
+            ["ff", "f", "f", "ff"]
         );
         assert_eq!(
             parsed.text_elements[0].font_name,
-            parsed.text_elements[2].font_name
+            parsed.text_elements[3].font_name
         );
         assert_ne!(
             parsed.text_elements[0].font_name,
             parsed.text_elements[1].font_name
         );
-        for (e, (x, width)) in parsed
-            .text_elements
-            .iter()
-            .zip([(20., 10.), (30., 12.), (42., 10.)])
+        for (e, (x, width)) in
+            parsed
+                .text_elements
+                .iter()
+                .zip([(20., 10.), (30., 6.), (36., 6.), (42., 10.)])
         {
             assert!(
                 (e.bounds.x0 - x).abs() < 0.001
@@ -291,20 +386,20 @@ fn native_mixed_clusters_keep_embedded_routes_after_sdk_reconciliation() {
         &budget,
     )
     .unwrap();
-    assert_eq!(parsed.text_elements.len(), 3);
+    assert_eq!(parsed.text_elements.len(), 4);
     assert_eq!(
         parsed
             .text_elements
             .iter()
             .map(|e| e.text.as_str())
             .collect::<Vec<_>>(),
-        ["ff", "ff", "ff"]
+        ["ff", "f", "f", "ff"]
     );
     assert_ne!(
         parsed.text_elements[0].font_name,
         parsed.text_elements[1].font_name
     );
-    for (e, width) in parsed.text_elements.iter().zip([10., 12., 10.]) {
+    for (e, width) in parsed.text_elements.iter().zip([10., 6., 6., 10.]) {
         assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001, "{e:?}");
         assert!(
             parsed
@@ -321,13 +416,13 @@ fn source_cluster_routing_preserves_tj_and_original_glyph_character_spacing() {
     for (content, positions, widths) in [
         (
             "BT /F1 20 Tf 20 80 Td [(B) -100 (AA) 50 (B)] TJ ET",
-            [20., 32., 43.],
-            [10., 12., 10.],
+            [20., 32., 38., 43.],
+            [10., 6., 6., 10.],
         ),
         (
             "BT /F1 20 Tf 1 Tc 20 80 Td (BAAB) Tj ET",
-            [20., 31., 45.],
-            [10., 13., 10.],
+            [20., 31., 38., 45.],
+            [10., 6., 6., 10.],
         ),
     ] {
         let parsed = crate::parse_pdf_bytes(
@@ -335,7 +430,7 @@ fn source_cluster_routing_preserves_tj_and_original_glyph_character_spacing() {
             &pdf_with_content(content.as_bytes(), None),
         )
         .unwrap();
-        assert_eq!(parsed.text_elements.len(), 3);
+        assert_eq!(parsed.text_elements.len(), 4);
         for (i, e) in parsed.text_elements.iter().enumerate() {
             assert!((e.bounds.x0 - positions[i]).abs() < 0.001);
             assert!(
@@ -355,13 +450,13 @@ fn shared_fontfile_and_base_name_do_not_merge_different_resource_widths() {
         &pdf_with_content(content, Some(450)),
     )
     .unwrap();
-    assert_eq!(parsed.text_elements.len(), 2);
+    assert_eq!(parsed.text_elements.len(), 4);
     assert_ne!(
         parsed.text_elements[0].font_name,
-        parsed.text_elements[1].font_name
+        parsed.text_elements[2].font_name
     );
-    for (e, width) in parsed.text_elements.iter().zip([12., 18.]) {
-        assert_eq!(e.text, "ff");
+    for (e, width) in parsed.text_elements.iter().zip([6., 6., 9., 9.]) {
+        assert_eq!(e.text, "f");
         assert!((e.bounds.x1 - e.bounds.x0 - width).abs() < 0.001);
         assert!(
             parsed
@@ -376,14 +471,14 @@ fn shared_fontfile_and_base_name_do_not_merge_different_resource_widths() {
 #[test]
 fn identical_unicode_retains_distinct_encoded_glyph_clusters_for_docx() {
     let parsed = crate::parse_pdf_bytes("owned-source-clusters.pdf", &pdf()).unwrap();
-    assert_eq!(parsed.text_elements.len(), 2);
+    assert_eq!(parsed.text_elements.len(), 3);
     assert_eq!(
         parsed
             .text_elements
             .iter()
             .map(|t| t.text.as_str())
             .collect::<Vec<_>>(),
-        ["ff", "ff"]
+        ["ff", "f", "f"]
     );
     assert_ne!(
         parsed.text_elements[0].font_name, parsed.text_elements[1].font_name,
@@ -397,7 +492,7 @@ fn identical_unicode_retains_distinct_encoded_glyph_clusters_for_docx() {
             .expect("each routed original glyph cluster must have a portable font");
         assert_eq!(font.bytes.get(..4), Some(b"OTTO".as_slice()));
     }
-    for (element, expected) in parsed.text_elements.iter().zip([10., 12.]) {
+    for (element, expected) in parsed.text_elements.iter().zip([10., 6., 6.]) {
         assert!(
             (element.bounds.x1 - element.bounds.x0 - expected).abs() < 0.001,
             "original width must survive: {element:?}"
