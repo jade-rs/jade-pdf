@@ -5,6 +5,8 @@ use std::collections::BTreeMap;
 
 /// ライブラリが収集しない段落sectionの部品を、relationshipの数値順で補完する。
 pub(super) fn build(docx: Docx) -> Result<XMLDocx, ConvertError> {
+    let header_count = docx.document_rels.header_count;
+    let footer_count = docx.document_rels.footer_count;
     let root = &docx.document.section_property;
     let properties: Vec<_> = docx
         .document
@@ -40,12 +42,35 @@ pub(super) fn build(docx: Docx) -> Result<XMLDocx, ConvertError> {
     if let Some(headers) = headers {
         package.header_rels = vec![docx_rs::HeaderRels::new().build(); headers.len()];
         package.headers = headers;
+    } else if header_count > 9 {
+        package.headers = numeric_order(package.headers, header_count, "rIdHeader")?;
     }
     if let Some(footers) = footers {
         package.footer_rels = vec![docx_rs::FooterRels::new().build(); footers.len()];
         package.footers = footers;
+    } else if footer_count > 9 {
+        package.footers = numeric_order(package.footers, footer_count, "rIdFooter")?;
     }
     Ok(package)
+}
+
+/// docx-rsのrId文字列順をrelationship targetの1始まりの番号順へ戻す。
+fn numeric_order(
+    parts: Vec<Vec<u8>>,
+    count: usize,
+    prefix: &str,
+) -> Result<Vec<Vec<u8>>, ConvertError> {
+    if parts.len() != count {
+        return Err(ConvertError::Pack("incomplete page chrome parts".into()));
+    }
+    let mut indices: Vec<_> = (1..=count).collect();
+    indices.sort_by_key(|index| format!("{prefix}{index}"));
+    Ok(indices
+        .into_iter()
+        .zip(parts)
+        .collect::<BTreeMap<_, _>>()
+        .into_values()
+        .collect())
 }
 
 /// ページ見出しの全登録を照合し、欠番や非テキスト参照の黙示的な欠落を拒否する。
