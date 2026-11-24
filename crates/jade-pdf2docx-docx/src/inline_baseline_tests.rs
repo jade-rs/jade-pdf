@@ -436,30 +436,36 @@ proptest! {
     }
 }
 
+/// 任意のfragment粒度で、通常本文の近くに独立した小文字の長い行を作る。
+fn diagonal_note_source(split_glyphs: bool, gap: f32, offset: f32) -> ParsedDocument {
+    let mut parsed = formula_source();
+    let note = "an independent footnote paragraph";
+    let mut fragment = parsed.text_elements[1].clone();
+    fragment.baseline_y = Some(700. + offset);
+    fragment.bounds.y0 = 698.6 + offset;
+    fragment.bounds.y1 = 705.6 + offset;
+    fragment.bounds.x0 = 76. + gap;
+    fragment.bounds.x1 = fragment.bounds.x0 + note.len() as f32 * 3.5;
+    fragment.text = note.into();
+    if split_glyphs {
+        for (i, c) in note.chars().enumerate() {
+            let mut glyph = fragment.clone();
+            glyph.text = c.to_string();
+            glyph.bounds.x0 = fragment.bounds.x0 + i as f32 * 3.5;
+            glyph.bounds.x1 = glyph.bounds.x0 + 3.5;
+            parsed.text_elements.push(glyph);
+        }
+    } else {
+        parsed.text_elements.push(fragment);
+    }
+    parsed
+}
+
 /// 段の根拠がない斜め下の長い小文字行を、span分割の有無に関係なく本文へ吸収しない。
 #[test]
 fn long_diagonal_footnote_is_not_an_inline_script() {
     for split_glyphs in [false, true] {
-        let mut parsed = formula_source();
-        let note = "an independent footnote paragraph";
-        let mut fragment = parsed.text_elements[1].clone();
-        fragment.baseline_y = Some(694.5);
-        fragment.bounds.y0 = 693.1;
-        fragment.bounds.y1 = 700.1;
-        fragment.bounds.x0 = 80.;
-        fragment.bounds.x1 = 80. + note.len() as f32 * 3.5;
-        fragment.text = note.into();
-        if split_glyphs {
-            for (i, c) in note.chars().enumerate() {
-                let mut glyph = fragment.clone();
-                glyph.text = c.to_string();
-                glyph.bounds.x0 = 80. + i as f32 * 3.5;
-                glyph.bounds.x1 = glyph.bounds.x0 + 3.5;
-                parsed.text_elements.push(glyph);
-            }
-        } else {
-            parsed.text_elements.push(fragment);
-        }
+        let parsed = diagonal_note_source(split_glyphs, 4., -5.5);
         let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
         let body = pages[0]
             .lines
@@ -470,6 +476,34 @@ fn long_diagonal_footnote_is_not_an_inline_script() {
             body.text, "A2=B",
             "diagonal footnote must not become an inline script (split={split_glyphs})"
         );
-        assert!(pages[0].lines.iter().any(|l| l.text == note));
+        assert!(
+            pages[0]
+                .lines
+                .iter()
+                .any(|l| l.text == "an independent footnote paragraph")
+        );
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+    /// 行の幅と位置・描画順・fragment粒度によらず、脚注本文と数式の文字を混ぜない。
+    #[test]
+    fn diagonal_footnote_identity_is_representation_invariant(
+        split in any::<bool>(), reverse in any::<bool>(), above in any::<bool>(),
+        gap in 0_u8..=20, half_points in 9_u8..=12, translate in -50_i32..=20,
+    ) {
+        let delta = f32::from(half_points) / 2. * if above { 1. } else { -1. };
+        let mut parsed = diagonal_note_source(split, f32::from(gap), delta);
+        for t in &mut parsed.text_elements {
+            t.baseline_y = t.baseline_y.map(|b| b + translate as f32);
+            t.bounds.y0 += translate as f32;
+            t.bounds.y1 += translate as f32;
+        }
+        if reverse { parsed.text_elements.reverse(); }
+        let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+        prop_assert!(pages[0].lines.iter().any(|l| l.text == "A2=B"));
+        prop_assert!(pages[0].lines.iter().any(|l| l.text == "an independent footnote paragraph"));
+        prop_assert_eq!(pages[0].lines.len(), 3);
     }
 }
