@@ -1632,21 +1632,23 @@ fn warp_png_to_clipped_bounds(
 ) -> Option<Vec<u8>> {
     decode_budget.check_image_pixels(dst_width, dst_height)?;
     let source = decode_filter0_png_to_rgba(decode_budget, png)?;
-    let [a, b, c, d, e, f] = matrix;
+    let [a, b, c, d, e, f] = matrix.map(f64::from);
     let determinant = a * d - b * c;
-    if determinant.abs() < 0.0001 || dst_width == 0 || dst_height == 0 {
+    if determinant == 0. || dst_width == 0 || dst_height == 0 {
         return None;
     }
     let length = dst_width.checked_mul(dst_height)?.checked_mul(4)? as usize;
     let mut out = decode_budget.image_vector(length)?;
     out.resize(length, 0);
-    let bounds_width = bounds.x1 - bounds.x0;
-    let bounds_height = bounds.y1 - bounds.y0;
+    let bounds_width = f64::from(bounds.x1) - f64::from(bounds.x0);
+    let bounds_height = f64::from(bounds.y1) - f64::from(bounds.y0);
     for y in 0..dst_height {
-        let pdf_y = bounds.y1 - ((y as f32 + 0.5) / dst_height as f32) * bounds_height;
+        let pdf_y =
+            f64::from(bounds.y1) - ((f64::from(y) + 0.5) / f64::from(dst_height)) * bounds_height;
         for x in 0..dst_width {
-            let pdf_x = bounds.x0 + ((x as f32 + 0.5) / dst_width as f32) * bounds_width;
-            if clip.is_some_and(|clip| !clip.contains_point([pdf_x as f64, pdf_y as f64])) {
+            let pdf_x =
+                f64::from(bounds.x0) + ((f64::from(x) + 0.5) / f64::from(dst_width)) * bounds_width;
+            if clip.is_some_and(|clip| !clip.contains_point([pdf_x, pdf_y])) {
                 continue;
             }
             let rel_x = pdf_x - e;
@@ -1657,8 +1659,8 @@ fn warp_png_to_clipped_bounds(
                 continue;
             }
             let src_x =
-                ((u.clamp(0.0, 0.999_999) * source.width as f32) as u32).min(source.width - 1);
-            let src_y = (((1.0 - v).clamp(0.0, 0.999_999) * source.height as f32) as u32)
+                ((u.clamp(0.0, 0.999_999) * f64::from(source.width)) as u32).min(source.width - 1);
+            let src_y = (((1.0 - v).clamp(0.0, 0.999_999) * f64::from(source.height)) as u32)
                 .min(source.height - 1);
             let src_index = src_y
                 .checked_mul(source.width)?
