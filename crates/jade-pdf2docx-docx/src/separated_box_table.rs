@@ -73,29 +73,40 @@ pub(super) fn infer(
         }
         let cx = (b.x0 + b.x1) / 2.;
         let cy = (b.y0 + b.y1) / 2.;
-        let (Some(col), Some(row)) = (column_index_for_x(cx, &xs), row_index_for_y(cy, &ys)) else {
+        if b.x1 <= bounds.x0 || b.x0 >= bounds.x1 || b.y1 <= bounds.y0 || b.y0 >= bounds.y1 {
             continue;
-        };
+        }
+        let col = interval(cx, &xs)?;
+        let row = height - 1 - interval(cy, &ys)?;
         // 実データ行の外・縦の空白帯・複数の物理セルに跨る文字は所有が一意でない。
         if !rows.iter().any(|r| r[0].y0 <= cy && cy <= r[0].y1)
-            || b.x0 < xs[col] as f32 - 1.
-            || b.x1 > xs[col + 1] as f32 + 1.
-            || b.y0 < ys[height - row - 1] as f32 - 1.
-            || b.y1 > ys[height - row] as f32 + 1.
+            || b.x0 < xs[col] as f32 - EDGE_EPSILON
+            || b.x1 > xs[col + 1] as f32 + EDGE_EPSILON
+            || b.y0 < ys[height - row - 1] as f32 - EDGE_EPSILON
+            || b.y1 > ys[height - row] as f32 + EDGE_EPSILON
         {
             return None;
         }
         texts[row][col].push(text.clone());
     }
-    // 閉じた各枠に少なくとも一つの原本文字が必要。単なる反復した装飾は表としない。
+    // 空欄のある枠も保持する。反復の根拠は、各行に二つ以上の値と、各枠列に二行以上の値。
+    let mut populated_columns = vec![0; columns.len()];
     for row in &rows {
-        for b in row {
-            let col = column_index_for_x((b.x0 + b.x1) / 2., &xs)?;
-            let band = row_index_for_y((b.y0 + b.y1) / 2., &ys)?;
-            if texts[band][col].is_empty() {
-                return None;
+        let mut populated = 0;
+        for (index, b) in row.iter().enumerate() {
+            let col = interval((b.x0 + b.x1) / 2., &xs)?;
+            let band = height - 1 - interval((b.y0 + b.y1) / 2., &ys)?;
+            if !texts[band][col].is_empty() {
+                populated += 1;
+                populated_columns[index] += 1;
             }
         }
+        if populated < 2 {
+            return None;
+        }
+    }
+    if populated_columns.iter().any(|count| *count < 2) {
+        return None;
     }
     let cells = texts
         .iter()
@@ -236,13 +247,20 @@ fn edges(values: impl Iterator<Item = f32>) -> Option<Vec<i32>> {
     let mut v = values.collect::<Vec<_>>();
     v.sort_by(f32::total_cmp);
     v.dedup_by(|a, b| same(*a, *b));
-    if v.iter()
-        .any(|n| !n.is_finite() || *n < i32::MIN as f32 || *n >= i32::MAX as f32)
-    {
+    if v.iter().any(|n| {
+        !n.is_finite() || *n < i32::MIN as f32 || *n >= i32::MAX as f32 || !same(*n, n.round())
+    }) {
         return None;
     }
     let out = v.iter().map(|n| n.round() as i32).collect::<Vec<_>>();
     out.windows(2).all(|p| p[0] < p[1]).then_some(out)
+}
+
+/// 境界上の中心を隣のセルへ丸めず、開区間内で一意の物理帯だけを返す。
+fn interval(value: f32, edges: &[i32]) -> Option<usize> {
+    edges
+        .windows(2)
+        .position(|p| value > p[0] as f32 && value < p[1] as f32)
 }
 
 /// 現存する一つの原本辺がセルの一辺を覆う場合だけ黒罫線を付ける。
