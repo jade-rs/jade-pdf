@@ -1,5 +1,6 @@
 //! 実数operandの値を、指数付き小数を扱う既存consumerでも保持する数値回帰。
 use super::Dict;
+use proptest::prelude::*;
 
 /// 実際のDICT writerから数値operandを一つ取り出す。
 fn operand(value: f64) -> Vec<u8> {
@@ -52,5 +53,34 @@ fn cff_real_operands_keep_scale_in_decimal_consumers() {
             (actual - value).abs() <= value.abs() * 1e-12 + 1e-15,
             "CFF real operand must preserve consumer scale: {value} encoded as {text}, read as {actual}"
         );
+    }
+}
+
+/// 対応する全em単位数で、実数表記によるFontMatrixの桁ずれがない。
+#[test]
+fn every_supported_em_preserves_font_matrix_scale() {
+    for units in 16u16..=16384 {
+        let scale = 1. / f64::from(units);
+        let text = decimal(&operand(scale));
+        let actual = observed_consumer(&text);
+        assert!(
+            (actual * f64::from(units) - 1.).abs() < 1e-12,
+            "em={units}: {text}"
+        );
+        assert_eq!(text.parse::<f64>().unwrap().to_bits(), scale.to_bits());
+    }
+}
+
+proptest! {
+    /// 任意の有限f64で有効数字・符号・指数を失わず、特定font値だけの回避策にしない。
+    #[test]
+    fn finite_real_bit_patterns_round_trip_without_consumer_scale_loss(bits in any::<u64>()) {
+        let value = f64::from_bits(bits);
+        prop_assume!(value.is_finite());
+        let bytes = operand(value);
+        let text = decimal(&bytes);
+        prop_assert_eq!(text.parse::<f64>().unwrap().to_bits(), bits);
+        prop_assert_eq!(observed_consumer(&text).to_bits(), bits);
+        prop_assert!(bytes.len() <= 32);
     }
 }

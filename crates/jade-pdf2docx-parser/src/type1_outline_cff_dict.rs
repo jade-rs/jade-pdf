@@ -49,10 +49,7 @@ impl Dict {
         if !value.is_finite() {
             return None;
         }
-        let mut text = Text {
-            bytes: [0; 64],
-            len: 0,
-        };
+        let mut text = Text::new();
         write!(&mut text, "{value:e}").ok()?;
         text.integer_significand()?;
         let mut nibbles = [15_u8; 66];
@@ -98,6 +95,14 @@ struct Text {
 }
 
 impl Text {
+    /// 数値の表示に必要な固定容量を、heap確保なしで用意する。
+    fn new() -> Self {
+        Self {
+            bytes: [0; 64],
+            len: 0,
+        }
+    }
+
     /// 小数点を指数の補正へ移し、有効数字を減らさず整数仮数へ変換する。
     fn integer_significand(&mut self) -> Option<()> {
         let text = &self.bytes[..self.len];
@@ -110,10 +115,7 @@ impl Text {
             .parse::<i32>()
             .ok()?
             .checked_sub(i32::try_from(exponent - point - 1).ok()?)?;
-        let mut normalized = Self {
-            bytes: [0; 64],
-            len: 0,
-        };
+        let mut normalized = Self::new();
         for &byte in &text[..exponent] {
             if byte != b'.' {
                 normalized.write_char(char::from(byte)).ok()?;
