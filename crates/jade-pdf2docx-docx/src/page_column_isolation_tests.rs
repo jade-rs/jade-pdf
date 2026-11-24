@@ -6,6 +6,9 @@ use std::io::{Cursor, Read};
 #[path = "floating_image_anchor_tests.rs"]
 mod floating_images;
 
+#[path = "page_chrome_occurrence_tests.rs"]
+mod page_chrome_occurrences;
+
 /// 外部資料を使わず、二つの段と別ページの所有画像を持つ解析結果を作る。
 fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
     assert!((2..=5).contains(&page_count));
