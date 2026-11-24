@@ -196,3 +196,53 @@ fn unequal_source_gutter_keeps_signed_right_column_displacement() {
         );
     }
 }
+
+/// 最初の実sectionに保存された整数twip属性を、生成XMLから読む。
+fn first_section_attribute(xml: &str, element: &[u8], attribute: &[u8]) -> f64 {
+    use quick_xml::{Reader, events::Event};
+    let mut reader = Reader::from_str(xml);
+    let mut in_section = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(e) if e.name().as_ref() == b"w:sectPr" => in_section = true,
+            Event::Empty(e) if in_section && e.name().as_ref() == element => {
+                for attr in e.attributes() {
+                    let attr = attr.unwrap();
+                    if attr.key.as_ref() == attribute {
+                        return std::str::from_utf8(&attr.value).unwrap().parse().unwrap();
+                    }
+                }
+            }
+            Event::Eof => panic!("missing owned section attribute"),
+            _ => {}
+        }
+    }
+}
+
+proptest! {
+    /// ページ幅・余白が端数でも、実XMLのWord領域とindentの和が原本位置を保つ。
+    #[test]
+    fn fractional_section_geometry_preserves_source_column_x(
+        width in 600.0_f32..1400.0,
+        left_fraction in 0.02_f32..0.12,
+        right_fraction in 0.58_f32..0.82,
+    ) {
+        let left = width * left_fraction;
+        let right = width * right_fraction;
+        let mut parsed = source(2, &[1]);
+        for page in &mut parsed.pages { page.width = width; }
+        for text in &mut parsed.text_elements {
+            let x = if text.text.contains("RIGHT") { right } else { left };
+            text.bounds.x0 = x;
+            text.bounds.x1 = x + 65.;
+        }
+        let (xml, _) = package_source(parsed);
+        let word_width = first_section_attribute(&xml, b"w:pgSz", b"w:w");
+        let word_left = first_section_attribute(&xml, b"w:pgMar", b"w:left");
+        let word_gap = first_section_attribute(&xml, b"w:cols", b"w:space");
+        let word_right_origin = (word_width + word_left + word_gap) / 2.;
+        let position = word_right_origin + f64::from(indent_for_text(&xml, "PAGEA RIGHT 1"));
+        let error = (position - f64::from(right) * 20.).abs();
+        prop_assert!(error <= 0.5001, "Word region quantisation must preserve source x; error={error}twip");
+    }
+}
