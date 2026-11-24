@@ -1,5 +1,6 @@
 //! 実際のReportLab入力が使うASCII85→FlateのContents/Form本文を復元する回帰。
 use super::*;
+use proptest::prelude::*;
 
 /// 固定4byteを85進数へ展開する、テスト側の独立したencoder。
 fn encode(data: &[u8]) -> Vec<u8> {
@@ -80,5 +81,52 @@ fn ascii85_flate_counts_both_decoded_stages() {
                 })
             ));
         }
+    }
+}
+
+/// 破損・未対応の順序・予測変換を、空文書の成功として扱わない。
+#[test]
+fn malformed_or_unsupported_ascii85_content_fails_explicitly() {
+    let (_, encoded) = compressed(b"/Fm Do");
+    for (dictionary, data) in [
+        (
+            b"<< /Filter [/FlateDecode /ASCII85Decode] >>".as_slice(),
+            encoded.as_slice(),
+        ),
+        (
+            b"<< /Filter [/ASCII85Decode /FlateDecode /FlateDecode] >>".as_slice(),
+            encoded.as_slice(),
+        ),
+        (
+            b"<< /Filter [/ASCII85Decode /FlateDecode] /DecodeParms [null << /Predictor 12 >>] >>"
+                .as_slice(),
+            encoded.as_slice(),
+        ),
+        (
+            b"<< /Filter [/ASCII85Decode /FlateDecode] >>".as_slice(),
+            b"!~>".as_slice(),
+        ),
+        (
+            b"<< /Filter [/ASCII85Decode /FlateDecode] >>".as_slice(),
+            b"!!!!!~>".as_slice(),
+        ),
+    ] {
+        let budget = DecodeBudget::default();
+        assert!(decode_content_stream_payload(&budget, dictionary, data).is_none());
+        assert!(matches!(budget.check(), Err(ParseError::Io(_))));
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(64))]
+    /// 部分group・零byte・任意byteを含む二段の復元を独立encoderと比較する。
+    #[test]
+    fn ascii85_flate_roundtrips_owned_bytes(data in prop::collection::vec(any::<u8>(), 0..256), null_array in any::<bool>()) {
+        let (_, encoded) = compressed(&data);
+        let dictionary = if null_array { b"<< /Filter [/ASCII85Decode /FlateDecode] /DecodeParms [null null] >>".as_slice() } else { b"<< /Filter [/ASCII85Decode /FlateDecode] /DecodeParms null >>".as_slice() };
+        let budget = DecodeBudget::default();
+        let decoded = decode_content_stream_payload(&budget, dictionary, &encoded);
+        prop_assert_eq!(decoded.as_deref(), Some(data.as_slice()));
+        prop_assert!(budget.check().is_ok());
     }
 }
