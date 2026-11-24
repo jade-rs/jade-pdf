@@ -91,6 +91,19 @@ mod image_draw_budget_tests;
 #[path = "image_storage_budget_tests.rs"]
 mod image_storage_budget_tests;
 
+#[cfg(test)]
+#[path = "form_image_tests.rs"]
+mod form_image_tests;
+
+#[path = "form_images.rs"]
+mod form_images;
+
+#[path = "image_raster.rs"]
+mod image_raster;
+
+#[path = "content_ascii85.rs"]
+mod content_ascii85;
+
 #[path = "image_ccitt.rs"]
 mod image_ccitt;
 #[cfg(test)]
@@ -136,7 +149,7 @@ mod image_sample_decode_tests;
 mod image_smask_tests;
 
 #[path = "image_draws.rs"]
-mod image_draws;
+pub(crate) mod image_draws;
 #[path = "image_pixels.rs"]
 mod image_pixels;
 #[path = "image_png.rs"]
@@ -1079,7 +1092,10 @@ fn extract_image_elements_from_pdf_bytes(
     streams: &[crate::structure::StreamSpan<'_>],
     quality: &mut QualityReport,
 ) -> Vec<ParsedImageElement> {
-    let placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
+    let mut placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
+    if form_images::append(decode_budget, bytes, streams, quality, &mut placements).is_none() {
+        return Vec::new();
+    }
     let mut placed_object_numbers = crate::metadata_workspace::Set::default();
     for placement in &placements {
         if placed_object_numbers
@@ -1205,6 +1221,7 @@ fn extract_image_elements_from_pdf_bytes(
         if matching_placements.peek().is_none() {
             if placements.is_empty() {
                 let placement = ImagePlacement {
+                    clip: None,
                     object_number: stream.object_number.unwrap_or(0),
                     page: 0,
                     bounds: ParsedBounds {
@@ -1290,9 +1307,9 @@ fn is_extracted_image_stream(
             || stream
                 .object_number
                 .is_some_and(|number| placed_object_numbers.contains(&number)))
-        && !stream
-            .object_number
-            .is_some_and(|number| unpainted_object_numbers.contains(&number))
+        && !stream.object_number.is_some_and(|number| {
+            unpainted_object_numbers.contains(&number) && !placed_object_numbers.contains(&number)
+        })
 }
 
 /// PDF 内の Image XObject stream 数が閾値を超えるか判定する。
@@ -1393,7 +1410,6 @@ impl ImageStreamEntry {
             matrix,
             ..
         } = *placement;
-        let matrix = Some(matrix);
         if decode_budget.is_stopped() {
             return None;
         }
@@ -1418,20 +1434,34 @@ impl ImageStreamEntry {
         } else {
             self.png_bytes.as_slice()
         };
-        let has_shear = matrix.is_some_and(matrix_has_shear);
-        let png_bytes = matrix
-            .filter(|matrix| matrix_has_shear(*matrix))
-            .and_then(|matrix| {
-                warp_png_to_ctm_bounds(
-                    decode_budget,
-                    source,
-                    matrix,
-                    bounds,
-                    display_width,
-                    display_height,
-                )
-            })
-            .or_else(|| image_png::copy(decode_budget, source))?;
+        let has_shear = matrix_has_shear(matrix);
+        let png_bytes = if let Some(clip) = &placement.clip {
+            let (raster_width, raster_height) =
+                image_raster::dimensions(matrix, bounds, self.width, self.height);
+            warp_png_to_clipped_bounds(
+                decode_budget,
+                source,
+                matrix,
+                bounds,
+                raster_width.max(display_width),
+                raster_height.max(display_height),
+                Some(clip),
+            )?
+        } else {
+            has_shear
+                .then(|| {
+                    warp_png_to_ctm_bounds(
+                        decode_budget,
+                        source,
+                        matrix,
+                        bounds,
+                        display_width,
+                        display_height,
+                    )
+                })
+                .flatten()
+                .or_else(|| image_png::copy(decode_budget, source))?
+        };
         Some(ParsedImageElement {
             page,
             bounds,
@@ -1439,7 +1469,11 @@ impl ImageStreamEntry {
             width_px: display_width,
             height_px: display_height,
             floating,
-            rotation_degrees: if has_shear { 0 } else { rotation_degrees },
+            rotation_degrees: if has_shear || placement.clip.is_some() {
+                0
+            } else {
+                rotation_degrees
+            },
         })
     }
 }
@@ -1538,22 +1572,48 @@ fn warp_png_to_ctm_bounds(
     dst_width: u32,
     dst_height: u32,
 ) -> Option<Vec<u8>> {
+    warp_png_to_clipped_bounds(
+        decode_budget,
+        png,
+        matrix,
+        bounds,
+        dst_width,
+        dst_height,
+        None,
+    )
+}
+
+/// 変換画像の各画素へForm BBoxと通常clipを適用し、外側は透明のまま残す。
+fn warp_png_to_clipped_bounds(
+    decode_budget: &DecodeBudget,
+    png: &[u8],
+    matrix: [f32; 6],
+    bounds: ParsedBounds,
+    dst_width: u32,
+    dst_height: u32,
+    clip: Option<&crate::form_clip::Clip>,
+) -> Option<Vec<u8>> {
     decode_budget.check_image_pixels(dst_width, dst_height)?;
     let source = decode_filter0_png_to_rgba(decode_budget, png)?;
-    let [a, b, c, d, e, f] = matrix;
+    let [a, b, c, d, e, f] = matrix.map(f64::from);
     let determinant = a * d - b * c;
-    if determinant.abs() < 0.0001 || dst_width == 0 || dst_height == 0 {
+    if determinant == 0. || dst_width == 0 || dst_height == 0 {
         return None;
     }
     let length = dst_width.checked_mul(dst_height)?.checked_mul(4)? as usize;
     let mut out = decode_budget.image_vector(length)?;
     out.resize(length, 0);
-    let bounds_width = bounds.x1 - bounds.x0;
-    let bounds_height = bounds.y1 - bounds.y0;
+    let bounds_width = f64::from(bounds.x1) - f64::from(bounds.x0);
+    let bounds_height = f64::from(bounds.y1) - f64::from(bounds.y0);
     for y in 0..dst_height {
-        let pdf_y = bounds.y1 - ((y as f32 + 0.5) / dst_height as f32) * bounds_height;
+        let pdf_y =
+            f64::from(bounds.y1) - ((f64::from(y) + 0.5) / f64::from(dst_height)) * bounds_height;
         for x in 0..dst_width {
-            let pdf_x = bounds.x0 + ((x as f32 + 0.5) / dst_width as f32) * bounds_width;
+            let pdf_x =
+                f64::from(bounds.x0) + ((f64::from(x) + 0.5) / f64::from(dst_width)) * bounds_width;
+            if clip.is_some_and(|clip| !clip.contains_point([pdf_x, pdf_y])) {
+                continue;
+            }
             let rel_x = pdf_x - e;
             let rel_y = pdf_y - f;
             let u = (d * rel_x - c * rel_y) / determinant;
@@ -1562,8 +1622,8 @@ fn warp_png_to_ctm_bounds(
                 continue;
             }
             let src_x =
-                ((u.clamp(0.0, 0.999_999) * source.width as f32) as u32).min(source.width - 1);
-            let src_y = (((1.0 - v).clamp(0.0, 0.999_999) * source.height as f32) as u32)
+                ((u.clamp(0.0, 0.999_999) * f64::from(source.width)) as u32).min(source.width - 1);
+            let src_y = (((1.0 - v).clamp(0.0, 0.999_999) * f64::from(source.height)) as u32)
                 .min(source.height - 1);
             let src_index = src_y
                 .checked_mul(source.width)?
@@ -1577,8 +1637,10 @@ fn warp_png_to_ctm_bounds(
 }
 
 /// content stream 内の Image XObject 配置。
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug)]
 struct ImagePlacement {
+    /// 部分的に可視なForm画像だけに保存するページ空間の切り抜き。
+    clip: Option<crate::form_clip::Clip>,
     /// Do時の非stroke色と透明度。
     paint: image_draws::ImagePaint,
     /// 対象ページ番号。
@@ -1627,6 +1689,7 @@ fn extract_image_placements_from_pdf_bytes(
                 decode_budget,
                 &mut placements,
                 ImagePlacement {
+                    clip: None,
                     paint,
                     page,
                     object_number: *object_number,
@@ -3206,6 +3269,9 @@ fn decode_content_stream_payload(
     dict: &[u8],
     data: &[u8],
 ) -> Option<Vec<u8>> {
+    if content_ascii85::handles(dict) {
+        return content_ascii85::decode(decode_budget, dict, data);
+    }
     if crate::metadata::value(dict, b"Filter")
         .is_some_and(|filter| crate::metadata::is_name(filter, b"LZWDecode"))
     {

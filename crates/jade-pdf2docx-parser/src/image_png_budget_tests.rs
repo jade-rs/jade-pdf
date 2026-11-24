@@ -158,6 +158,7 @@ fn place(target: &DecodeBudget, stream: &ImageStreamEntry) -> Option<ParsedImage
     stream.to_element(
         target,
         &ImagePlacement {
+            clip: None,
             object_number: 100,
             page: 0,
             bounds: ParsedBounds {
@@ -207,6 +208,7 @@ fn warp_limit_does_not_fall_back_to_png_copy() {
     let image: Option<ParsedImageElement> = stream.to_element(
         &target,
         &ImagePlacement {
+            clip: None,
             object_number: 100,
             page: 0,
             bounds: ParsedBounds {

@@ -8,14 +8,14 @@ use crate::{
 };
 
 #[path = "image_paint.rs"]
-mod paint;
+pub(crate) mod paint;
 #[path = "image_paint_resources.rs"]
-mod resources;
+pub(crate) mod resources;
 pub(super) use resources::visit as visit_in_source;
 
 /// Do時の非stroke色と透明度。通常画像は色を使わない。
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub(super) struct ImagePaint {
+pub(crate) struct ImagePaint {
     /// 対応済みDevice色。未対応色空間ではNone。
     pub(super) color: Option<[u8; 3]>,
     /// 非stroke alpha。未解決・未対応の描画状態ではNone。
