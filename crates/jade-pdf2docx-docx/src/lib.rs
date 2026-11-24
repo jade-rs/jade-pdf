@@ -46,6 +46,7 @@ mod output;
 mod package;
 mod page_chrome;
 mod paragraph_anchor;
+mod section_chrome_package;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -1166,19 +1167,21 @@ fn build_multi_page_text_column_docx(
     let last_page = pages
         .last()
         .expect("multi-page text layout must have pages");
-    let page_chrome = page_chrome.page(last_page.page);
-    let mut docx = add_repeated_page_chrome_to_docx(
-        structured_docx_with_page_layout(parsed, positioned_tables, last_page, page_chrome),
-        page_chrome,
+    let mut docx = structured_docx_with_page_layout(
+        parsed,
+        positioned_tables,
+        last_page,
+        page_chrome.page(last_page.page),
     );
-    let repeated_chrome_section = docx.document.section_property.clone();
     for (page_index, page) in pages.iter().enumerate() {
-        let base_section = inherit_header_footer(
-            structured_docx_with_page_layout(parsed, positioned_tables, page, page_chrome)
+        let chrome = page_chrome.page(page.page);
+        // 各ページの見出しを登録し、その参照を同ページ内の全段組区間へ渡す。
+        docx.document.section_property =
+            structured_docx_with_page_layout(parsed, positioned_tables, page, chrome)
                 .document
-                .section_property,
-            &repeated_chrome_section,
-        );
+                .section_property;
+        docx = add_repeated_page_chrome_to_docx(docx, chrome);
+        let base_section = docx.document.section_property.clone();
         let text_column_layout = text_columns_by_page
             .get(page_index)
             .and_then(Option::as_ref);
@@ -1203,26 +1206,6 @@ fn build_multi_page_text_column_docx(
         )?;
     }
     Ok(docx)
-}
-
-/// 反復 header/footer part と参照をページ固有の section property へ継承する。
-fn inherit_header_footer(
-    mut section: SectionProperty,
-    source: &SectionProperty,
-) -> SectionProperty {
-    section.header_reference = source.header_reference.clone();
-    section.header = source.header.clone();
-    section.first_header_reference = source.first_header_reference.clone();
-    section.first_header = source.first_header.clone();
-    section.even_header_reference = source.even_header_reference.clone();
-    section.even_header = source.even_header.clone();
-    section.footer_reference = source.footer_reference.clone();
-    section.footer = source.footer.clone();
-    section.first_footer_reference = source.first_footer_reference.clone();
-    section.first_footer = source.first_footer.clone();
-    section.even_footer_reference = source.even_footer_reference.clone();
-    section.even_footer = source.even_footer.clone();
-    section
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
