@@ -223,3 +223,23 @@ fn merged_aliases_do_not_transfer_baseline_confidence() {
         );
     }
 }
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 同名aliasを入れ替え、移動・文字上げ・Formを変えても、水平側だけが既知の基線を持つ。
+    #[test]
+    fn mixed_writing_aliases_preserve_confidence_under_transforms(
+        reverse in any::<bool>(), in_form in any::<bool>(),
+        x in 30_u8..=60, y in 50_u8..=90, size in 4_u8..=20, rise in -5_i8..=5,
+    ) {
+        let (first,second) = if reverse { ("G","F") } else { ("F","G") };
+        let parsed = document(2,&format!("BT /{first} {size} Tf 1 0 0 1 {x} {y} Tm {rise} Ts <0041> Tj /{second} {size} Tf <0042> Tj ET"),in_form);
+        prop_assert_eq!(parsed.text_elements.len(),2);
+        prop_assert_eq!(parsed.text_elements[0].text.as_str(),"A");
+        prop_assert_eq!(parsed.text_elements[1].text.as_str(),"B");
+        let expected = (f32::from(y)+f32::from(rise))*if in_form { 3. } else { 1. }+if in_form { 11. } else { 0. };
+        let known = usize::from(reverse);
+        prop_assert_eq!(parsed.text_elements[known].baseline_y,Some(expected));
+        prop_assert_eq!(parsed.text_elements[1-known].baseline_y,None);
+    }
+}

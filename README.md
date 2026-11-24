@@ -58,7 +58,7 @@ The comparison command writes JSON to stdout and exits with `0` when there are n
 
 PDF comparison uses the pinned Pdfium runtime described in the [comparison guide](docs/pdf_diff.md). For PDF→DOCX rendering with a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
 
-`ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright generated Type1 glyph's drawing matrix in the bytes/WASM parser. DOCX row grouping uses this separately from `bounds`. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping.
+`ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright horizontal text drawing matrix in the bytes/WASM parser. This now covers supported simple fonts and horizontal CID fonts as well as generated Type1 glyphs. Positive finite font size, verified horizontal writing mode and positive axis-aligned page-space transforms are required. Unknown/vertical writing modes, skew and reflection retain `None`; merged spans keep compatible baseline confidence. Rust callers constructing text elements can still set `baseline_y: None` to retain bounds-based grouping. See the [text baseline guide](docs/text_baselines.md).
 
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 

@@ -10,7 +10,7 @@ pub(crate) fn upright(matrix: [f32; 6]) -> Option<f32> {
         .then_some(matrix[5])
 }
 
-/// 隣接描画の既存0.0001pt許容内だけ基線を共有し、既知と未知は結合しない。
+/// 基線差0.0001pt以内だけ基線を共有し、既知と未知は結合しない。
 pub(crate) fn compatible(previous: Option<f32>, next: Option<f32>) -> bool {
     match (previous, next) {
         (None, None) => true,
