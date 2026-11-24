@@ -2,6 +2,10 @@
 use super::Font;
 use std::fmt::{self, Write};
 
+#[cfg(test)]
+#[path = "type1_outline_cff_real_tests.rs"]
+mod real_tests;
+
 /// 全glyphで共有するnominalWidthX=32768。他のPrivate項目は既定値を使う。
 pub(super) const PRIVATE: &[u8] = &[29, 0, 0, 128, 0, 21];
 
