@@ -435,3 +435,41 @@ proptest! {
         prop_assert!(!xml.contains("JadeBaseline_"));
     }
 }
+
+/// 段の根拠がない斜め下の長い小文字行を、span分割の有無に関係なく本文へ吸収しない。
+#[test]
+fn long_diagonal_footnote_is_not_an_inline_script() {
+    for split_glyphs in [false, true] {
+        let mut parsed = formula_source();
+        let note = "an independent footnote paragraph";
+        let mut fragment = parsed.text_elements[1].clone();
+        fragment.baseline_y = Some(694.5);
+        fragment.bounds.y0 = 693.1;
+        fragment.bounds.y1 = 700.1;
+        fragment.bounds.x0 = 80.;
+        fragment.bounds.x1 = 80. + note.len() as f32 * 3.5;
+        fragment.text = note.into();
+        if split_glyphs {
+            for (i, c) in note.chars().enumerate() {
+                let mut glyph = fragment.clone();
+                glyph.text = c.to_string();
+                glyph.bounds.x0 = 80. + i as f32 * 3.5;
+                glyph.bounds.x1 = glyph.bounds.x0 + 3.5;
+                parsed.text_elements.push(glyph);
+            }
+        } else {
+            parsed.text_elements.push(fragment);
+        }
+        let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+        let body = pages[0]
+            .lines
+            .iter()
+            .find(|l| l.text.starts_with('A'))
+            .unwrap();
+        assert_eq!(
+            body.text, "A2=B",
+            "diagonal footnote must not become an inline script (split={split_glyphs})"
+        );
+        assert!(pages[0].lines.iter().any(|l| l.text == note));
+    }
+}
