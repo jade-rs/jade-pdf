@@ -301,3 +301,6 @@ proptest! {
         }
     }
 }
+
+#[path = "page_chrome_origin_tests.rs"]
+mod origins;

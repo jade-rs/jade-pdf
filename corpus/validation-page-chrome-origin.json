@@ -1,0 +1,102 @@
+{
+  "generated_utc": "2026-11-24T04:22:11.267102+00:00",
+  "scope": "Header/footer source anchors across actual section margins and side-effect-free uniformity comparison; explicit negative evidence from a newly collected9page PDF.",
+  "production_ready": false,
+  "qualified_runtime_head": "fed5a62ef31005817cf0522bb19138d3858ccb9a",
+  "original_tested_runtime_head": "d64d59332511031bfc32d4c1a9c29719c5cab059",
+  "qualified_crates_tree": "dce9c7303410884b721a8f25ae96452e11adc5bc",
+  "base_main": "04befde62ff604f003db176fdb566cadf4598525",
+  "runtime_rebind": "All670 Rust source hashes and full git tree unchanged by rebase. Native example, shipping CLI built alone, all4 WASM bindings and6 notices actually rebuilt and byte-identical to tested artifacts.",
+  "behavior": {
+    "anchors": "Use source left/centre/right page coordinates and actual section margins, including signed indents outside body margins.",
+    "centre_writing_width": "Preserved; no narrowing to compensate for a shifted centre.",
+    "uniformity": "Compare emitted run properties/text, alignment, quantized source bounds/page width, edge distance and explicit inheritance clearing. Do not generate/compare paragraph IDs.",
+    "different_source_centres": "Keep separate source-page sections even when text/style match.",
+    "unverified_geometry": "Nonfinite/out-of-page, missing width and unsupported margins retain existing fallback.",
+    "policy": "No dependency, Unicode decoding, original program/permission, sourcePDF/gold, OCR/strict gate changes. Exactly3trackedPDFfixtures remain."
+  },
+  "validation": {
+    "new_regression_and_property_tests": 5,
+    "default_Rust": {
+      "passed": 2255,
+      "failed": 0,
+      "ignored": 29,
+      "command": "sh scripts/check_rust_features.sh default",
+      "clippy": "exit0 with existing warnings; no warning-free claim"
+    },
+    "Python_unittest": 152,
+    "format": "passed",
+    "browser_standard_chromium": 72,
+    "browser_standard_webkit": 72,
+    "existing6PDF_browser_default_strict_outcomes": 24,
+    "new9pagePDF_observed_browser_outcomes": 4,
+    "native_CLI_expected_outcomes": 5,
+    "actual_CLI_default_owned_EfficientNet_equal_example": true,
+    "actual_CLI_strict_owned_EfficientNet_BERT_rejected_before_publication": true,
+    "native_example_sha256": "838a203af3ef38714d45f6c73cf7cabe56e4d9255c482cd0f92d1d999a0248f3",
+    "native_CLI_sha256": "a3ca47b923f7a4f7d87b20bb94641173bbaf719e742e4b4f809de3be6ed5103b",
+    "raw_WASM_sha256": "930b515de86009f2f7c5834787fcb97cb9c87a96583777b83f7b5f6b4dbd36bf",
+    "distributed_WASM_sha256": "e0ff4c156e310be2dd03ba6b509a22171c056f95083a441e309e9aa450ec2d86"
+  },
+  "EfficientNet_existing_source": {
+    "source_pdf_sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+    "all59_original_source_gold_files_unchanged": true,
+    "independent_source_header_centre_pt": 298.44206080000004,
+    "native_max_centre_error_pt_before": 35.06693919999998,
+    "native_max_centre_error_pt_after": 0.033060800000043855,
+    "pure_max_centre_error_pt_before": 35.09093919999998,
+    "pure_max_centre_error_pt_after": 0.040939200000025266,
+    "all9_header_parts_style_preserved": true,
+    "all12_image_anchors_media_and18pure_font_assets_unchanged": true,
+    "all_body_XML_identical_except_generated_paragraph_IDs": true,
+    "all_pixels_outside_header_band_identical": {
+      "native_pages": 20,
+      "pure_pages": 20,
+      "fixed_band_points": [
+        42,
+        65
+      ]
+    },
+    "native_other5source_DOCX_bytes_unchanged": true,
+    "pure_other_source_values_unchanged_except_paragraph_IDs": true,
+    "visual_review": "All20native and20pure pages viewed as thumbnails, pages1and15 in full for each.",
+    "remaining": "Source10pages still20; header glyph width/font mismatch, table/vector/body/caption/label fidelity and Word rendering unresolved. Existing source is not a prospective holdout."
+  },
+  "new_Batch_Normalization_source": {
+    "publisher": "https://proceedings.mlr.press/v37/ioffe15.html",
+    "PDF": "https://proceedings.mlr.press/v37/ioffe15.pdf",
+    "bytes": 318669,
+    "sha256": "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27",
+    "pages": 9,
+    "selection_and_freeze": "Collected after runtime d64d593 froze, not selected from product outcomes. All9pages and20originalfontprograms independently reviewed;40source/render/review/gold files frozen before first product conversion.",
+    "source_manifest_sha256": "93e25053537c2f6ca15f239be41ba489f4a07772540205c3385cc1861cec515c",
+    "Figure4_32_numeric_gold_sha256": "d54fd69bd1da02d7646497d710ad32337595d0151d7223eaa1b346739cc9fb07",
+    "rights_scope": "Official public PMLR article and current publisher CCBY4 agreement reviewed; local ignored QA only. No font/thirdparty license inferred from article policy, no PDF/font assets committed or redistributed.",
+    "font_policy": "16originalType1programs declareOFL1.1;4Nimbusprograms lackFSType/OFL and havePS/PDF exception text. UnchangedDOCX permission gate excludes those4 from outline generation. Original bytes andflags untouched.",
+    "native": "Default rejects overlapping partially clipped text before publication; exact same error as qualified PR33baseline. Guard retained.",
+    "pure": "Chromium/WebKit default DOCX bytes equal each other and previous qualified PR33baseline. Strict rejects19quality issues.",
+    "numeric_rows": "All32prospectively fixed numericcells remain in exact ordered9textrows, includingdash/percent/asterisk.",
+    "table_structure": "No corresponding6columnWordtable; structural fidelity rejected.",
+    "header_membership": "8short running headers stay in body; firstpage has a different full title, outside current all-pages header criterion.",
+    "pages_rendered": 18,
+    "replacement_chars_in_body": 59,
+    "original_ToUnicode_inventory": "All20sourcefont dictionaries lackToUnicode; raw-source inventory retained. Missing glyph-name/encoding mappings require investigation before Unicode changes.",
+    "model_label_gold_correction": "One manually transcribed multi crop label independently rechecked as multicrop after observation. Original40files and numericgold32 unchanged; no prospective claim for corrected label.",
+    "visual_review": "All18outputpage thumbnails and pages1and15 in full reviewed. Two-column text overlap, missing vector graphs, broken math/font fallback remain.",
+    "accuracy_accepted": false
+  },
+  "retained_attempts": [
+    "Different-centre regression initially passed, disproving the expected failure; inspection found generated paragraph IDs made every repeated chrome comparison nonuniform. Added actual failing uniform-section regression before key fix.",
+    "FontTools PFA-container loader rejected raw PDFFontFile missing terminal padding; used its raw psLib parser on unchanged originalbytes for independent eligibility review.",
+    "First new-source native wrapper asserted success but actual product correctly rejected clip-overlap; failed output/log/receipt retained and unchanged baseline independently matched.",
+    "First rebased build combined CLI and example, changing CLI bytes. Same original CLI-only build restored exact qualifiedhash; combined-command difference recorded, feature-unification cause not proven."
+  ],
+  "local_evidence": "corpus/wasm-runtime/page-chrome-origin-qualification (ignored artifacts/source only); frozen complete manifest prepared after documentation commit.",
+  "remaining_goal_work": [
+    "Current papers still fail pagination/columns/tables/vectors/fonts, including9→18,10→20,16→32pages.",
+    "Audit native partially clipped text overlap without disabling completeness checks.",
+    "Restore columns per page when another page has tables; ensure last-table page membership and image/header boundaries.",
+    "Recognize short headers absent on firstpage and reconstruct numeric borderless table topology.",
+    "Resolve verified original glyph names/encoding without overriding source Unicode or substituting different glyph outlines."
+  ]
+}

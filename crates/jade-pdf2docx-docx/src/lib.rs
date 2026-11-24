@@ -45,6 +45,7 @@ mod ocr_reconcile;
 mod output;
 mod package;
 mod page_chrome;
+mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
 #[cfg(not(target_arch = "wasm32"))]
@@ -871,7 +872,20 @@ fn build_structured_docx_with_image_payloads(
                     image_payloads,
                 )?
             };
-            docx = append_section_with_repeated_chrome(docx, section, page_chrome.page(page.page))?;
+            let layout = structured_docx_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            )
+            .document
+            .section_property;
+            docx = append_section_with_repeated_chrome(
+                docx,
+                section,
+                page_chrome.page(page.page),
+                &layout,
+            )?;
         } else {
             let text_column_layout = (pages.len() == 1)
                 .then_some(document_text_columns.as_ref())
@@ -2472,6 +2486,8 @@ struct RepeatedPageChromeLine {
     edge_distance_twips: i32,
     /// PDF 行右端から page 右端までの距離（twips）。
     right_indent_twips: i32,
+    /// sectionと同じ表示幅のtwip値。未確認寸法は配置補正に使わない。
+    page_width_twips: Option<u32>,
 }
 
 /// PDF page の反復 header/footer 候補。
@@ -2497,8 +2513,16 @@ fn structured_line_max_font_size(line: &StructuredTextLine) -> f32 {
 }
 
 /// 反復 page chrome 行を PDF の右端余白も含む DOCX paragraph へ変換する。
-fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine) -> Paragraph {
+fn paragraph_from_repeated_page_chrome_line(
+    chrome_line: &RepeatedPageChromeLine,
+    layout: &SectionProperty,
+) -> Paragraph {
     let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None, None);
+    if let Some((left, right)) = chrome_line.page_width_twips.and_then(|width| {
+        page_chrome_anchor::indents(&chrome_line.line, width, &layout.page_margin)
+    }) {
+        return paragraph.indent(Some(left), None, Some(right), None);
+    }
     if chrome_line.line.alignment == ParagraphAlignment::Right && chrome_line.right_indent_twips > 0
     {
         paragraph.indent(None, None, Some(chrome_line.right_indent_twips), None)
@@ -2509,21 +2533,23 @@ fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine
 
 /// 反復 page chrome を DOCX の header/footer part へ追加する。
 fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome) -> Docx {
-    if let Some(header) = repeated_header(chrome) {
+    if let Some(header) = repeated_header(chrome, &docx.document.section_property) {
         docx = docx.header(header);
     }
-    if let Some(footer) = repeated_footer(chrome) {
+    if let Some(footer) = repeated_footer(chrome, &docx.document.section_property) {
         docx = docx.footer(footer);
     }
     docx
 }
 
 /// 原本見出しか、先行ページからの継承を解除する空headerを作る。
-fn repeated_header(chrome: &RepeatedPageChrome) -> Option<Header> {
+fn repeated_header(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Option<Header> {
     chrome
         .header
         .as_ref()
-        .map(|line| Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .map(|line| {
+            Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
+        })
         .or_else(|| {
             chrome
                 .clear_header
@@ -2532,11 +2558,13 @@ fn repeated_header(chrome: &RepeatedPageChrome) -> Option<Header> {
 }
 
 /// 原本見出しか、先行ページからの継承を解除する空footerを作る。
-fn repeated_footer(chrome: &RepeatedPageChrome) -> Option<Footer> {
+fn repeated_footer(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Option<Footer> {
     chrome
         .footer
         .as_ref()
-        .map(|line| Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line)))
+        .map(|line| {
+            Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
+        })
         .or_else(|| {
             chrome
                 .clear_footer
@@ -2551,12 +2579,13 @@ fn append_section_with_repeated_chrome(
     mut docx: Docx,
     mut section: Section,
     chrome: &RepeatedPageChrome,
+    layout: &SectionProperty,
 ) -> Result<Docx, ConvertError> {
-    if let Some(footer) = repeated_footer(chrome) {
+    if let Some(footer) = repeated_footer(chrome, layout) {
         section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = repeated_header(chrome) {
+    if let Some(header) = repeated_header(chrome, layout) {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
