@@ -63,8 +63,8 @@ fn source(image_page: Option<usize>) -> ParsedDocument {
                 y1: 228.,
             },
             png_bytes,
-            width_px: 1,
-            height_px: 1,
+            width_px: 64,
+            height_px: 64,
             floating: false,
             rotation_degrees: 0,
         });
@@ -105,8 +105,10 @@ fn another_pages_image_preserves_columns_and_stays_before_its_section_boundary()
         );
         let drawing = xml.find("<w:drawing>").unwrap();
         let boundary = xml.find("<w:sectPr>").unwrap();
+        // sectPrは段落の先頭側のpPrに保存される。境界段落そのものの画像も前ページに属する。
+        let boundary_paragraph_end = boundary + xml[boundary..].find("</w:p>").unwrap();
         assert_eq!(
-            drawing < boundary,
+            drawing < boundary_paragraph_end,
             image_page == 0,
             "image must stay in its original page section: {xml}"
         );
