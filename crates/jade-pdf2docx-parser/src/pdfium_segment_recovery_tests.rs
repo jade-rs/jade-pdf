@@ -46,7 +46,7 @@ fn native_logo_extracts_each_sdk_character_once() {
 /// 矩形の重複を回復したページでも、同じsource text objectの見出しを文字単位へ崩さない。
 #[test]
 fn native_recovery_retains_a_coherent_heading_span() {
-    let title = "A long native heading for object spans";
+    let title = "Coherent native heading";
     let content = format!(
         "BT /F 12 Tf 1 0 0 1 20 150 Tm ({title}) Tj \
          1 0 0 1 20 100 Tm (LaT) Tj 1 0 0 1 38 97.65 Tm (E) Tj \
