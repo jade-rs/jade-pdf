@@ -75,6 +75,22 @@ fn inferred_table_summary_preserves_other_pages_columns() {
     assert!(sections[1].text.contains("PAGEB RIGHT 1"));
 }
 
+/// 段間を横切る未分割行が本文内に残るページへ、狭い実段組を適用しない。
+#[test]
+fn unsplit_body_row_crossing_the_gutter_does_not_enter_columns() {
+    let mut parsed = source(2, &[]);
+    let mut wide = parsed.text_elements[0].clone();
+    wide.bounds.x1 = 550.;
+    wide.bounds.y0 = 682.;
+    wide.bounds.y1 = 693.;
+    wide.baseline_y = Some(682.);
+    wide.text = "FULL WIDTH BODY ROW".into();
+    parsed.text_elements.push(wide);
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert!(detected_text_columns_for_page(&parsed, &pages[0], &[]).is_none(),
+        "unsplit body row crossing the gutter must not be forced into a narrow column");
+}
+
 /// 梱包済みDOCXから、Wordが解釈する本文を読み出す。
 fn document_xml(bytes: Vec<u8>) -> String {
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
