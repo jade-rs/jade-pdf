@@ -20,6 +20,8 @@ mod column_flow;
 
 #[path = "inline_baseline_tests.rs"]
 mod inline_baselines;
+#[path = "inline_script_gutter_tests.rs"]
+mod script_gutters;
 #[path = "inline_script_row_tests.rs"]
 mod script_rows;
 
