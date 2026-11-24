@@ -120,7 +120,7 @@ fn only_complete_original_rectangle_spans_are_retained() {
         &budget,
         vec![a.clone(), b.clone()],
         &keys,
-        &[original.clone()],
+        std::slice::from_ref(&original),
     )
     .unwrap();
     assert_eq!(output.len(), 1);
