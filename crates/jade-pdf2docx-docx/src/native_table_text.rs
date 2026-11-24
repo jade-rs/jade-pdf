@@ -337,8 +337,8 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     if cell.lines.len() < 2 {
         return None;
     }
-    let capacity = pdf_points_to_twips(cell.top - cell.bottom)?;
-    let mut used = 0usize;
+    let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
+    let mut rounding = cell_line_rounding::Accumulator::default();
     let mut out = TableCell::new().vertical_align(VAlignType::Top);
     out.property = out
         .property
@@ -348,17 +348,14 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_right(0, WidthType::Dxa);
     let mut previous_bottom = cell.top;
     for line in &cell.lines {
-        let before = pdf_points_to_twips((previous_bottom - line.top_y).max(0.0))?;
+        let before = (previous_bottom - line.top_y).max(0.0);
         let height = structured_line_max_font_size(line);
-        used = used
-            .checked_add(before)?
-            .checked_add(pdf_points_to_twips(height)?)?;
+        let (before, line_twips, used) = rounding.line(before, height)?;
         if used > capacity {
             return None;
         }
-        let paragraph = paragraph_from_structured_line(line, cell.left, None, None).line_spacing(
-            native_line_pitch::spacing(height, before.try_into().ok()?, 0)?,
-        );
+        let paragraph = paragraph_from_structured_line(line, cell.left, None, None)
+            .line_spacing(native_line_pitch::spacing_twips(line_twips, before, 0)?);
         out = out.add_paragraph(paragraph);
         previous_bottom = line.top_y - height;
     }
