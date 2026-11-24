@@ -218,3 +218,18 @@ fn selecting_device_color_space_restores_its_initial_black() {
         );
     }
 }
+
+/// Device色の既定置換があるページでは、未確認のCIE黒点をWord黒へ決めつけない。
+#[test]
+fn substituted_device_space_does_not_invent_black_borders() {
+    let resources = "<< /ColorSpace << /DefaultGray [/CalGray << /WhitePoint [1 1 1] /BlackPoint [.2 .1 .1] >>] >> >>";
+    let parsed = parse_pdf_bytes(
+        "owned-substituted-device.pdf",
+        &source(&["0 G 20 30 40 10 re S"], resources),
+    )
+    .unwrap();
+    assert!(
+        parsed.graphics.is_empty(),
+        "unverified DefaultGray substitution must not assert black rectangle borders"
+    );
+}
