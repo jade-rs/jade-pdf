@@ -12,6 +12,9 @@ mod page_chrome_occurrences;
 #[path = "page_table_column_tests.rs"]
 mod tables;
 
+#[path = "narrow_text_gutter_tests.rs"]
+mod narrow_gutters;
+
 /// 外部資料を使わず、二つの段と別ページの所有画像を持つ解析結果を作る。
 fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
     assert!((2..=5).contains(&page_count));
