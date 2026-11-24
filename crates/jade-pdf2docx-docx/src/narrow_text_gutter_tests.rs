@@ -31,12 +31,19 @@ fn narrow_source() -> ParsedDocument {
 #[test]
 fn sustained_narrow_gutter_preserves_separate_columns() {
     let (xml, _) = package_source(narrow_source());
-    assert_eq!(xml.matches("w:num=\"2\"").count(), 2,
-        "sustained narrow gutter must preserve separate columns");
+    assert_eq!(
+        xml.matches("w:num=\"2\"").count(),
+        2,
+        "sustained narrow gutter must preserve separate columns"
+    );
     for page in 0..2 {
         for side in ["LEFT", "RIGHT"] {
             for row in 0..8 {
-                assert_eq!(xml.matches(&format!("SOURCE PAGE{page} {side} ROW{row}")).count(), 1);
+                assert_eq!(
+                    xml.matches(&format!("SOURCE PAGE{page} {side} ROW{row}"))
+                        .count(),
+                    1
+                );
             }
         }
     }

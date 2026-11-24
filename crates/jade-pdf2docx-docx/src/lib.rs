@@ -39,7 +39,6 @@ mod image_anchor;
 mod native_baseline;
 mod native_line_pitch;
 mod native_spacing;
-mod text_column_gutter;
 mod native_table_rows;
 mod native_table_text;
 mod ocr_reconcile;
@@ -49,6 +48,7 @@ mod page_chrome;
 mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
+mod text_column_gutter;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -2447,7 +2447,7 @@ fn column_index_for_line(line: &StructuredTextLine, columns: &[f32]) -> usize {
 struct TextRowSegment<'a> {
     /// segment 内の text element。
     texts: Vec<&'a ParsedTextElement>,
-    /// 元 row が複数 segment に分割されたか。
+    /// rowの分割、または複数行で確認した空白帯の本文区間に由来するか。
     split_from_row: bool,
 }
 
@@ -2524,7 +2524,7 @@ struct StructuredTextLine {
     alignment: ParagraphAlignment,
     /// PDF text element ごとの DOCX run。
     runs: Vec<StructuredTextRun>,
-    /// 大きな水平ギャップで分割された row に由来するか。
+    /// 水平ギャップでのrow分割、または確認済みの段組み本文区間に由来するか。
     split_from_row: bool,
     /// 行テキスト。
     text: String,
