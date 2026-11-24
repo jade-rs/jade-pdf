@@ -16,6 +16,8 @@ pub(super) struct Cell {
     lines: Vec<StructuredTextLine>,
     /// 単一行セルの既存本文と完全に一致する、描画順のstyle付きrun。
     single_line_runs: Vec<StructuredTextRun>,
+    /// 複数行の配置が収まらない場合も、旧本文と完全一致するrunの書式は保持する。
+    fallback_runs: Vec<StructuredTextRun>,
 }
 
 /// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
@@ -56,6 +58,12 @@ fn cells_impl(
     } else {
         parsed.graphics.as_slice()
     };
+    // 新しく復元する旧配置runでは、確認済みgridと同じ端点・高さの線を文字下線にしない。
+    let fallback_graphics = styling_graphics
+        .iter()
+        .filter(|graphic| !is_grid_border(graphic, xs, ys))
+        .cloned()
+        .collect::<Vec<_>>();
     model
         .rows
         .iter()
@@ -106,6 +114,14 @@ fn cells_impl(
                         return None;
                     }
                     let rows = source_rows(elements, closed_boxes);
+                    // 同じ字形・fontでも別断片の位置を混同せず、確認済み行内の基線差だけを渡す。
+                    let offsets = rows
+                        .iter()
+                        .flat_map(|row| row.iter().copied().zip(inline_baseline::offsets(row)))
+                        .filter_map(|(element, offset)| {
+                            offset.map(|value| (std::ptr::from_ref(element), value))
+                        })
+                        .collect::<BTreeMap<_, _>>();
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
@@ -142,6 +158,19 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
+                                styling_graphics,
+                                &offsets,
+                            )
+                        } else {
+                            Vec::new()
+                        },
+                        fallback_runs: if lines.len() > 1 {
+                            legacy_runs(
+                                parsed,
+                                selected.iter().flat_map(|row| row.iter().flatten()),
+                                &cell.text,
+                                &fallback_graphics,
+                                &offsets,
                             )
                         } else {
                             Vec::new()
@@ -190,6 +219,8 @@ fn legacy_runs<'a>(
     parsed: &ParsedDocument,
     selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
+    graphics: &[ParsedGraphicElement],
+    offsets: &BTreeMap<*const ParsedTextElement, i32>,
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
@@ -199,17 +230,27 @@ fn legacy_runs<'a>(
         if text.len() == start {
             continue;
         }
-        let Some(mut run) = structured_text_runs_from_row(&[element], &parsed.graphics).pop()
-        else {
+        let Some(mut run) = structured_text_runs_from_row(&[element], graphics).pop() else {
             return Vec::new();
         };
         run.text = text[start..].to_string();
+        run.style.baseline_offset = offsets.get(&std::ptr::from_ref(element)).copied();
         run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|name| {
             parsed
                 .embedded_fonts
                 .iter()
                 .any(|font| font.font_name == name)
         });
+        // 旧本文へ補った区切り空白は、原本の字面にだけある下線を延長しない。
+        let gap = run.text.len() - element.text.trim().len();
+        if run.style.underlined && gap > 0 {
+            let mut separator = run.clone();
+            separator.text = run.text[..gap].to_string();
+            separator.style.underlined = false;
+            separator.style.baseline_offset = None;
+            runs.push(separator);
+            run.text = element.text.trim().to_string();
+        }
         runs.push(run);
     }
     if text == expected { runs } else { Vec::new() }
@@ -227,6 +268,29 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     let spacing = native_line_pitch::spacing(height, 0, 0)?;
     Some(
         cell.single_line_runs
+            .iter()
+            .fold(Paragraph::new(), |p, run| {
+                p.add_run(docx_run_from_structured_run(run))
+            })
+            .line_spacing(spacing),
+    )
+}
+
+/// 複数行boxの配置が失敗しても、照合済みの旧本文を原本runと最大em高の一段落へ保つ。
+pub(super) fn fallback_paragraph(cell: &Cell) -> Option<Paragraph> {
+    if cell.fallback_runs.is_empty() {
+        return None;
+    }
+    let height = cell.fallback_runs.iter().try_fold(0.0f32, |height, run| {
+        pdf_font_size_to_half_points(run.style.font_size)?;
+        Some(height.max(run.style.font_size))
+    })?;
+    if pdf_points_to_twips(height)? > pdf_points_to_twips(cell.top - cell.bottom)? {
+        return None;
+    }
+    let spacing = native_line_pitch::spacing(height, 0, 0)?;
+    Some(
+        cell.fallback_runs
             .iter()
             .fold(Paragraph::new(), |p, run| {
                 p.add_run(docx_run_from_structured_run(run))
@@ -316,3 +380,13 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[cfg(test)]
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
+
+/// 水平線の両端と高さが量子化済みの原本gridへ一致する場合だけ、表の境界と確認する。
+fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
+    let b = normalized_bounds(graphic.bounds);
+    [b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite())
+        && is_horizontal_line(&b)
+        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 0.5)
+        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 0.5)
+        && ys.iter().any(|y| (b.y0 - *y as f32).abs() <= 0.5)
+}

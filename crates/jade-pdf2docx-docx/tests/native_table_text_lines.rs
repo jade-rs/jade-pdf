@@ -228,6 +228,23 @@ fn cell_line_boxes_exceeding_source_height_keep_legacy_layout() {
     assert_eq!(p[0].0, "Alpha Beta");
 }
 
+/// 行boxが収まらず旧配置へ戻っても、照合済みの原本runの文字サイズを失わない。
+#[test]
+fn overfull_source_cell_keeps_native_run_sizes_in_legacy_layout() {
+    let p = paragraphs(&first_cell_from_source(&overfull_cell_source(6, 14)));
+    assert_eq!(p.len(), 1);
+    assert_eq!(p[0].0, "Alpha Beta");
+    assert_eq!(
+        p[0].3,
+        [20, 28],
+        "overfull source cell must retain its exact native run sizes"
+    );
+    assert_eq!(
+        p[0].1, 280,
+        "fallback line box must fit its largest source run"
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig {
         cases: 16,
@@ -240,6 +257,8 @@ proptest! {
         let p = paragraphs(&first_cell_from_source(&overfull_cell_source(gap, second_size)));
         prop_assert_eq!(p.len(), 1);
         prop_assert_eq!(&p[0].0, "Alpha Beta");
+        prop_assert_eq!(&p[0].3, &[20, second_size * 2]);
+        prop_assert_eq!(p[0].1, second_size * 20);
     }
 }
 
@@ -313,5 +332,140 @@ proptest! {
     #[test]
     fn single_line_cell_line_boxes_are_independent(small in 6u32..11, large in 12u32..21) {
         prop_assert_eq!(single_line_box_heights(small, large), (small * 20, large * 20));
+    }
+}
+
+/// 行boxが収まらない所有表で、同じ字形の上付き・下付き文字を別の原本位置に描く。
+fn overfull_script_source(rise: u32) -> Vec<u8> {
+    overfull_script_source_with_underline(rise, "")
+}
+
+/// 表gridの端点へ届かない独立した下線を、原本の本文へ追加できる。
+fn overfull_script_source_with_underline(rise: u32, underline: &str) -> Vec<u8> {
+    owned_pdf_content(&format!(
+        "{underline} 1 w 72 660 m 272 660 l S 72 700 m 272 700 l S 72 660 m 72 700 l S 172 660 m 172 700 l S 272 660 m 272 700 l S BT /F1 10 Tf 82 680 Td (Alpha) Tj ET BT /F1 5 Tf 110 {} Td (2) Tj ET BT /F1 14 Tf 92 674 Td (Beta) Tj ET BT /F1 10 Tf 82 665 Td (Gamma) Tj ET BT /F1 5 Tf 122 {} Td (2) Tj ET BT /F1 10 Tf 182 680 Td (Control) Tj ET",
+        680 + rise,
+        665 - rise,
+    ))
+}
+
+/// 同じ添字文字を持つ各runから、文字サイズと符号付き位置指定を独立に読む。
+fn script_run_positions(xml: &str) -> Vec<(Option<u32>, Option<i32>)> {
+    let mut reader = Reader::from_str(xml);
+    let mut out = Vec::new();
+    let mut text = String::new();
+    let mut size = None;
+    let mut position = None;
+    let mut in_text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:r" => {
+                text.clear();
+                size = None;
+                position = None;
+            }
+            Event::Start(tag) if tag.name().as_ref() == b"w:t" => in_text = true,
+            Event::End(tag) if tag.name().as_ref() == b"w:t" => in_text = false,
+            Event::Text(value) if in_text => text.push_str(&value.decode().unwrap()),
+            Event::Empty(tag) if tag.name().as_ref() == b"w:sz" => {
+                size = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap());
+            }
+            Event::Empty(tag) if tag.name().as_ref() == b"w:position" => {
+                position = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap());
+            }
+            Event::End(tag) if tag.name().as_ref() == b"w:r" && text.trim() == "2" => {
+                out.push((size, position));
+            }
+            Event::Eof => return out,
+            _ => {}
+        }
+    }
+}
+
+/// 旧配置の一段落でも、同じ5pt文字の上付きと下付きの基線差を失わない。
+#[test]
+fn overfull_source_scripts_keep_independent_baseline_positions() {
+    let cell = first_cell_from_source(&overfull_script_source(3));
+    let p = paragraphs(&cell);
+    assert_eq!(p.len(), 1);
+    assert_eq!(p[0].0, "Alpha 2 Beta Gamma 2");
+    assert_eq!(
+        script_run_positions(&cell),
+        [(Some(10), Some(6)), (Some(10), Some(-6))],
+        "overfull source scripts must retain signed native baseline offsets"
+    );
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 16,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/native_table_text_lines.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 同じ字形・font・サイズの二つの断片が互いの上下位置を借用しない。
+    #[test]
+    fn overfull_source_script_positions_follow_each_fragment(rise in 2u32..=3) {
+        let cell = first_cell_from_source(&overfull_script_source(rise));
+        let expected = [(Some(10), Some((rise * 2) as i32)), (Some(10), Some(-((rise * 2) as i32)))];
+        prop_assert_eq!(script_run_positions(&cell), expected);
+        prop_assert!(underlined_run_texts(&cell).is_empty());
+    }
+}
+
+/// 原本の表下辺は文字の下線ではなく、旧配置の書式復元でも下線を新設しない。
+#[test]
+fn overfull_source_grid_border_does_not_become_run_underline() {
+    let cell = first_cell_from_source(&overfull_script_source(3));
+    assert!(
+        !cell.contains("<w:u "),
+        "verified source grid border must not become restored run underline: {cell}"
+    );
+}
+
+/// 表罫線を除外しても、gridの端点へ届かない独立した本文下線は保持する。
+#[test]
+fn overfull_source_keeps_independent_text_underline() {
+    let cell = first_cell_from_source(&overfull_script_source_with_underline(
+        3,
+        "0.5 w 83 664 m 116 664 l S",
+    ));
+    assert_eq!(underlined_run_texts(&cell), ["Gamma"]);
+    assert_eq!(paragraphs(&cell)[0].0, "Alpha 2 Beta Gamma 2");
+}
+
+/// 下線の有無を本文断片へ対応させ、隣のrunに付いた別の下線で成功しないよう読む。
+fn underlined_run_texts(xml: &str) -> Vec<String> {
+    let mut reader = Reader::from_str(xml);
+    let mut out = Vec::new();
+    let mut text = String::new();
+    let mut underlined = false;
+    let mut in_text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:r" => {
+                text.clear();
+                underlined = false;
+            }
+            Event::Start(tag) if tag.name().as_ref() == b"w:t" => in_text = true,
+            Event::End(tag) if tag.name().as_ref() == b"w:t" => in_text = false,
+            Event::Text(value) if in_text => text.push_str(&value.decode().unwrap()),
+            Event::Empty(tag) if tag.name().as_ref() == b"w:u" => {
+                underlined = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .is_some_and(|a| a.value.as_ref() != b"none");
+            }
+            Event::End(tag) if tag.name().as_ref() == b"w:r" && underlined => {
+                out.push(text.to_string());
+            }
+            Event::Eof => return out,
+            _ => {}
+        }
     }
 }
