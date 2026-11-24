@@ -198,6 +198,21 @@ mod tests {
         assert_eq!(infer_owned(&words, 612.0), None);
     }
 
+    /// 三段など複数の独立した空白帯を、一つの二段本文へ決め打ちしない。
+    #[test]
+    fn multiple_sustained_gutters_are_ambiguous() {
+        let source = (0..8)
+            .map(|row| {
+                [(54., 200.), (220., 392.), (412., 558.)]
+                    .into_iter()
+                    .map(|(left, right)| text(left, right, 700. - row as f32 * 18.))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(infer_owned(&source, 612.), None,
+            "multiple sustained gutters must not be forced into two columns");
+    }
+
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
     #[test]
     fn crossing_body_line_blocks_gutter_but_heading_does_not() {
