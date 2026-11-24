@@ -2044,7 +2044,7 @@ fn structured_text_runs_from_row(
     let Some(first) = row.first() else {
         return Vec::new();
     };
-    let baseline = inline_baseline::reference(row);
+    let baseline_offsets = inline_baseline::offsets(row);
     let mut runs = Vec::new();
     let mut right = first.bounds.x1;
     let mut height_sum = (first.bounds.y1 - first.bounds.y0).abs().max(1.0);
@@ -2083,7 +2083,7 @@ fn structured_text_runs_from_row(
                     })
                     .map(|_| text.bounds),
                 placement: None,
-                baseline_offset: inline_baseline::offset(text, baseline),
+                baseline_offset: baseline_offsets[index],
             },
         });
         right = right.max(text.bounds.x1);

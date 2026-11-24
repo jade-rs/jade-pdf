@@ -10,7 +10,7 @@ use quick_xml::{
 const MARKER: &str = "JadeBaseline_";
 
 /// 最大fontのbaselineが一意な行だけ、周囲の通常文字の基準を返す。
-pub(super) fn reference(row: &[&ParsedTextElement]) -> Option<(f32, f32)> {
+fn reference(row: &[&ParsedTextElement]) -> Option<(f32, f32)> {
     let main = row
         .iter()
         .filter(|text| {
@@ -32,7 +32,7 @@ pub(super) fn reference(row: &[&ParsedTextElement]) -> Option<(f32, f32)> {
 }
 
 /// 小さい文字だけに元の相対位置を付け、未知の基線・極端な差・font縮小の推測を避ける。
-pub(super) fn offset(text: &ParsedTextElement, reference: Option<(f32, f32)>) -> Option<i32> {
+fn offset(text: &ParsedTextElement, reference: Option<(f32, f32)>) -> Option<i32> {
     let (size, baseline) = reference?;
     let y = text.baseline_y.filter(|y| y.is_finite())?;
     let ratio = text.font_size / size;
@@ -46,6 +46,61 @@ pub(super) fn offset(text: &ParsedTextElement, reference: Option<(f32, f32)>) ->
         && (-31680. ..=31680.).contains(&half_points)
         && half_points != 0.)
         .then_some(half_points as i32)
+}
+
+/// 行全体が曖昧な場合は左右直近の通常文字を照合し、二回の走査で各runの位置を求める。
+pub(super) fn offsets(row: &[&ParsedTextElement]) -> Vec<Option<i32>> {
+    if let Some(baseline) = reference(row) {
+        return row
+            .iter()
+            .map(|text| offset(text, Some(baseline)))
+            .collect();
+    }
+    let mut result = vec![None; row.len()];
+    if row
+        .iter()
+        .any(|text| !text.font_size.is_finite() || text.font_size <= 0.)
+    {
+        return result;
+    }
+    let size = row.iter().map(|text| text.font_size).fold(0., f32::max);
+    let dominant = |text: &ParsedTextElement| text.font_size >= size * 0.95;
+    let mut previous = None;
+    let left = row
+        .iter()
+        .map(|text| {
+            let anchor = previous;
+            if dominant(text) {
+                previous = Some(*text);
+            }
+            anchor
+        })
+        .collect::<Vec<_>>();
+    let mut next = None;
+    for (index, text) in row.iter().enumerate().rev() {
+        result[index] = offset(text, neighbouring_reference(size, left[index], next));
+        if dominant(text) {
+            next = Some(*text);
+        }
+    }
+    result
+}
+
+/// 隣接する通常文字が双方とも既知かつ同じ基線の場合だけ、局所的な基準を返す。
+fn neighbouring_reference(
+    size: f32,
+    left: Option<&ParsedTextElement>,
+    right: Option<&ParsedTextElement>,
+) -> Option<(f32, f32)> {
+    let anchor = left.or(right)?;
+    let baseline = anchor.baseline_y.filter(|y| y.is_finite())?;
+    if let (Some(_), Some(right)) = (left, right) {
+        let other = right.baseline_y.filter(|y| y.is_finite())?;
+        if (baseline - other).abs() > 0.25 {
+            return None;
+        }
+    }
+    Some((size, baseline))
 }
 
 /// privateな測定値だけから、梱包時の変換対象を表すstyle名を作る。
