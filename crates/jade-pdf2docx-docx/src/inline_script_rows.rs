@@ -87,7 +87,7 @@ impl<'a> Row<'a> {
     }
 }
 
-/// 小文字だけの行を一意な本文行へ全体として移し、曖昧・重複・入れ子の移動を避ける。
+/// 近接する小文字群ごとに一意な本文行へ戻し、単語の分断と曖昧・入れ子の移動を避ける。
 pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
     if rows.is_empty() || rows.iter().any(Vec::is_empty) {
         return;
@@ -98,7 +98,7 @@ pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
     {
         return;
     }
-    let mut moves = vec![None; rows.len()];
+    let mut moves = rows.iter().map(|r| vec![None; r.len()]).collect::<Vec<_>>();
     for (index, texts) in rows.iter().enumerate() {
         let source = &metadata[index];
         if source.size <= 0. || texts.iter().any(|t| t.font_size < source.size * 0.95) {
@@ -110,30 +110,65 @@ pub(super) fn recover<'a>(rows: &mut Vec<Vec<&'a ParsedTextElement>>) {
         if end - start > MAX_CANDIDATE_ROWS {
             continue;
         }
-        let mut target = None;
-        for (candidate, row) in metadata.iter().enumerate().take(end).skip(start) {
-            if candidate != index && texts.iter().all(|t| row.accepts(t)) {
-                if target.is_some() {
-                    target = None;
-                    break;
+        for cluster in clusters(texts, source.size) {
+            let mut target = None;
+            for (candidate, row) in metadata.iter().enumerate().take(end).skip(start) {
+                if candidate != index && cluster.iter().all(|i| row.accepts(texts[*i])) {
+                    if target.is_some() {
+                        target = None;
+                        break;
+                    }
+                    target = Some(candidate);
                 }
-                target = Some(candidate);
+            }
+            for glyph in cluster {
+                moves[index][glyph] = target;
             }
         }
-        moves[index] = target;
     }
     let mut incoming = vec![false; rows.len()];
-    for target in moves.iter().flatten() {
+    for target in moves.iter().flatten().flatten() {
         incoming[*target] = true;
     }
-    for (source, target) in moves.iter().enumerate() {
-        if let Some(target) = target
-            && moves[*target].is_none()
-            && !incoming[source]
-        {
-            let texts = std::mem::take(&mut rows[source]);
-            rows[*target].extend(texts);
+    let outgoing = moves
+        .iter()
+        .map(|row| row.iter().any(Option::is_some))
+        .collect::<Vec<_>>();
+    let mut additions = vec![Vec::new(); rows.len()];
+    for (source, plan) in moves.iter().enumerate() {
+        let texts = std::mem::take(&mut rows[source]);
+        for (text, target) in texts.into_iter().zip(plan) {
+            if let Some(target) = target
+                && !outgoing[*target]
+                && !incoming[source]
+            {
+                additions[*target].push(text);
+            } else {
+                rows[source].push(text);
+            }
         }
     }
+    for (row, texts) in rows.iter_mut().zip(additions) {
+        row.extend(texts);
+    }
     rows.retain(|row| !row.is_empty());
+}
+
+/// 接した文字列は一体として扱い、離れた指数や単位の小文字群を水平座標で分ける。
+fn clusters(texts: &[&ParsedTextElement], size: f32) -> Vec<Vec<usize>> {
+    let mut order = (0..texts.len()).collect::<Vec<_>>();
+    order.sort_by(|a, b| texts[*a].bounds.x0.total_cmp(&texts[*b].bounds.x0));
+    let mut groups: Vec<Vec<usize>> = Vec::new();
+    let mut right = f32::NEG_INFINITY;
+    for index in order {
+        let bounds = texts[index].bounds;
+        if bounds.x0 - right > size * 0.25 {
+            groups.push(vec![index]);
+            right = bounds.x1;
+        } else {
+            groups.last_mut().unwrap().push(index);
+            right = right.max(bounds.x1);
+        }
+    }
+    groups
 }
