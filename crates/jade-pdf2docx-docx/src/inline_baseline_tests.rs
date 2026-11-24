@@ -104,6 +104,46 @@ fn unverified_outlying_script_remains_separate() {
     assert!(!xml.contains("<w:position"));
 }
 
+/// 直前の細い文字の後ろに長い本文boxが重なる場合も、その交差を見落とさない。
+#[test]
+fn overlapping_main_span_blocks_outlying_row_recovery() {
+    let mut parsed = formula_source();
+    parsed.text_elements[1].baseline_y = Some(704.5);
+    parsed.text_elements[1].bounds.y0 += 0.5;
+    parsed.text_elements[1].bounds.y1 += 0.5;
+    for (text, left, right) in [("wide", 49., 61.), ("i", 54., 55.)] {
+        let mut main = parsed.text_elements[0].clone();
+        main.text = text.into();
+        main.bounds.x0 = left;
+        main.bounds.x1 = right;
+        parsed.text_elements.push(main);
+    }
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(
+        pages[0].lines.len(),
+        3,
+        "overlapping main text must keep the outlying row separate"
+    );
+}
+
+/// 上下二つの本文に同じように接する場合は、行の対応を推測しない。
+#[test]
+fn two_valid_body_rows_leave_outlying_script_ambiguous() {
+    let mut parsed = formula_source();
+    parsed.text_elements[1].baseline_y = Some(694.5);
+    parsed.text_elements[1].bounds.y0 -= 9.5;
+    parsed.text_elements[1].bounds.y1 -= 9.5;
+    for index in [0, 2] {
+        let mut lower = parsed.text_elements[index].clone();
+        lower.baseline_y = Some(689.);
+        lower.bounds.y0 -= 11.;
+        lower.bounds.y1 -= 11.;
+        parsed.text_elements.push(lower);
+    }
+    let pages = text_lines_by_page_from_pdf_text_elements(&parsed, &[]);
+    assert_eq!(pages[0].lines.len(), 4);
+}
+
 /// ページを半分へ縮小すると、font sizeとbaseline位置も同じ物理倍率で縮小する。
 #[test]
 fn inline_offsets_follow_the_existing_word_page_fit() {
