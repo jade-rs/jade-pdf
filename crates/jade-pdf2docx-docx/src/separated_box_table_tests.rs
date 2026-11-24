@@ -212,3 +212,47 @@ proptest! {
         assert_source_cells(&parsed,&expected,xs,&ys);
     }
 }
+
+/// 閉じた枠のある列でも、一つの空欄を消したり隣の列へ詰めたりしない。
+#[test]
+fn an_empty_outlined_cell_preserves_its_row_and_column() {
+    let (mut parsed, mut expected, xs, ys) = boxed_source(3, 20., 16.);
+    parsed.text_elements.retain(|text| text.text != "name1");
+    expected[1][1].clear();
+    assert_source_cells(&parsed, &expected, xs, &ys);
+}
+
+/// 現行point gridで表せない端を、罫線のない別のセルとして黙って出力しない。
+#[test]
+fn fractional_edges_do_not_silently_drop_the_source_borders() {
+    let (mut parsed, _, _, _) = boxed_source(3, 20., 16.);
+    for graphic in &mut parsed.graphics {
+        graphic.bounds.x0 += 0.25;
+        graphic.bounds.x1 += 0.25;
+    }
+    for text in &mut parsed.text_elements {
+        text.bounds.x0 += 0.25;
+        text.bounds.x1 += 0.25;
+    }
+    assert!(
+        separated_box_table::infer(&parsed, 0, &parsed.graphics).is_none(),
+        "unrepresentable source edges must retain the existing fallback instead of losing borders"
+    );
+}
+
+/// 境界の両側へ跨る文字を、近接する片側セルの本文として所有させない。
+#[test]
+fn a_fragment_crossing_two_physical_cells_rejects_the_new_model() {
+    let (mut parsed, _, _, _) = boxed_source(3, 20., 16.);
+    let text = parsed
+        .text_elements
+        .iter_mut()
+        .find(|t| t.text == "name0")
+        .unwrap();
+    text.bounds.x0 = 199.75;
+    text.bounds.x1 = 200.25;
+    assert!(
+        separated_box_table::infer(&parsed, 0, &parsed.graphics).is_none(),
+        "ambiguous source glyphs must not be assigned across a cell edge"
+    );
+}
