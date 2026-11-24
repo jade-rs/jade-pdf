@@ -2,6 +2,10 @@
 use crate::{ParseError, ParsedTextElement, decode::DecodeBudget};
 use pdfium_render::prelude::*;
 
+#[cfg(test)]
+#[path = "pdfium_recovery_spans_tests.rs"]
+mod tests;
+
 /// objectの有限な外接矩形と変換行列を照合する固定長の幾何fingerprint。
 #[derive(Clone, Copy, PartialEq)]
 pub(super) struct Key {
