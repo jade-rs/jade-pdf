@@ -241,9 +241,10 @@ proptest! {
     /// ページ幅・余白が端数でも、実XMLのWord領域とindentの和が原本位置を保つ。
     #[test]
     fn fractional_section_geometry_preserves_source_column_x(
-        width in 600.0_f32..1400.0,
-        left_fraction in 0.02_f32..0.12,
-        right_fraction in 0.58_f32..0.82,
+        // 正のf32の全bit表現を同じ半開区間から生成し、float sampler内部の丸めpanicを避ける。
+        width in (600.0_f32.to_bits()..1400.0_f32.to_bits()).prop_map(f32::from_bits),
+        left_fraction in (0.02_f32.to_bits()..0.12_f32.to_bits()).prop_map(f32::from_bits),
+        right_fraction in (0.58_f32.to_bits()..0.82_f32.to_bits()).prop_map(f32::from_bits),
     ) {
         let left = width * left_fraction;
         let right = width * right_fraction;
