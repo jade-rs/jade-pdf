@@ -24,7 +24,36 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, false)
+}
+
+/// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
+pub(super) fn boxed_cells(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, true)
+}
+
+/// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
+fn cells_impl(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+    closed_boxes: bool,
+) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    // 添字復元を許す呼出元は全graphicが閉じた枠と確認済みであり、枠の下辺は文字下線ではない。
+    let styling_graphics = if closed_boxes {
+        &[][..]
+    } else {
+        parsed.graphics.as_slice()
+    };
     model
         .rows
         .iter()
@@ -35,45 +64,52 @@ pub(super) fn cells(
                 .map(|cell| {
                     let start = col;
                     col += cell.grid_span.max(1);
+                    if cell.vertical_merge == Some(DocxVerticalMerge::Continue) {
+                        return None;
+                    }
+                    let row_span = if cell.vertical_merge == Some(DocxVerticalMerge::Restart) {
+                        vertical_merge_row_span(model, row_index, start, model.rows.len())
+                    } else {
+                        1
+                    };
+                    // 段落の所有は結合矩形全体。継続先が異なる横幅を持つ不正なモデルでは推測しない。
+                    for next in row_index + 1..row_index.checked_add(row_span)? {
+                        let continued = docx_model_cell_at_column(model, next, start)?;
+                        if continued.grid_span.max(1) != cell.grid_span.max(1) {
+                            return None;
+                        }
+                    }
                     let band = ys.len().checked_sub(row_index + 2)?;
+                    let bottom_band = ys
+                        .len()
+                        .checked_sub(row_index.checked_add(row_span)?.checked_add(1)?)?;
                     let top = *ys.get(band + 1)? as f32;
-                    let bottom = *ys.get(band)? as f32;
+                    let bottom = *ys.get(bottom_band)? as f32;
                     let left = *xs.get(start)? as f32;
-                    let selected = texts.get(row_index)?.get(start..col)?;
-                    let mut elements = selected.iter().flatten().collect::<Vec<_>>();
-                    if elements.is_empty()
-                        || cell.vertical_merge == Some(DocxVerticalMerge::Continue)
-                    {
+                    let selected = texts
+                        .get(row_index..row_index.checked_add(row_span)?)?
+                        .iter()
+                        .map(|row| row.get(start..col))
+                        .collect::<Option<Vec<_>>>()?;
+                    let elements = selected
+                        .iter()
+                        .flat_map(|row| row.iter().flatten())
+                        .collect::<Vec<_>>();
+                    if elements.is_empty() {
                         return None;
                     }
                     let original = elements.iter().map(|t| t.text.as_str()).collect::<String>();
                     if characters(&original) != characters(&cell.text) {
                         return None;
                     }
-                    elements.sort_by(|a, b| {
-                        native_baseline::line_y(b)
-                            .total_cmp(&native_baseline::line_y(a))
-                            .then(a.bounds.x0.total_cmp(&b.bounds.x0))
-                    });
-                    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
-                    for element in elements {
-                        if let Some(row) = rows.last_mut().filter(|row| {
-                            (native_baseline::line_y(row[0]) - native_baseline::line_y(element))
-                                .abs()
-                                <= TEXT_ROW_Y_TOLERANCE_PT
-                        }) {
-                            row.push(element);
-                        } else {
-                            rows.push(vec![element]);
-                        }
-                    }
+                    let rows = source_rows(elements, closed_boxes);
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
                             let mut row =
                                 native_spacing::with_interior_spaces(&parsed.text_elements, row);
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                            let mut line = source_line(row, &parsed.graphics, *xs.last()? as f32)?;
+                            let mut line = source_line(row, styling_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             Some(line)
@@ -95,8 +131,14 @@ pub(super) fn cells(
                         left,
                         top,
                         bottom,
-                        single_line_runs: if lines.len() == 1 {
-                            legacy_runs(parsed, selected, &cell.text)
+                        single_line_runs: if closed_boxes && lines.len() == 1 {
+                            lines[0].runs.clone()
+                        } else if lines.len() == 1 {
+                            legacy_runs(
+                                parsed,
+                                selected.iter().flat_map(|row| row.iter().flatten()),
+                                &cell.text,
+                            )
                         } else {
                             Vec::new()
                         },
@@ -108,15 +150,46 @@ pub(super) fn cells(
         .collect()
 }
 
+/// 元の行分割を保ち、確認済み局所基線だけから添字を同じセル内の行へ戻す。
+pub(super) fn source_rows(
+    mut elements: Vec<&ParsedTextElement>,
+    scripts: bool,
+) -> Vec<Vec<&ParsedTextElement>> {
+    elements.sort_by(|a, b| {
+        native_baseline::line_y(b)
+            .total_cmp(&native_baseline::line_y(a))
+            .then(a.bounds.x0.total_cmp(&b.bounds.x0))
+    });
+    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
+    for element in elements {
+        if let Some(row) = rows.last_mut().filter(|row| {
+            (native_baseline::line_y(row[0]) - native_baseline::line_y(element)).abs()
+                <= TEXT_ROW_Y_TOLERANCE_PT
+        }) {
+            row.push(element);
+        } else {
+            rows.push(vec![element]);
+        }
+    }
+    if scripts {
+        inline_script_rows::recover(&mut rows, None);
+    }
+    rows.retain(|row| !row.is_empty());
+    for row in &mut rows {
+        row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+    }
+    rows
+}
+
 /// 既存のセル文字列・断片間空白と完全一致する場合だけ、原本runのstyleを対応させる。
-fn legacy_runs(
+fn legacy_runs<'a>(
     parsed: &ParsedDocument,
-    selected: &[Vec<ParsedTextElement>],
+    selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
-    for element in selected.iter().flatten() {
+    for element in selected {
         let start = text.len();
         append_cell_fragment(&mut text, element.text.trim());
         if text.len() == start {
@@ -223,3 +296,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     }
     Some(out)
 }
+
+#[cfg(test)]
+#[path = "native_table_merge_tests.rs"]
+mod merged_tests;

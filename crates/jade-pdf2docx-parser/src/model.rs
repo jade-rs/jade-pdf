@@ -68,7 +68,7 @@ pub struct ParsedGraphicElement {
 /// PDF content stream から抽出したテキスト要素を表す。
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedTextElement {
-    /// 水平SDK文字または確認済み正立Type1描画のbaseline y座標。boundsと同じページ座標系で、未確認はNone。
+    /// 水平SDK文字または確認済み水平書字の正立描画のbaseline y座標。boundsと同じページ座標系で、未確認はNone。
     /// pure/自作IRではNoneを指定でき、行復元は従来どおりbounds.y0を使う。
     pub baseline_y: Option<f32>,
     /// 対象ページ番号。

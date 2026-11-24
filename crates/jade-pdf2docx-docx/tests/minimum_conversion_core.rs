@@ -818,12 +818,12 @@ fn byte_conversion_resizes_image_drawing_from_pdf_ctm_bounds() {
 
     let doc_xml = support::docx_assert::read_document_xml(&output_docx);
     assert!(
-        doc_xml.contains(r#"cx="638175""#),
-        "expected 67px/638175emu width from 50pt CTM; XML: {doc_xml}"
+        doc_xml.contains(r#"cx="635000""#),
+        "expected 635000emu width directly from 50pt CTM; XML: {doc_xml}"
     );
     assert!(
-        doc_xml.contains(r#"cy="504825""#),
-        "expected 53px/504825emu height from 40pt CTM; XML: {doc_xml}"
+        doc_xml.contains(r#"cy="508000""#),
+        "expected 508000emu height directly from 40pt CTM; XML: {doc_xml}"
     );
 
     let _ = fs::remove_file(output_docx);

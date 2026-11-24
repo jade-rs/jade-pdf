@@ -131,7 +131,7 @@ fn parameters<'a>(
 }
 
 /// 空白・コメント以外の余剰tokenを拒否し、単一keywordを借用する。
-fn keyword(value: &[u8]) -> Option<&[u8]> {
+pub(crate) fn keyword(value: &[u8]) -> Option<&[u8]> {
     let mut lexer = Lexer {
         bytes: value,
         cursor: 0,
@@ -143,7 +143,7 @@ fn keyword(value: &[u8]) -> Option<&[u8]> {
 }
 
 /// PDF十進数を字句で0..=1と検証し、丸めで範囲外を受け入れない。
-fn alpha(word: &[u8]) -> Option<f64> {
+pub(crate) fn alpha(word: &[u8]) -> Option<f64> {
     let unsigned = word
         .strip_prefix(b"+")
         .or_else(|| word.strip_prefix(b"-"))

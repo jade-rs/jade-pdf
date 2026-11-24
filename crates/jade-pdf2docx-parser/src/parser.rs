@@ -38,6 +38,8 @@ mod graphics_budget_tests;
 mod graphics_draws;
 #[path = "graphics_merge.rs"]
 mod graphics_merge;
+#[path = "stroked_rectangles.rs"]
+mod stroked_rectangles;
 
 /// 罫線本文を共有予算付きで抽出し、失敗時は部分結果を破棄する。
 #[cfg(test)]
@@ -780,6 +782,9 @@ fn extract_graphics_from_pdf_bytes(
     } else {
         streams
     };
+    if stroked_rectangles::append(decode_budget, bytes, &streams, &mut segments).is_none() {
+        return Vec::new();
+    }
     for (page, stream) in streams {
         if graphics_draws::append(decode_budget, page, &stream, &mut segments).is_none() {
             return Vec::new();
@@ -2621,13 +2626,25 @@ fn extract_text_elements_with_matrices<'clip>(
                     && crate::text_draws::adjacent(previous, width, current, state.size)
             })
         });
-        let positioned =
-            derived.is_some() && page_matrix.and_then(type1_positions::baseline).is_some();
+        let horizontal = derived.is_some()
+            || state
+                .font
+                .as_deref()
+                .and_then(|font| metrics.get(font))
+                .is_some_and(|font| font.is_horizontal());
+        let source_baseline = page_matrix
+            .filter(|_| horizontal && font_size.is_finite() && font_size > 0.)
+            .and_then(crate::text_baseline::upright);
+        let positioned = derived.is_some()
+            && page_matrix
+                .and_then(crate::text_baseline::upright)
+                .is_some();
         let merge = !positioned
             && !last_positioned
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
+                    && crate::text_baseline::compatible(previous.baseline_y, source_baseline)
                     && previous.font_name.as_deref() == font_name
                     && previous.fill_color == state.color
             });
@@ -2677,7 +2694,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
-                            baseline_y: page_matrix.and_then(type1_positions::baseline),
+                            baseline_y: source_baseline,
                             page,
                             bounds: gap,
                             font_size,
@@ -2724,8 +2741,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: derived
-                            .and_then(|_| page_matrix.and_then(type1_positions::baseline)),
+                        baseline_y: source_baseline,
                         page,
                         bounds,
                         font_size,

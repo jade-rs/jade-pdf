@@ -1,0 +1,722 @@
+{
+  "time_utc": "2026-11-24T16:40:27.603448+00:00",
+  "source_url": "https://pubs.usgs.gov/gip/70039401/report.pdf",
+  "source_landing": "https://pubs.usgs.gov/publication/70039401",
+  "source_sha256": "adba1cb0cb0a12dc5d4da18f4d0a947c912dba68e984cef590352aff8b22bd58",
+  "fixed_candidate_before_collection": "e603044564411ac2c1fc59d20a6232688102a6d6",
+  "product_used": false,
+  "all5_source_pages_individually_viewed": true,
+  "reference_truth": "Original rendered black ink. All source PDF text-show operations use rendering mode3; hidden OCR strings, fonts, Unicode encodings and declared bold are not ground truth for visible ink.",
+  "pages": [
+    {
+      "physical_page": 1,
+      "size_pt": [
+        276.84,
+        633.78
+      ],
+      "source_render_sha256": "90577af806e6ba576b4c72526752e41e5733dfbbedb2f8924545fbf9f18bc429",
+      "source_render_size_px": [
+        699,
+        1600
+      ]
+    },
+    {
+      "physical_page": 2,
+      "size_pt": [
+        556.38,
+        634.5
+      ],
+      "source_render_sha256": "ccdf76484d6d157ef9b568b1acb53c5cd16e8e32117fc670cb6c1b5f142ed927",
+      "source_render_size_px": [
+        1404,
+        1600
+      ]
+    },
+    {
+      "physical_page": 3,
+      "size_pt": [
+        557.1,
+        628.74
+      ],
+      "source_render_sha256": "8d76d46d915b65deeb64ce42d53d1f6543fa0d4f1edfdbad6a1d7d2b725f61d1",
+      "source_render_size_px": [
+        1418,
+        1600
+      ]
+    },
+    {
+      "physical_page": 4,
+      "size_pt": [
+        557.28,
+        631.26
+      ],
+      "source_render_sha256": "ae2a6bedd4b6b2adf588c3b0ee8a55f3f660d25b935eb8aeac505e971bfbc6bc",
+      "source_render_size_px": [
+        1413,
+        1600
+      ]
+    },
+    {
+      "physical_page": 5,
+      "size_pt": [
+        266.04,
+        636.12
+      ],
+      "source_render_sha256": "61803d32b94d8a76b5d75d6b4c92e832147a9012177ab6c2c85a6c322393d56a",
+      "source_render_size_px": [
+        670,
+        1600
+      ]
+    }
+  ],
+  "whole_document_expectations": [
+    "Preserve5 physical pages and each mixed physical page size.",
+    "Retain all visible original raster ink without crop, duplicate overlay, invented text, or color inversion.",
+    "Do not turn invisible OCR text into additional visible DOCX body.",
+    "Full original raster resolution and image orientation remain qualified requirements, not merely nonblank previews."
+  ],
+  "selected_table": {
+    "physical_page": 2,
+    "heading": "Approximate Conversions",
+    "columns": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "data_rows": 14,
+    "data_cells": 56,
+    "manual_source_ink_transcription": true,
+    "Unicode_codepoint_identity_proven_by_scan": false,
+    "policy": "Visual graphemes transcribed as printed. Superscript2/3 are display annotations, not a claim that scan ink encodes U+00B2/U+00B3. Exact scalar counts must not use aliases or NFKC. Decimal zeros, printed approximate values and commas must not be replaced with modern conversion constants.",
+    "annotation_coordinate_space": "Independent source-page2 1600px-high PNG; human approximate ROIs, not extracted glyph bounds.",
+    "cells": [
+      {
+        "source_row": 1,
+        "column": 1,
+        "visual_text": "inch (in)",
+        "source_render_ROI_px": [
+          392,
+          611,
+          700,
+          635
+        ]
+      },
+      {
+        "source_row": 1,
+        "column": 2,
+        "visual_text": "2.5",
+        "source_render_ROI_px": [
+          700,
+          611,
+          850,
+          635
+        ]
+      },
+      {
+        "source_row": 1,
+        "column": 3,
+        "visual_text": "0.4",
+        "source_render_ROI_px": [
+          850,
+          611,
+          1009,
+          635
+        ]
+      },
+      {
+        "source_row": 1,
+        "column": 4,
+        "visual_text": "centimeter (cm)",
+        "source_render_ROI_px": [
+          1009,
+          611,
+          1337,
+          635
+        ]
+      },
+      {
+        "source_row": 2,
+        "column": 1,
+        "visual_text": "foot (ft)",
+        "source_render_ROI_px": [
+          392,
+          636,
+          700,
+          660
+        ]
+      },
+      {
+        "source_row": 2,
+        "column": 2,
+        "visual_text": "0.305",
+        "source_render_ROI_px": [
+          700,
+          636,
+          850,
+          660
+        ]
+      },
+      {
+        "source_row": 2,
+        "column": 3,
+        "visual_text": "3.3",
+        "source_render_ROI_px": [
+          850,
+          636,
+          1009,
+          660
+        ]
+      },
+      {
+        "source_row": 2,
+        "column": 4,
+        "visual_text": "meter (m)",
+        "source_render_ROI_px": [
+          1009,
+          636,
+          1337,
+          660
+        ]
+      },
+      {
+        "source_row": 3,
+        "column": 1,
+        "visual_text": "yard (yd)",
+        "source_render_ROI_px": [
+          392,
+          661,
+          700,
+          685
+        ]
+      },
+      {
+        "source_row": 3,
+        "column": 2,
+        "visual_text": "0.91",
+        "source_render_ROI_px": [
+          700,
+          661,
+          850,
+          685
+        ]
+      },
+      {
+        "source_row": 3,
+        "column": 3,
+        "visual_text": "1.1",
+        "source_render_ROI_px": [
+          850,
+          661,
+          1009,
+          685
+        ]
+      },
+      {
+        "source_row": 3,
+        "column": 4,
+        "visual_text": "meter (m)",
+        "source_render_ROI_px": [
+          1009,
+          661,
+          1337,
+          685
+        ]
+      },
+      {
+        "source_row": 4,
+        "column": 1,
+        "visual_text": "mile (mi)",
+        "source_render_ROI_px": [
+          392,
+          685,
+          700,
+          709
+        ]
+      },
+      {
+        "source_row": 4,
+        "column": 2,
+        "visual_text": "1.61",
+        "source_render_ROI_px": [
+          700,
+          685,
+          850,
+          709
+        ]
+      },
+      {
+        "source_row": 4,
+        "column": 3,
+        "visual_text": "0.62",
+        "source_render_ROI_px": [
+          850,
+          685,
+          1009,
+          709
+        ]
+      },
+      {
+        "source_row": 4,
+        "column": 4,
+        "visual_text": "kilometer (km)",
+        "source_render_ROI_px": [
+          1009,
+          685,
+          1337,
+          709
+        ]
+      },
+      {
+        "source_row": 5,
+        "column": 1,
+        "visual_text": "nautical mile",
+        "source_render_ROI_px": [
+          392,
+          710,
+          700,
+          734
+        ]
+      },
+      {
+        "source_row": 5,
+        "column": 2,
+        "visual_text": "1.85",
+        "source_render_ROI_px": [
+          700,
+          710,
+          850,
+          734
+        ]
+      },
+      {
+        "source_row": 5,
+        "column": 3,
+        "visual_text": "0.54",
+        "source_render_ROI_px": [
+          850,
+          710,
+          1009,
+          734
+        ]
+      },
+      {
+        "source_row": 5,
+        "column": 4,
+        "visual_text": "kilometer (km)",
+        "source_render_ROI_px": [
+          1009,
+          710,
+          1337,
+          734
+        ]
+      },
+      {
+        "source_row": 6,
+        "column": 1,
+        "visual_text": "square inch (in²)",
+        "source_render_ROI_px": [
+          392,
+          735,
+          700,
+          759
+        ]
+      },
+      {
+        "source_row": 6,
+        "column": 2,
+        "visual_text": "6.45",
+        "source_render_ROI_px": [
+          700,
+          735,
+          850,
+          759
+        ]
+      },
+      {
+        "source_row": 6,
+        "column": 3,
+        "visual_text": "0.155",
+        "source_render_ROI_px": [
+          850,
+          735,
+          1009,
+          759
+        ]
+      },
+      {
+        "source_row": 6,
+        "column": 4,
+        "visual_text": "square centimeter (cm²)",
+        "source_render_ROI_px": [
+          1009,
+          735,
+          1337,
+          759
+        ]
+      },
+      {
+        "source_row": 7,
+        "column": 1,
+        "visual_text": "square foot (ft²)",
+        "source_render_ROI_px": [
+          392,
+          760,
+          700,
+          784
+        ]
+      },
+      {
+        "source_row": 7,
+        "column": 2,
+        "visual_text": "0.093",
+        "source_render_ROI_px": [
+          700,
+          760,
+          850,
+          784
+        ]
+      },
+      {
+        "source_row": 7,
+        "column": 3,
+        "visual_text": "10.8",
+        "source_render_ROI_px": [
+          850,
+          760,
+          1009,
+          784
+        ]
+      },
+      {
+        "source_row": 7,
+        "column": 4,
+        "visual_text": "square meter (m²)",
+        "source_render_ROI_px": [
+          1009,
+          760,
+          1337,
+          784
+        ]
+      },
+      {
+        "source_row": 8,
+        "column": 1,
+        "visual_text": "acre (43560 ft²)",
+        "source_render_ROI_px": [
+          392,
+          785,
+          700,
+          809
+        ]
+      },
+      {
+        "source_row": 8,
+        "column": 2,
+        "visual_text": "0.405",
+        "source_render_ROI_px": [
+          700,
+          785,
+          850,
+          809
+        ]
+      },
+      {
+        "source_row": 8,
+        "column": 3,
+        "visual_text": "2.5",
+        "source_render_ROI_px": [
+          850,
+          785,
+          1009,
+          809
+        ]
+      },
+      {
+        "source_row": 8,
+        "column": 4,
+        "visual_text": "hectare (ha) (10,000 m²)",
+        "source_render_ROI_px": [
+          1009,
+          785,
+          1337,
+          809
+        ]
+      },
+      {
+        "source_row": 9,
+        "column": 1,
+        "visual_text": "gallon (US)",
+        "source_render_ROI_px": [
+          392,
+          809,
+          700,
+          833
+        ]
+      },
+      {
+        "source_row": 9,
+        "column": 2,
+        "visual_text": "3.8",
+        "source_render_ROI_px": [
+          700,
+          809,
+          850,
+          833
+        ]
+      },
+      {
+        "source_row": 9,
+        "column": 3,
+        "visual_text": "0.26",
+        "source_render_ROI_px": [
+          850,
+          809,
+          1009,
+          833
+        ]
+      },
+      {
+        "source_row": 9,
+        "column": 4,
+        "visual_text": "liter (L)",
+        "source_render_ROI_px": [
+          1009,
+          809,
+          1337,
+          833
+        ]
+      },
+      {
+        "source_row": 10,
+        "column": 1,
+        "visual_text": "barrel (42 gal)",
+        "source_render_ROI_px": [
+          392,
+          834,
+          700,
+          858
+        ]
+      },
+      {
+        "source_row": 10,
+        "column": 2,
+        "visual_text": "0.159",
+        "source_render_ROI_px": [
+          700,
+          834,
+          850,
+          858
+        ]
+      },
+      {
+        "source_row": 10,
+        "column": 3,
+        "visual_text": "6.3",
+        "source_render_ROI_px": [
+          850,
+          834,
+          1009,
+          858
+        ]
+      },
+      {
+        "source_row": 10,
+        "column": 4,
+        "visual_text": "cubic meter (m³)",
+        "source_render_ROI_px": [
+          1009,
+          834,
+          1337,
+          858
+        ]
+      },
+      {
+        "source_row": 11,
+        "column": 1,
+        "visual_text": "ounce (oz)",
+        "source_render_ROI_px": [
+          392,
+          859,
+          700,
+          883
+        ]
+      },
+      {
+        "source_row": 11,
+        "column": 2,
+        "visual_text": "28.0",
+        "source_render_ROI_px": [
+          700,
+          859,
+          850,
+          883
+        ]
+      },
+      {
+        "source_row": 11,
+        "column": 3,
+        "visual_text": "0.035",
+        "source_render_ROI_px": [
+          850,
+          859,
+          1009,
+          883
+        ]
+      },
+      {
+        "source_row": 11,
+        "column": 4,
+        "visual_text": "gram (g)",
+        "source_render_ROI_px": [
+          1009,
+          859,
+          1337,
+          883
+        ]
+      },
+      {
+        "source_row": 12,
+        "column": 1,
+        "visual_text": "pound (lb av)",
+        "source_render_ROI_px": [
+          392,
+          885,
+          700,
+          909
+        ]
+      },
+      {
+        "source_row": 12,
+        "column": 2,
+        "visual_text": "0.454",
+        "source_render_ROI_px": [
+          700,
+          885,
+          850,
+          909
+        ]
+      },
+      {
+        "source_row": 12,
+        "column": 3,
+        "visual_text": "2.2",
+        "source_render_ROI_px": [
+          850,
+          885,
+          1009,
+          909
+        ]
+      },
+      {
+        "source_row": 12,
+        "column": 4,
+        "visual_text": "kilogram (kg)",
+        "source_render_ROI_px": [
+          1009,
+          885,
+          1337,
+          909
+        ]
+      },
+      {
+        "source_row": 13,
+        "column": 1,
+        "visual_text": "short ton (2,000 lb)",
+        "source_render_ROI_px": [
+          392,
+          910,
+          700,
+          934
+        ]
+      },
+      {
+        "source_row": 13,
+        "column": 2,
+        "visual_text": "0.907",
+        "source_render_ROI_px": [
+          700,
+          910,
+          850,
+          934
+        ]
+      },
+      {
+        "source_row": 13,
+        "column": 3,
+        "visual_text": "1.1",
+        "source_render_ROI_px": [
+          850,
+          910,
+          1009,
+          934
+        ]
+      },
+      {
+        "source_row": 13,
+        "column": 4,
+        "visual_text": "metric ton (t)",
+        "source_render_ROI_px": [
+          1009,
+          910,
+          1337,
+          934
+        ]
+      },
+      {
+        "source_row": 14,
+        "column": 1,
+        "visual_text": "pound (mass)/foot (lb/ft)",
+        "source_render_ROI_px": [
+          392,
+          935,
+          700,
+          959
+        ]
+      },
+      {
+        "source_row": 14,
+        "column": 2,
+        "visual_text": "1.5",
+        "source_render_ROI_px": [
+          700,
+          935,
+          850,
+          959
+        ]
+      },
+      {
+        "source_row": 14,
+        "column": 3,
+        "visual_text": "0.67",
+        "source_render_ROI_px": [
+          850,
+          935,
+          1009,
+          959
+        ]
+      },
+      {
+        "source_row": 14,
+        "column": 4,
+        "visual_text": "kilogram/meter",
+        "source_render_ROI_px": [
+          1009,
+          935,
+          1337,
+          959
+        ]
+      }
+    ]
+  },
+  "source_style_expectations": {
+    "heading": "Visible heading and column labels bold in scanned ink; hidden OCR font names alone do not establish visible weight.",
+    "table_body": "Plain regular-looking ink with superscript area and volume powers in unit labels.",
+    "raster_default": "Native/default fidelity may retain the scanned table as original page image. Editable OCR table evaluation is separate and must bind all56 cells to this source gold."
+  },
+  "limits": [
+    "Other table cells on physicalpages2to4 are not included in selected56cell semantic acceptance.",
+    "Whole5page visual acceptance remains required.",
+    "No first product conversion/parse has been performed."
+  ]
+}

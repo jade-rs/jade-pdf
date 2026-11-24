@@ -35,6 +35,10 @@ mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
 mod glyph_metrics;
+mod graphic_table_cells;
+#[cfg(test)]
+mod graphic_table_merge_tests;
+mod graphic_table_ownership;
 mod layout_space;
 mod normal_weight_package;
 mod positioned_type1;
@@ -64,7 +68,9 @@ mod page_chrome;
 mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
+mod separated_box_table;
 mod text_column_gutter;
+mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
@@ -1759,6 +1765,10 @@ fn text_lines_by_page_from_pdf_text_elements(
                 && !parsed.image_elements.iter().any(|image| image.page == page))
             .then(|| text_column_gutter::infer(&rows, page_width))
             .flatten();
+            let cuts = rows
+                .iter()
+                .map(|row| text_row_segments::cuts(row, gutter))
+                .collect::<Vec<_>>();
             let changed = inline_script_rows::recover(&mut rows, gutter);
             for (row, changed) in rows.iter_mut().zip(changed) {
                 if changed {
@@ -1769,11 +1779,11 @@ fn text_lines_by_page_from_pdf_text_elements(
                     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
                 }
             }
-            rows.retain(|row| !row.is_empty());
             let lines = rows
                 .iter()
-                .flat_map(|row| {
-                    split_text_row_segments(row, gutter)
+                .zip(&cuts)
+                .flat_map(|(row, cuts)| {
+                    text_row_segments::split(row, gutter, cuts)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
@@ -1856,43 +1866,6 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
         .iter()
         .find(|parsed_page| parsed_page.page_number == page)
         .map(|page| parsed_page_display_size_points(page).1)
-}
-
-/// 1 行分の text element を、段組などの大きな水平ギャップで分割する。
-fn split_text_row_segments<'a>(
-    row: &[&'a ParsedTextElement],
-    gutter: Option<text_column_gutter::Gutter>,
-) -> Vec<TextRowSegment<'a>> {
-    let Some(first) = row.first() else {
-        return Vec::new();
-    };
-    let avg_height = row
-        .iter()
-        .map(|text| (text.bounds.y1 - text.bounds.y0).abs().max(1.0))
-        .sum::<f32>()
-        / row.len() as f32;
-    let split_gap = avg_height * 8.0;
-    let mut segments: Vec<Vec<&ParsedTextElement>> = vec![vec![*first]];
-    let mut right = first.bounds.x1;
-    for text in row.iter().copied().skip(1) {
-        let gap = text.bounds.x0 - right;
-        if gap > split_gap
-            || gutter.is_some_and(|gutter| right < gutter.x && gutter.x < text.bounds.x0)
-        {
-            segments.push(vec![text]);
-        } else if let Some(segment) = segments.last_mut() {
-            segment.push(text);
-        }
-        right = right.max(text.bounds.x1);
-    }
-    let split_from_row = segments.len() > 1 || gutter.is_some_and(|gutter| gutter.contains(first));
-    segments
-        .into_iter()
-        .map(|texts| TextRowSegment {
-            texts,
-            split_from_row,
-        })
-        .collect()
 }
 
 /// text row segment を DOCX 出力用の structured line に変換する。
@@ -3866,6 +3839,9 @@ fn infer_positioned_tables_from_pdf_graphics_page(
         .filter(|graphic| graphic.page == page)
         .cloned()
         .collect::<Vec<_>>();
+    if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
+        return vec![table];
+    }
     let loose_component_candidates =
         positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 2.0);
     let strict_component_candidates =
@@ -4697,21 +4673,9 @@ fn needs_space_between_fragments(left: &str, right: &str) -> bool {
     left.is_ascii_alphanumeric() && right.is_ascii_alphanumeric()
 }
 
-/// span 適用後の model が元 grid cell の text を保持しているか判定する。
+/// 結合後の矩形所有ごとに原本の文字を照合し、欠落・複製・別セルへの移動を拒否する。
 fn model_preserves_grid_cell_texts(model: &DocxTableModel, cells: &[Vec<String>]) -> bool {
-    let model_text = model
-        .rows
-        .iter()
-        .flat_map(|row| row.iter())
-        .map(|cell| cell.text.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    cells
-        .iter()
-        .flatten()
-        .map(|cell| cell.trim())
-        .filter(|cell| !cell.is_empty())
-        .all(|cell| model_text.contains(cell))
+    graphic_table_ownership::preserves(model, cells)
 }
 
 /// 内部 DOCX 表モデルの結合情報を公開 `OcrTable` の矩形 span grid へ変換する。
@@ -4958,80 +4922,7 @@ fn docx_table_model_from_grid(
     cells: &[Vec<String>],
     cell_underlines: &[Vec<bool>],
 ) -> Option<DocxTableModel> {
-    if cells.is_empty() || cells.iter().any(|row| row.len() + 1 != xs.len()) {
-        return None;
-    }
-    let border_size = table_border_size_for_pdf_rule(table_rule_stroke_width(graphics, xs, ys));
-    let mut has_span = false;
-    let mut rows = Vec::with_capacity(cells.len());
-    for (row_index, row) in cells.iter().enumerate() {
-        let band_index = ys.len().checked_sub(2 + row_index)?;
-        let bottom = ys[band_index];
-        let top = ys[band_index + 1];
-        let mut modeled_row = Vec::new();
-        let mut col = 0usize;
-        while col < row.len() {
-            let mut span = 1usize;
-            let mut text = row[col].clone();
-            let mut underlined = cell_underlines
-                .get(row_index)
-                .and_then(|row| row.get(col))
-                .copied()
-                .unwrap_or(false);
-            while col + span < row.len()
-                && !has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top)
-                && should_merge_across_missing_vertical_boundary(row, col, span)
-            {
-                underlined |= cell_underlines
-                    .get(row_index)
-                    .and_then(|row| row.get(col + span))
-                    .copied()
-                    .unwrap_or(false);
-                if !row[col + span].trim().is_empty() {
-                    if !text.trim().is_empty() {
-                        text.push(' ');
-                    }
-                    text.push_str(row[col + span].trim());
-                }
-                span += 1;
-            }
-            if span > 1 {
-                has_span = true;
-            }
-            let vertical_merge = vertical_merge_for_cell(graphics, xs, ys, row_index, col, span);
-            if vertical_merge.is_some() {
-                has_span = true;
-            }
-            modeled_row.push(DocxTableCellModel {
-                text,
-                underlined,
-                alignment: ParagraphAlignment::Left,
-                grid_span: span,
-                vertical_merge,
-                width_twips: None,
-                borders: Some(DocxCellBorders {
-                    top: has_horizontal_boundary_in_column_band(
-                        graphics,
-                        top,
-                        xs[col],
-                        xs[col + span],
-                    ),
-                    left: has_vertical_boundary_in_band(graphics, xs[col], bottom, top),
-                    bottom: has_horizontal_boundary_in_column_band(
-                        graphics,
-                        bottom,
-                        xs[col],
-                        xs[col + span],
-                    ),
-                    right: has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top),
-                    size_eighths_pt: border_size,
-                }),
-            });
-            col += span;
-        }
-        rows.push(modeled_row);
-    }
-    has_span.then_some(DocxTableModel { rows })
+    graphic_table_cells::model(graphics, xs, ys, cells, cell_underlines)
 }
 
 /// 欠けた縦罫線を結合として扱ってよいか判定する。
@@ -5043,36 +4934,6 @@ fn should_merge_across_missing_vertical_boundary(row: &[String], col: usize, spa
         .get(col + span)
         .is_some_and(|cell| !cell.trim().is_empty());
     !(current_has_text && next_has_text)
-}
-
-/// セルの縦結合状態を判定する。
-fn vertical_merge_for_cell(
-    graphics: &[ParsedGraphicElement],
-    xs: &[i32],
-    ys: &[i32],
-    row_index: usize,
-    col: usize,
-    span: usize,
-) -> Option<DocxVerticalMerge> {
-    if span != 1 {
-        return None;
-    }
-    let band_index = ys.len().checked_sub(2 + row_index)?;
-    let has_boundary_above = if row_index == 0 {
-        true
-    } else {
-        has_horizontal_boundary_in_column_band(graphics, ys[band_index + 1], xs[col], xs[col + 1])
-    };
-    let has_boundary_below = if row_index + 1 >= ys.len().saturating_sub(1) {
-        true
-    } else {
-        has_horizontal_boundary_in_column_band(graphics, ys[band_index], xs[col], xs[col + 1])
-    };
-    match (has_boundary_above, has_boundary_below) {
-        (true, false) => Some(DocxVerticalMerge::Restart),
-        (false, _) => Some(DocxVerticalMerge::Continue),
-        _ => None,
-    }
 }
 
 /// 指定 row band を縦罫線が分割しているか判定する。

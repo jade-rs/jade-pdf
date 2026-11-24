@@ -45,7 +45,7 @@ Painted curved paths in page content produce a per-page `unsupported_curved_path
 
 The pure Rust parser accepts direct `LZWDecode` content filters with `EarlyChange` 0 or 1 and no prediction (`Predictor` 1). It also decodes the exact `ASCII85Decode` → `FlateDecode` chain in page and Form content, with absent/null `DecodeParms` or `[null null]`, charging both decoded stages to the shared limits. Malformed ASCII85/Flate content and unsupported ASCII85 filter orders or parameters fail explicitly. Other filter chains, indirect filter/parameter values, and LZW predictors retain their existing limitations. Formal page `Contents` may reference an indirect array; stream order, repeated references, and state across streams are preserved. Wrong-generation or invalid content references are errors. Malformed LZW and unsupported LZW parameters fail conversion instead of producing a blank document. Scanned images still require OCR for editable text. See the [LZW and Contents validation](corpus/validation-lzw-content.json) for the reviewed source, conformance checks and remaining limits.
 
-Images drawn inside called Form XObjects retain their local resource names, composed transforms, supported inherited paint, and convex clipping. Clipped PNGs preserve at least the source pixel density and 96dpi display resolution. Positioned images on upright pages use page-relative top-origin anchors. This recovers bitmap components without implementing complete Form artwork or transparency-group compositing: Form and OCR quality diagnostics remain, and strict conversion still rejects them. See [Form image behavior and limits](docs/form_images.md).
+Images drawn inside called Form XObjects retain their local resource names, composed transforms, supported inherited paint, and convex clipping. Clipped PNGs preserve at least the source pixel density and 96dpi display resolution. Positioned images on upright pages use page-relative top-origin anchors. This recovers bitmap components without implementing complete Form artwork or transparency-group compositing: Form and OCR quality diagnostics remain, and strict conversion still rejects them. See [Form image behavior and limits](docs/form_images.md). Upright images with known bounds preserve physical extents directly from PDF points without integer display-pixel rounding; see [image dimensions and renderer limits](docs/image_physical_extents.md).
 
 ### Compare PDFs
 
@@ -58,13 +58,17 @@ The comparison command writes JSON to stdout and exits with `0` when there are n
 
 PDF comparison uses the pinned Pdfium runtime described in the [comparison guide](docs/pdf_diff.md). For PDF→DOCX rendering with a prepared, verified runtime without downloads, follow the [offline Pdfium guide](docs/pdfium-offline.md).
 
-`ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright generated Type1 glyph's drawing matrix in the bytes/WASM parser. DOCX row grouping uses this separately from `bounds`. Rust callers constructing text elements can set `baseline_y: None` to retain bounds-based grouping.
+`ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright horizontal text drawing matrix in the bytes/WASM parser. This now covers supported simple fonts and horizontal CID fonts as well as generated Type1 glyphs. Positive finite font size, verified horizontal writing mode and positive axis-aligned page-space transforms are required. Unknown/vertical writing modes, skew and reflection retain `None`; merged spans keep compatible baseline confidence. Rust callers constructing text elements can still set `baseline_y: None` to retain bounds-based grouping. See the [text baseline guide](docs/text_baselines.md).
 
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
 
 Tables inferred from PDF rules keep their source-coordinate row order and each grid row’s height, including descending values and content streams that paint the bottom row first. Cells whose modeled text agrees with the source retain individual run styles. Multiline cells use separate source-positioned paragraphs and explicit edge spaces when their paragraph boxes fit the source row height; single-line cells retain their existing text and alignment. Nested, unmatched, or overfull cells use the existing layout. Complex cell boundaries, font substitution, and rendered placement still require review; see the [cell-line validation](corpus/validation-native-cell-lines.json).
+
+Repeated, independently outlined cells can form one editable table while retaining physical whitespace bands and empty cells. Only complete source edges create borders; ambiguous glyph ownership retains the existing fallback. This does not establish fill, glyph placement, or page fidelity; see [separated box tables](docs/separated_box_tables.md).
+
+Partial-rule table merges retain rectangular ownership: vertical continuations match the preceding column range, source text belongs to the restart cell, and native styles come from every covered source row. Per-cell source validation detects duplicate loss and values moved to another cell; see [graphic table ownership](docs/graphic_table_ownership.md).
 
 Text paragraphs use an explicit line box based on the source font size, with the PDF's blank space applied separately. This prevents font-dependent automatic leading from accumulating between source lines. Font substitution can still shift the first baseline or change glyph widths.
 
@@ -133,4 +137,5 @@ The production DOCX WASM build helper bundles and verifies the Adobe Glyph List,
 
 Verified small-glyph baseline differences are retained as signed DOCX run positions without changing the source font size. Bounded row recovery uses each verified source column independently and keeps ambiguous or overlapping cases unchanged. This improves tested scientific exponents; it does not establish equation, table, pagination or Microsoft Word fidelity. See the [inline baseline guide](docs/inline_baselines.md).
 
+長方形の罫線を扱う条件と、元の表の所属・色・改ページに残る課題は、[長方形からの罫線抽出](docs/stroked_rectangles.md)を参照してください。
 PDF由来の太字・通常体と表の先頭行の改ページについては、[書体と表の先頭行](docs/source_typography_and_table_opening.md)を参照してください。
