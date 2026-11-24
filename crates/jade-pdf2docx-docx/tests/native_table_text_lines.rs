@@ -414,6 +414,7 @@ proptest! {
         let cell = first_cell_from_source(&overfull_script_source(rise));
         let expected = [(Some(10), Some((rise * 2) as i32)), (Some(10), Some(-((rise * 2) as i32)))];
         prop_assert_eq!(script_run_positions(&cell), expected);
+        prop_assert!(underlined_run_texts(&cell).is_empty());
     }
 }
 
@@ -434,9 +435,37 @@ fn overfull_source_keeps_independent_text_underline() {
         3,
         "0.5 w 83 664 m 116 664 l S",
     ));
-    assert!(
-        cell.contains("<w:u "),
-        "independent source underline must survive: {cell}"
-    );
+    assert_eq!(underlined_run_texts(&cell), ["Gamma"]);
     assert_eq!(paragraphs(&cell)[0].0, "Alpha 2 Beta Gamma 2");
+}
+
+/// 下線の有無を本文断片へ対応させ、隣のrunに付いた別の下線で成功しないよう読む。
+fn underlined_run_texts(xml: &str) -> Vec<String> {
+    let mut reader = Reader::from_str(xml);
+    let mut out = Vec::new();
+    let mut text = String::new();
+    let mut underlined = false;
+    let mut in_text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:r" => {
+                text.clear();
+                underlined = false;
+            }
+            Event::Start(tag) if tag.name().as_ref() == b"w:t" => in_text = true,
+            Event::End(tag) if tag.name().as_ref() == b"w:t" => in_text = false,
+            Event::Text(value) if in_text => text.push_str(&value.decode().unwrap()),
+            Event::Empty(tag) if tag.name().as_ref() == b"w:u" => {
+                underlined = tag
+                    .try_get_attribute(b"w:val")
+                    .unwrap()
+                    .is_some_and(|a| a.value.as_ref() != b"none");
+            }
+            Event::End(tag) if tag.name().as_ref() == b"w:r" && underlined => {
+                out.push(text.trim().to_string());
+            }
+            Event::Eof => return out,
+            _ => {}
+        }
+    }
 }
