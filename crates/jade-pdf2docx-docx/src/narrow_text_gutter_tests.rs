@@ -48,3 +48,66 @@ fn sustained_narrow_gutter_preserves_separate_columns() {
         }
     }
 }
+
+/// 実際に保存したWordの左段領域が右段の原本字面へ侵入しないことを確認する。
+#[test]
+fn narrow_column_frames_do_not_clip_original_right_text() {
+    use quick_xml::events::Event;
+    let (xml, _) = package_source(narrow_source());
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    let mut width = 0.;
+    let mut left = 0.;
+    let mut right = 0.;
+    let mut gap = 0.;
+    let mut count = 1;
+    let mut first_width = None;
+    let mut checked = 0;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(e) | Event::Start(e)
+                if matches!(
+                    e.local_name().as_ref(),
+                    b"pgSz" | b"pgMar" | b"cols" | b"col"
+                ) =>
+            {
+                let attrs = e
+                    .attributes()
+                    .map(Result::unwrap)
+                    .map(|a| {
+                        (
+                            String::from_utf8(a.key.local_name().as_ref().to_vec()).unwrap(),
+                            String::from_utf8(a.value.to_vec()).unwrap(),
+                        )
+                    })
+                    .collect::<BTreeMap<_, _>>();
+                let value = |name: &str| attrs.get(name).unwrap().parse::<f64>().unwrap();
+                match e.local_name().as_ref() {
+                    b"pgSz" => width = value("w"),
+                    b"pgMar" => {
+                        left = value("left");
+                        right = value("right");
+                    }
+                    b"cols" => {
+                        count = value("num") as usize;
+                        gap = value("space");
+                        first_width = None;
+                    }
+                    b"col" if first_width.is_none() => first_width = Some(value("w")),
+                    _ => (),
+                }
+            }
+            Event::End(e) if e.local_name().as_ref() == b"sectPr" && count == 2 => {
+                let first_end =
+                    (left + first_width.unwrap_or((width - left - right - gap) / 2.)) / 20.;
+                assert!(
+                    first_end < 309.,
+                    "left Word column frame must end before original right text: end={first_end}, source=309"
+                );
+                checked += 1;
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    assert_eq!(checked, 2);
+}
