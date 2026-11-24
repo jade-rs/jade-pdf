@@ -95,6 +95,9 @@ mod image_storage_budget_tests;
 #[path = "form_image_tests.rs"]
 mod form_image_tests;
 
+#[path = "form_images.rs"]
+mod form_images;
+
 #[path = "image_ccitt.rs"]
 mod image_ccitt;
 #[cfg(test)]
@@ -1084,47 +1087,8 @@ fn extract_image_elements_from_pdf_bytes(
     quality: &mut QualityReport,
 ) -> Vec<ParsedImageElement> {
     let mut placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
-    if streams.iter().any(|stream| {
-        crate::metadata::value(stream.dictionary, b"Subtype")
-            .is_some_and(|v| !crate::metadata::is_name(v, b"Image"))
-    }) {
-        crate::form_content::visit_images(
-            decode_budget,
-            bytes,
-            quality,
-            |page, object_number, matrix, paint, clip| {
-                if !matrix.iter().all(|v| v.is_finite()) {
-                    return Some(());
-                }
-                let Some(bounds) = clip.transformed_bounds(decode_budget, [0., 0., 1., 1.], matrix)
-                else {
-                    return (!decode_budget.is_stopped()).then_some(());
-                };
-                let clipped = !clip.contains_rect([0., 0., 1., 1.], matrix);
-                let clip = if clipped {
-                    Some(clip.intersection(decode_budget, clip)?)
-                } else {
-                    None
-                };
-                crate::metadata_workspace::try_push(
-                    decode_budget,
-                    &mut placements,
-                    ImagePlacement {
-                        object_number,
-                        page,
-                        bounds,
-                        floating: clipped || matrix_has_rotation_or_skew(matrix),
-                        rotation_degrees: rotation_degrees_from_matrix(matrix),
-                        matrix,
-                        paint,
-                        clip,
-                    },
-                )
-            },
-        );
-        if decode_budget.is_stopped() {
-            return Vec::new();
-        }
+    if form_images::append(decode_budget, bytes, streams, quality, &mut placements).is_none() {
+        return Vec::new();
     }
     let mut placed_object_numbers = crate::metadata_workspace::Set::default();
     for placement in &placements {
@@ -1439,16 +1403,7 @@ impl ImageStreamEntry {
             paint,
             matrix,
             ..
-        } = placement;
-        let (page, bounds, floating, rotation_degrees, paint, matrix) = (
-            *page,
-            *bounds,
-            *floating,
-            *rotation_degrees,
-            *paint,
-            *matrix,
-        );
-        let matrix = Some(matrix);
+        } = *placement;
         if decode_budget.is_stopped() {
             return None;
         }
@@ -1473,21 +1428,20 @@ impl ImageStreamEntry {
         } else {
             self.png_bytes.as_slice()
         };
-        let has_shear = matrix.is_some_and(matrix_has_shear);
+        let has_shear = matrix_has_shear(matrix);
         let png_bytes = if let Some(clip) = &placement.clip {
             warp_png_to_clipped_bounds(
                 decode_budget,
                 source,
-                matrix?,
+                matrix,
                 bounds,
                 display_width,
                 display_height,
                 Some(clip),
             )?
         } else {
-            matrix
-                .filter(|matrix| matrix_has_shear(*matrix))
-                .and_then(|matrix| {
+            has_shear
+                .then(|| {
                     warp_png_to_ctm_bounds(
                         decode_budget,
                         source,
@@ -1497,6 +1451,7 @@ impl ImageStreamEntry {
                         display_height,
                     )
                 })
+                .flatten()
                 .or_else(|| image_png::copy(decode_budget, source))?
         };
         Some(ParsedImageElement {

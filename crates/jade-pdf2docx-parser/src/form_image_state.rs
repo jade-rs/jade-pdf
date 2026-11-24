@@ -16,8 +16,7 @@ pub(crate) fn enter<'a>(
             if crate::page_attributes::is_null(group) {
                 return true;
             }
-            if !paint.is_opaque() || !metadata::dictionary_entries_complete(group)
-            {
+            if !paint.is_opaque() || !metadata::dictionary_entries_complete(group) {
                 return false;
             }
             let Some(entries) = metadata::entries(group) else {
