@@ -20,6 +20,18 @@ half-pointのfont size、整数percent、描画器側の丸めには制約があ
 
 ## 権利と制限
 
+実際に埋め込むfaceがない場合だけ、既知の `NimbusRomNo9L-Regu` / `Medi` / `ReguItal` / `MediItal` を
+`Times New Roman` familyへ指定し、対応するbold/italic属性を保持する。
+6文字大文字のsubset prefixを除く既知のface名だけが対象で、部分文字列や未知の変形名から推測しない。
+同じ代替familyになる表の混在faceも、一つの共通styleへ潰さない。埋め込みfaceの名前と内部styleは保持する。
+これは描画環境が持つ代替fontの選択であり、新しいfont programの生成や埋め込み許可の根拠ではない。
+名前の対応はArtifexの[Fontmap.OS2](https://github.com/ArtifexSoftware/ghostpdl/blob/master/lib/Fontmap.OS2)で照合した。
+
+段組みと代替familyを併用した現在の検証は[段組みガイド](text_columns.md)と
+[検証台帳](../corpus/validation-narrow-text-columns.json)を参照する。
+GNU原本17ページに対しnative18・pure17ページまで減ったが、CMTTの文字が見えない箇所が残る。
+以下のPR #29・#30時点の測定値は当時の履歴であり、現在の全体精度を表すものではない。
+
 変換前に元 program の FSType と確認可能なライセンス表示を検査します。対応する OFL 1.1 表示の場合は元の著作権・notice と標準ライセンス本文を保持します。埋め込みが許されない場合や権利根拠を確認できない場合は、この変換経路では font を生成しません。no-subsetting 属性を保持し、元 program 内の全 glyph を出力へ残します。これは元の Type1 暗号文や hint 命令を同一 byte のまま保存することを意味しません。
 
 対応は、検証済みの binary eexec、静的 CharStrings/Subrs、標準的な FontMatrix などに限定します。任意の PostScript、任意の FontMatrix、あらゆる複合文字や shaping を実装したわけではありません。元 glyph の Unicode が未確認なら、別の Unicode や PUA を推測して割り当てません。既存の `unverified_encoding` 診断と strict の拒否は維持します。
