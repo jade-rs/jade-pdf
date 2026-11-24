@@ -1,0 +1,21 @@
+{
+  "scope": "Owned source-grid contract for partial-rule rectangular cell ownership; production and whole-paper fidelity remain unproven.",
+  "source_reference_commit": "8322ad7895d8e15f7002c80e3f67c993edce99fd",
+  "implementation_independent": true,
+  "tests": [
+    "graphic_table_merge_tests",
+    "native_table_text::merged_tests"
+  ],
+  "new_property_samples_per_run": 64,
+  "invariants": [
+    "Every physical row covers each source grid column once.",
+    "Vertical continuation has the same start column and width as its preceding owner.",
+    "Source text from all vertically merged rows appears in the restart cell only.",
+    "Native row fonts, sizes, colors and positions use the full merged source region.",
+    "Each atomic source border is retained without added edges.",
+    "Per-owner source text validation rejects repeated-word loss and values swapped across cells."
+  ],
+  "discovery": "Native BERT Figure5 grid changed after rectangle extraction; one output page26 changed among27. The original is16 pages and contains a colored curve plot, so graph/table classification and whole-paper fidelity still fail.",
+  "whole_document_accepted": false,
+  "production_ready": false
+}
