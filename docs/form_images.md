@@ -56,3 +56,14 @@ Form、透明合成、非凸・曲線 clip、全描画順、すべての vector 
 確認に用いた viewer は LibreOffice であり、Microsoft Word での描画は未検証である。
 配布用のフォント許可判定、元 PDF、選択した表の参照、元のフォントプログラムは変更していない。
 実文書の欠落は残っており、プロダクション準備完了とは扱わない。
+
+## DeviceCMYK JPEG の色と制限
+
+8 bit の `DeviceCMYK` + `DCTDecode` は CMYK/YCCK の四成分を保持して復号し、PDF の `Decode`、検証済み四成分の soft-mask `Matte`、既存の RGB 近似の順に処理する。
+Adobe APP14 の transform と画像寸法・成分数を検証し、不正な Decode/Matte を推測で補わない。画像 pixel 上限と strict の品質拒否も維持する。
+名前の escape、singleton 色空間、間接参照、明示 identity Decode は、同じ画像画素を保持する。
+
+RGB 化は既存の unmanaged DeviceCMYK 近似である。[PDF 32000-1 の 10.3.5](https://opensource.adobe.com/dc-acrobat-sdk-docs/standards/pdfstandards/pdf/PDF32000_2008.pdf)にある基本的な変換式に従うが、印刷機の色や CMS による参照描画を完全に再現するものではない。
+NASA Webb factsheet の両ページでは背景の反転が解消した一方、暗部の細部はつぶれる。原本 2 ページが出力 6 ページになり、画像と本文の分離、白い本文の不可視化、誤った表推定、vector の欠落も残る。
+両背景画像以外の native DOCX part、Chromium/WebKit の本文 XML・品質警告・strict 拒否は変更前と一致し、NIST wallet の出力も変更前と同一である。
+この検証は色極性の修正を確認するもので、factsheet 全体やカラーマネジメントの合格を意味しない。[検証記録](../corpus/validation-device-cmyk-jpeg.json)を参照。

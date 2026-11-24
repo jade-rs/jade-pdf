@@ -1,6 +1,6 @@
 {
   "created_utc": "2026-11-24T10:56:00.646998+00:00",
-  "scope": "Prospective source-polarity gate for DeviceCMYK DCT JPEG. No product fix/test run yet.",
+  "scope": "Source-polarity regression and qualified incremental DeviceCMYK JPEG fix. The owned_controls block preserves the prospective observation before the first product test; current results follow.",
   "production_ready": false,
   "discovery_original_source": "https://science.nasa.gov/wp-content/uploads/2024/08/webbfactsheet.pdf",
   "discovery_source_sha256": "84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e",
@@ -54,9 +54,98 @@
       "CMYK.pdf:1",
       "YCCK.pdf:1"
     ],
-    "expected_polarity_before_first_product_test": "First pixel orange, second blue. ReferenceRGBs≈[246,135,17]/[22,111,192]; test allows unmanagedDeviceCMYK versus managedPoppler differences, does not claim exact colorimetry.",
+    "expected_polarity_before_first_product_test": "First pixel orange, second blue. ReferenceRGBs\u2248[246,135,17]/[22,111,192]; test allows unmanagedDeviceCMYK versus managedPoppler differences, does not claim exact colorimetry.",
     "source_rights": "Entirely owned2pixels and independent minimalPDFshells. No external image/font assets in test code.",
     "first_product_test_executed": false
   },
-  "private_evidence_root": "Ignored corpus/wasm-runtime/cmyk-jpeg-qualification; only3existingPDFfixtures tracked."
+  "private_evidence_root": "Ignored corpus/wasm-runtime/cmyk-jpeg-qualification; only3existingPDFfixtures tracked.",
+  "qualification": {
+    "time_utc": "2026-11-24T11:37:05.701844+00:00",
+    "Rust_source_head": "7bd8d1dd880a81314e95d77ccf6883bb807c1d02",
+    "Rust_source_files": 689,
+    "TDD": {
+      "Red_polarity": "365bd03",
+      "Red_source_Matte": "1b33598",
+      "Green": "ce95029",
+      "inplace_Refactor": "799ffdc",
+      "metadata_and_boundary_qualification": "7bd8d1d"
+    },
+    "owned_tests": {
+      "integration_tests": 7,
+      "PBT_cases_per_run": 48,
+      "properties": "CMYK/YCCK; escaped names, singleton color spaces, indirect colors and Decode endpoints, identity Decode and whitespace leave PNG and text unchanged. Cyan-only inversion changes source components before RGB. Malformed Decode/Matte/BPC/dimensions report DecodeFailed; strict rejects and preserves no success result. Inclusive pixel limit and limit-1 checked in default/strict."
+    },
+    "default_checks": {
+      "passed": 2302,
+      "failed": 0,
+      "ignored": 30,
+      "groups": 125,
+      "clippy": "workspace --exclude jade-pdf-diff --all-targets --locked succeeded",
+      "coverage": "Same default workspace scope as PDF-to-DOCX CI, split into main5crates and remaining WASM/raster crates. Uses verified DOCX Pdfium7961."
+    },
+    "diff_SDK_verification": {
+      "initial_mixed_SDK_failure": "Accidental --workspace run passed DOCX7961 to diff crate which pins8111;2ToUnicode tests failed. Failed log retained, no test/source suppression.",
+      "corrected": "All35 extraction tests pass unchanged with pinned8111; local library hash matches repository pin."
+    },
+    "WASM": {
+      "raw_sha256": "d8d84c04166b7a48a281333f5832217a13ef39657e1d0bcf468221d08e5decc6",
+      "distributed_sha256": "19cc92d127e9759efcde4decc1dfd6bb3a097cb2a004f290b99c14f90f4d9625",
+      "Chromium_standard_passed": 72,
+      "WebKit_standard_passed": 72,
+      "actual_known_input_count": 11,
+      "actual_known_outcomes": 44,
+      "known_success_DOCX_byteexact_parent": 34,
+      "known_errors_exact_parent": 10,
+      "actual_new_inputs": [
+        "NASA-Webb",
+        "NIST-wallet"
+      ],
+      "new_input_outcomes": 8,
+      "new_default_outputs_byteexact_between_engines": true,
+      "transport": "Same production inspect/default/strict exports; bounded64KiB transfer for large NASA DOCX with browser-side and host-side SHA equality."
+    },
+    "native": {
+      "known_inputs": 10,
+      "all_known_DOCX_byteexact_merged_parent": true,
+      "BatchNorm_partial_clip_rejection_no_output_unchanged": true,
+      "new_inputs_default_and_strict": 4,
+      "NASA_changed_parts": [
+        "word/media/rIdImage1.png",
+        "word/media/rIdImage2.png"
+      ],
+      "NASA_all_other_parts_exact_parent": true,
+      "NIST_DOCX_byteexact_parent": true
+    },
+    "NASA_review": {
+      "source_pages": 2,
+      "output_pages": 6,
+      "all_output_pages_viewed": true,
+      "original_source_gold_unchanged": true,
+      "background_polarity": "Gold/dark instead of inverted blue/gray. Native and two browser outputs retain image dimensions.",
+      "remaining": "Shadow detail is clipped by existing unmanaged additive CMYK approximation. Whole brochure still fails: full-page image flows apart from body, white text disappears against white page, false table, missing vectors.",
+      "diagnostic_RGB_MAE_before_after": [
+        {
+          "page": 1,
+          "before": 85.83482505525978,
+          "after": 33.405965816974266,
+          "candidate_exact_black_fraction": 0.6087941385950971
+        },
+        {
+          "page": 2,
+          "before": 131.3027044725348,
+          "after": 18.61345121202068,
+          "candidate_exact_black_fraction": 0.936335827935053
+        }
+      ],
+      "diagnostic_scope": "Post-candidate independent image-only source derivative, exact original JPEG/dictionary rendered with Poppler. Metrics diagnose remaining loss; not prospective gold, perceptual accuracy or CMS conformance."
+    },
+    "implementation": "Shared existing raw four-channel decoder, source Decode/verified Matte then existing unmanaged PDF CMYK approximation. In-place4\u21923compaction, no new dependency/publicAPI/permission override. Existing RGB/Gray/ICC paths unchanged.",
+    "fixture_policy": "Only3previously reviewed fixture PDFs tracked; external originals/derivatives remain ignored private QA.",
+    "limitations": [
+      "Not color-managed equivalence; dark detail remains lost.",
+      "Not whole-paper or brochure acceptance.",
+      "Microsoft Word rendering not validated.",
+      "Production readiness remains false."
+    ]
+  }
 }
