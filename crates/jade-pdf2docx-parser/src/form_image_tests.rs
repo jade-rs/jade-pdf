@@ -180,3 +180,19 @@ fn indirect_form_subtype_is_not_skipped() {
         "indirect Form subtype must retain its image"
     );
 }
+
+/// 有限で小さい画像の行列を特異行列と誤認し、他の画像まで捨てない。
+#[test]
+fn tiny_partial_image_is_not_discarded_as_singular() {
+    let pdf = fixture(
+        "/Fm Do",
+        "0 0 .00005 .00005 re W n .0001 0 0 .0001 0 0 cm /Im Do",
+        "",
+    );
+    let parsed = parse_pdf_bytes("owned-small-crop.pdf", &pdf).unwrap();
+    assert_eq!(
+        parsed.image_elements.len(),
+        1,
+        "finite nonzero clipped image must survive"
+    );
+}
