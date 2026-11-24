@@ -38,6 +38,7 @@ mod glyph_metrics;
 mod graphic_table_cells;
 #[cfg(test)]
 mod graphic_table_merge_tests;
+mod graphic_table_ownership;
 mod layout_space;
 mod positioned_type1;
 mod roman_fallback;
@@ -4662,21 +4663,9 @@ fn needs_space_between_fragments(left: &str, right: &str) -> bool {
     left.is_ascii_alphanumeric() && right.is_ascii_alphanumeric()
 }
 
-/// span 適用後の model が元 grid cell の text を保持しているか判定する。
+/// 結合後の矩形所有ごとに原本の文字を照合し、欠落・複製・別セルへの移動を拒否する。
 fn model_preserves_grid_cell_texts(model: &DocxTableModel, cells: &[Vec<String>]) -> bool {
-    let model_text = model
-        .rows
-        .iter()
-        .flat_map(|row| row.iter())
-        .map(|cell| cell.text.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    cells
-        .iter()
-        .flatten()
-        .map(|cell| cell.trim())
-        .filter(|cell| !cell.is_empty())
-        .all(|cell| model_text.contains(cell))
+    graphic_table_ownership::preserves(model, cells)
 }
 
 /// 内部 DOCX 表モデルの結合情報を公開 `OcrTable` の矩形 span grid へ変換する。
