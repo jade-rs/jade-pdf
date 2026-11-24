@@ -7,8 +7,21 @@ mod fixture;
 fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
     let font = match kind {
         0 => "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".into(),
-        1 => format!("<< /Type /Font /Subtype /TrueType /BaseFont /OwnedSans /Encoding /WinAnsiEncoding /FirstChar 0 /LastChar 255 /Widths [{}] >>", vec!["600";256].join(" ")),
-        2 => "<< /Type /Font /Subtype /Type0 /BaseFont /OwnedCID /Encoding /Identity-H /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>".into(),
+        1 => format!(
+            "<< /Type /Font /Subtype /TrueType /BaseFont /OwnedSans /Encoding /WinAnsiEncoding /FirstChar 0 /LastChar 255 /Widths [{}] >>",
+            vec!["600"; 256].join(" ")
+        ),
+        2..=5 => {
+            let encoding = match kind {
+                2 => "/Identity-H",
+                3 => "/Identity-V",
+                4 => "9 0 R",
+                _ => "/Unknown-CMap",
+            };
+            format!(
+                "<< /Type /Font /Subtype /Type0 /BaseFont /OwnedCID /Encoding {encoding} /DescendantFonts [6 0 R] /ToUnicode 7 0 R >>"
+            )
+        }
         _ => unreachable!(),
     };
     let objects = vec![
@@ -20,6 +33,7 @@ fn document(kind: u8, content: &str, in_form: bool) -> ParsedDocument {
         "<< /Type /Font /Subtype /CIDFontType2 /BaseFont /OwnedCID /CIDSystemInfo << /Registry (Adobe) /Ordering (Identity) /Supplement 0 >> /DW 600 >>".into(),
         fixture::stream("1 begincodespacerange\n<0000> <FFFF>\nendcodespacerange\n4 beginbfchar\n<0041> <0041>\n<0032> <0032>\n<0042> <0042>\n<0043> <0043>\nendbfchar"),
         format!("<< /Type /XObject /Subtype /Form /BBox [0 0 200 200] /Matrix [2 0 0 3 7 11] /Resources << /Font << /F 5 0 R >> >> /Length {} >>\nstream\n{content}\nendstream",content.len()),
+        fixture::stream("/WMode 1 def 1 begincodespacerange <0000> <FFFF> endcodespacerange 1 begincidchar <0041> 65 endcidchar"),
     ];
     parse_pdf_bytes("owned-upright-baseline.pdf", &fixture::pdf(&objects)).unwrap()
 }
@@ -157,5 +171,21 @@ proptest! {
         prop_assert_eq!(parsed.text_elements[0].baseline_y,Some(expected));
         prop_assert_eq!(parsed.text_elements[0].font_size,f32::from(size)*f32::from(sy)*scale);
         prop_assert_eq!(parsed.text_elements[0].text.as_str(),"A");
+    }
+}
+
+/// 正立した文字行列でも、縦書き・未確認Encodingを水平基線と取り違えない。
+#[test]
+fn vertical_and_unverified_cmaps_do_not_gain_horizontal_baselines() {
+    for kind in 3..=5 {
+        for in_form in [false, true] {
+            let parsed = document(kind, "BT /F 18 Tf 1 0 0 1 30 80 Tm <0041> Tj ET", in_form);
+            assert_eq!(parsed.text_elements.len(), 1);
+            assert_eq!(parsed.text_elements[0].text, "A");
+            assert!(
+                parsed.text_elements[0].baseline_y.is_none(),
+                "vertical or unverified writing mode must not gain a horizontal baseline"
+            );
+        }
     }
 }
