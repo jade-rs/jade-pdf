@@ -2621,6 +2621,15 @@ fn extract_text_elements_with_matrices<'clip>(
                     && crate::text_draws::adjacent(previous, width, current, state.size)
             })
         });
+        let horizontal = derived.is_some()
+            || state
+                .font
+                .as_deref()
+                .and_then(|font| metrics.get(font))
+                .is_some_and(|font| font.is_horizontal());
+        let source_baseline = page_matrix
+            .filter(|_| horizontal && font_size.is_finite() && font_size > 0.)
+            .and_then(crate::text_baseline::upright);
         let positioned = derived.is_some()
             && page_matrix
                 .and_then(crate::text_baseline::upright)
@@ -2630,6 +2639,7 @@ fn extract_text_elements_with_matrices<'clip>(
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
+                    && crate::text_baseline::compatible(previous.baseline_y, source_baseline)
                     && previous.font_name.as_deref() == font_name
                     && previous.fill_color == state.color
             });
@@ -2679,7 +2689,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
-                            baseline_y: page_matrix.and_then(crate::text_baseline::upright),
+                            baseline_y: source_baseline,
                             page,
                             bounds: gap,
                             font_size,
@@ -2726,9 +2736,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        baseline_y: page_matrix
-                            .filter(|_| font_size.is_finite() && font_size > 0.)
-                            .and_then(crate::text_baseline::upright),
+                        baseline_y: source_baseline,
                         page,
                         bounds,
                         font_size,

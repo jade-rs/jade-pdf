@@ -121,6 +121,11 @@ impl Metrics {
         Some((bytes, width * size / 1000., code == 32))
     }
 
+    /// simple fontまたは検査済み水平CID経路だけを水平書字と確認する。
+    pub(crate) fn is_horizontal(&self) -> bool {
+        self.simple || self.type3 || self.cid.is_some()
+    }
+
     /// CharProcによるglyph描画を使うFontかを返す。
     pub(crate) fn is_type3(&self) -> bool {
         self.type3
