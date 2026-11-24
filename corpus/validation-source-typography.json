@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "feature": "source font weight and table opening pagination",
+  "reference": {
+    "repository": "https://github.com/bokuweb/lawrenceanum",
+    "commit": "8322ad7895d8e15f7002c80e3f67c993edce99fd",
+    "packages": [
+      "kanpo-parser",
+      "kanpo-docx"
+    ],
+    "adoption": "Independent Rust implementation of explicit normal-weight override and last direct paragraph keepNext for ordinary opening table rows. No reference code, dependencies or external PDF files redistributed."
+  },
+  "production_source_head": "0ab0e3d8c674429dfd9fb1f088c11bca2cfe322e",
+  "qualified_base_head": "237559930019178b4941e2e6a66ecb2ce029abc3",
+  "validation": {
+    "default_tests_passed": 2341,
+    "failed": 0,
+    "ignored": 30,
+    "groups": 125,
+    "DOCX_unit_tests": 154,
+    "new_property_samples_per_run": 160,
+    "default_clippy_and_fmt": true,
+    "native_control_outputs": 13,
+    "native_changes": "Only paired explicit normal b/bCs reset and keepNext. Text/order/positivebold/fontsize/baseline/colors/cells/merges/widths/borders/font/media/license parts exact base.",
+    "Chromium_owned_outcomes": 72,
+    "WebKit_owned_outcomes": 72,
+    "known_browser_outcomes": 44,
+    "additional_public_browser_outcomes": 12,
+    "successful_browser_packages_audited": 40,
+    "browser_inspection_and_strict_errors_unchanged": true,
+    "rendered_controls": {
+      "GNU_Hello": {
+        "pages": 17,
+        "all_pages_RGB_exact_base": true
+      },
+      "owned_table_columns": {
+        "pages": 3,
+        "all_pages_RGB_exact_base": true
+      },
+      "BERT": {
+        "pages": 27,
+        "RGB_exact_base_pages": 26,
+        "changed_output_page": 20,
+        "change": "A first bullet line shifts2.75pt horizontally after explicitnormalweight. Originalsourcephysicalpage12 Additionalx329.0976437; base327.45; candidate330.2. Fullpaper still fails16->27pages."
+      }
+    }
+  },
+  "remaining_failures": [
+    "Whole public papers, BIPM chart and NIST wallet still fail full table, geometry/math or pagination gold.",
+    "No claim production readiness or MicrosoftWord render equivalence.",
+    "Table grid detection/source color reconstruction and other kanpo design remain future work; this change only adopts two bounded behaviors."
+  ],
+  "evidence_directory": "corpus/wasm-runtime/source-typography-qualification (ignored; raw inputs/outputs and manifests kept local)",
+  "tracked_PDF_count": 3,
+  "production_ready": false
+}
