@@ -29,6 +29,11 @@ impl Default for Paint {
 }
 
 impl Paint {
+    /// 通常合成のグループを個別描画へ分解できる不透明状態かを返す。
+    pub(crate) fn is_opaque(&self) -> bool {
+        self.opacity == Some(1.)
+    }
+
     /// 色と透明状態を分離し、通常画像へ未対応色を伝播しない。
     pub(crate) fn snapshot(&self) -> super::ImagePaint {
         super::ImagePaint {

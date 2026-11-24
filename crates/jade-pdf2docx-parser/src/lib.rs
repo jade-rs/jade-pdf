@@ -18,6 +18,7 @@ mod form_attributes;
 mod form_clip;
 mod form_content;
 mod form_diagnostics;
+mod form_image_state;
 mod form_matrices;
 mod form_operands;
 mod form_storage;

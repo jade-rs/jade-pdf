@@ -342,7 +342,11 @@ fn visit_inner(
                         continue;
                     };
                     let parent = stack.last().unwrap();
-                    let paint = parent.paint;
+                    let paint = if images.is_some() {
+                        crate::form_image_state::enter(dictionary, parent.paint, &mut resolver)
+                    } else {
+                        parent.paint
+                    };
                     let combined = match parent.clips.get(span.start) {
                         Some(path) => parent.clip.intersection(budget, path),
                         None => None,
