@@ -113,4 +113,17 @@ mod tests {
             [40, 60]
         );
     }
+
+    /// 有限でもgridの整数範囲を超える外辺を、飽和castで有効な別位置へ移さない。
+    #[test]
+    fn finite_out_of_grid_range_does_not_saturate_into_a_column() {
+        let x = i32::MAX as f32;
+        let horizontal = [b(10., 100., x, 100.), b(10., 500., x, 500.)];
+        let vertical = [b(x, 100., x, 400.)];
+        assert_eq!(
+            augment(&[40, 60], &[100, 400, 500], &vertical, &horizontal),
+            [40, 60],
+            "out-of-grid coordinate must not saturate into a source column"
+        );
+    }
 }
