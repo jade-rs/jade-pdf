@@ -139,3 +139,5 @@ Verified small-glyph baseline differences are retained as signed DOCX run positi
 
 長方形の罫線を扱う条件と、元の表の所属・色・改ページに残る課題は、[長方形からの罫線抽出](docs/stroked_rectangles.md)を参照してください。
 PDF由来の太字・通常体と表の先頭行の改ページについては、[書体と表の先頭行](docs/source_typography_and_table_opening.md)を参照してください。
+
+部分clip付きの短い文字objectが多いnative解析では、一意な所属の共有索引で既定のmetadata予算内の処理を改善しています。曖昧な所属の扱いと検証範囲は、[native clipの文字索引](docs/native_clip_workspace.md)を参照してください。

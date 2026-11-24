@@ -1,0 +1,52 @@
+{
+  "scope": "Bound native partial-clip character ownership workspace without changing default limits or public APIs.",
+  "qualified_source": "30a00b325378d2181a0a62fcfe6da24be4a24340",
+  "qualified_base_main": "710582eda92e7679b455b6bca83d62a8c5429900",
+  "Rust_source_files_in_command_receipts": 717,
+  "default_feature": {
+    "clippy_passed": true,
+    "passed": 2390,
+    "failed": 0,
+    "ignored": 32,
+    "test_groups": 129
+  },
+  "owned_regressions": {
+    "distinct_partial_text_objects": 160,
+    "workspace_limit_bytes": 262144,
+    "old_path_exceeded_limit": true,
+    "new_path_passed": true,
+    "ownership_property_cases": 32,
+    "independent_reference": "SDK exact object ownership API; no geometric index in the oracle",
+    "controls": ["coincident objects with different clips", "repeated Form leaves", "rotations", "repeated text"]
+  },
+  "reviewed_original": {
+    "id": "NTA-stamp-tax-table-2026-06",
+    "sha256": "a74ef38911860b41868e5f1b7d8f870d2ff870ad2dcfd16c637a4e15abfd1e14",
+    "registration": "corpus/manifest-japanese-table-holdout.json",
+    "default_limit_bytes": 134217728,
+    "old_reservation_bytes_at_failure": 134230384,
+    "new_native_parse_pages": 2,
+    "source_pages_compared_to_exact_native_ownership": 2,
+    "SDK_characters_per_normalized_page": 5195,
+    "every_index_mask_matches_legacy": true,
+    "selected_logical_cell_associations": 30,
+    "exact_unicode_identity_claimed": false,
+    "DOCX_four_column_tables": 2,
+    "rendered_pages_individually_reviewed": 2,
+    "strict_quality_issue_count": 4,
+    "strict_output_written": false,
+    "whole_document_accepted": false,
+    "remaining_failures": ["plain cell fallback clips text", "two-digit number wrapping", "table origin and footer fidelity", "header image decode", "curved paths"]
+  },
+  "regression_evidence": {
+    "prior_native_inputs_with_byteexact_DOCX": 14,
+    "BatchNorm_ambiguous_partial_clip_rejection_unchanged": true,
+    "final_native_outcomes_compared_to_prior_candidate": 18,
+    "all_15_successful_packages_byteexact_prior_candidate": true,
+    "WASM_distribution_payloads_byteexact_parent": 10,
+    "parent_browser_evidence_reused": true,
+    "new_browser_runs_claimed": false
+  },
+  "source_PDF_or_fonts_redistributed": false,
+  "production_ready": false
+}

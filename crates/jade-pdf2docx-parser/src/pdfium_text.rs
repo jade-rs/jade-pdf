@@ -4,7 +4,7 @@ use pdfium_render::prelude::*;
 
 #[cfg(test)]
 #[path = "pdfium_text_budget_tests.rs"]
-mod budget_tests;
+pub(crate) mod budget_tests;
 
 #[cfg(test)]
 #[path = "pdfium_segment_recovery_tests.rs"]

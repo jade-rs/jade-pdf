@@ -5,6 +5,9 @@ use crate::{
     page_attribute_fixture::{pdf, stream},
 };
 
+#[path = "pdfium_clip_index_tests.rs"]
+pub(crate) mod clip_index_tests;
+
 /// 指定容量だけを持つ独立したmetadata予算を作る。
 pub(super) fn budget(capacity: u64) -> DecodeBudget {
     DecodeBudget::new(&ParseLimits {

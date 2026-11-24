@@ -18,6 +18,10 @@ mod pages;
 mod need_tests;
 
 #[cfg(test)]
+#[path = "pdfium_clip_source_tests.rs"]
+mod clip_source_tests;
+
+#[cfg(test)]
 #[path = "pdfium_preview_budget_tests.rs"]
 mod preview_budget_tests;
 
