@@ -779,9 +779,8 @@ fn build_structured_docx_with_image_payloads(
         && region_lines.is_empty()
         && pages.len() > 1
         && text_columns_by_page.iter().any(Option::is_some)
-        && pages.iter().all(|page| !page.lines.is_empty())
-        && positioned_tables.is_empty()
-        && ocr_table.is_none();
+        // 推定表はpositioned_tablesと互換要約の両方で渡される。位置のないOCR表だけを除外する。
+        && (ocr_table.is_none() || !positioned_tables.is_empty());
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
             parsed,
@@ -993,6 +992,9 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     }
     blocks.sort_by(compare_structured_blocks);
     let block_count = blocks.len();
+    if block_count == 0 {
+        return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
+    }
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
@@ -1137,6 +1139,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     .map_err(ConvertError::InvalidOcrTable)?;
                 container = container
                     .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                if let Some(boundary) =
+                    page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
+                {
+                    container = container.add_structured_paragraph(boundary);
+                }
                 if gap_after_block[block_index] {
                     container = container.add_structured_paragraph(table_gap_paragraph());
                 }
@@ -1301,13 +1308,29 @@ fn detected_text_columns_for_page(
         infer_text_columns(&page.lines, page_width).filter(|columns| columns.len() == 2)?;
     let leading_single_column_line_count = leading_single_column_line_count(&page.lines);
     let trailing_single_column_line_count = trailing_single_column_line_count(&page.lines);
+    let column_line_count = page
+        .lines
+        .len()
+        .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count);
+    // 少数の大きな行間だけで列候補ができても、本文が次列へ横断するなら実段組へ入れない。
+    if page
+        .lines
+        .iter()
+        .skip(leading_single_column_line_count)
+        .take(column_line_count)
+        .any(|line| {
+            let column = column_index_for_line(line, &columns);
+            columns
+                .get(column + 1)
+                .is_some_and(|next_left| line.right_x > *next_left)
+        })
+    {
+        return None;
+    }
     Some(DetectedTextColumnLayout {
         columns,
         leading_single_column_line_count,
-        column_line_count: page
-            .lines
-            .len()
-            .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count),
+        column_line_count,
         trailing_single_column_line_count,
     })
 }
@@ -1411,21 +1434,40 @@ fn structured_page_layout(
         .pages
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)?;
-    let min_x = structured_page_left_x(parsed, positioned_tables, page);
-    let max_y = positioned_tables
-        .iter()
-        .filter(|table| table.page == page.page)
-        .map(|table| table.bounds.y1)
-        .chain(page.lines.iter().map(|line| line.top_y))
-        .chain(
-            parsed
-                .image_elements
-                .iter()
-                .filter(|image| image.page == page.page && !image.floating)
-                .map(|image| image.bounds.y1),
-        )
-        .filter(|value| value.is_finite())
-        .fold(f32::NEG_INFINITY, f32::max);
+    // floating画像やheader/footerだけのページにも、確認済みの原本寸法を使う。
+    // 本文flowがない場合の原点は0とし、既定A4の余白へ置き換えない。
+    let has_flow = !page.lines.is_empty()
+        || positioned_tables
+            .iter()
+            .any(|table| table.page == page.page)
+        || parsed
+            .image_elements
+            .iter()
+            .any(|image| image.page == page.page && !image.floating);
+    let display_height = parsed_page_display_size_points(parsed_page).1;
+    let min_x = if has_flow {
+        structured_page_left_x(parsed, positioned_tables, page)
+    } else {
+        0.
+    };
+    let max_y = if has_flow {
+        positioned_tables
+            .iter()
+            .filter(|table| table.page == page.page)
+            .map(|table| table.bounds.y1)
+            .chain(page.lines.iter().map(|line| line.top_y))
+            .chain(
+                parsed
+                    .image_elements
+                    .iter()
+                    .filter(|image| image.page == page.page && !image.floating)
+                    .map(|image| image.bounds.y1),
+            )
+            .filter(|value| value.is_finite())
+            .fold(f32::NEG_INFINITY, f32::max)
+    } else {
+        display_height
+    };
     if !min_x.is_finite() || !max_y.is_finite() {
         return None;
     }
@@ -1438,7 +1480,6 @@ fn structured_page_layout(
         page,
         max_y,
     );
-    let display_height = parsed_page_display_size_points(parsed_page).1;
     let top = pdf_points_to_floor_twips(
         (display_height - max_y - stroke_adjustment + text_bearing_adjustment).max(0.0),
     )
