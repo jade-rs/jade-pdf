@@ -207,3 +207,55 @@ fn column_sections_do_not_inherit_later_pages_running_header_on_first_page() {
         "first-page column sections must not inherit a later running header"
     );
 }
+
+/// ページ数に依存せず、交互の書式を持つ実際のsourceを自作する。
+fn alternating_headers(page_count: usize, columns: bool) -> ParsedDocument {
+    let template = source(2, &[]);
+    let mut parsed = template.clone();
+    parsed.page_count = page_count;
+    parsed.pages.clear();
+    parsed.text_elements.clear();
+    for page in 0..page_count {
+        let mut geometry = template.pages[0].clone();
+        geometry.page_number = page;
+        parsed.pages.push(geometry);
+        for text in template.text_elements.iter().filter(|text| text.page == 0) {
+            if !columns && text.bounds.x0 > 48. {
+                continue;
+            }
+            let mut text = text.clone();
+            text.page = page;
+            text.text = text.text.replace("PAGEA", &format!("PAGE{page}"));
+            parsed.text_elements.push(text);
+        }
+        let mut header = template.text_elements[0].clone();
+        header.page = page;
+        header.text = "SHARED TITLE".into();
+        header.font_size = if page % 2 == 0 { 9. } else { 10. };
+        header.bounds.y1 = 752.;
+        header.bounds.y0 = 752. - header.font_size;
+        header.baseline_y = Some(header.bounds.y0);
+        parsed.text_elements.push(header);
+    }
+    parsed
+}
+
+/// 10番目以降のheader部品も文字列順ではなくrelationshipの番号に対応する。
+#[test]
+fn twelve_page_headers_resolve_to_the_correct_styles() {
+    let parts = parts(alternating_headers(12, false));
+    let sections: Vec<_> = parts["word/document.xml"]
+        .split("<w:sectPr")
+        .skip(1)
+        .map(|part| part.split("</w:sectPr>").next().unwrap())
+        .collect();
+    assert_eq!(sections.len(), 12);
+    for (page, section) in sections.iter().enumerate() {
+        let header = header_part(&parts, section).unwrap();
+        let size = if page % 2 == 0 { 18 } else { 20 };
+        assert!(
+            header.contains(&format!("w:sz w:val=\"{size}\"")),
+            "header part style must match source page {page}"
+        );
+    }
+}
