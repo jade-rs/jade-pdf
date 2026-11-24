@@ -2515,15 +2515,11 @@ fn structured_line_max_font_size(line: &StructuredTextLine) -> f32 {
 /// 反復 page chrome 行を PDF の右端余白も含む DOCX paragraph へ変換する。
 fn paragraph_from_repeated_page_chrome_line(
     chrome_line: &RepeatedPageChromeLine,
-    layout: Option<&SectionProperty>,
+    layout: &SectionProperty,
 ) -> Paragraph {
     let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None, None);
-    if let Some((left, right)) = layout.and_then(|layout| {
-        page_chrome_anchor::indents(
-            &chrome_line.line,
-            chrome_line.page_width_twips?,
-            &layout.page_margin,
-        )
+    if let Some((left, right)) = chrome_line.page_width_twips.and_then(|width| {
+        page_chrome_anchor::indents(&chrome_line.line, width, &layout.page_margin)
     }) {
         return paragraph.indent(Some(left), None, Some(right), None);
     }
@@ -2552,8 +2548,7 @@ fn repeated_header(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Opt
         .header
         .as_ref()
         .map(|line| {
-            Header::new()
-                .add_paragraph(paragraph_from_repeated_page_chrome_line(line, Some(layout)))
+            Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
         })
         .or_else(|| {
             chrome
@@ -2568,8 +2563,7 @@ fn repeated_footer(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Opt
         .footer
         .as_ref()
         .map(|line| {
-            Footer::new()
-                .add_paragraph(paragraph_from_repeated_page_chrome_line(line, Some(layout)))
+            Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
         })
         .or_else(|| {
             chrome
