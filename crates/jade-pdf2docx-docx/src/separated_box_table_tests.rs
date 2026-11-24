@@ -182,7 +182,8 @@ fn separated_box_columns_keep_their_source_rows_and_empty_cell() {
     assert_source_cells(&parsed, &expected, xs, &ys);
     let tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let mut parsed = parsed;
-    let docx = build_structured_docx_from_owned_images(&mut parsed, &None, &tables).unwrap();
+    let summary = tables.first().map(|table| table.table.clone());
+    let docx = build_structured_docx_from_owned_images(&mut parsed, &summary, &tables).unwrap();
     let bytes = pack_docx_to_bytes(docx, &[]).unwrap();
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
