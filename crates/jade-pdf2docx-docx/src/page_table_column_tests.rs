@@ -1,6 +1,10 @@
 //! 別ページの表が実段組を無効化せず、表末尾にも原本ページ境界を保持する回帰。
 use super::*;
 
+#[path = "page_section_evidence.rs"]
+mod evidence;
+use evidence::sections;
+
 /// 自作の2行2列の表を、原本ページ末尾に配置する。
 fn positioned_table(page: usize) -> PositionedTable {
     PositionedTable {
@@ -103,99 +107,6 @@ fn table_on_last_page_preserves_earlier_columns_and_cells() {
     assert!(xml.contains("PAGEA LEFT 1") && xml.contains("PAGEA RIGHT 1"));
 }
 
-/// 原本ページに対応するsectionの内容と段数。
-#[derive(Debug)]
-struct Evidence {
-    /// このsectionに所属する本文とセルの文字。
-    text: String,
-    /// Wordのsection段数。未指定時は1。
-    columns: usize,
-    /// 直接bodyに属する表の個数。
-    tables: usize,
-    /// このsection内の画像描画の個数。
-    drawings: usize,
-    /// Wordページの表示幅（twips）。
-    width: usize,
-    /// Wordページの表示高さ（twips）。
-    height: usize,
-}
-
-impl Default for Evidence {
-    /// Word既定の1段から検証を始める。
-    fn default() -> Self {
-        Self {
-            text: String::new(),
-            columns: 1,
-            tables: 0,
-            drawings: 0,
-            width: 0,
-            height: 0,
-        }
-    }
-}
-
-/// 実際のWord要素の整数属性を、prefixの表記順に依存せず読む。
-fn integer(e: &quick_xml::events::BytesStart<'_>, name: &[u8], fallback: usize) -> usize {
-    e.attributes()
-        .map(Result::unwrap)
-        .find(|a| a.key.local_name().as_ref() == name)
-        .map(|a| std::str::from_utf8(&a.value).unwrap().parse().unwrap())
-        .unwrap_or(fallback)
-}
-
-/// pPrのsectPrも、その段落自身を含めて前のsource sectionへ所属させる。
-fn sections(xml: &str) -> Vec<Evidence> {
-    use quick_xml::events::Event;
-    let mut reader = quick_xml::Reader::from_str(xml);
-    let mut stack: Vec<Vec<u8>> = Vec::new();
-    let mut pending = Evidence::default();
-    let mut result = Vec::new();
-    let mut boundary = false;
-    loop {
-        match reader.read_event().unwrap() {
-            Event::Start(e) => {
-                let tag = e.local_name().as_ref().to_vec();
-                if tag == b"tbl" && stack.len() == 2 {
-                    pending.tables += 1;
-                }
-                if tag == b"drawing" {
-                    pending.drawings += 1;
-                }
-                if tag == b"sectPr" && stack.len() == 4 && stack[2] == b"p" {
-                    boundary = true;
-                }
-                stack.push(tag);
-            }
-            Event::Empty(e) if e.local_name().as_ref() == b"cols" => {
-                pending.columns = integer(&e, b"num", 1);
-            }
-            Event::Empty(e) if e.local_name().as_ref() == b"pgSz" => {
-                pending.width = integer(&e, b"w", 0);
-                pending.height = integer(&e, b"h", 0);
-            }
-            Event::Text(e) if stack.last().is_some_and(|tag| tag == b"t") => {
-                pending
-                    .text
-                    .push_str(std::str::from_utf8(e.as_ref()).unwrap());
-                pending.text.push('\n');
-            }
-            Event::End(e) => {
-                let tag = e.local_name();
-                let paragraph_end = tag.as_ref() == b"p" && stack.len() == 3 && boundary;
-                let document_end = tag.as_ref() == b"sectPr" && stack.len() == 3;
-                if paragraph_end || document_end {
-                    result.push(std::mem::take(&mut pending));
-                    boundary = false;
-                }
-                stack.pop().unwrap();
-            }
-            Event::Eof => break,
-            _ => (),
-        }
-    }
-    result
-}
-
 /// 表が最後のblockでも、次ページの実段組に表や本文を取り残さない。
 #[test]
 fn table_at_page_end_keeps_its_own_section_before_later_columns() {
@@ -284,4 +195,56 @@ fn header_only_page_keeps_source_boundary_before_later_columns() {
     assert_eq!((sections[0].columns, sections[1].columns), (1, 2));
     assert!(sections[1].text.contains("PAGEB RIGHT 1"));
     assert!(!xml.contains("RUNNING HEADER") && !xml.contains("RUNNING FOOTER"));
+}
+
+proptest! {
+    /// 表・画像・本文なしの並びを変えても、各source pageの内容を他sectionへ流さない。
+    #[test]
+    fn page_local_tables_images_and_bodyless_pages_preserve_ownership(
+        page_count in 2usize..=5,
+        table_mask in 0u8..32,
+        image_mask in 0u8..32,
+        bodyless_mask in 0u8..32,
+    ) {
+        // 最終ページは必ず二段組。残りのページの全組合せを同じ本番経路で検証する。
+        let earlier = (1usize << (page_count - 1)) - 1;
+        let table_mask = usize::from(table_mask) & earlier;
+        let image_mask = usize::from(image_mask) & earlier;
+        let bodyless_mask = usize::from(bodyless_mask) & (table_mask | image_mask);
+        let image_pages: Vec<_> = (0..page_count)
+            .filter(|page| image_mask & (1 << page) != 0).collect();
+        let mut parsed = source(page_count, &image_pages);
+        parsed.text_elements.retain(|text| bodyless_mask & (1 << text.page) == 0);
+        for image in &mut parsed.image_elements {
+            image.floating = true;
+        }
+        let tables: Vec<_> = (0..page_count)
+            .filter(|page| table_mask & (1 << page) != 0).map(positioned_table).collect();
+        let xml = packaged(parsed, &tables);
+        let sections = sections(&xml);
+        prop_assert_eq!(sections.len(), page_count);
+        for (page, section) in sections.iter().enumerate() {
+            let has_table = table_mask & (1 << page) != 0;
+            let has_image = image_mask & (1 << page) != 0;
+            prop_assert_eq!(section.tables, usize::from(has_table));
+            prop_assert_eq!(section.drawings, usize::from(has_image));
+            prop_assert_eq!(section.columns, if has_table || has_image {1} else {2});
+            prop_assert_eq!((section.width, section.height), (12240, 15840));
+            let own_marker = format!("PAGE{}", char::from(b'A' + page as u8));
+            prop_assert_eq!(section.text.contains(&own_marker), bodyless_mask & (1 << page) == 0);
+            for other in 0..page_count {
+                if other != page {
+                    prop_assert!(!section.text.contains(&format!("PAGE{}", char::from(b'A' + other as u8))), "foreign body page");
+                    prop_assert!(!section.text.contains(&format!("TABLE PAGE{other} ")), "foreign table page");
+                }
+            }
+            if has_table {
+                for row in 0..2 {
+                    for column in 0..2 {
+                        prop_assert_eq!(section.text.matches(&format!("TABLE PAGE{page} R{row}C{column}")).count(), 1);
+                    }
+                }
+            }
+        }
+    }
 }
