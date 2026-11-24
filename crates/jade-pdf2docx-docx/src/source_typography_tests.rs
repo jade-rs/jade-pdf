@@ -51,3 +51,24 @@ fn intrinsic_regular_clears_prior_heading_bold() {
     );
     assert!(!xml.contains("<w:b />"));
 }
+
+proptest::proptest! {
+    #![proptest_config(proptest::test_runner::Config::with_cases(32))]
+    /// familyを変えても、明示的な接尾辞の通常体を太字へ変えない。
+    #[test]
+    fn arbitrary_family_does_not_override_explicit_normal(family in "[A-Za-z]{1,24}", index in 0_usize..4) {
+        let style=["Regular","Light","Medium","Book"][index];
+        let xml=run_xml(&format!("{family}-{style}"),true,None);
+        proptest::prop_assert!(!xml.contains("<w:b />"));
+        proptest::prop_assert!(xml.contains("<w:b w:val=\"false\""));
+    }
+    /// 埋め込みfaceの通常体と太字を名前の反対の宣言で上書きしない。
+    #[test]
+    fn intrinsic_face_weight_wins_over_conflicting_suffix(bold in proptest::prelude::any::<bool>(), prior in proptest::prelude::any::<bool>()) {
+        let bytes=embedded_style_tests::metadata_font(if bold {32}else{64},0);
+        let face=embedded_face::Face::read(&bytes).unwrap();
+        let xml=run_xml(if bold {"Family-Regular"}else{"Family-Bold"},prior,Some(face));
+        proptest::prop_assert_eq!(xml.contains("<w:b />"),bold);
+        proptest::prop_assert_eq!(xml.contains("<w:b w:val=\"false\""),!bold);
+    }
+}
