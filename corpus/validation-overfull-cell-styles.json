@@ -1,0 +1,66 @@
+{
+  "date_utc": "2026-11-24T21:04:51.605705+00:00",
+  "scope": "Verified source run styles survive overfull native table fallback without changing legacy cell text or geometry",
+  "producer_commit": "bd5a6bc0a75a98a9dd4c18d86bb4e6bc050cc116",
+  "integrated_main44": "902fb84416f9ac22431200d2bb82cfec51a04dee",
+  "source_Rust_files": 719,
+  "tests": {
+    "default_passed": 2401,
+    "default_failed": 0,
+    "default_ignored": 32,
+    "test_groups": 131,
+    "fmt_and_Clippy_passed": true,
+    "TDD_Red_Green_preserved": true,
+    "owned_duplicate_script_position_PBT_cases": 16,
+    "overfull_size_PBT_cases": 16
+  },
+  "native": {
+    "outcomes": 26,
+    "success": 23,
+    "expected_rejection": 3,
+    "prior14_DOCX_byteexact_main44": true,
+    "NTA_only_changed_cell_index": 5,
+    "NTA_legacy_text_characters_preserved": 349,
+    "NTA_strict_original4_issues_and_BatchNorm_both_modes_rejection_unchanged": true,
+    "owned8_literal_font_weight_size_color_script_underline_oracles_passed": true
+  },
+  "browsers": {
+    "engines": [
+      "Chromium",
+      "WebKit"
+    ],
+    "cases_per_engine": 21,
+    "outcomes_per_engine": 42,
+    "success_per_engine": 31,
+    "exact_expected_rejection_per_engine": 11,
+    "all_inspections_exact_main44_or_registered_owned_parent": true,
+    "both_engines_DOCX_hashes_and_outcomes_exact_each_other": true,
+    "existing17_cases_all_outputs_byteexact_main44_except_BatchNorm_default2_algorithm_cells": true,
+    "additional4_owned_cases_registered_before_probe_file_execution": true
+  },
+  "package_scope": {
+    "unchanged_cell_geometry_ids_text_headers_images_assets": true,
+    "BatchNorm_added_regular_face": "JadeT1-7KRGN7GRWCHFCDKV24OFJLVLRBQLMJJ75G2L3RKUJJT3SI7GGTZQ",
+    "added_face_deobfuscated_bytes_sha256": "c46485dab1e54f25bcf03078baea048bf9bbc5df990ac59b04596d0f33790ddd",
+    "added_face_bytes_exact_original_pure_parser_output": true,
+    "all_prior_font_programs_and_declarations_exact_after_id_key_rebinding": true,
+    "font_number_shift_not_glyph_accuracy_or_new_rights_claim": true
+  },
+  "visual": {
+    "candidate_pages_reviewed_or_exact_DOCX_reused": 24,
+    "BatchNorm_all18_pages_individually_viewed": true,
+    "NTA2_pages_reused_byteexact_previously_viewed_DOCX": true,
+    "owned4_pages_individually_viewed": true,
+    "whole_document_accepted": false,
+    "limitations_documented": "docs/native_overfull_cell_styles.md"
+  },
+  "rights_and_provenance": {
+    "existing_private_QA_originals_reused_no_new_external_original_claim": true,
+    "original_NTA_prospective_gold_and_rights_manifest_unchanged": true,
+    "tracked_PDF_fixtures_remain3": true,
+    "original_PDFs_fonts_generated_DOCX_not_redistributed": true,
+    "kanpo_reference_and_independent_implementation": "docs/source_typography_and_table_opening.md"
+  },
+  "local_evidence_namespace": "corpus/wasm-runtime/japanese-multiline-cell-qualification",
+  "production_ready": false
+}

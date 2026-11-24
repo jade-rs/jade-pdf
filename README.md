@@ -64,7 +64,7 @@ Inferred centred text lines within the body area retain their PDF centre through
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
 
-Tables inferred from PDF rules keep their source-coordinate row order and each grid row’s height, including descending values and content streams that paint the bottom row first. Cells whose modeled text agrees with the source retain individual run styles. Multiline cells use separate source-positioned paragraphs and explicit edge spaces when their paragraph boxes fit the source row height; single-line cells retain their existing text and alignment. Nested, unmatched, or overfull cells use the existing layout. Complex cell boundaries, font substitution, and rendered placement still require review; see the [cell-line validation](corpus/validation-native-cell-lines.json).
+Tables inferred from PDF rules keep their source-coordinate row order and each grid row’s height, including descending values and content streams that paint the bottom row first. Cells whose modeled text agrees with the source retain individual run styles. Multiline cells use separate source-positioned paragraphs and explicit edge spaces when their paragraph boxes fit the source row height; single-line cells retain their existing text and alignment. Nested and unmatched cells use the existing layout. Overfull cells keep the existing one-paragraph layout and retain verified source run styles when the legacy text matches exactly. Complex cell boundaries, font substitution, and rendered placement still require review; see the [cell-line validation](corpus/validation-native-cell-lines.json).
 
 Repeated, independently outlined cells can form one editable table while retaining physical whitespace bands and empty cells. Only complete source edges create borders; ambiguous glyph ownership retains the existing fallback. This does not establish fill, glyph placement, or page fidelity; see [separated box tables](docs/separated_box_tables.md).
 
@@ -143,3 +143,5 @@ PDF由来の太字・通常体と表の先頭行の改ページについては�
 部分clip付きの短い文字objectが多いnative解析では、一意な所属の共有索引で既定のmetadata予算内の処理を改善しています。曖昧な所属の扱いと検証範囲は、[native clipの文字索引](docs/native_clip_workspace.md)を参照してください。
 
 原本で一行の表セルは、確認できた水平原点へ既定の左右余白を重ねずに配置します。適用条件と残る表示上の問題は、[一行セルの水平位置](docs/native_single_line_cell_origin.md)を参照してください。
+
+表セルの行配置が収まらない場合の文字書式・添字・下線については、[セル書式の保持](docs/native_overfull_cell_styles.md)を参照してください。
