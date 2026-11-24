@@ -35,6 +35,8 @@ mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
 mod glyph_metrics;
+#[cfg(test)]
+mod graphic_table_merge_tests;
 mod layout_space;
 mod positioned_type1;
 mod roman_fallback;
