@@ -1,9 +1,8 @@
 //! 元の静的EncodingとPDFのbase/Differencesから、確認したglyphだけを選ぶ。
 use super::{DecodeBudget, Font, ResourceResolver, values};
-use crate::{metadata, type1_program::Base};
-#[path = "type1_outline_pdf_encodings.rs"]
-mod predefined;
+use crate::pdf_font_encodings as predefined;
 use crate::type1_standard_encoding as standard;
+use crate::{metadata, type1_program::Base};
 
 /// 既知のPDF encoding名を、OS側の文字コード表へ置き換えずに選ぶ。
 fn predefined(name: &[u8]) -> Option<&'static [&'static [u8]; 256]> {

@@ -50,6 +50,7 @@ mod metadata_source;
 mod metadata_validation_tests;
 mod metadata_workspace;
 mod model;
+mod named_font_encoding;
 mod object_bytes;
 mod object_index;
 #[cfg(test)]
@@ -62,6 +63,8 @@ mod page_resources;
 mod page_tree;
 mod parser;
 mod pdf_binary_string;
+#[path = "type1_outline_pdf_encodings.rs"]
+mod pdf_font_encodings;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_backend;
 #[cfg(not(target_arch = "wasm32"))]
