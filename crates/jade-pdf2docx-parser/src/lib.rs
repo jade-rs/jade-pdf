@@ -13,6 +13,7 @@ mod font_metrics_cache;
 mod font_references;
 mod font_repair;
 mod font_validation;
+mod font_weight;
 mod font_widths;
 mod form_attributes;
 mod form_clip;

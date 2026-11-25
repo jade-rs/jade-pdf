@@ -2532,6 +2532,11 @@ fn extract_text_elements_with_matrices<'clip>(
                     .unwrap_or(resource)
             })
         });
+        let font_weight = state
+            .font
+            .as_deref()
+            .and_then(|name| metrics.get(name))
+            .and_then(|font| font.font_weight());
         if current_sequence != Some(sequence) {
             current_sequence = Some(sequence);
             current_geometry = geometry(&bytes[..sequence]);
@@ -2649,6 +2654,7 @@ fn extract_text_elements_with_matrices<'clip>(
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
+                    && previous.font_weight == font_weight
                     && crate::text_baseline::compatible(previous.baseline_y, source_baseline)
                     && previous.font_name.as_deref() == font_name
                     && previous.fill_color == state.color
@@ -2747,7 +2753,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
-                        font_weight: None,
+                        font_weight,
                         baseline_y: source_baseline,
                         page,
                         bounds,
