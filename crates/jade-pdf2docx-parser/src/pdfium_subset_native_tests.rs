@@ -212,14 +212,8 @@ fn native_subset_owned_candidate_reaches_sdk_preflight() {
 /// 同じ位置・同じfamilyの別resourceも、文字index回復で正しい宣言値を保つ。
 #[test]
 fn native_subset_overlapping_same_family_keeps_source_weights() {
-    let bytes = source(&[400, 700], false, false);
-    let pattern = b"/F1 20 Tf 70 150 Td";
-    let offset = bytes
-        .windows(pattern.len())
-        .position(|value| value == pattern)
-        .unwrap();
-    let mut overlap = bytes;
-    overlap[offset..offset + pattern.len()].copy_from_slice(b"/F1 20 Tf 20 150 Td");
+    let overlap = identical_overprint_source();
+    eprintln!("original SDK overlap fonts: {:?}", original_fonts(&overlap));
     let elements = native(&overlap);
     assert_eq!(
         elements
@@ -229,6 +223,19 @@ fn native_subset_overlapping_same_family_keeps_source_weights() {
             .collect::<Vec<_>>(),
         vec![Some(400), Some(700)]
     );
+}
+
+/// 同じ所有glyphを同じ位置へ二度描き、両operandの文字を固定した対照にする。
+fn identical_overprint_source() -> Vec<u8> {
+    let bytes = source(&[400, 700], false, false);
+    let pattern = b"/F1 20 Tf 70 150 Td";
+    let offset = bytes
+        .windows(pattern.len())
+        .position(|value| value == pattern)
+        .unwrap();
+    let mut overlap = bytes;
+    overlap[offset..offset + pattern.len()].copy_from_slice(b"/F1 20 Tf 20 150 Td");
+    overlap
 }
 
 /// 新規の一時出力先だけへ、ファイル変換前に全ページ確認する所有対照を書き出す。
@@ -249,4 +256,9 @@ fn export_owned_subset_sources_before_file_product() {
         )
         .unwrap();
     }
+    std::fs::write(
+        dir.join("identical-overprint.pdf"),
+        identical_overprint_source(),
+    )
+    .unwrap();
 }
