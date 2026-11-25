@@ -131,6 +131,8 @@ mod image_separation;
 mod image_smask;
 #[path = "image_stencil.rs"]
 mod image_stencil;
+#[path = "image_unfiltered.rs"]
+mod image_unfiltered;
 #[cfg(test)]
 use image_smask::decode_alpha as decode_smask_alpha;
 #[cfg(test)]
@@ -1181,7 +1183,7 @@ fn extract_image_elements_from_pdf_bytes(
                         &mut quality.issues,
                         QualityIssue::ImageReplaced {
                             object_number,
-                            reason: if filter.is_some() {
+                            reason: if filter.is_some() || image_unfiltered::is_candidate(dict) {
                                 ImageReplacementReason::DecodeFailed
                             } else {
                                 ImageReplacementReason::UnsupportedFilter
@@ -1791,6 +1793,9 @@ fn decode_image_stream_as_png(
     height: u32,
 ) -> Option<Vec<u8>> {
     decode_budget.check_image_pixels(width, height)?;
+    if image_unfiltered::is_candidate(dict) {
+        return image_unfiltered::decode(decode_budget, pdf_bytes, dict, data, width, height);
+    }
     if image_filter_chain::terminal_filter(dict).is_some() {
         let (dictionary, decoded) =
             image_filter_chain::unwrap(decode_budget, pdf_bytes, dict, data)?;
