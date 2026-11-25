@@ -90,3 +90,47 @@ pub(crate) fn read<'a>(
     }
     exact_weight(value, budget)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ParseError, ParseLimits};
+
+    /// 任意属性の読取りは停止済みの元エラーを消費せず、呼出し元へ一度だけ渡す。
+    #[test]
+    fn stopped_optional_weight_preserves_original_resource_failure() {
+        for previously_delivered in [false, true] {
+            let objects = crate::page_attributes::Objects::default();
+            let budget = DecodeBudget::new(&ParseLimits::default());
+            let mut resolver = ResourceResolver::new(&objects, &budget);
+            let dictionary = b"<< /FontDescriptor << /Type /FontDescriptor /FontWeight 700 >> >>";
+            assert!(budget.charge_metadata_workspace_bytes(u64::MAX).is_none());
+            if previously_delivered {
+                assert!(matches!(
+                    budget.check(),
+                    Err(ParseError::ResourceLimit {
+                        resource: "metadata workspace bytes",
+                        actual: u64::MAX,
+                        ..
+                    })
+                ));
+            }
+            assert!(read(&mut resolver, dictionary, false, &budget).is_none());
+            assert!(exact_weight(b"700", &budget).is_none());
+            if previously_delivered {
+                assert!(budget.check().is_ok());
+            } else {
+                assert!(matches!(
+                    budget.check(),
+                    Err(ParseError::ResourceLimit {
+                        resource: "metadata workspace bytes",
+                        actual: u64::MAX,
+                        ..
+                    })
+                ));
+            }
+            assert!(budget.is_stopped());
+            assert!(budget.check().is_ok());
+        }
+    }
+}
