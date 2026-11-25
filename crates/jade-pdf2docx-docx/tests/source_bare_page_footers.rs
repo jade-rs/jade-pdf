@@ -219,6 +219,22 @@ fn two_bare_numbers_are_not_enough_for_a_verified_sequence() {
     assert!(package(&[1, 2]).1.is_empty());
 }
 
+/// 9から10へ桁数が変わっても、原本の中央と同じWord書式を保った連番として扱う。
+#[test]
+fn verified_bare_sequence_keeps_digit_count_changes() {
+    let (_, footers) = package(&[9, 10, 11]);
+    assert_eq!(
+        footers.iter().map(|f| text(f)).collect::<Vec<_>>(),
+        ["9", "10", "11"]
+    );
+}
+
+/// u32の終端から0へ巻き戻る値を、連続したページ番号として扱わない。
+#[test]
+fn bare_sequence_does_not_wrap_at_integer_limit() {
+    assert!(package(&[u32::MAX, 0, 1, 2]).1.is_empty());
+}
+
 /// 書式・原点・別候補・背景・内部空白のある数字を、原文を変えてfooterへ押し込まない。
 #[test]
 fn conflicting_source_style_geometry_or_candidates_do_not_create_footers() {

@@ -76,7 +76,8 @@ fn recover(
             let Some(number) = number(&line, width, height) else {
                 continue;
             };
-            if overlaps_decoration(parsed, page.page, &line) {
+            if !confirmed_upright(&row[start..end]) || overlaps_decoration(parsed, page.page, &line)
+            {
                 return None;
             }
             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &space_family);
@@ -112,6 +113,20 @@ fn recover(
         result.push((page.page, line));
     }
     Some(result)
+}
+
+/// 数字の向きとem矩形が原本から確認できる場合だけ、水平footerへの変換を許す。
+fn confirmed_upright(texts: &[&ParsedTextElement]) -> bool {
+    texts
+        .iter()
+        .filter(|text| !text.text.trim().is_empty())
+        .all(|text| {
+            text.baseline_y.is_some_and(|baseline| {
+                baseline.is_finite()
+                    && (baseline - text.bounds.y0).abs() <= 0.01
+                    && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() <= 0.01
+            })
+        })
 }
 
 /// 中央の下端領域にある有限の数字だけを読み、内部の空白や符号を消して番号にしない。
