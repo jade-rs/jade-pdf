@@ -158,7 +158,7 @@ pub(super) fn reconcile(
             .text
             .chars()
             .filter(|ch| {
-                !ch.is_whitespace() && !(page.preserve_variations && variation_selector(*ch))
+                !(ch.is_whitespace() || page.preserve_variations && variation_selector(*ch))
             })
             .eq(mapped.iter().copied());
         page.unicode_agrees &= agrees;
@@ -289,7 +289,7 @@ fn variation_selector(scalar: char) -> bool {
 /// nativeが省いたselectorを除き、一対一で対応する文字数を返す。
 fn aligned_count(text: &str, omit_selectors: bool) -> usize {
     text.chars()
-        .filter(|ch| !ch.is_whitespace() && !(omit_selectors && variation_selector(*ch)))
+        .filter(|ch| !(ch.is_whitespace() || omit_selectors && variation_selector(*ch)))
         .count()
 }
 
