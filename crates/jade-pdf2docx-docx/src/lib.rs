@@ -5658,9 +5658,10 @@ fn group_side_by_side_tables(
     let divided = |a: ParsedBounds, b: ParsedBounds, page: usize| {
         let (left, right) = if a.x0 <= b.x0 { (a, b) } else { (b, a) };
         dividers.get(&page).is_some_and(|rules| {
+            // 表の外枠の縦罫線は区切りにしない（両方の表の間の空きにある罫線だけ）。
             rules.iter().any(|rule| {
-                rule.x0 >= left.x1 - 2.0
-                    && rule.x0 <= right.x0 + 2.0
+                rule.x0 > left.x1 + 2.0
+                    && rule.x0 < right.x0 - 2.0
                     && rule.y0 < left.y1.max(right.y1)
                     && rule.y1 > left.y0.min(right.y0)
             })

@@ -23,7 +23,28 @@ fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertEr
     crate::normal_weight_package::apply(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
     crate::ruby::apply_to_document_xml(&mut package.document);
+    disable_asian_latin_autospace(&mut package.styles);
     Ok(package)
+}
+
+/// 和文と欧文・数字の間に Word が自動で足す空き（`autoSpaceDE`・`autoSpaceDN`、和文の Word の
+/// 既定で有効）を、文書の既定の段落書式で止める。原本の PDF の字の位置にこの空きは無く、
+/// 原本の行の幅で組んだ行（表のセルの行など）が、空きの分だけ長くなって折り返してしまう。
+fn disable_asian_latin_autospace(styles: &mut Vec<u8>) {
+    const DEFAULT: &str = "<w:pPrDefault><w:pPr>";
+    let Ok(text) = std::str::from_utf8(styles) else {
+        return;
+    };
+    if text.contains("w:autoSpaceDE") || !text.contains(DEFAULT) {
+        return;
+    }
+    *styles = text
+        .replacen(
+            DEFAULT,
+            "<w:pPrDefault><w:pPr><w:autoSpaceDE w:val=\"0\" /><w:autoSpaceDN w:val=\"0\" />",
+            1,
+        )
+        .into_bytes();
 }
 
 /// 途中の section の header に置いた図の中身を media に足し、その図を参照する header の
@@ -363,6 +384,17 @@ pub(super) fn pack_docx_to_file(
 mod tests {
     use super::*;
     use docx_rs::{Docx, Header, Paragraph, Pic, Run, Section};
+
+    /// 和文と欧文の間の自動の空きを、文書の既定の段落書式で止める。
+    #[test]
+    fn asian_latin_autospace_is_disabled_by_default() {
+        let mut styles = Docx::new().build().styles;
+        disable_asian_latin_autospace(&mut styles);
+        let text = String::from_utf8(styles).unwrap();
+        assert!(text.contains(
+            "<w:pPrDefault><w:pPr><w:autoSpaceDE w:val=\"0\" /><w:autoSpaceDN w:val=\"0\" />"
+        ));
+    }
 
     /// 途中の section の header の図は、その header の関係の部品と media に登録する。
     #[test]
