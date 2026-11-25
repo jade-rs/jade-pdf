@@ -2141,6 +2141,11 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
             structured_run.style.embedded_face,
             structured_run.style.font_weight,
         );
+    } else if let Some(bold) = declared_font_bold(
+        structured_run.style.embedded_face,
+        structured_run.style.font_weight,
+    ) {
+        run = if bold { run.bold() } else { run.disable_bold() };
     }
     if let Some(color) = structured_run.style.fill_color.as_deref()
         && is_rgb_hex_color(color)
@@ -2151,6 +2156,15 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
         run = run.underline("single");
     }
     run
+}
+
+/// 埋め込みfaceを先に使い、sourceの有効なdescriptor値を二値の太字へ対応させる。
+fn declared_font_bold(face: Option<embedded_face::Face>, weight: Option<u16>) -> Option<bool> {
+    face.map(|face| face.bold).or_else(|| {
+        weight
+            .filter(|value| (1..=1000).contains(value))
+            .map(|value| value >= 700)
+    })
 }
 
 /// 埋め込みfaceの属性を優先し、通常の代替fontだけ名前からstyleを推定する。
@@ -2174,13 +2188,7 @@ fn apply_pdf_font_name_to_run(
     let named_weight = infer
         .then(|| source_font_weight::weight(font_name))
         .flatten();
-    let weight = face
-        .map(|face| face.bold)
-        .or_else(|| {
-            source_weight
-                .filter(|value| (1..=1000).contains(value))
-                .map(|value| value >= 700)
-        })
+    let weight = declared_font_bold(face, source_weight)
         .or_else(|| compatible.map(|font| font.bold))
         .or(named_weight);
     match weight {
