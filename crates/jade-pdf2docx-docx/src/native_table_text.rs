@@ -58,8 +58,8 @@ fn cells_impl(
     } else {
         parsed.graphics.as_slice()
     };
-    // 新しく復元する旧配置runでは、確認済みgridと同じ端点・高さの線を文字下線にしない。
-    let fallback_graphics = styling_graphics
+    // 一行・複数行・旧配置のいずれも、確認済みgridと同じ端点・高さの線を文字下線にしない。
+    let text_graphics = styling_graphics
         .iter()
         .filter(|graphic| !is_grid_border(graphic, xs, ys))
         .cloned()
@@ -128,7 +128,7 @@ fn cells_impl(
                             let mut row =
                                 native_spacing::with_interior_spaces(&parsed.text_elements, row);
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                            let mut line = source_line(row, styling_graphics, *xs.last()? as f32)?;
+                            let mut line = source_line(row, &text_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             Some(line)
@@ -158,7 +158,7 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
-                                styling_graphics,
+                                &text_graphics,
                                 &offsets,
                             )
                         } else {
@@ -169,7 +169,7 @@ fn cells_impl(
                                 parsed,
                                 selected.iter().flat_map(|row| row.iter().flatten()),
                                 &cell.text,
-                                &fallback_graphics,
+                                &text_graphics,
                                 &offsets,
                             )
                         } else {
@@ -347,15 +347,23 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_left(0, WidthType::Dxa)
         .margin_right(0, WidthType::Dxa);
     let mut previous_bottom = cell.top;
-    for line in &cell.lines {
+    let right_anchors = native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right);
+    for (index, line) in cell.lines.iter().enumerate() {
         let before = (previous_bottom - line.top_y).max(0.0);
         let height = structured_line_max_font_size(line);
         let (before, line_twips, used) = rounding.line(before, height)?;
         if used > capacity {
             return None;
         }
-        let paragraph = paragraph_from_structured_line(line, cell.left, None, None)
+        let mut paragraph = paragraph_from_structured_line(line, cell.left, None, None)
             .line_spacing(native_line_pitch::spacing_twips(line_twips, before, 0)?);
+        if right_anchors[index] {
+            let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
+            paragraph =
+                paragraph
+                    .align(AlignmentType::Right)
+                    .indent(Some(0), None, Some(right), None);
+        }
         out = out.add_paragraph(paragraph);
         previous_bottom = line.top_y - height;
     }
@@ -378,12 +386,12 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
 
-/// 水平線の両端と高さが量子化済みの原本gridへ一致する場合だけ、表の境界と確認する。
+/// 別々に量子化する横辺・縦辺の端点差は1ptまで、高さは従来の半point以内でgridと照合する。
 fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
     let b = normalized_bounds(graphic.bounds);
     [b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite())
         && is_horizontal_line(&b)
-        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 0.5)
-        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 0.5)
+        && xs.iter().any(|x| (b.x0 - *x as f32).abs() <= 1.0)
+        && xs.iter().any(|x| (b.x1 - *x as f32).abs() <= 1.0)
         && ys.iter().any(|y| (b.y0 - *y as f32).abs() <= 0.5)
 }
