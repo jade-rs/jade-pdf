@@ -208,3 +208,45 @@ fn native_subset_owned_candidate_reaches_sdk_preflight() {
     let verified = tags.confirm_embedded(&budget, &sdk, 1000).unwrap();
     assert!(verified, "SDK did not confirm every candidate");
 }
+
+/// 同じ位置・同じfamilyの別resourceも、文字index回復で正しい宣言値を保つ。
+#[test]
+fn native_subset_overlapping_same_family_keeps_source_weights() {
+    let bytes = source(&[400, 700], false, false);
+    let pattern = b"/F1 20 Tf 70 150 Td";
+    let offset = bytes
+        .windows(pattern.len())
+        .position(|value| value == pattern)
+        .unwrap();
+    let mut overlap = bytes;
+    overlap[offset..offset + pattern.len()].copy_from_slice(b"/F1 20 Tf 20 150 Td");
+    let elements = native(&overlap);
+    assert_eq!(
+        elements
+            .iter()
+            .filter(|e| !e.text.trim().is_empty())
+            .map(|e| e.font_weight)
+            .collect::<Vec<_>>(),
+        vec![Some(400), Some(700)]
+    );
+}
+
+/// 新規の一時出力先だけへ、ファイル変換前に全ページ確認する所有対照を書き出す。
+#[test]
+#[ignore = "new JADE_SUBSET_OWNED_EXPORT_DIR required; review all pages before product file use"]
+fn export_owned_subset_sources_before_file_product() {
+    let dir = std::path::PathBuf::from(std::env::var_os("JADE_SUBSET_OWNED_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&dir).unwrap();
+    for (name, weights, broken, unused) in [
+        ("single-700", vec![700], false, false),
+        ("same-family-400-700", vec![400, 700], false, false),
+        ("invalid-program", vec![700], true, false),
+        ("unused-candidate", vec![700, 400], false, true),
+    ] {
+        std::fs::write(
+            dir.join(format!("{name}.pdf")),
+            source(&weights, broken, unused),
+        )
+        .unwrap();
+    }
+}
