@@ -88,6 +88,7 @@ fn native_recovery_retains_a_coherent_heading_span() {
 #[test]
 fn preview_comparison_preserves_repetition_unicode_and_stopped_budget() {
     let mut element = ParsedTextElement {
+        font_weight: None,
         baseline_y: Some(100.),
         page: 0,
         bounds: crate::ParsedBounds {

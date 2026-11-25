@@ -2699,6 +2699,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
+                            font_weight: None,
                             baseline_y: source_baseline,
                             page,
                             bounds: gap,
@@ -2746,6 +2747,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
+                        font_weight: None,
                         baseline_y: source_baseline,
                         page,
                         bounds,

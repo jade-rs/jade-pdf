@@ -11,6 +11,7 @@ fn packaged(name: &str, selection: Option<u16>) -> String {
     )
     .unwrap();
     parsed.text_elements = vec![ParsedTextElement {
+        font_weight: None,
         baseline_y: Some(100.),
         page: 0,
         bounds: ParsedBounds {

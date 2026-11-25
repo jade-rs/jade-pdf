@@ -567,6 +567,7 @@ mod tests {
             graphics: Vec::new(),
             embedded_fonts: Vec::new(),
             text_elements: vec![jade_pdf2docx_parser::ParsedTextElement {
+                font_weight: None,
                 baseline_y: None,
                 page: 0,
                 bounds: jade_pdf2docx_parser::ParsedBounds {
@@ -614,6 +615,7 @@ mod tests {
             embedded_fonts: Vec::new(),
             text_elements: vec![
                 jade_pdf2docx_parser::ParsedTextElement {
+                    font_weight: None,
                     baseline_y: None,
                     page: 0,
                     bounds: jade_pdf2docx_parser::ParsedBounds {
@@ -628,6 +630,7 @@ mod tests {
                     text: "page one text".to_string(),
                 },
                 jade_pdf2docx_parser::ParsedTextElement {
+                    font_weight: None,
                     baseline_y: None,
                     page: 2,
                     bounds: jade_pdf2docx_parser::ParsedBounds {

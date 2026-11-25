@@ -16,6 +16,7 @@ fn row_source(script: bool, gap: f32, size: f32, delta: f32, after_symbol: bool)
     ]
     .into_iter()
     .map(|(text, left, right, y, font_size)| ParsedTextElement {
+        font_weight: None,
         page: 0,
         text: text.into(),
         font_name: Some("Helvetica".into()),

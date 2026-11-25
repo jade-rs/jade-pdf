@@ -199,6 +199,7 @@ fn copy_element(
     text: bool,
 ) -> Option<ParsedTextElement> {
     Some(ParsedTextElement {
+        font_weight: None,
         baseline_y: element.baseline_y,
         page: element.page,
         bounds: element.bounds,

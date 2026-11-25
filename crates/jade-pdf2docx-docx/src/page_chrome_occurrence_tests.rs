@@ -14,6 +14,7 @@ fn title_and_running_headers() -> ParsedDocument {
     for page in 0..3 {
         let (size, top) = if page == 0 { (18., 712.) } else { (9., 752.) };
         parsed.text_elements.push(ParsedTextElement {
+            font_weight: None,
             page,
             baseline_y: Some(top - size),
             bounds: ParsedBounds {

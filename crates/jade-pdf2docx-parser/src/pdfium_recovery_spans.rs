@@ -111,6 +111,7 @@ fn duplicate(
     let color = crate::text_result_storage::copy(budget, text.fill_color.as_deref());
     budget.check()?;
     Ok(ParsedTextElement {
+        font_weight: None,
         text: content.flatten().unwrap_or_default(),
         font_name: font.flatten(),
         fill_color: color.flatten(),

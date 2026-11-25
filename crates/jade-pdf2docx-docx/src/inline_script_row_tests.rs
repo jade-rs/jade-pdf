@@ -9,6 +9,7 @@ fn column_source(local_formula: bool) -> ParsedDocument {
     parsed.text_elements.clear();
     let mut add = |text: &str, left: f32, right: f32, y: f32, size: f32| {
         parsed.text_elements.push(ParsedTextElement {
+            font_weight: None,
             page: 0,
             text: text.into(),
             font_name: Some("Helvetica".into()),

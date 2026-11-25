@@ -69,6 +69,7 @@ fn boxed_source(
                 )
             };
             parsed.text_elements.push(ParsedTextElement {
+                font_weight: None,
                 page: 0,
                 text,
                 font_name: Some("Helvetica".into()),
@@ -84,6 +85,7 @@ fn boxed_source(
             });
         }
         parsed.text_elements.push(ParsedTextElement {
+            font_weight: None,
             page: 0,
             text: (row + 3).to_string(),
             font_name: Some("Helvetica".into()),
