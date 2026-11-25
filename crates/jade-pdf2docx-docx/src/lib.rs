@@ -1702,6 +1702,8 @@ const MAX_LINES_BESIDE_TABLE: usize = 3;
 const PARTIAL_EDGE_CLUSTER_PT: f32 = 25.0;
 /// 段をまたぐ行を段の外とみなす、段の中身の端との重なりの上限（行の数）。
 const SPANNING_OVERLAP_LINES: f32 = 2.0;
+/// 段の外の全幅の行と一緒に組む、すぐ上・下の行との間隔の上限（行の数）。
+const TITLE_GROUP_LINES: f32 = 1.5;
 /// 段の区切り線（ページの高さの大半にわたる縦罫線）で分けたページで、行・表を段ごとに
 /// 分けられるとき、その分け方を返す。
 ///
@@ -1790,6 +1792,29 @@ fn band_columns(
             } else {
                 merge.push((line.left_x, line.right_x));
             }
+        }
+        // 段の外の全幅の行のすぐ上・下で、その行の幅の中に中央がある行（表の題名の下の期間
+        // など）は、題名と一緒に段の外に組む。
+        for group in [&mut above, &mut below] {
+            loop {
+                let joined = page.lines.iter().enumerate().find(|(index, line)| {
+                    !group.contains(index)
+                        && one_band(line.left_x, line.right_x).is_some()
+                        && group.iter().any(|&member| {
+                            let anchor = &page.lines[member];
+                            let size = structured_line_max_font_size(anchor).max(1.0);
+                            let centre = (line.left_x + line.right_x) / 2.0;
+                            centre > anchor.left_x
+                                && centre < anchor.right_x
+                                && (line.top_y - anchor.top_y).abs() <= TITLE_GROUP_LINES * size
+                        })
+                });
+                let Some((index, _)) = joined else {
+                    break;
+                };
+                group.push(index);
+            }
+            group.sort_unstable();
         }
         // 段の中身の上・下にある全幅の表は段の外に組み、高さが重なる表だけ段をまとめる。
         merge.extend(
