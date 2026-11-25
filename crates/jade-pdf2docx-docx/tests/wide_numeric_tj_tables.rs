@@ -1,5 +1,7 @@
 //! TJの明示間隔で離れた原本数値を、Wordの別セルへ割り当てる。
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
+use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
@@ -21,6 +23,41 @@ fn numeric_tj_values_keep_separate_editable_source_cells() {
 fn horizontally_scaled_numeric_fields_keep_their_body_word_separator() {
     let input = owned_pdf_content("BT /F1 10 Tf 50 Tz 20 600 Td [(3) -1000 (768)] TJ ET");
     assert_eq!(body_text(&input), "3 768");
+}
+
+/// 小さいtrackingは値を分けず、明示空白は一つだけ保ち、添字へは語間を挿入しない。
+#[test]
+fn numeric_body_spacing_retains_tracking_explicit_spaces_and_scripts() {
+    for (content, expected) in [
+        (
+            "BT /F1 10 Tf 50 Tz 20 600 Td [(3) -100 (768)] TJ ET",
+            "3768",
+        ),
+        (
+            "BT /F1 10 Tf 50 Tz 20 600 Td [(3 ) -1000 (768)] TJ ET",
+            "3 768",
+        ),
+        (
+            "BT /F1 10 Tf 20 600 Td (10) Tj ET BT /F1 6 Tf 34 604 Td (6) Tj ET",
+            "106",
+        ),
+    ] {
+        assert_eq!(body_text(&owned_pdf_content(content)), expected);
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 24,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/wide_numeric_tj_tables.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 正の水平倍率とemを変えても、原本の異なる3と768を別の値として編集できる。
+    #[test]
+    fn scaled_numeric_fields_keep_their_logical_separator(size in 5u16..25, scale in 25u16..80, adjustment in 1000u16..1800) {
+        let input = owned_pdf_content(&format!("BT /F1 {size} Tf {scale} Tz 20 600 Td [(3) -{adjustment} (768)] TJ ET"));
+        prop_assert_eq!(body_text(&input), "3 768");
+    }
 }
 
 /// Word本文のrun境界を除いて、編集時に見える文字列を公開byte APIから読む。
