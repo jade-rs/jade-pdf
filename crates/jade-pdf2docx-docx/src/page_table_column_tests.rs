@@ -15,6 +15,7 @@ fn positioned_table(page: usize) -> PositionedTable {
             x1: 248.,
             y1: 560.,
         },
+        allow_top_origin_text_y: false,
         stroke_width: 0.5,
         font_name: Some("Helvetica".into()),
         font_embedded: false,

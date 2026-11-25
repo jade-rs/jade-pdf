@@ -1883,7 +1883,7 @@ fn text_element_is_in_table(
     if text_center_is_in_table_bounds(center_x, center_y, table) {
         return true;
     }
-    table_accepts_top_origin_text_y(parsed, table)
+    table.allow_top_origin_text_y
         && page_height(parsed, text.page)
             .map(|height| text_center_is_in_table_bounds(center_x, height - center_y, table))
             .unwrap_or(false)
@@ -2913,6 +2913,8 @@ struct PositionedTable {
     page: usize,
     /// 表全体の bounds。
     bounds: ParsedBounds,
+    /// gridへの原本本文割当で使ったY反転の判断を、本文の除外にもそのまま使う。
+    allow_top_origin_text_y: bool,
     /// 表罫線のおおまかな線幅。
     stroke_width: f32,
     /// 表セルで共通する解決可能な PDF BaseFont 名。
@@ -4246,6 +4248,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
     PositionedTable {
         page: table.page,
         bounds: table.bounds,
+        allow_top_origin_text_y: table.allow_top_origin_text_y,
         stroke_width: table.stroke_width,
         font_name: None,
         font_embedded: false,
@@ -4680,6 +4683,7 @@ fn infer_positioned_table_from_graphics(
             x1: *xs.last().expect("xs is not empty") as f32,
             y1: *ys.last().expect("ys is not empty") as f32,
         },
+        allow_top_origin_text_y,
         stroke_width: table_rule_stroke_width(&page_graphics, &xs, &ys),
         font_name,
         font_embedded,
@@ -4746,14 +4750,6 @@ fn grid_accepts_top_origin_text_y(parsed: &ParsedDocument, page: usize, ys: &[i3
     ys.first()
         .map(|min_y| *min_y as f32 > height * 0.5)
         .unwrap_or(false)
-}
-
-/// 原本座標を照合したrunを持たない旧表だけ、top-origin text yの補正対象にする。
-fn table_accepts_top_origin_text_y(parsed: &ParsedDocument, table: &PositionedTable) -> bool {
-    table.source_cell_runs.is_empty()
-        && page_height(parsed, table.page)
-            .map(|height| table.bounds.y0 > height * 0.5)
-            .unwrap_or(false)
 }
 
 /// PDF の列境界を DOCX cell width（twips）へ変換する。
@@ -5393,6 +5389,7 @@ fn infer_positioned_table_from_text_grid_page(
     Some(PositionedTable {
         page,
         bounds,
+        allow_top_origin_text_y: false,
         stroke_width: 0.0,
         font_name: None,
         font_embedded: false,

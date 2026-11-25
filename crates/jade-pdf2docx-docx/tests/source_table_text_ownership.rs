@@ -1,5 +1,7 @@
 //! 原本の表外本文を、推測したY反転の表所有へ吸い込まない。
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
+use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 use std::io::{Cursor, Read};
 
 /// 上半分の自作罫線表と、Yを反転した時だけ表へ入る下半分の本文。
@@ -13,10 +15,14 @@ fn source(caption_y: u16) -> Vec<u8> {
     }
     for (row, y) in [675, 625, 575].into_iter().enumerate() {
         for (col, x) in [82, 182].into_iter().enumerate() {
-            content.push_str(&format!("BT /F1 10 Tf {x} {y} Td (Cell-{row}-{col}) Tj ET "));
+            content.push_str(&format!(
+                "BT /F1 10 Tf {x} {y} Td (Cell-{row}-{col}) Tj ET "
+            ));
         }
     }
-    content.push_str(&format!("BT /F1 10 Tf 82 {caption_y} Td (Outside source caption) Tj ET"));
+    content.push_str(&format!(
+        "BT /F1 10 Tf 82 {caption_y} Td (Outside source caption) Tj ET"
+    ));
     owned_pdf_content(&content)
 }
 
@@ -24,8 +30,15 @@ fn source(caption_y: u16) -> Vec<u8> {
 #[test]
 fn source_table_does_not_swallow_reflected_outside_caption() {
     let xml = document_xml(&source(150));
-    assert!(xml.contains("<w:tbl>"), "the genuine source table must remain editable");
-    assert_eq!(xml.matches("Outside source caption").count(), 1, "outside text is not owned by the reflected table");
+    assert!(
+        xml.contains("<w:tbl>"),
+        "the genuine source table must remain editable"
+    );
+    assert_eq!(
+        xml.matches("Outside source caption").count(),
+        1,
+        "outside text is not owned by the reflected table"
+    );
     for row in 0..3 {
         for col in 0..2 {
             assert_eq!(xml.matches(&format!("Cell-{row}-{col}")).count(), 1);
@@ -71,3 +84,30 @@ fn document_xml(source: &[u8]) -> String {
     xml
 }
 
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 24,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/source_table_text_ownership.proptest-regressions"))),
+        ..ProptestConfig::default()
+    })]
+    /// 表の鏡像領域に入る全ての下半分の本文baselineでも、原文を一度だけ保つ。
+    #[test]
+    fn reflected_caption_positions_preserve_text(caption_y in 100u16..230) {
+        let xml = document_xml(&source(caption_y));
+        prop_assert!(xml.contains("<w:tbl>"));
+        prop_assert_eq!(xml.matches("Outside source caption").count(), 1);
+        for row in 0..3 {
+            for col in 0..2 {
+                prop_assert_eq!(xml.matches(&format!("Cell-{row}-{col}")).count(), 1);
+            }
+        }
+    }
+}
+
+/// 表と鏡像が交わらない上側の本文も、同じ原本所有判定で保持する。
+#[test]
+fn above_table_caption_is_preserved() {
+    let xml = document_xml(&source(740));
+    assert_eq!(xml.matches("Outside source caption").count(), 1);
+    assert!(xml.contains("<w:tbl>"));
+}

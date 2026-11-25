@@ -170,6 +170,7 @@ pub(super) fn infer(
     Some(PositionedTable {
         page,
         bounds,
+        allow_top_origin_text_y: false,
         stroke_width: stroke,
         font_name: font_name.clone(),
         font_embedded: font.is_some(),

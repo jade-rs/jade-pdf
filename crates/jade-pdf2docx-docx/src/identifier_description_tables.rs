@@ -107,6 +107,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
     let table = PositionedTable {
         page,
         bounds,
+        allow_top_origin_text_y: false,
         stroke_width: 0.0,
         font_name: None,
         font_embedded: false,
