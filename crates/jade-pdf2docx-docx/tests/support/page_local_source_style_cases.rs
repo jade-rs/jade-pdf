@@ -127,8 +127,8 @@ proptest! {
     /// 原点・列間隔・ページ順を変えても、太字の原文断片と対応する書式を失わない。
     #[test]
     fn mixed_source_styles_follow_their_cells(
-        left in 20usize..80,
-        width in 160usize..250,
+        left in 20u16..80,
+        width in 160u16..250,
         styled_first in any::<bool>(),
     ) {
         let pages = if styled_first { [false, true] } else { [true, false] };
