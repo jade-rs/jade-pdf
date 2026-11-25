@@ -96,7 +96,7 @@ fn document_xml(source: &[u8]) -> String {
 }
 
 /// 属性の順序に依存せず、各Word行の高さとセルの上下辺の有無を読む。
-fn geometry(xml: &str) -> Vec<(u32, Vec<(bool, bool)>)> {
+fn geometry(xml: &str) -> Vec<RowGeometry> {
     let mut reader = Reader::from_str(xml);
     let mut rows = Vec::new();
     let mut row = (0, Vec::new());
@@ -128,6 +128,9 @@ fn geometry(xml: &str) -> Vec<(u32, Vec<(bool, bool)>)> {
         }
     }
 }
+
+/// Word行の高さと、各セルの上下辺の有無。
+type RowGeometry = (u32, Vec<(bool, bool)>);
 
 /// 編集可能な行を増やしても原本にない横辺を描かず、外枠と表全体の高さを保つ。
 #[test]
@@ -171,6 +174,22 @@ fn unruled_body_lines_retain_unambiguous_row_association() {
 #[test]
 fn unmatched_multiline_cells_keep_the_original_grid_rows() {
     assert_eq!(table_rows(&source(3, 25, false, false)).len(), 2);
+}
+
+/// 行数だけが同じでもbaselineが異なる列は、一つの論理行へ関連付けない。
+#[test]
+fn equal_line_counts_without_shared_baselines_keep_the_original_grid() {
+    let mut pdf = String::from_utf8(source(3, 25, false, true)).unwrap();
+    let length = pdf.len();
+    for index in 0..3 {
+        let y = 650 - index * 25;
+        pdf = pdf.replace(
+            &format!("182 {y} Td (Value-{index})"),
+            &format!("182 {} Td (Value-{index})", y - 6),
+        );
+    }
+    assert_eq!(pdf.len(), length, "keep all xref and stream lengths exact");
+    assert_eq!(table_rows(pdf.as_bytes()).len(), 2);
 }
 
 /// 数値列だけに単位があっても、三つの名称と値を再び一つのWord行へ潰さない。
