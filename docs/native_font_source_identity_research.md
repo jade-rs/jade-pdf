@@ -1,0 +1,15 @@
+# native文字と元のフォント辞書の対応に関する私的研究
+
+SDKだけで読む文字にFontDescriptorの太さを渡すには、元のfont resourceを特定する必要がある。同じfamily名への推測やStemVからの推定は使わない。既存のType3識別と同じ考え方で、SDK用の一時入力のBaseFontへ解析ごとの識別名を付ける方法を調べた。製品のRust実装は変更していない。
+
+対象は全ページを確認済みのNASA Webb資料2ページ（SHA-256 `84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e`）。元PDFと固定したFontDescriptorの記録は変更せず、pypdfで複製した私的入力の、6つの埋め込みsubset Type1/CFF辞書のBaseFontだけに識別名を設定した。フォントのpayloadは辞書の識別根拠としてhashを記録し、font program自体は変更していない。
+
+同じPDFiumバイナリ（SHA-256 `c2f68f87106da4f0cb6d6a90a7aad9644b3c1cb92a3463dbdc8f39449aec3869`）を使い、元入力と私的入力を別processで観察した。全3,400文字のうち3,265文字を6辞書へ対応でき、135文字は未確認のままとした。対応する元辞書のFontWeightは、300が4文字、400が2,997文字、500が247文字、700が17文字だった。SDKのStemV推定値は採用していない。
+
+差はfont名とfont object名だけで、Unicodeと順序、矩形・origin・matrix・size・angleのfloat bit列、色、生成文字flag、描画mode、force-bold flag、SDKの推定値は一致した。両2ページの全RGB pixelも一致した。元側の2つの描画画像を個別に確認し、私的入力側はRGB一致で確認を引き継いだ。PNGはSDKのRGB出力を確認するための可逆な形式変換である。
+
+[固定7961 branchのFontInfo API](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/fpdfsdk/fpdf_text.cpp)はCPDF_FontのBaseFont名を返す。[face based simple fontの読込み](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/core/fpdfapi/font/cpdf_facebasedsimplefont.cpp)では、埋め込みfontがある場合にsubset prefixを除く処理がある。今回の6辞書では、元の6大文字と`+`を除いた名前が元SDKの名前と一致した。取得した一次資料はURLとhashを保存した。これだけで未知のfont名全般の正規化や全種類のfontでの等価性を証明したとは扱わない。
+
+製品への採用に必要な、厳密な適用条件、SDKによる埋め込み確認、確認できない場合の元入力への復帰、曖昧・不正・未埋込入力、停止・容量の回帰は未実装である。識別名を公開IRへ漏らさず、Type3の判定も区別する必要がある。private probeのコンパイル失敗と画像encoder未対応の失敗も、元コード・ログとともに残した。
+
+これは同じ既知PDFを用いた私的なSDK等価性の記録である。Jadeの変換は実行しておらず、DOCXの太字・段組み・改ページの改善や精度向上、本番品質の達成は主張しない。元の負のfont sizeや回転、文書全体の失敗もこの研究では直していない。
