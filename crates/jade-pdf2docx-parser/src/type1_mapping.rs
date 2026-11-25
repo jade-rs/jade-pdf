@@ -46,10 +46,33 @@ pub(crate) fn build(
     differences: &[Option<&[u8]>; 256],
     original: &ToUnicodeCMap,
 ) -> Option<Mapping> {
+    build_with_predefined(budget, encoding, differences, original, None)
+}
+
+/// 検証済み固定表を使う場合も保存容量を予約し、原本ToUnicodeの処理件数とは区別する。
+pub(crate) fn from_predefined(
+    budget: &DecodeBudget,
+    names: &'static [&'static [u8]; 256],
+) -> Option<Mapping> {
+    let mapping =
+        build_with_predefined(budget, None, &[None; 256], &Default::default(), Some(names))?;
+    (!budget.is_stopped()).then_some(mapping)
+}
+
+/// 原本の表と固定glyph名のどちらも、同じ容量予約・未知slot判定で完成表へ変換する。
+fn build_with_predefined(
+    budget: &DecodeBudget,
+    encoding: Option<&Encoding<'_>>,
+    differences: &[Option<&[u8]>; 256],
+    original: &ToUnicodeCMap,
+    predefined: Option<&'static [&'static [u8]; 256]>,
+) -> Option<Mapping> {
     let mut data = ToUnicodeCMapData::default();
     let mut unknown = [0; 4];
     for code in 0..256 {
-        budget.charge_tounicode_entries(1)?;
+        if predefined.is_none() {
+            budget.charge_tounicode_entries(1)?;
+        }
         let digits = b"0123456789ABCDEF";
         let key_bytes = [digits[code >> 4], digits[code & 15]];
         let key = std::str::from_utf8(&key_bytes).ok()?;
@@ -61,15 +84,18 @@ pub(crate) fn build(
             Some(raw) => Some(difference_name(budget, raw)?),
             None => None,
         };
-        let name = difference.as_deref().or_else(|| {
-            encoding.and_then(|table| {
-                table.slots[code].or_else(|| match table.base {
-                    Base::Standard => Some(standard::STANDARD[code]),
-                    // Latin1の表を未検証のbyte→Unicode推測で代用しない。
-                    Base::Custom | Base::Latin1 => None,
+        let name = predefined
+            .map(|names| names[code])
+            .or(difference.as_deref())
+            .or_else(|| {
+                encoding.and_then(|table| {
+                    table.slots[code].or_else(|| match table.base {
+                        Base::Standard => Some(standard::STANDARD[code]),
+                        // Latin1の表を未検証のbyte→Unicode推測で代用しない。
+                        Base::Custom | Base::Latin1 => None,
+                    })
                 })
-            })
-        });
+            });
         let mut length = 0usize;
         let complete = if original_value.is_some() {
             true
@@ -91,7 +117,12 @@ pub(crate) fn build(
             },
             String::len,
         );
-        budget.charge_tounicode_bytes((2 + payload) as u64)?;
+        if predefined.is_none() {
+            budget.charge_tounicode_bytes((2 + payload) as u64)?;
+        } else {
+            // 固定表でもkey/valueはheapへ保存するため、原本CMapの入力枠と別に予約する。
+            budget.charge_metadata_workspace_bytes((2 + payload) as u64)?;
+        }
         data.reserve_mapping(budget)?;
         let mut stored_key = budget.try_string_capacity(2)?;
         stored_key.push_str(key);
