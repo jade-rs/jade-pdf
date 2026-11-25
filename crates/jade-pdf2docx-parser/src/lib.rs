@@ -76,6 +76,8 @@ mod pdfium_clip_overlap;
 mod pdfium_font_tags;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_printed_hyphens;
+#[cfg(all(test, not(target_arch = "wasm32")))]
+mod pdfium_subset_native_tests;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_subset_weight;
 #[cfg(not(target_arch = "wasm32"))]
