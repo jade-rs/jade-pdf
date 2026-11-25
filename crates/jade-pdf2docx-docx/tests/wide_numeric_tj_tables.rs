@@ -16,6 +16,37 @@ fn numeric_tj_values_keep_separate_editable_source_cells() {
     assert_eq!(table_rows(&source()), [["376", "-2.4"], ["89", "0.2"]]);
 }
 
+/// 半emの桁差を持つ所有数値表でも、公開変換から狭いセルの元の右端anchorを保持する。
+#[test]
+fn rounded_half_em_numbers_keep_source_right_anchors_in_public_docx() {
+    let bytes = owned_pdf_content(
+        "1 w 126 600 m 182 600 l S 126 650 m 182 650 l S 126 600 m 126 650 l S 154 600 m 154 650 l S 182 600 m 182 650 l S \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 142.43892 640 Tm (6.1) Tj ET \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 170.43892 640 Tm (5.8) Tj ET \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 142.43892 625 Tm (6.5) Tj ET \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 170.43892 625 Tm (7.2) Tj ET \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 138.95892 610 Tm (21.0) Tj ET \
+         BT /F1 6.96 Tf 83.333333 Tz 1 0 0 1 166.95892 610 Tm (22.8) Tj ET",
+    );
+    assert_eq!(table_rows(&bytes), [["6.16.521.0", "5.87.222.8"]]);
+    let xml = document_xml(&bytes);
+    for text in ["21.0", "22.8"] {
+        let cell = xml
+            .split("<w:tc>")
+            .filter_map(|part| part.split("</w:tc>").next())
+            .find(|part| part.contains(&format!(">{text}</w:t>")))
+            .unwrap();
+        let paragraph = cell
+            .split("<w:p ")
+            .find(|part| part.contains(&format!(">{text}</w:t>")))
+            .unwrap();
+        assert!(
+            paragraph.contains("<w:jc w:val=\"right\""),
+            "{text}: {paragraph}"
+        );
+    }
+}
+
 /// 内容streamから既存と同じobject順・xref形式を生成し、所有対照のbyteを保つ。
 fn owned_pdf_content(content: &str) -> Vec<u8> {
     let objects = [
