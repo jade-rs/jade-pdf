@@ -150,6 +150,33 @@ fn terminal_mixed_style_cell_covers_its_source_glyph_advances() {
     assert!((widths[3] as f32 / 20. - 59.002).abs() < 0.05, "{widths:?}");
 }
 
+/// 大きいfontで求めた行上端から、小さいfontだけのセルの原本上端までの差を保つ。
+#[test]
+fn smaller_source_cells_keep_their_own_top_within_a_mixed_size_row() {
+    let xml = document_xml(&source_with_palette(
+        &[true, false],
+        40,
+        240,
+        None,
+        None,
+        true,
+    ));
+    let mut reader = Reader::from_str(&xml);
+    let mut table = 0;
+    let mut before = Vec::<u32>::new();
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:tbl" => table += 1,
+            Event::Empty(tag) if table == 2 && tag.name().as_ref() == b"w:spacing" => {
+                before.push(attribute(&tag, b"w:before").unwrap().parse().unwrap());
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    assert_eq!(before, vec![40, 0, 40, 0, 40, 0]);
+}
+
 proptest! {
     /// 原点・列間隔・ページ順を変えても、太字の原文断片と対応する書式を失わない。
     #[test]
