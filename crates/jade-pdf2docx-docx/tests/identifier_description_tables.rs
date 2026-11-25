@@ -1,5 +1,7 @@
 //! 長い技術コードの説明表と、通常の二段組本文を区別する公開byte APIの契約。
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
+use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
@@ -105,4 +107,40 @@ fn dense_identifier_rows_keep_each_original_description_and_surrounding_notes() 
 #[test]
 fn ordinary_article_columns_remain_outside_identifier_tables() {
     assert!(result(&source(30, false, true)).1.is_empty());
+}
+
+/// 大文字でも複数の語を含む見出し列を、空白のない識別子へ勝手に正規化しない。
+#[test]
+fn spaced_uppercase_labels_do_not_become_identifier_rows() {
+    let pdf = String::from_utf8(source(30, false, false)).unwrap();
+    let changed = pdf.replace("FIELD_CODE_", "FIELD CODE_");
+    assert_eq!(
+        changed.len(),
+        pdf.len(),
+        "preserve original offsets and lengths"
+    );
+    assert!(result(changed.as_bytes()).1.is_empty());
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {
+        cases: 24,
+        failure_persistence: Some(Box::new(FileFailurePersistence::Direct(
+            "tests/identifier_description_tables.proptest-regressions",
+        ))),
+        ..ProptestConfig::default()
+    })]
+
+    /// 密な反復行を増減・逆順描画しても、各コードと説明の所属・表示順を保つ。
+    #[test]
+    fn repeated_identifier_ownership_does_not_depend_on_row_count_or_paint_order(
+        count in 25usize..=35,
+        reverse in any::<bool>(),
+    ) {
+        let (_, rows) = result(&source(count, reverse, false));
+        let expected = (0..count)
+            .map(|i| vec![format!("FIELD_CODE_{i:02}"), format!("Description for original item {i:02}")])
+            .collect::<Vec<_>>();
+        prop_assert_eq!(rows, expected);
+    }
 }

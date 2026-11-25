@@ -40,6 +40,7 @@ mod graphic_table_cells;
 mod graphic_table_merge_tests;
 mod graphic_table_outer_edges;
 mod graphic_table_ownership;
+mod identifier_description_tables;
 mod layout_space;
 mod normal_weight_package;
 mod positioned_type1;
@@ -3806,6 +3807,7 @@ fn infer_positioned_tables_for_page(
         return Vec::new();
     }
     infer_positioned_table_from_text_grid_page(parsed, page, preserve_source_text)
+        .or_else(|| identifier_description_tables::infer(parsed, page))
         .into_iter()
         .filter(|table| !preserve_source_text || text_grid_ownership::preserves(parsed, table))
         .collect()
