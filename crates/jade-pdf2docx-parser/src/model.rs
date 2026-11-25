@@ -77,6 +77,8 @@ pub struct ParsedTextElement {
     pub bounds: ParsedBounds,
     /// PDF text state 由来の font size（pt）。
     pub font_size: f32,
+    /// FontDescriptorの明示weight（1..=1000）。nativeでsourceと結び付けられない場合など未確認はNone。
+    pub font_weight: Option<u16>,
     /// PDF font resource から解決した BaseFont 名。
     pub font_name: Option<String>,
     /// PDF fill color から解決した RGB hex 色（例: `FF0000`）。

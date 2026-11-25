@@ -1,0 +1,33 @@
+# FontDescriptorに明記された文字の太さ
+
+名前が`Regular`でもFontDescriptorが700を宣言するPDFでは、名前の推測だけでは原本の太字を失う。bytes/WASM解析は、選択したfont resourceのdescriptor直下の`FontWeight`を読み、`ParsedTextElement::font_weight: Option<u16>`として保持する。simple fontとType0の単一descendant、直接値と数値への間接参照を扱う。幅情報がないfontでも独立に保持する。
+
+採用する値は有限の整数1..=1000だけとする。属性の欠落、型違い、未解決参照、重複した属性、複数descendant、入れ子にある同名属性は未確認の`None`とする。名前や`StemV`から数値を作らない。走査は既存の停止・処理時間予算とresource resolverを共有し、依存を追加しない。同じ名前でも太さの異なるspanは連結しない。
+
+整数値は十進表記から直接確認する。浮動小数点への丸めで`0.999999999999999999`が1になる例を公開bytes APIで再現したため、0でない小数部や範囲外の値を確定値へ丸めない。PDFの数値ではない指数表記も採用しない。`+700`、先頭ゼロ、`700.000`のように小数部がすべて0である既存の表記は、同じ整数値として保持する。全文のコピーや浮動小数点への変換は追加せず、長い数値も256 byteごとに停止・時間予算を確認する。最初の数値回帰は5件成功・2件失敗で、最小weight=1・小数部の先頭ゼロ8桁のseedを保持した。修正後の公開テスト7件とdefault全体2,464件が成功した（失敗0、明示ignore32、141 test groups）。
+
+数値修正では、以前のnative110出力とbrowser260出力のDOCX・検査・拒否理由をすべて保持した。変換前に元の数値表記をDecimalで確認した所有PDF3件を追加し、native116出力は101成功・15拒否、Chromium/WebKitそれぞれ136出力は110成功・26拒否だった。新しい数値境界の18出力はUnicodeと太字の期待値を満たし、browser272出力はengine間で一致した。変化は新しい2つの非整数・範囲外の対照だけで、太字指定以外の文字・位置・書式・ZIP内容は変わらない。新しいDOCXも以前に描画・確認したDOCXとbyte単位で一致したため、描画の確認を引き継いだ。3つの元Type1対照は、既知の空白描画とRGB一致で確認しており、属性とUnicodeに検証を限定する。新しい見た目の精度向上や文書全体の合格は主張しない。
+
+任意属性の読取りは停止状態だけを確認し、元の処理上限エラーを消費しない。停止後は太さを確定せず、呼出し元に最初のエラーを一度だけ渡す。既に渡したエラーも作り直さない。上限超過後の読取りで失敗するテストを先に保持し、修正後はdefault全体2,465件が成功した（失敗0、明示ignore32、141 test groups）。native116出力を実行し直し、成功101件のDOCXと拒否15件のログは数値修正時の親版とbyte単位で一致した。Chromium/WebKitも272出力を実行し直し、成功110・拒否26件ずつのDOCX・検査・拒否理由は親版およびengine間で一致した。同一DOCXに対する元のgoldと描画確認を引き継ぎ、新しい描画や精度向上は主張しない。
+
+DOCXの本文runでは、確認した埋め込みfaceの属性を最優先し、続いて有効なdescriptor値の700以上を太字、それ未満を通常体へ対応させる。太さを確認できない場合は既存の既知書体・名前による扱いを保つ。family名が欠けても明示値は独立に反映する。Wordの二値の太字へ対応させるため、300と400などの連続的なweight差を再現する機能ではない。
+
+nativeの文字回復でも、予算付きコピーは確認済みweightを保持する。連続glyphの結合と元矩形の一致判定にはweightを含め、同じfont名・位置・本文であっても通常体・太字・未確認の境界を越えない。コピー・結合境界・別weightの矩形を誤採用しない回帰3件と、Unicodeを含むspan全体の保存PBTを追加した。最初のRedは4件すべて失敗し、最小weight=1のseedを保持した。
+
+この追加修正を含む739個のRust sourceでdefault全体2,461件が成功した（失敗0、明示ignore32、141 test groups）。native110出力を実行し直し、成功95件のDOCXと拒否15件のログは、下記の宣言weight検証時の親版とすべてbyte単位で一致した。作り直したWASMのJS・WASM・型・ライセンス10ファイルも親版と一致し、同一runtimeに対する下記browser260出力の検証を引き継ぐ。browserの新しい実行や新しい精度評価は主張しない。DOCXが同一なので再描画は追加しない。元PDFと固定goldは変更していない。
+
+Rustで`ParsedTextElement`を直接構築する呼び出し側は、未確認なら`font_weight: None`を追加する必要がある。native SDKから抽出するだけのspanも`None`とする。固定したPDFium 7961の`FPDFText_GetFontWeight`は`StemV`からの推定を返すため、この属性の根拠に使用しない。native側でsourceに基づくspanを再利用する場合のコピーは値を保持するが、SDKしか読めないfontと元resourceの対応を名前だけで推測しない。
+
+この変更は、罫線のない表の粗いfallbackにセルごとのstyleを追加するものではない。PDFの全太字、回転した見出し、段組み、改ページを含む文書全体の再現性は別途確認が必要である。
+
+最初のRedでは解析3件、DOCX2件、native用コピー1件が失敗した。期待する`Weight`を変えずに、一行のCID CMapにある独立した復号不具合を修正した。font名がない場合の太字欠落もRedで確認してから修正した。固定した元bytes、seed、ログを保持している。
+
+共有build領域では、新しい属性を持たない既存成果物が参照されて全体チェックがコンパイルで失敗した。失敗ログと、新しいmoduleを含まないdepfile・rlib・rmetaを保存した。同じ739個のRust sourceを空の専用build領域で再検証し、default全体2,457件が成功した（失敗0、明示ignore32、141 test groups）。既存のClippy警告は残る。
+
+native110出力は95成功・15拒否、Chromium/WebKitそれぞれ130出力は104成功・26拒否だった。browser260出力はengine間で一致し、検査結果と拒否理由は親と同じである。新しい所有PDF9件の54出力は、Unicodeと太字の期待値をすべて満たした。変化したnative20出力・browser各20出力は、document.xmlの`w:b`・`w:bCs`だけが異なる。本文の文字順、位置、font名・サイズ・色、画像と他のZIP内容は変わらない。
+
+14件の比較用DOCXを28ページへ描画し、異なる16ページの画像を2枚の一覧で確認した。新しい太字3ページは個別にも確認し、通常体3ページは先に確認したToUnicode検証の画像と一致した。変化した実資料3件の全ページは、親とRGB単位で一致した。ただしBIPMは原本1ページからWord2ページ、NASAのbrowser出力は原本2ページからWord6ページのままであり、本文欠落・段組み・改ページを含む文書全体は未合格である。
+
+所有PDFの原本は変換前に全9ページを確認した。font programを含まないsimple Type1の7件は独立描画で空白になるため、属性とUnicodeの検証に限定し、見た目やglyph形状の合格には数えない。描画できるCIDの400・700の対照も保ち、通常体・太字を確認した。検証件数は精度率ではなく、今回確認した範囲の記録である。本番品質の達成はまだ主張しない。
+
+数値範囲は[PDF 2.0のFontDescriptor正誤表](https://pdf-issues.pdfa.org/32000-2-2020/clause09.html)を参照した。PDFiumの推定経路は[固定7961のCPDF_Font](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/core/fpdfapi/font/cpdf_font.cpp)と[FPDFText_GetFontWeight](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/fpdfsdk/fpdf_text.cpp)で確認した。

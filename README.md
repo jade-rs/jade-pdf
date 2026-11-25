@@ -62,6 +62,8 @@ PDF comparison uses the pinned Pdfium runtime described in the [comparison guide
 
 `ParsedTextElement::baseline_y` exposes a finite origin reported by the SDK for the first horizontal glyph, or verified from an upright horizontal text drawing matrix in the bytes/WASM parser. This now covers supported simple fonts and horizontal CID fonts as well as generated Type1 glyphs. Positive finite font size, verified horizontal writing mode and positive axis-aligned page-space transforms are required. Unknown/vertical writing modes, skew and reflection retain `None`; merged spans keep compatible baseline confidence. Rust callers constructing text elements can still set `baseline_y: None` to retain bounds-based grouping. See the [text baseline guide](docs/text_baselines.md).
 
+`ParsedTextElement::font_weight` preserves an explicitly verified integer FontDescriptor weight in the bytes/WASM parser. Rust struct literals need `font_weight: None` when unconfirmed. DOCX uses verified embedded face attributes first, then the declared weight (700 or greater becomes bold). SDK-only spans retain `None`. See the [source FontDescriptor weight guide](docs/source_font_descriptor_weight.md).
+
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.

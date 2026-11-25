@@ -57,6 +57,7 @@ fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
             for row in 0..2 {
                 let y = 695. - row as f32 * 25.;
                 parsed.text_elements.push(ParsedTextElement {
+                    font_weight: None,
                     baseline_y: Some(y),
                     page,
                     bounds: ParsedBounds {

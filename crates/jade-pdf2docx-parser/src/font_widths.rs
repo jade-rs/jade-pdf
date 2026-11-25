@@ -29,6 +29,8 @@ enum Standard {
 /// 局所 Font resource の glyph 幅。未対応 Font は推定へ戻す。
 #[derive(Debug, Clone, Default)]
 pub(crate) struct Metrics {
+    /// FontDescriptorに直接確認したweight。幅表がなくても保持する。
+    weight: Option<u16>,
     /// FirstChar/Widths と MissingWidth から作る最大256 glyph の幅。
     widths: Option<Box<[f32; 256]>>,
     /// Widths がないときの標準 Font。
@@ -94,6 +96,11 @@ impl Layout {
 }
 
 impl Metrics {
+    /// 確認済みの属性を返し、未確認の重さを補わない。
+    pub(crate) fn font_weight(&self) -> Option<u16> {
+        self.weight
+    }
+
     /// 復号済みbyte列から一つのencoded glyphと幅・word spacing判定を読む。
     pub(crate) fn next_glyph<'a>(
         &self,
@@ -147,6 +154,12 @@ impl Metrics {
             .and_then(|value| resolver.resolve(value))
             .map(|(value, _)| value);
         metrics.type3 = subtype.is_some_and(|v| metadata::is_name(v, b"Type3"));
+        metrics.weight = crate::font_weight::read(
+            &mut resolver,
+            dictionary,
+            subtype.is_some_and(|v| metadata::is_name(v, b"Type0")),
+            budget,
+        );
         if subtype.is_some_and(|v| metadata::is_name(v, b"Type0")) {
             metrics.cid = crate::cid_widths::Metrics::read_with_source(
                 &mut resolver,

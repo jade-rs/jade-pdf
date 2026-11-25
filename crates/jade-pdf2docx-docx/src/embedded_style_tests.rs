@@ -31,6 +31,7 @@ fn package(selection: u16, permission: u16, name: &str) -> Vec<u8> {
     )
     .unwrap();
     parsed.text_elements = vec![ParsedTextElement {
+        font_weight: None,
         baseline_y: Some(100.),
         page: 0,
         bounds: ParsedBounds {

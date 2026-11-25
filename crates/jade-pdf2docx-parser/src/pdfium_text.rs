@@ -72,6 +72,7 @@ pub(crate) fn extract(
             budget,
             &mut elements,
             ParsedTextElement {
+                font_weight: None,
                 baseline_y,
                 page: page_number,
                 bounds,

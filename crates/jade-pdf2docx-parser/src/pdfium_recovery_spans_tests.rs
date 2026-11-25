@@ -12,6 +12,7 @@ fn fingerprint(offset: f32) -> Option<Key> {
 /// 水平な同一fontの連続文字を作る。
 fn element(text: &str, left: f32, right: f32) -> ParsedTextElement {
     ParsedTextElement {
+        font_weight: None,
         text: text.into(),
         page: 0,
         bounds: ParsedBounds {
@@ -142,4 +143,78 @@ fn only_complete_original_rectangle_spans_are_retained() {
         2,
         "Unverified overpaint must remain separate indexed glyphs"
     );
+}
+
+/// 予算付きの文字複製でも、確認済みdescriptor値を消さない。
+#[test]
+fn recovery_declared_weight_survives_budgeted_duplicate() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let mut source = element("Weight", 10., 34.);
+    source.font_weight = Some(700);
+    assert_eq!(duplicate(&budget, &source).unwrap(), source);
+}
+
+/// 同じ名前と幾何でも、通常体・太字・未確認の境界を越えて結合しない。
+#[test]
+fn recovery_declared_weight_boundary_prevents_join() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    for (a, b) in [(Some(400), Some(700)), (Some(700), None), (None, Some(700))] {
+        let mut previous = element("A", 10., 22.);
+        previous.font_weight = a;
+        let original = previous.clone();
+        let mut next = element("B", 22., 34.);
+        next.font_weight = b;
+        assert!(
+            !join(
+                &budget,
+                &mut previous,
+                &next,
+                fingerprint(1.),
+                fingerprint(1.)
+            )
+            .unwrap()
+        );
+        assert_eq!(previous, original);
+    }
+}
+
+/// 別の太さの元矩形を、同じ字面のspan採用の証拠に使わない。
+#[test]
+fn recovery_declared_weight_is_required_for_original_rectangle_match() {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let mut a = element("A", 10., 22.);
+    let mut b = element("B", 22., 34.);
+    a.font_weight = Some(400);
+    b.font_weight = Some(400);
+    let key = Some(Key {
+        geometry: [10., 90., 34., 102., 1., 0., 0., 1., 0., 0.],
+    });
+    let mut original = element("AB", 10., 34.);
+    original.font_weight = Some(700);
+    let expected = vec![a.clone(), b.clone()];
+    assert_eq!(
+        retain(
+            &budget,
+            vec![a, b],
+            &[(key, false), (key, true)],
+            &[original]
+        )
+        .unwrap(),
+        expected
+    );
+}
+
+proptest::proptest! {
+    #![proptest_config(proptest::test_runner::Config {cases:24,failure_persistence:Some(Box::new(proptest::test_runner::FileFailurePersistence::Direct("src/pdfium_recovery_spans_weight.proptest-regressions"))),..Default::default()})]
+    /// 同じ確認値の復元では、Unicode・幾何・その他のstyleも一緒に保つ。
+    #[test]
+    fn recovery_declared_weight_preserves_complete_accepted_span(weight in 1u16..=1000) {
+        let budget=DecodeBudget::new(&ParseLimits::default());
+        let mut a=element("A😀",10.,22.);let mut b=element("一",22.,34.);
+        a.font_weight=Some(weight);b.font_weight=Some(weight);
+        let mut original=element("A😀一",10.,34.);original.font_weight=Some(weight);
+        let key=Some(Key {geometry:[10.,90.,34.,102.,1.,0.,0.,1.,0.,0.]});
+        let output=retain(&budget,vec![a,b],&[(key,false),(key,true)],std::slice::from_ref(&original)).unwrap();
+        proptest::prop_assert_eq!(output,vec![original]);
+    }
 }

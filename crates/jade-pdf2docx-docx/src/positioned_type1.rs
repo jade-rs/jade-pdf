@@ -127,6 +127,7 @@ mod tests {
         StructuredTextRun {
             text: text.into(),
             style: StructuredTextStyle {
+                font_weight: None,
                 font_name: name.map(str::to_string),
                 font_embedded: name.is_some(),
                 font_size: 10.,
@@ -228,6 +229,7 @@ mod tests {
         parsed.text_elements = runs
             .into_iter()
             .map(|r| ParsedTextElement {
+                font_weight: None,
                 page: 0,
                 baseline_y: Some(80.),
                 bounds: r.style.source_bounds.unwrap(),
@@ -239,6 +241,7 @@ mod tests {
             .collect();
         parsed.embedded_fonts = vec![font];
         parsed.text_elements.push(ParsedTextElement {
+            font_weight: None,
             baseline_y: None,
             page: 0,
             bounds: ParsedBounds {
