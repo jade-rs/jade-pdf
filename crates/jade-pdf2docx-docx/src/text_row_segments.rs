@@ -56,3 +56,47 @@ pub(super) fn split<'a>(
         })
         .collect()
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use jade_pdf2docx_parser::ParsedBounds;
+    use proptest::prelude::*;
+
+    /// 既知の原点・em高を持つ所有断片を作り、製品の段組推定から期待値を逆算しない。
+    fn text(left: f32, right: f32, y: f32) -> ParsedTextElement {
+        ParsedTextElement {
+            page: 0,
+            text: "376".into(),
+            font_name: None,
+            font_size: 10.,
+            font_weight: None,
+            fill_color: None,
+            baseline_y: Some(y),
+            bounds: ParsedBounds { x0: left, x1: right, y0: y, y1: y + 10. },
+        }
+    }
+
+    /// 四行で確認した本文の段間だけを作り、上下の短い数値行は根拠へ混ぜない。
+    fn body() -> Vec<Vec<ParsedTextElement>> {
+        (0..4)
+            .map(|i| vec![text(90., 294., 700. - i as f32 * 20.), text(318., 522., 700. - i as f32 * 20.)])
+            .collect()
+    }
+
+    /// 本文の外にある全幅数値行は狭い段間で割らず、本文内と従来の広い間隔は分割する。
+    #[test]
+    fn narrow_body_gutter_does_not_split_leading_or_trailing_numeric_rows() {
+        let rows = body();
+        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
+        for y in [740., 600.] {
+            let row = [text(280., 298., y), text(314., 332., y)];
+            assert!(cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), "outside body at y={y}");
+        }
+        let within = [text(280., 298., 680.), text(314., 332., 680.)];
+        assert!(!cuts(&within.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
+        let wide = [text(90., 108., 740.), text(318., 336., 740.)];
+        assert!(!cuts(&wide.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
+    }
+}
