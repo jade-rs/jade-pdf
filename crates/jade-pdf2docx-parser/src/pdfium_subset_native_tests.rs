@@ -298,3 +298,16 @@ fn export_owned_subset_sources_before_file_product() {
     )
     .unwrap();
 }
+
+/// escape対照を別の一時名前空間へ書き、固定済みの所有PDFを上書きしない。
+#[test]
+#[ignore = "new JADE_SUBSET_ESCAPED_EXPORT_DIR required; review before product file use"]
+fn export_escaped_owned_subset_source_before_file_product() {
+    let dir = std::path::PathBuf::from(std::env::var_os("JADE_SUBSET_ESCAPED_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&dir).unwrap();
+    std::fs::write(
+        dir.join("source.pdf"),
+        source_with_file_subtype(&[700], false, false, "/Type1#43"),
+    )
+    .unwrap();
+}

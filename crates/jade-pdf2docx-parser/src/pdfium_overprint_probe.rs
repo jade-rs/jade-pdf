@@ -234,4 +234,61 @@ mod tests {
             ));
         });
     }
+
+    /// 同名familyの別resourceや別weightを渡しても、選択objectの確認値へ取り違えない。
+    #[test]
+    fn isolated_glyph_rejects_another_resource_or_weight() {
+        super::super::tests::with_page(|sdk, page, tags| {
+            let groups =
+                super::super::collect(&DecodeBudget::default(), page.objects(), tags).unwrap();
+            let first = &groups[0].targets[0];
+            let other = &groups[0].targets[1];
+            for (source_key, weight) in [
+                (other.source_key, first.weight),
+                (first.source_key, other.weight),
+            ] {
+                let target = Target {
+                    ordinal: first.ordinal,
+                    source_key,
+                    weight,
+                };
+                assert!(
+                    extract(
+                        &DecodeBudget::default(),
+                        sdk,
+                        &tags.bytes,
+                        0,
+                        &target,
+                        tags,
+                        std::path::Path::new("overprint.pdf")
+                    )
+                    .unwrap()
+                    .is_none()
+                );
+            }
+        });
+    }
+
+    /// family名と埋め込みが同じでも、解析ローカルの識別名がない入力から値を推測しない。
+    #[test]
+    fn isolated_glyph_never_matches_an_untagged_family_name() {
+        super::super::tests::with_page(|sdk, page, tags| {
+            let groups =
+                super::super::collect(&DecodeBudget::default(), page.objects(), tags).unwrap();
+            let original = crate::pdfium_subset_native_tests::identical_overprint_source();
+            assert!(
+                extract(
+                    &DecodeBudget::default(),
+                    sdk,
+                    &original,
+                    0,
+                    &groups[0].targets[0],
+                    tags,
+                    std::path::Path::new("overprint.pdf")
+                )
+                .unwrap()
+                .is_none()
+            );
+        });
+    }
 }
