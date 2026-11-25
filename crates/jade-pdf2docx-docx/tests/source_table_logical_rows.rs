@@ -62,13 +62,7 @@ fn source_with_units(
 
 /// 公開byte APIのDOCXから、Word表の行とセルの本文を読み戻す。
 fn table_rows(source: &[u8]) -> Vec<Vec<String>> {
-    let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-logical-rows.pdf", source).unwrap();
-    let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
-    let mut xml = String::new();
-    zip.by_name("word/document.xml")
-        .unwrap()
-        .read_to_string(&mut xml)
-        .unwrap();
+    let xml = document_xml(source);
     let mut reader = Reader::from_str(&xml);
     let mut rows = Vec::new();
     let mut row = Vec::new();
@@ -86,6 +80,80 @@ fn table_rows(source: &[u8]) -> Vec<Vec<String>> {
             Event::Eof => return rows,
             _ => {}
         }
+    }
+}
+
+/// 公開byte APIの出力本文XMLを、閉じたDOCX archiveから取り出す。
+fn document_xml(source: &[u8]) -> String {
+    let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-logical-rows.pdf", source).unwrap();
+    let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+    let mut xml = String::new();
+    zip.by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    xml
+}
+
+/// 属性の順序に依存せず、各Word行の高さとセルの上下辺の有無を読む。
+fn geometry(xml: &str) -> Vec<(u32, Vec<(bool, bool)>)> {
+    let mut reader = Reader::from_str(xml);
+    let mut rows = Vec::new();
+    let mut row = (0, Vec::new());
+    let mut cell = (false, false);
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:tr" => row = (0, Vec::new()),
+            Event::Start(tag) if tag.name().as_ref() == b"w:tc" => cell = (false, false),
+            Event::Empty(tag) => {
+                let value = tag
+                    .attributes()
+                    .map(Result::unwrap)
+                    .find(|a| a.key.as_ref() == b"w:val");
+                if let Some(value) = value {
+                    match tag.name().as_ref() {
+                        b"w:trHeight" => {
+                            row.0 = std::str::from_utf8(&value.value).unwrap().parse().unwrap()
+                        }
+                        b"w:top" => cell.0 = value.value.as_ref() != b"nil",
+                        b"w:bottom" => cell.1 = value.value.as_ref() != b"nil",
+                        _ => {}
+                    }
+                }
+            }
+            Event::End(tag) if tag.name().as_ref() == b"w:tc" => row.1.push(cell),
+            Event::End(tag) if tag.name().as_ref() == b"w:tr" => rows.push(row.clone()),
+            Event::Eof => return rows,
+            _ => {}
+        }
+    }
+}
+
+/// 編集可能な行を増やしても原本にない横辺を描かず、外枠と表全体の高さを保つ。
+#[test]
+fn logical_rows_keep_original_edges_and_total_height() {
+    for units in [false, true] {
+        let rows = geometry(&document_xml(&source_with_units(3, 25, false, true, units)));
+        assert_eq!(rows.len(), 4 + usize::from(units));
+        assert_eq!(
+            rows.iter().map(|row| row.0).sum::<u32>(),
+            (50 + 3 * 25) * 20
+        );
+        assert_eq!(rows[0].1, [(true, true)]);
+        assert!(rows[1].1.iter().all(|edges| *edges == (true, false)));
+        assert!(
+            rows[2..rows.len() - 1]
+                .iter()
+                .flat_map(|row| &row.1)
+                .all(|edges| *edges == (false, false))
+        );
+        assert!(
+            rows.last()
+                .unwrap()
+                .1
+                .iter()
+                .all(|edges| *edges == (false, true))
+        );
     }
 }
 
@@ -110,7 +178,10 @@ fn unmatched_multiline_cells_keep_the_original_grid_rows() {
 fn smaller_numeric_unit_prefix_does_not_hide_the_body_rows() {
     let mut rows = expected(3);
     rows.insert(1, vec![String::new(), "units".to_string()]);
-    assert_eq!(table_rows(&source_with_units(3, 25, false, true, true)), rows);
+    assert_eq!(
+        table_rows(&source_with_units(3, 25, false, true, true)),
+        rows
+    );
 }
 
 /// 所有原本を描画する前に定義した、物理的な上から下への名称・値の対応。
@@ -132,7 +203,38 @@ proptest! {
         count in 3u16..7,
         pitch in 16u16..30,
         reverse in any::<bool>(),
+        units in any::<bool>(),
     ) {
-        prop_assert_eq!(table_rows(&source(count, pitch, reverse, true)), expected(count));
+        let mut rows = expected(count);
+        if units { rows.insert(1, vec![String::new(), "units".to_string()]); }
+        prop_assert_eq!(table_rows(&source_with_units(count, pitch, reverse, true, units)), rows);
+    }
+}
+
+/// 新規領域だけに所有原本を保存し、全ページの確認前にはfile製品APIへ渡さない。
+#[test]
+#[ignore = "fresh JADE_LOGICAL_TABLE_EXPORT_DIR required; review all source pages before file conversion"]
+fn export_owned_logical_rows_before_file_product() {
+    let dir = std::path::PathBuf::from(std::env::var_os("JADE_LOGICAL_TABLE_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&dir).unwrap();
+    for (name, bytes) in [
+        ("merged-header-synchronized.pdf", source(3, 25, false, true)),
+        ("merged-header-bottom-up.pdf", source(3, 25, true, true)),
+        (
+            "merged-header-numeric-units.pdf",
+            source_with_units(3, 25, false, true, true),
+        ),
+        (
+            "merged-header-unmatched-multiline.pdf",
+            source(3, 25, false, false),
+        ),
+    ] {
+        use std::io::Write;
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(dir.join(name))
+            .unwrap();
+        file.write_all(&bytes).unwrap();
     }
 }

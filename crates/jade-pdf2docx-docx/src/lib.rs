@@ -3752,6 +3752,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 has_graphic_tables,
             )
         })
+        .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
     tables.sort_by(|a, b| {
         a.page
@@ -4643,7 +4644,7 @@ fn infer_positioned_table_from_graphics(
     });
     let font_embedded = embedded_font.is_some();
     let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
-    Some(native_table_text::refine_logical_rows(PositionedTable {
+    Some(PositionedTable {
         page,
         bounds: ParsedBounds {
             x0: *xs.first().expect("xs is not empty") as f32,
@@ -4668,7 +4669,7 @@ fn infer_positioned_table_from_graphics(
         native_cells,
         source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
-    }))
+    })
 }
 
 /// text bbox が grid 座標へ直接入るか判定する。
