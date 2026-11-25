@@ -22,25 +22,22 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
         parsed
             .text_elements
             .iter()
-            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .filter(|text| text.page == page && !text.text.is_empty())
             .collect(),
         false,
     );
     let mut anchors = Vec::<(f32, f32, usize)>::new();
     for row in &rows {
-        let Some(cells) = merge_text_row_into_cells(row).filter(|cells| cells.len() == 2) else {
-            continue;
-        };
-        let top = cells
+        let visible = row
             .iter()
-            .map(|cell| cell.y1)
-            .fold(f32::NEG_INFINITY, f32::max);
-        let Some((key, _)) =
-            text_grid_cell_styles::source_cell(parsed, cells[0].texts.clone(), top)
+            .copied()
+            .filter(|text| !text.text.trim().is_empty())
+            .collect::<Vec<_>>();
+        let Some(cells) = merge_text_row_into_cells(&visible).filter(|cells| cells.len() == 2)
         else {
             continue;
         };
-        if !identifier(&key) || !description(&cells[1].text) {
+        if self::row(parsed, row, cells[0].x0, cells[1].x0).is_none() {
             continue;
         }
         if let Some(anchor) = anchors.iter_mut().find(|(left, right, _)| {
@@ -306,5 +303,27 @@ mod tests {
         parsed.text_elements = elements;
         let table = infer(&parsed, 0).expect("explicit spaces are source text, not absent cells");
         assert_eq!(table.table.rows[0][1], "Original description 0");
+    }
+
+    /// コード候補の中の明示的な空白を取り去って、別の識別子へ正規化しない。
+    #[test]
+    fn explicit_space_inside_identifier_is_not_removed_to_accept_a_table() {
+        let mut parsed = fragmented_codes();
+        let mut elements = Vec::new();
+        for row in parsed.text_elements.chunks(3) {
+            elements.push(row[0].clone());
+            let mut space = row[1].clone();
+            space.text = " ".into();
+            space.bounds.x0 = 104.0;
+            space.bounds.x1 = 107.0;
+            elements.push(space);
+            let mut digit = row[1].clone();
+            digit.bounds.x0 = 107.0;
+            digit.bounds.x1 = 113.0;
+            elements.push(digit);
+            elements.push(row[2].clone());
+        }
+        parsed.text_elements = elements;
+        assert!(infer(&parsed, 0).is_none());
     }
 }

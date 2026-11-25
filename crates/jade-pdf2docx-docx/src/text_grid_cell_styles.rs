@@ -38,6 +38,12 @@ pub(super) fn source_cell(
     texts: Vec<&ParsedTextElement>,
     row_top: f32,
 ) -> Option<(String, Cell)> {
+    let start = texts.iter().position(|text| !text.text.trim().is_empty())?;
+    let end = texts
+        .iter()
+        .rposition(|text| !text.text.trim().is_empty())?
+        + 1;
+    let texts = texts[start..end].to_vec();
     if texts.iter().any(|text| {
         pdf_font_size_to_half_points(text.font_size).is_none()
             || ![
