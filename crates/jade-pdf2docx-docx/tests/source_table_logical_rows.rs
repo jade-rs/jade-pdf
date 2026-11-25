@@ -5,11 +5,11 @@ use proptest::test_runner::FileFailurePersistence;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
-/// 外枠・列罫線・見出し下線だけを持ち、本文の各列へ同じbaselineの値を描く所有原本。
+/// 横結合した見出しと本文の列罫線を持ち、各列へ同じbaselineの値を描く所有原本。
 fn source(count: u16, pitch: u16, reverse: bool, synchronized: bool) -> Vec<u8> {
     let bottom = 650 - count * pitch;
     let mut content = format!(
-        "1 w 72 {bottom} m 272 {bottom} l S 72 670 m 272 670 l S 72 700 m 272 700 l S 72 {bottom} m 72 700 l S 172 {bottom} m 172 700 l S 272 {bottom} m 272 700 l S BT /F1 10 Tf 82 680 Td (Label) Tj ET BT /F1 10 Tf 182 680 Td (Value) Tj ET"
+        "1 w 72 {bottom} m 272 {bottom} l S 72 670 m 272 670 l S 72 700 m 272 700 l S 72 {bottom} m 72 700 l S 172 {bottom} m 172 670 l S 272 {bottom} m 272 700 l S BT /F1 10 Tf 82 680 Td (Summary) Tj ET"
     );
     let mut order = (0..count).collect::<Vec<_>>();
     if reverse {
@@ -93,7 +93,7 @@ fn unmatched_multiline_cells_keep_the_original_grid_rows() {
 
 /// 所有原本を描画する前に定義した、物理的な上から下への名称・値の対応。
 fn expected(count: u16) -> Vec<Vec<String>> {
-    std::iter::once(vec!["Label".to_string(), "Value".to_string()])
+    std::iter::once(vec!["Summary".to_string()])
         .chain((0..count).map(|index| vec![format!("Label-{index}"), format!("Value-{index}")]))
         .collect()
 }
