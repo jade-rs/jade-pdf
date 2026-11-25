@@ -146,3 +146,46 @@ fn a_lone_frame_rule_is_bridged_to_the_amount_column() {
         divided.len()
     );
 }
+
+/// 同じ高さの科目と金額は 1 つの段落にまとめ、金額は科目の段落に付ける。本文の行どうしや、
+/// 高さの違う金額はまとめない。
+#[test]
+fn amounts_on_a_label_row_join_the_label_paragraph() {
+    let line = |text: &str, left_x: f32, right_x: f32, top_y: f32| StructuredTextLine {
+        top_y,
+        left_x,
+        right_x,
+        alignment: ParagraphAlignment::Left,
+        runs: vec![StructuredTextRun {
+            text: text.into(),
+            style: StructuredTextStyle::default(),
+        }],
+        split_from_row: true,
+        text: text.into(),
+    };
+    let block = |flow_index: usize, line: StructuredTextLine| StructuredBlock::Paragraph {
+        top_y: line.top_y,
+        flow_index,
+        line,
+    };
+    let mut blocks = vec![
+        block(0, line("有価証券", 97., 128., 543.)),
+        block(1, line("18,346", 280., 305., 543.)),
+        block(2, line("たな卸資産", 97., 137., 528.)),
+        block(3, line("112", 290., 305., 520.)),
+        block(4, line("左の段の本文の行", 97., 180., 500.)),
+        block(5, line("右の段の本文の行", 330., 420., 500.)),
+    ];
+    let attached = attach_row_amounts(&mut blocks);
+    assert_eq!(blocks.len(), 5);
+    assert_eq!(
+        attached
+            .iter()
+            .map(|(flow, lines)| (
+                *flow,
+                lines.iter().map(|l| l.text.clone()).collect::<Vec<_>>()
+            ))
+            .collect::<Vec<_>>(),
+        vec![(0, vec!["18,346".to_string()])]
+    );
+}

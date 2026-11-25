@@ -1597,6 +1597,67 @@ impl StructuredPageContainer for BandCell {
     }
 }
 
+/// 科目の行と同じ高さの右の金額だけの行を、科目の行の flow 番号ごとに外す。
+///
+/// 金額の行は、科目の行のすぐ後の段落で、上端の差が [`ROW_AMOUNT_ALIGNMENT_PT`] 以内、
+/// 科目の右端から字の大きさの 2 倍以上右にあるもの。科目は金額だけの行でなく、
+/// [`MAX_ROW_LABEL_CHARS`] 字以下とする（2 段組みの本文の左右の行はつながない）。
+fn attach_row_amounts(
+    blocks: &mut Vec<StructuredBlock>,
+) -> BTreeMap<usize, Vec<StructuredTextLine>> {
+    let mut attached = BTreeMap::<usize, Vec<StructuredTextLine>>::new();
+    let mut index = 0;
+    while index < blocks.len() {
+        let StructuredBlock::Paragraph {
+            flow_index, line, ..
+        } = &blocks[index]
+        else {
+            index += 1;
+            continue;
+        };
+        let (flow_index, label) = (*flow_index, line.clone());
+        let size = structured_line_max_font_size(&label).max(1.0);
+        if is_amount_text(&label.text)
+            || label.text.trim().chars().count() > MAX_ROW_LABEL_CHARS
+            || label.text.contains('\t')
+        {
+            index += 1;
+            continue;
+        }
+        let mut right = label.right_x;
+        while let Some(StructuredBlock::Paragraph { line: amount, .. }) = blocks.get(index + 1) {
+            if (amount.top_y - label.top_y).abs() > ROW_AMOUNT_ALIGNMENT_PT
+                || amount.left_x < right + 2.0 * size
+                || !is_amount_text(&amount.text)
+            {
+                break;
+            }
+            right = amount.right_x;
+            attached.entry(flow_index).or_default().push(amount.clone());
+            blocks.remove(index + 1);
+        }
+        index += 1;
+    }
+    attached
+}
+
+/// 科目の行と金額の行を同じ高さとみなす上端の差（pt）と、科目とみなす行の字数の上限。
+const ROW_AMOUNT_ALIGNMENT_PT: f32 = 1.5;
+const MAX_ROW_LABEL_CHARS: usize = 30;
+
+/// 金額だけの文字列（数字と桁区切り・負の印・空白）か。
+fn is_amount_text(text: &str) -> bool {
+    let text = text.trim();
+    text.chars().any(|ch| ch.is_ascii_digit())
+        && text.chars().all(|ch| {
+            ch.is_ascii_digit()
+                || matches!(
+                    ch,
+                    ',' | '.' | '△' | '▲' | '-' | ' ' | '　' | '，' | '(' | ')' | '（' | '）'
+                )
+        })
+}
+
 /// 段のセルの中身を組む範囲（左右の x、原点）。`flat` の範囲はその中を段に分けない。
 #[derive(Clone, Copy)]
 struct BandRange {
@@ -2150,6 +2211,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    // 同じ高さの科目と金額（間を大きく空けて分けた行の断片）は、1 つの段落にして金額を右揃えの
+    // タブで置く（別の段落にすると縦に積まれ、行が倍の高さになる）。
+    let row_amounts = if vertical.is_none() && text_column_layout.is_none() {
+        attach_row_amounts(&mut blocks)
+    } else {
+        BTreeMap::new()
+    };
     if let Some(vertical) = vertical
         && !vertical_images.is_empty()
     {
@@ -2317,6 +2385,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
+                for amount in row_amounts.get(&flow_index).into_iter().flatten() {
+                    if let Some(position) =
+                        pdf_points_to_indent_twips(amount.right_x - paragraph_origin_x)
+                            .and_then(|twips| usize::try_from(twips).ok())
+                    {
+                        paragraph = paragraph
+                            .add_tab(Tab::new().val(TabValueType::Right).pos(position))
+                            .add_run(Run::new().add_tab());
+                        paragraph = amount.runs.iter().fold(paragraph, |paragraph, run| {
+                            paragraph.add_run(docx_run_from_structured_run(run))
+                        });
+                    }
+                }
                 if let Some(indent) =
                     column_origin_twips
                         .zip(page_width)
