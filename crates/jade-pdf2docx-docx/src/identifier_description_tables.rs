@@ -31,7 +31,16 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
         let Some(cells) = merge_text_row_into_cells(row).filter(|cells| cells.len() == 2) else {
             continue;
         };
-        if !identifier(&cells[0].text) || !description(&cells[1].text) {
+        let top = cells
+            .iter()
+            .map(|cell| cell.y1)
+            .fold(f32::NEG_INFINITY, f32::max);
+        let Some((key, _)) =
+            text_grid_cell_styles::source_cell(parsed, cells[0].texts.clone(), top)
+        else {
+            continue;
+        };
+        if !identifier(&key) || !description(&cells[1].text) {
             continue;
         }
         if let Some(anchor) = anchors.iter_mut().find(|(left, right, _)| {
