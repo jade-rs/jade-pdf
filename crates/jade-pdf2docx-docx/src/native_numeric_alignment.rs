@@ -44,7 +44,10 @@ pub(super) fn right_anchors(lines: &[StructuredTextLine], left: f32, right: f32)
     }
     // 右端はadvanceでなく字面の外接矩形なので、emの10%未満のsidebearing差だけを許す。
     // 同じ幅の行は左右どちらの揃えとも解釈できるので変更しない。
-    if max_right - min_right < max_em * 0.1 && max_left - min_left >= max_em * 0.5 {
+    // 座標をf32へ保存した際の最大1ULPだけを境界判定へ戻す。emの0.01%を上限とし、
+    // 大きいページ原点でも右揃えの証拠となる半emの桁差そのものは緩めない。
+    let rounding = (min_left.abs().max(max_left.abs()) * f32::EPSILON).min(max_em * 0.0001);
+    if max_right - min_right < max_em * 0.1 && max_left - min_left + rounding >= max_em * 0.5 {
         for (index, _) in numeric {
             out[index] = true;
         }
@@ -156,6 +159,19 @@ mod tests {
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
+        /// 半emちょうどの桁差だけを座標丸めから救い、明確に小さい0.49emは原点に依存せず拒否する。
+        #[test]
+        fn rounded_half_em_boundary_does_not_admit_smaller_spreads(origin in 0u16..2000, em_hundredths in 400u16..3000) {
+            let (origin, em) = (f32::from(origin), f32::from(em_hundredths) / 100.);
+            let right = origin + em * 4.;
+            let anchor = right - em * 0.25;
+            let mut lines = [line("6.1", anchor - em * 1.5, anchor), line("21.0", anchor - em * 2., anchor)];
+            for line in &mut lines { line.runs[0].style.font_size = em; }
+            prop_assert_eq!(right_anchors(&lines, origin, right), [true, true]);
+            lines[1].left_x = lines[0].left_x - em * 0.49;
+            prop_assert_eq!(right_anchors(&lines, origin, right), [false, false]);
+        }
+
         /// 字形端の差がemの10%未満なら保持し、それを明確に超える配置差は原点・sizeに依存せず拒否する。
         #[test]
         fn sidebearing_band_scales_with_font_em(origin in 0i16..500,em in 8u16..30,gap_hundredths in 1u16..10) {
