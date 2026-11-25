@@ -70,6 +70,7 @@ fn native_name<'a>(name: &'a [u8], budget: &DecodeBudget) -> Option<&'a str> {
 }
 
 /// stream keywordを文字列やPDF名から作らず、最初の辞書とEOLを確認する。
+#[cfg(test)]
 fn stream_header(body: &[u8]) -> Option<&[u8]> {
     let mut lexer = syntax::Lexer {
         bytes: body,
@@ -94,10 +95,37 @@ fn stream_header(body: &[u8]) -> Option<&[u8]> {
 }
 
 /// sourceの一意なsubset名・descriptor・Type1C streamだけを候補として読む。
+#[cfg(test)]
 pub(crate) fn read<'a>(
     resolver: &mut ResourceResolver<'_, 'a>,
     font: &'a [u8],
     budget: &DecodeBudget,
+) -> Option<Candidate<'a>> {
+    read_with_header(resolver, font, budget, |_, body| stream_header(body))
+}
+
+/// 合成metadataで失われるEOLを推測せず、同じ原本の検査済みstream辞書を使う。
+pub(crate) fn read_indexed<'a>(
+    resolver: &mut ResourceResolver<'_, 'a>,
+    font: &'a [u8],
+    budget: &DecodeBudget,
+    bytes: &'a [u8],
+    index: &crate::stream_index::StreamIndex,
+) -> Option<Candidate<'a>> {
+    if !index.matches(bytes) {
+        return None;
+    }
+    read_with_header(resolver, font, budget, |number, _| {
+        index.for_object(bytes, number?).map(|(header, _)| header)
+    })
+}
+
+/// 辞書の条件を共有し、streamの根拠だけを呼出し側の検査方法から受け取る。
+fn read_with_header<'a>(
+    resolver: &mut ResourceResolver<'_, 'a>,
+    font: &'a [u8],
+    budget: &DecodeBudget,
+    header_for: impl FnOnce(Option<u32>, &'a [u8]) -> Option<&'a [u8]>,
 ) -> Option<Candidate<'a>> {
     active(budget)?;
     if !metadata::is_name(field(resolver, font, b"Type", budget)?, b"Font")
@@ -126,8 +154,8 @@ pub(crate) fn read<'a>(
         return None;
     }
     let weight = crate::font_weight::read(resolver, font, false, budget)?;
-    let file = field(resolver, descriptor, b"FontFile3", budget)?;
-    let header = stream_header(file)?;
+    let (file, number) = resolver.resolve(unique(descriptor, b"FontFile3", budget)?)?;
+    let header = header_for(number, file)?;
     if !metadata::is_name(field(resolver, header, b"Subtype", budget)?, b"Type1C") {
         return None;
     }

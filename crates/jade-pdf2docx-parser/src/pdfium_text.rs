@@ -2,6 +2,9 @@
 use crate::{ParseError, ParsedBounds, ParsedTextElement, decode::DecodeBudget};
 use pdfium_render::prelude::*;
 
+#[path = "pdfium_font_weight_index.rs"]
+mod font_weights;
+
 #[cfg(test)]
 #[path = "pdfium_text_budget_tests.rs"]
 pub(crate) mod budget_tests;
@@ -29,6 +32,7 @@ pub(crate) fn characters<'a>(
 }
 
 /// segment本文と先頭文字の幾何/styleを、共有indexと予算付き保存でIRへ変換する。
+#[cfg(test)]
 pub(crate) fn extract(
     budget: &DecodeBudget,
     path: &std::path::Path,
@@ -36,7 +40,27 @@ pub(crate) fn extract(
     page_text: &PdfPageText<'_>,
     characters: &PdfPageTextChars<'_>,
 ) -> Result<Vec<ParsedTextElement>, ParseError> {
+    extract_tagged(
+        budget,
+        path,
+        page_number,
+        page_text,
+        characters,
+        &crate::pdfium_font_tags::Tagged::default(),
+    )
+}
+
+/// 通常のsegment抽出を保ち、確認済みのsource名と一様なweightだけを追加する。
+pub(crate) fn extract_tagged(
+    budget: &DecodeBudget,
+    path: &std::path::Path,
+    page_number: usize,
+    page_text: &PdfPageText<'_>,
+    characters: &PdfPageTextChars<'_>,
+    tags: &crate::pdfium_font_tags::Tagged,
+) -> Result<Vec<ParsedTextElement>, ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
+    let weights = font_weights::Index::new(budget, characters, tags)?;
     let mut elements = Vec::new();
     for segment in page_text.segments().iter() {
         crate::metadata_workspace::ensure_active(budget)?;
@@ -63,7 +87,7 @@ pub(crate) fn extract(
             font_size = first.scaled_font_size().value;
             baseline_y = horizontal_baseline(&first);
             let name = first.font_name();
-            font_name = copy(budget, (!name.is_empty()).then_some(name.as_str()))?;
+            font_name = copy(budget, tags.original_name(&name))?;
             let color = first.fill_color().ok().map(|color| color.to_hex());
             fill_color = copy(budget, color.as_deref())?;
         }
@@ -72,7 +96,7 @@ pub(crate) fn extract(
             budget,
             &mut elements,
             ParsedTextElement {
-                font_weight: None,
+                font_weight: weights.weight(budget, segment.bounds())?,
                 baseline_y,
                 page: page_number,
                 bounds,

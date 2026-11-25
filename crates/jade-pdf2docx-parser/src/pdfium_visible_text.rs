@@ -229,7 +229,7 @@ fn extract_mode(
             break;
         };
         let element = ParsedTextElement {
-            font_weight: None,
+            font_weight: tags.weight(&name),
             baseline_y: crate::pdfium_text::horizontal_baseline(&character),
             page,
             bounds: crate::ParsedBounds {

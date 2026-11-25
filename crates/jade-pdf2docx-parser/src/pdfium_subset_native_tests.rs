@@ -188,3 +188,23 @@ fn native_subset_unobserved_candidate_keeps_original_input() {
             .all(|e| e.font_weight.is_none() && e.font_name.as_deref() == Some("OwnedSubset"))
     );
 }
+
+/// metadata候補の識別とSDK確認を分け、失敗した段階を固定する。
+#[test]
+fn native_subset_owned_candidate_reaches_sdk_preflight() {
+    let bytes = source(&[700], false, false);
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    crate::parser::parse_pdf_bytes_pure_with_budget(
+        "owned-subset.pdf".into(),
+        &bytes,
+        &ParseLimits::default(),
+        &budget,
+    )
+    .unwrap();
+    let mut tags =
+        crate::pdfium_font_tags::Tagged::prepare_weights(&budget, &bytes, false).unwrap();
+    assert!(tags.has_weights(), "source candidate was not tagged");
+    let sdk = pdfium_auto::bind_pdfium_silent().unwrap();
+    let verified = tags.confirm_embedded(&budget, &sdk, 1000).unwrap();
+    assert!(verified, "SDK did not confirm every candidate");
+}
