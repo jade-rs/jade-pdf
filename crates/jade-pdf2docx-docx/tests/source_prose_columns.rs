@@ -8,6 +8,12 @@ use std::io::{Cursor, Read};
 
 /// 外部assetを使わず、散文二列または識別子と説明の二列を持つ所有PDFを作る。
 fn source(rows: usize, size: u16, codes: bool) -> (Vec<u8>, String) {
+    source_with_columns(rows, size, codes, 2)
+}
+
+/// 未検証の三列境界も同じ所有テキストとPDF構築で比較する。
+fn source_with_columns(rows: usize, size: u16, codes: bool, columns: usize) -> (Vec<u8>, String) {
+    assert!([2, 3].contains(&columns));
     let mut content = "BT /F1 12 Tf 54 740 Td (Owned prose control) Tj ET".to_string();
     let mut expected = "Owned prose control".to_string();
     for row in 0..rows {
@@ -22,11 +28,17 @@ fn source(rows: usize, size: u16, codes: bool) -> (Vec<u8>, String) {
             format!("Right complete sentence number {row:02}")
         };
         let y = 700 - row * if codes { 14 } else { 20 };
-        content.push_str(&format!(
-            " BT /F1 {size} Tf 54 {y} Td ({left}) Tj ET BT /F1 {size} Tf 350 {y} Td ({right}) Tj ET"
-        ));
-        expected.push_str(&left);
-        expected.push_str(&right);
+        let third = format!("Third complete sentence number {row:02}");
+        let xs: &[u16] = if columns == 2 {
+            &[54, 350]
+        } else {
+            &[54, 250, 446]
+        };
+        for (index, x) in xs.iter().enumerate() {
+            let text = [&left, &right, &third][index];
+            content.push_str(&format!(" BT /F1 {size} Tf {x} {y} Td ({text}) Tj ET"));
+            expected.push_str(text);
+        }
     }
     let objects = [
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
@@ -116,6 +128,20 @@ fn code_description_rows_keep_their_editable_table() {
     let (source, expected) = source(30, 10, true);
     let (tables, rows, _, text) = properties(&document(&source));
     assert_eq!((tables, rows), (1, 30));
+    assert_eq!(inventory(&text), inventory(&expected));
+}
+
+/// 三列を未検証の二段組経路へ入れない。旧表推定の外観の正しさは承認しない。
+#[test]
+fn three_column_prose_keeps_unqualified_legacy_fallback() {
+    let (source, expected) = source_with_columns(10, 8, false, 3);
+    let (tables, rows, columns, text) = properties(&document(&source));
+    assert_eq!(
+        (tables, rows),
+        (1, 10),
+        "retain the existing three-column fallback"
+    );
+    assert!(!columns, "do not reinterpret three source columns as two");
     assert_eq!(inventory(&text), inventory(&expected));
 }
 
