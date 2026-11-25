@@ -31,7 +31,13 @@ fn recover(
     parsed: &ParsedDocument,
     pages: &[StructuredTextPage],
 ) -> Option<Vec<(usize, StructuredTextLine)>> {
-    if parsed.page_count < 3 || pages.len() != parsed.page_count {
+    // 密な実段組ではfooterだけでも既存の改ページが変わるため、全体の組を昇格しない。
+    if parsed.page_count < 3
+        || pages.len() != parsed.page_count
+        || text_lines_by_page_from_pdf_text_elements(parsed, &[])
+            .iter()
+            .any(|page| unqualified_prose_columns(parsed, page))
+    {
         return None;
     }
     let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
@@ -113,6 +119,34 @@ fn recover(
         result.push((page.page, line));
     }
     Some(result)
+}
+
+/// 左右各八行以上の長い散文がある原本では、未検証の段組改ページへfooterを加えない。
+fn unqualified_prose_columns(parsed: &ParsedDocument, page: &StructuredTextPage) -> bool {
+    let Some(geometry) = parsed.pages.iter().find(|p| p.page_number == page.page) else {
+        return false;
+    };
+    let width = parsed_page_display_size_points(geometry).0;
+    let prose = page
+        .lines
+        .iter()
+        .filter(|line| {
+            line.text.split_whitespace().count() >= 3
+                && line.text.chars().any(char::is_lowercase)
+                && line.right_x - line.left_x >= structured_line_max_font_size(line) * 8.0
+        })
+        .cloned()
+        .collect::<Vec<_>>();
+    let Some(columns) = infer_text_columns(&prose, width) else {
+        return false;
+    };
+    columns.iter().enumerate().all(|(index, _)| {
+        prose
+            .iter()
+            .filter(|line| column_index_for_line(line, &columns) == index)
+            .count()
+            >= 8
+    })
 }
 
 /// 数字の向きとem矩形が原本から確認できる場合だけ、水平footerへの変換を許す。
