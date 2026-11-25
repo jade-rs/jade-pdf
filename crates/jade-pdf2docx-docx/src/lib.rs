@@ -5244,7 +5244,8 @@ fn infer_positioned_table_from_text_grid_page(
         .first()
         .zip(page_texts.last())
         .is_some_and(|(first, last)| last.bounds.y0 > first.bounds.y0 + 1.0);
-    if y_increases_in_content_order {
+    // 新しく混在ページから採用する表は、描画順ではなくPDF座標の上から下へ並べる。
+    if y_increases_in_content_order && !preserve_source_layout {
         page_texts.sort_by(|a, b| {
             a.bounds
                 .y0
