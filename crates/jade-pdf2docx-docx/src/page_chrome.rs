@@ -165,7 +165,10 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
     }
     // 既存の反復footerと競合させず、全出現を組み立てられた場合にだけ連番footerを採用する。
     if plan.pages.values().all(|chrome| chrome.footer.is_none()) {
-        let selected = numbered_page_footers::select(parsed, pages);
+        let mut selected = numbered_page_footers::select(parsed, pages);
+        if selected.is_empty() {
+            selected = bare_page_footers::select(parsed, pages);
+        }
         let occurrences = selected
             .iter()
             .map(|(page, line)| occurrence(parsed, *page, line, false).map(|c| (*page, c)))

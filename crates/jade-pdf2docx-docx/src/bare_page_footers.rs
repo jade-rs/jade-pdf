@@ -1,0 +1,175 @@
+//! 全ページの原本位置・書式・連番が一致した裸の数字だけを、失われていたfooterへ戻す。
+use super::*;
+use docx_rs::BuildXML;
+
+/// 最初の原本ページで確認した番号・Word書式・寸法とfooter原点。
+struct Reference {
+    /// 最初の番号。後続は元ページ数だけ増える場合に限る。
+    number: u32,
+    /// 数字の役として正規化した実際のWord書式。
+    style: Vec<Vec<u8>>,
+    /// 同じ表示幅のページだけを組として扱う。
+    width: f32,
+    /// 同じ表示高のページだけを組として扱う。
+    height: f32,
+    /// 原本の下端からのbaseline距離。
+    edge: f32,
+    /// 原本のページ中央からの水平差。
+    offset: f32,
+}
+
+/// 三ページ以上の全出現を照合し、旧本文で除外される数字を原本のfooterへ一度ずつ戻す。
+pub(super) fn select(
+    parsed: &ParsedDocument,
+    pages: &[StructuredTextPage],
+) -> Vec<(usize, StructuredTextLine)> {
+    recover(parsed, pages).unwrap_or_default()
+}
+
+/// 寸法・原点・fontが一つでも不明なページを推測せず、全出現が確認できた場合だけ返す。
+fn recover(
+    parsed: &ParsedDocument,
+    pages: &[StructuredTextPage],
+) -> Option<Vec<(usize, StructuredTextLine)>> {
+    if parsed.page_count < 3 || pages.len() != parsed.page_count {
+        return None;
+    }
+    let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    let mut result = Vec::new();
+    let mut first: Option<Reference> = None;
+    for (index, page) in pages.iter().enumerate() {
+        if page.page != index {
+            return None;
+        }
+        let geometry = parsed.pages.iter().find(|p| p.page_number == page.page)?;
+        if geometry.rotation.rem_euclid(360) != 0 || parsed_page_size_twips(geometry).is_none() {
+            return None;
+        }
+        let (width, height) = parsed_page_display_size_points(geometry);
+        let rows = native_table_text::source_rows(
+            parsed
+                .text_elements
+                .iter()
+                .filter(|text| {
+                    text.page == page.page
+                        && !text.text.is_empty()
+                        && text.bounds.y0 >= 0.0
+                        && text.bounds.y1 <= height * 0.12
+                })
+                .collect(),
+            false,
+        );
+        let mut candidates = Vec::new();
+        for row in rows {
+            let Some(start) = row.iter().position(|text| !text.text.trim().is_empty()) else {
+                continue;
+            };
+            let end = row.iter().rposition(|text| !text.text.trim().is_empty())? + 1;
+            let mut line = structured_text_line_from_segment(
+                &TextRowSegment {
+                    texts: row[start..end].to_vec(),
+                    split_from_row: false,
+                },
+                &parsed.graphics,
+                width,
+            )?;
+            let Some(number) = number(&line, width, height) else {
+                continue;
+            };
+            if overlaps_decoration(parsed, page.page, &line) {
+                return None;
+            }
+            mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &space_family);
+            candidates.push((number, line));
+        }
+        if candidates.len() != 1 {
+            return None;
+        }
+        let (number, line) = candidates.pop()?;
+        let style = style(&line);
+        let edge = line.top_y - structured_line_max_font_size(&line);
+        let offset = (line.left_x + line.right_x) / 2.0 - width / 2.0;
+        if let Some(reference) = &first {
+            if reference.number.checked_add(u32::try_from(index).ok()?) != Some(number)
+                || reference.style != style
+                || (width - reference.width).abs() > 0.1
+                || (height - reference.height).abs() > 0.1
+                || (edge - reference.edge).abs() > 1.0
+                || (offset - reference.offset).abs() > 1.0
+            {
+                return None;
+            }
+        } else {
+            first = Some(Reference {
+                number,
+                style,
+                width,
+                height,
+                edge,
+                offset,
+            });
+        }
+        result.push((page.page, line));
+    }
+    Some(result)
+}
+
+/// 中央の下端領域にある有限の数字だけを読み、内部の空白や符号を消して番号にしない。
+fn number(line: &StructuredTextLine, width: f32, height: f32) -> Option<u32> {
+    let em = structured_line_max_font_size(line);
+    if ![width, height, line.top_y, line.left_x, line.right_x, em]
+        .iter()
+        .all(|v| v.is_finite())
+        || width <= 0.0
+        || height <= 0.0
+        || em <= 0.0
+        || line.top_y <= em
+        || line.top_y > height * 0.12
+        || line.left_x < 0.0
+        || line.right_x > width
+        || line.left_x >= line.right_x
+        || ((line.left_x + line.right_x) / 2.0 - width / 2.0).abs() > em.max(2.0)
+        || line
+            .runs
+            .iter()
+            .any(|r| pdf_font_size_to_half_points(r.style.font_size).is_none())
+        || line.text.is_empty()
+        || !line.text.chars().all(|c| c.is_ascii_digit())
+    {
+        return None;
+    }
+    line.text.parse().ok()
+}
+
+/// 数字ごとの字数やrun境界を同じ役として扱い、実際のWord書式の変化は保持する。
+fn style(line: &StructuredTextLine) -> Vec<Vec<u8>> {
+    let mut result = Vec::new();
+    for run in &line.runs {
+        let properties = docx_run_from_structured_run(run).run_property.build();
+        if result.last() != Some(&properties) {
+            result.push(properties);
+        }
+    }
+    result
+}
+
+/// 背景や画像と重なる文字を単独footerへ移し、原本の可視性を変える推測を避ける。
+fn overlaps_decoration(parsed: &ParsedDocument, page: usize, line: &StructuredTextLine) -> bool {
+    let bottom = line.top_y - structured_line_max_font_size(line);
+    parsed
+        .graphics
+        .iter()
+        .filter(|g| g.page == page)
+        .map(|g| g.bounds)
+        .chain(
+            parsed
+                .image_elements
+                .iter()
+                .filter(|i| i.page == page)
+                .map(|i| i.bounds),
+        )
+        .map(normalized_bounds)
+        .any(|b| {
+            b.x0 <= line.right_x && b.x1 >= line.left_x && b.y0 <= line.top_y && b.y1 >= bottom
+        })
+}

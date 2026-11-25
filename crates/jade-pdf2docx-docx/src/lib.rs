@@ -55,6 +55,7 @@ mod source_typography_tests;
 mod table_opening;
 mod text_grid_cell_styles;
 
+mod bare_page_footers;
 mod cell_line_rounding;
 mod html_table;
 mod image_anchor;
