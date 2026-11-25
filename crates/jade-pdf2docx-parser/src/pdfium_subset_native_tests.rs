@@ -226,7 +226,7 @@ fn native_subset_overlapping_same_family_keeps_source_weights() {
 }
 
 /// 同じ所有glyphを同じ位置へ二度描き、両operandの文字を固定した対照にする。
-fn identical_overprint_source() -> Vec<u8> {
+pub(crate) fn identical_overprint_source() -> Vec<u8> {
     let bytes = source(&[400, 700], false, false);
     let pattern = b"/F1 20 Tf 70 150 Td";
     let offset = bytes
