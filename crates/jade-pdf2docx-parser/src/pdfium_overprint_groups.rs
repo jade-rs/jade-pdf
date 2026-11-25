@@ -2,6 +2,9 @@
 use crate::{ParseError, decode::DecodeBudget, metadata_workspace, pdfium_font_tags::Tagged};
 use pdfium_render::prelude::*;
 
+#[path = "pdfium_overprint_probe.rs"]
+pub(crate) mod probe;
+
 /// 個別に読み直す元object。fontのfamily名を識別子にしない。
 pub(crate) struct Target {
     /// ページ内を深さ優先で数えたtext objectの順番。
@@ -172,7 +175,7 @@ mod tests {
     use crate::ParseLimits;
 
     /// 所有CDF対照を同じSDK文書へ渡し、確認済みtagと借用ページを組み合わせる。
-    fn with_page(check: impl FnOnce(&PdfPage<'_>, &Tagged)) {
+    pub(super) fn with_page(check: impl FnOnce(&Pdfium, &PdfPage<'_>, &Tagged)) {
         let bytes = crate::pdfium_subset_native_tests::identical_overprint_source();
         let budget = DecodeBudget::default();
         crate::parser::parse_pdf_bytes_pure_with_budget(
@@ -189,7 +192,7 @@ mod tests {
             assert!(confirmed);
             let doc = sdk.load_pdf_from_byte_slice(&tags.bytes, None).unwrap();
             let page = doc.pages().get(0).unwrap();
-            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| check(&page, &tags)))
+            std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| check(&sdk, &page, &tags)))
         };
         if let Err(error) = outcome {
             std::panic::resume_unwind(error);
@@ -199,7 +202,7 @@ mod tests {
     /// 同じfamily・位置でも別source resourceであることを保ち、元paint順を固定する。
     #[test]
     fn exact_overprint_group_preserves_distinct_source_resources_and_order() {
-        with_page(|page, tags| {
+        with_page(|_, page, tags| {
             let groups = collect(&DecodeBudget::default(), page.objects(), tags).unwrap();
             assert_eq!(groups.len(), 1);
             assert_eq!(
@@ -220,7 +223,7 @@ mod tests {
     /// 新しい候補配列も容量を確保前に予約し、元の上限エラーを返す。
     #[test]
     fn overprint_group_storage_preserves_original_budget_failure() {
-        with_page(|page, tags| {
+        with_page(|_, page, tags| {
             let budget = DecodeBudget::new(&ParseLimits {
                 max_total_metadata_workspace_bytes: 0,
                 ..Default::default()
