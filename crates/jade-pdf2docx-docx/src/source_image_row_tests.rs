@@ -133,3 +133,16 @@ fn text_overlap_outside_verified_row_keeps_only_that_image_inline() {
     assert_eq!(xml.matches("<wp:anchor ").count(), 2);
     assert_eq!(xml.matches("<wp:inline ").count(), 1);
 }
+
+/// 未解決のinline画像があるpageでは、行に属さない画像まで固定して本文を覆わない。
+#[test]
+fn unresolved_inline_image_keeps_isolated_images_in_flow() {
+    let mut parsed=image_row();
+    let mut extra=parsed.image_elements[2].clone();
+    extra.bounds=ParsedBounds {x0:48.,x1:96.,y0:100.,y1:148.};
+    parsed.image_elements.push(extra);
+    parsed.text_elements[0].bounds=parsed.image_elements[3].bounds;
+    let (xml,_)=package_source(parsed);
+    assert_eq!(xml.matches("<wp:anchor ").count(),2);
+    assert_eq!(xml.matches("<wp:inline ").count(),2);
+}
