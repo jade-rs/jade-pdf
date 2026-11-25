@@ -279,4 +279,32 @@ mod tests {
         assert_eq!(table.table.row_count(), 6);
         assert!(!text_element_is_in_table(&parsed, &note, &table));
     }
+
+    /// 説明の語間が独立したSDK要素でも、変数の描画断片と区別して空白を保持する。
+    #[test]
+    fn explicit_space_elements_separate_description_words() {
+        let mut parsed = fragmented_codes();
+        let mut elements = Vec::new();
+        for row in parsed.text_elements.chunks(3) {
+            elements.extend_from_slice(&row[..2]);
+            for (text, x0, x1) in [
+                ("Original".to_string(), 234.0, 270.0),
+                (" ".to_string(), 270.0, 273.0),
+                (
+                    row[2].text.strip_prefix("Original ").unwrap().to_string(),
+                    273.0,
+                    450.0,
+                ),
+            ] {
+                let mut element = row[2].clone();
+                element.text = text;
+                element.bounds.x0 = x0;
+                element.bounds.x1 = x1;
+                elements.push(element);
+            }
+        }
+        parsed.text_elements = elements;
+        let table = infer(&parsed, 0).expect("explicit spaces are source text, not absent cells");
+        assert_eq!(table.table.rows[0][1], "Original description 0");
+    }
 }
