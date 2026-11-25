@@ -1,19 +1,165 @@
 //! 他objectをSDK内だけで不可視化し、選択元objectの一文字だけを独立に確認する。
 use super::{Tagged, Target};
-use crate::{ParseError, ParsedTextElement, decode::DecodeBudget};
+use crate::{ParseError, ParsedTextElement, decode::DecodeBudget, metadata_workspace};
 use pdfium_render::prelude::*;
 
 /// 元入力を変更せず、sourceの識別子・weight・文字を確認した場合だけ一文字を返す。
 pub(crate) fn extract(
-    _budget: &DecodeBudget,
-    _sdk: &Pdfium,
-    _bytes: &[u8],
-    _page: usize,
-    _target: &Target,
-    _tags: &Tagged,
-    _path: &std::path::Path,
+    budget: &DecodeBudget,
+    sdk: &Pdfium,
+    bytes: &[u8],
+    page: usize,
+    target: &Target,
+    tags: &Tagged,
+    path: &std::path::Path,
 ) -> Result<Option<ParsedTextElement>, ParseError> {
-    Ok(None)
+    metadata_workspace::ensure_active(budget)?;
+    // opaqueなSDK再解析の処理量を、入力長の累積要求量で保守的に制限する。
+    let _ = budget.charge_metadata_workspace_bytes(bytes.len() as u64);
+    budget.check()?;
+    let document = sdk
+        .load_pdf_from_byte_slice(bytes, None)
+        .map_err(|error| sdk_error(path, error))?;
+    let index = page
+        .try_into()
+        .map_err(|_| sdk_error(path, "overprint page index overflow"))?;
+    let native_page = document
+        .pages()
+        .get(index)
+        .map_err(|error| sdk_error(path, error))?;
+    crate::pdfium_clip_overlap::check(budget, path, native_page.objects(), tags)?;
+    crate::pdfium_visible_text::suppress_hidden(budget, path, native_page.objects(), tags, 0)?;
+    let mut state = Suppression {
+        target,
+        tags,
+        ordinal: 0,
+        found: false,
+        valid: true,
+    };
+    state.visit(budget, path, native_page.objects(), 0)?;
+    if !state.found || !state.valid {
+        return Ok(None);
+    }
+    let text = native_page.text().map_err(|error| sdk_error(path, error))?;
+    let characters = crate::pdfium_text::characters(budget, &text)?;
+    let excluded = crate::pdfium_clip::excluded(budget, native_page.objects(), &text)?;
+    let mut observed = 0;
+    for character in characters.iter() {
+        metadata_workspace::ensure_active(budget)?;
+        if excluded.get(character.index()).copied().unwrap_or(false)
+            || matches!(
+                character.render_mode().ok(),
+                Some(PdfPageTextRenderMode::Invisible)
+            )
+        {
+            continue;
+        }
+        let Some(ch) = char::from_u32(character.unicode_value()) else {
+            return Ok(None);
+        };
+        if ch.is_whitespace() {
+            if character.text_object().is_ok() {
+                return Ok(None);
+            }
+            continue;
+        }
+        if tags.source_key(&character.font_name()) != Some(target.source_key) {
+            return Ok(None);
+        }
+        observed += 1;
+    }
+    if observed != 1 {
+        return Ok(None);
+    }
+    let (_, mut elements) =
+        crate::pdfium_visible_text::extract(budget, path, page, &characters, tags, &excluded)?;
+    if elements.len() != 1 {
+        return Ok(None);
+    }
+    let mut element = elements.pop().unwrap();
+    let b = element.bounds;
+    if !element.font_size.is_finite()
+        || ![b.x0, b.y0, b.x1, b.y1]
+            .iter()
+            .all(|value| value.is_finite())
+        || b.x0 >= b.x1
+        || b.y0 >= b.y1
+    {
+        return Ok(None);
+    }
+    let trimmed = element.text.trim_end();
+    if trimmed.chars().count() != 1
+        || trimmed
+            .chars()
+            .any(|ch| ch.is_control() || ch.is_whitespace())
+        || element.font_weight != Some(target.weight)
+    {
+        return Ok(None);
+    }
+    element.text.truncate(trimmed.len());
+    Ok(Some(element))
+}
+
+/// 選択元objectをそのまま残し、他objectのUnicodeを回復結果へ混ぜない。
+struct Suppression<'a> {
+    /// 元のpaint順と確認済みresourceを持つ対象。
+    target: &'a Target,
+    /// 元の名前を復元する解析ローカルtag。
+    tags: &'a Tagged,
+    /// 次のtext objectの元の順番。
+    ordinal: usize,
+    /// 指定された元objectが実在したか。
+    found: bool,
+    /// 対象の元resource・weight・描画・埋め込みを再確認できたか。
+    valid: bool,
+}
+
+impl Suppression<'_> {
+    /// 元のForm階層とmatrixを保ったまま、対象外だけをSDK内で不可視化する。
+    fn visit<'a>(
+        &mut self,
+        budget: &DecodeBudget,
+        path: &std::path::Path,
+        objects: &'a impl PdfPageObjectsCommon<'a>,
+        depth: usize,
+    ) -> Result<(), ParseError> {
+        let _ = budget.check_form_depth(depth);
+        budget.check()?;
+        metadata_workspace::ensure_active(budget)?;
+        for mut object in objects.iter() {
+            metadata_workspace::ensure_active(budget)?;
+            if let Some(text) = object.as_text_object_mut() {
+                let current = self.ordinal;
+                self.ordinal += 1;
+                let name = text.font().name();
+                if current == self.target.ordinal {
+                    self.found = true;
+                    self.valid = self.tags.source_key(&name) == Some(self.target.source_key)
+                        && self.tags.weight(&name) == Some(self.target.weight)
+                        && text.font().is_embedded().is_ok_and(|value| value)
+                        && !crate::pdfium_visible_text::hidden_object(text, self.tags);
+                } else {
+                    // 確認済みType1Cだけ文字列を変更し、未知fontやType3を再符号化しない。
+                    if self.tags.weight(&name).is_some() {
+                        text.set_text("").map_err(|error| sdk_error(path, error))?;
+                    }
+                    text.set_render_mode(PdfPageTextRenderMode::Invisible)
+                        .map_err(|error| sdk_error(path, error))?;
+                }
+            } else if let Some(form) = object.as_x_object_form_object() {
+                self.visit(budget, path, form, depth + 1)?;
+            }
+        }
+        Ok(())
+    }
+}
+
+/// probe失敗を元文書のpath付きで返し、SDK専用入力や識別名を公開しない。
+fn sdk_error(path: &std::path::Path, error: impl std::fmt::Display) -> ParseError {
+    ParseError::Pdfium {
+        path: path.to_path_buf(),
+        message: format!("overprint object read failed: {error}"),
+    }
 }
 
 #[cfg(test)]

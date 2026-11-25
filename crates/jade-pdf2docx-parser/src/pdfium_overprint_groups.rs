@@ -19,6 +19,8 @@ pub(crate) struct Target {
 pub(crate) struct Group {
     /// 元のpaint順に保持する描画object。
     pub(crate) targets: Vec<Target>,
+    /// 別の描画objectがないページだけを先に採用するための、全text object数。
+    pub(crate) page_text_objects: usize,
 }
 
 /// 候補の収集だけを行い、Unicodeや幾何の回復成功とは扱わない。
@@ -63,7 +65,14 @@ pub(crate) fn collect<'a>(
                     weight,
                 });
             }
-            metadata_workspace::push(budget, &mut groups, Group { targets })?;
+            metadata_workspace::push(
+                budget,
+                &mut groups,
+                Group {
+                    targets,
+                    page_text_objects: scan.next_ordinal,
+                },
+            )?;
         }
         start = end;
     }
