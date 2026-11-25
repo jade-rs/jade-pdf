@@ -12,7 +12,7 @@ pub(crate) fn needs_separator(left: &str, right: &str, gap: f32, size: f32) -> b
 }
 
 /// 語間を持つ文字・句読点を対象にし、CJK・全角のtrackingは従来の字間として残す。
-fn word_spaced_character(scalar: char) -> bool {
+pub(crate) fn word_spaced_character(scalar: char) -> bool {
     let code = u32::from(scalar);
     if matches!(code, 0x2e80..=0x9fff | 0xac00..=0xd7af | 0xf900..=0xfaff | 0xff00..=0xffef | 0x20000..=0x323af)
     {

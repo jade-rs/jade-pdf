@@ -89,6 +89,7 @@ mod pdfium_text;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_visible_text;
 mod quality;
+mod registered_cid;
 mod resource_cache;
 mod resource_resolver;
 mod stream_index;

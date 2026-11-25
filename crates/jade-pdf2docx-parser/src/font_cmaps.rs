@@ -42,6 +42,25 @@ pub(super) fn read(
         return Index::default();
     };
     let mut resolver = crate::resource_resolver::ResourceResolver::new(objects, budget);
+    // 通常の構造用本文はliteralを隠す。候補があるときだけ元の登録文字列を読む。
+    let registered_source = objects
+        .iter()
+        .any(|(_, (_, dictionary))| {
+            crate::metadata::value(dictionary, b"Subtype")
+                .and_then(|value| resolver.resolve(value))
+                .is_some_and(|(value, _)| crate::metadata::is_name(value, b"Type0"))
+                && crate::metadata::value(dictionary, b"Encoding")
+                    .and_then(|value| resolver.resolve(value))
+                    .is_some_and(|(value, _)| crate::metadata::is_name(value, b"Identity-H"))
+                && crate::metadata::value(dictionary, b"ToUnicode").is_none()
+        })
+        .then(|| super::parser_source_preserving_strings(budget, bytes));
+    let registered_objects = registered_source
+        .as_ref()
+        .and_then(|source| crate::object_index::build(budget, source));
+    let mut registered_resolver = registered_objects
+        .as_ref()
+        .map(|objects| crate::resource_resolver::ResourceResolver::new(objects, budget));
     for (&number, (generation, dictionary)) in objects.iter() {
         if super::is_font_dictionary(&mut resolver, dictionary)
             && let Some(cmap) = crate::type1_font::read(
@@ -57,6 +76,14 @@ pub(super) fn read(
                 reference(objects, dictionary).and_then(|stream| {
                     super::font_cmap_for_object_number(budget, bytes, stream, offsets)
                 })
+            })
+            .or_else(|| {
+                let (actual, dictionary) = registered_objects.as_ref()?.get(&number)?;
+                if actual != generation {
+                    return None;
+                }
+                crate::registered_cid::read(budget, dictionary, registered_resolver.as_mut()?)
+                    .map(ToUnicodeCMap::for_registered)
             })
             && !cmap.is_empty()
         {

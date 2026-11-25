@@ -1,0 +1,40 @@
+{
+  "time_utc": "2026-11-25T13:45:48.965513+00:00",
+  "producer_head": "ffcb937dd95b46b457f4c82e40142e443d147475",
+  "full_producer": "f6dd364955e22abfdd4e4c4c52d80c4116b05e5f",
+  "Rust_files": 750,
+  "Rust_passed": 2502,
+  "Rust_failed": 0,
+  "Rust_ignored": 34,
+  "Rust_groups": 142,
+  "Python_distribution_checks": 10,
+  "native_outcomes": 132,
+  "native_success": 110,
+  "native_rejected": 22,
+  "browser_actual_outcomes": 280,
+  "browser_each_success": 113,
+  "browser_each_rejected": 27,
+  "old128_native_and272_browser_outputs_and_errors_byteexact": true,
+  "known_excerpt_all6_DOCX_byteexact": true,
+  "known_excerpt_all6_DOCX_sha256": "5cde7331ab2368221fd9507cb0dbbfe9407484b723282b629210e2140a70e6e6",
+  "whole_frozen_inventory_native_passes_browsers_fail_one_variation_selector": true,
+  "native_whitespace_regression_confirmed": true,
+  "rendered_DOCX": 5,
+  "rendered_pages": 13,
+  "all13_individually_reviewed": true,
+  "original_and_gold_unchanged": true,
+  "all44_full_gold_evaluation_complete": false,
+  "component_qualified": false,
+  "PR_created": false,
+  "production_ready": false,
+  "hold_reasons": [
+    "Native numeric date separators regress when the pure registered-CID page becomes count-compatible.",
+    "Native and browser disagree on the official variation sequence for source CID 18b5.",
+    "Original whole-document browser inventory gold remains failed, and layout/figure failures remain."
+  ],
+  "next_work": [
+    "Preserve native logical/date separators without weakening source space or glyph route invariants.",
+    "Resolve native variation-sequence ownership with independent source evidence; keep original gold immutable.",
+    "Continue source table font/column/border work in the prepared separate layout worktree."
+  ]
+}

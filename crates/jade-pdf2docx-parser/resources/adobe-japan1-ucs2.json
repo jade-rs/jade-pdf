@@ -1,0 +1,24 @@
+{
+  "commit": "2dd5e53fb74a01718b9dfd448a0d1cce6fff2aa5",
+  "version": "10.002",
+  "source": "crates/jade-pdf2docx-parser/resources/Adobe-Japan1-UCS2",
+  "source_sha256": "6a9693361647a37996312cc57071bb79f8c06411207be7c730a83fda1254cd82",
+  "URL": "https://raw.githubusercontent.com/adobe-type-tools/mapping-resources-pdf/2dd5e53fb74a01718b9dfd448a0d1cce6fff2aa5/pdf2unicode/Adobe-Japan1-UCS2",
+  "generator": "python3 tools/generate_registered_cids.py",
+  "entries": 23060,
+  "generated": [
+    {
+      "path": "crates/jade-pdf2docx-parser/resources/adobe-japan1-ucs2.offsets",
+      "bytes": 92244,
+      "sha256": "86b364785d3337ec747c8163bae8339d267485aead8383f20f057dd308421d5f"
+    },
+    {
+      "path": "crates/jade-pdf2docx-parser/resources/adobe-japan1-ucs2.utf8",
+      "bytes": 71750,
+      "sha256": "9197c61ccac7cdcf8bb78a59cf35f898415360f35bec5c131de5cdfd62b86018"
+    }
+  ],
+  "license": "crates/jade-pdf2docx-parser/licenses/adobe-japan1-ucs2.txt",
+  "license_sha256": "eef894d5e759ebf4f55e309000e847fc65294abf292ca3dfb9f9e7115c3fd2f7",
+  "collection_specification_URL": "https://github.com/adobe-type-tools/Adobe-Japan1/blob/b42b377d7efbc233ae2a4c1833947e04760e68d1/README.md"
+}
