@@ -1,0 +1,85 @@
+{
+  "scope": "Named WinAnsi glyph mapping for standard Latin Type1 fonts with no ToUnicode and no FontDescriptor",
+  "producer_and_full_default_commit": "0f8ecd51f482b7af8adb7a425efdbbfd5524ad27",
+  "source_Rust_files": 730,
+  "qualified_parent_commit": "741b05d86f9a1edf8dcc2c61453a1a8441d85186",
+  "qualified_parent_full_tree": "8f78cb7ab032cad1b70c0f811bf650d9d6ca1b0e",
+  "tests": {
+    "default_passed": 2435,
+    "default_failed": 0,
+    "default_ignored": 32,
+    "groups": 137,
+    "fmt_and_Clippy_passed": true,
+    "public_tests": 4,
+    "PBT_cases": 24,
+    "operand_routes": 6,
+    "parent_final_Red_commit": "55587c9ecb27f5bd6ac3213322d87d68f426ee2d",
+    "existing_original_ToUnicode_work_boundary_expectations_unchanged": true,
+    "static_key_value_memory_and_lookup_storage_reserved_before_allocation": true,
+    "compiled_static_names_not_charged_as_authored_ToUnicode_parsing": true,
+    "authored_ToUnicode_presence_and_other_source_declarations_not_overridden": true
+  },
+  "native": {
+    "outcomes": 64,
+    "success": 59,
+    "expected_rejection": 5,
+    "all59_successful_DOCX_byteexact_parent": true,
+    "prior56_outcomes_and_all4_rejection_logs_exact_parent": true,
+    "only_mode_change_new_undefined_slot_strict_success_to_rejection": true,
+    "new_undefined_slot_default_quality_warning_explicit": true,
+    "new_native_owned_punctuation_already_correct_in_parent_not_new_native_accuracy": true,
+    "new_owned_literal_gold_mismatches_retained": 3,
+    "all_native_literal_oracles_passed": false
+  },
+  "browsers": {
+    "engines": ["Chromium", "WebKit"],
+    "cases_per_engine": 40,
+    "outcomes_per_engine": 80,
+    "success_per_engine": 66,
+    "expected_rejection_per_engine": 14,
+    "existing36_inspections_DOCX_errors_exact_parent": true,
+    "known11_order_and_same_browser_history_preserved": true,
+    "all_new4_byte_route_literal_size_and_mode_oracles_passed": true,
+    "new_punctuation_both_modes_DOCX_byteexact_native": true,
+    "new_undefined_slot_default_marker_and_diagnostic_strict_rejection": true,
+    "author_ToUnicode_and_custom_font_route_unchanged": true,
+    "changed_packages_only_expected_text_no_styles_geometry_IDs_or_other_parts_changed": true,
+    "all_hashes_and_errors_exact_between_engines": true
+  },
+  "owned_controls": {
+    "cases": 4,
+    "gold_before_first_file_product_sha256": "70acfb73dc1321f598d5fce343cc6a168a39ca76e8bd94ecbed4269c3bbd6ff4",
+    "initial_fixed_candidate": "623e8e4c980b523029fd1106f85f5db838611940",
+    "initial_candidate_native8_and_parent8_results_preserved": true,
+    "initial_candidate_rejected_for_existing_resource_budget2_regressions": true,
+    "source623_archive_sha256": "873efbc7063ac4a380fd9b69b264046769adfce3a278afef802d80072354ba42",
+    "no_failing_valid_control_excluded_or_gold_rewritten": true,
+    "not_unseen_external_accuracy": true
+  },
+  "visual": {
+    "distinct_DOCX_pages_rendered_and_individually_viewed": 7,
+    "candidate_selections_individually_viewed": 6,
+    "owned_source_pages_individually_viewed": 2,
+    "total_distinct_PNGs_viewed": 9,
+    "all_changed_browser_DOCX_pages_viewed": true,
+    "source_exact_shapes_spacing_baselines_not_claimed": true,
+    "viewer_resized_full_resolution_review_not_claimed": true,
+    "Microsoft_Word_not_verified": true
+  },
+  "remaining_limitations": {
+    "native_undefined_default_marker_omitted_with_warning_and_strict_rejection": true,
+    "custom_native_em_dash_vs_byte_replacement_preexisting_gap": true,
+    "existing_valid_inline_one_line_ToUnicode_CMap_parsing_unresolved": true,
+    "general_PDF_layout_math_plots_tables_CJK_fidelity_unqualified": true,
+    "details": "docs/named_winansi_text.md"
+  },
+  "rights_and_provenance": {
+    "existing_licensed_ReportLab_glyph_names_and_Adobe_Glyph_List_reused": true,
+    "no_dependency_API_CLI_change": true,
+    "original_PDF_fonts_DOCX_not_redistributed": true,
+    "tracked_PDF_fixtures_remain3": true
+  },
+  "local_evidence_namespace": "corpus/wasm-runtime/named-winansi-text-qualification",
+  "whole_document_accepted": false,
+  "production_ready": false
+}
