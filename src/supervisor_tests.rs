@@ -299,15 +299,31 @@ fn assert_unresponsive_supervisor(output_setup_error: bool) {
         assert!(matches!(result, Err(WorkerError::Timeout { timeout }) if timeout == limit));
     }
     assert!(started.elapsed() < Duration::from_secs(5));
-    let pid = fs::read_to_string(&marker).unwrap();
+    // 負荷の高い環境では、子が pid を書く前に期限で停止されることがある。その場合も、marker を
+    // 引数に持つ子孫が残っていないことを確かめる。
+    let marker_text = marker.to_str().unwrap().to_owned();
+    let survives = || match fs::read_to_string(&marker) {
+        Ok(pid) => {
+            let state = Command::new("ps")
+                .args(["-p", pid.trim(), "-o", "command="])
+                .output()
+                .unwrap();
+            String::from_utf8_lossy(&state.stdout).contains(&marker_text)
+        }
+        Err(_) => {
+            let state = Command::new("ps")
+                .args(["-axo", "command="])
+                .output()
+                .unwrap();
+            String::from_utf8_lossy(&state.stdout)
+                .lines()
+                .any(|command| command.contains(&marker_text))
+        }
+    };
     let deadline = Instant::now() + Duration::from_secs(2);
     let mut remains = true;
     while remains && Instant::now() < deadline {
-        let state = Command::new("ps")
-            .args(["-p", pid.trim(), "-o", "command="])
-            .output()
-            .unwrap();
-        remains = String::from_utf8_lossy(&state.stdout).contains(marker.to_str().unwrap());
+        remains = survives();
         if remains {
             std::thread::sleep(Duration::from_millis(10));
         }
