@@ -5,8 +5,17 @@ use proptest::test_runner::FileFailurePersistence;
 
 /// 非埋め込みの所有font辞書とbyte operandを生成し、外観の正しさは主張しない。
 fn pdf(bytes: &[u8], route: usize, flags: &str, encoding: &str, unicode: bool) -> Vec<u8> {
-    let literal = format!("({})", bytes.iter().map(|b| format!("\\{b:03o}")).collect::<String>());
-    let hex = format!("<{}>", bytes.iter().map(|b| format!("{b:02X}")).collect::<String>());
+    let literal = format!(
+        "({})",
+        bytes
+            .iter()
+            .map(|b| format!("\\{b:03o}"))
+            .collect::<String>()
+    );
+    let hex = format!(
+        "<{}>",
+        bytes.iter().map(|b| format!("{b:02X}")).collect::<String>()
+    );
     let show = match route {
         0 => format!("{literal} Tj"),
         1 => format!("{hex} Tj"),
@@ -35,15 +44,23 @@ fn pdf(bytes: &[u8], route: usize, flags: &str, encoding: &str, unicode: bool) -
     }
     let xref = data.len();
     data.extend_from_slice(b"xref\n0 8\n0000000000 65535 f \n");
-    for offset in offsets { data.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes()); }
-    data.extend_from_slice(format!("trailer << /Size 8 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes());
+    for offset in offsets {
+        data.extend_from_slice(format!("{offset:010} 00000 n \n").as_bytes());
+    }
+    data.extend_from_slice(
+        format!("trailer << /Size 8 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
+    );
     data
 }
 
 /// 純Rust公開byte parserの可視文字を、preview正規化なしに読む。
 fn text(bytes: &[u8]) -> String {
-    parse_pdf_bytes(std::path::Path::new("owned-truetype-winansi.pdf"), bytes).unwrap()
-        .text_elements.iter().map(|e| e.text.as_str()).collect()
+    parse_pdf_bytes(std::path::Path::new("owned-truetype-winansi.pdf"), bytes)
+        .unwrap()
+        .text_elements
+        .iter()
+        .map(|e| e.text.as_str())
+        .collect()
 }
 
 /// 非記号の明示WinAnsiは、全描画operandで節記号・通貨・Latin文字を保持する。
@@ -51,7 +68,16 @@ fn text(bytes: &[u8]) -> String {
 fn nonsymbolic_truetype_named_winansi_retains_defined_unicode() {
     for flags in ["32", "96"] {
         for route in 0..6 {
-            assert_eq!(text(&pdf(&[0xa7,0x80,0xe9,0x97],route,flags,"/WinAnsiEncoding",false)), "§€é—");
+            assert_eq!(
+                text(&pdf(
+                    &[0xa7, 0x80, 0xe9, 0x97],
+                    route,
+                    flags,
+                    "/WinAnsiEncoding",
+                    false
+                )),
+                "§€é—"
+            );
         }
     }
 }
@@ -59,17 +85,29 @@ fn nonsymbolic_truetype_named_winansi_retains_defined_unicode() {
 /// 原本のToUnicodeをWinAnsiで上書きせず、異なる記号意味を維持する。
 #[test]
 fn authored_truetype_unicode_keeps_priority() {
-    for route in 0..6 { assert_eq!(text(&pdf(&[0xa7],route,"32","/WinAnsiEncoding",true)),"☃"); }
+    for route in 0..6 {
+        assert_eq!(
+            text(&pdf(&[0xa7], route, "32", "/WinAnsiEncoding", true)),
+            "☃"
+        );
+    }
 }
 
 /// 記号・矛盾・不正flagと未対応encoding辞書を新しいUnicode対応へ昇格しない。
 #[test]
 fn unverified_truetype_flags_and_encodings_keep_legacy_fallback() {
-    for flags in ["0","4","36","-32","32.0","null"] {
-        assert_ne!(text(&pdf(&[0xa7],0,flags,"/WinAnsiEncoding",false)),"§");
+    for flags in ["0", "4", "36", "-32", "32.0", "null"] {
+        assert_ne!(
+            text(&pdf(&[0xa7], 0, flags, "/WinAnsiEncoding", false)),
+            "§"
+        );
     }
-    for encoding in ["/MacRomanEncoding","null","<< /BaseEncoding /WinAnsiEncoding /Differences [167 /snowman] >>"] {
-        assert_ne!(text(&pdf(&[0xa7],0,"32",encoding,false)),"§");
+    for encoding in [
+        "/MacRomanEncoding",
+        "null",
+        "<< /BaseEncoding /WinAnsiEncoding /Differences [167 /snowman] >>",
+    ] {
+        assert_ne!(text(&pdf(&[0xa7], 0, "32", encoding, false)), "§");
     }
 }
 
@@ -83,4 +121,45 @@ proptest! {
         for index in indices {bytes.push(pairs[index].0);expected.push_str(pairs[index].1);}
         prop_assert_eq!(text(&pdf(&bytes,route,"32","/WinAnsiEncoding",false)),expected);
     }
+}
+
+/// 未定義codeを有効な文字と誤認せず、予算と同様にstrictの失敗を維持する。
+#[test]
+fn undefined_truetype_winansi_slot_is_diagnosed_and_rejected_in_strict_mode() {
+    use jade_pdf2docx_parser::{
+        ParseError, ParseOptions, QualityIssue, UnsupportedFontReason, parse_pdf_bytes_with_options,
+    };
+    let bytes = pdf(&[b'A', 1, b'Z'], 0, "32", "/WinAnsiEncoding", false);
+    let parsed = parse_pdf_bytes_with_options(
+        "owned-undefined-truetype.pdf",
+        &bytes,
+        &ParseOptions::default(),
+    )
+    .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|e| e.text.as_str())
+            .collect::<String>(),
+        "A�Z"
+    );
+    assert!(parsed.quality.issues.iter().any(|i| matches!(
+        i,
+        QualityIssue::UnsupportedFont {
+            reason: UnsupportedFontReason::Encoding,
+            ..
+        }
+    )));
+    assert!(matches!(
+        parse_pdf_bytes_with_options(
+            "owned-undefined-truetype.pdf",
+            &bytes,
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            }
+        ),
+        Err(ParseError::QualityRejected { .. })
+    ));
 }

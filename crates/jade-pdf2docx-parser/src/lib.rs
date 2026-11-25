@@ -108,6 +108,7 @@ mod text_rendering;
 mod text_result_storage;
 mod text_word_gap;
 mod tounicode_cache;
+mod truetype_winansi;
 #[cfg(test)]
 #[path = "type1_cluster_embedding_tests.rs"]
 mod type1_cluster_embedding_tests;
