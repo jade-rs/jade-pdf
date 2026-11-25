@@ -16,6 +16,17 @@ fn source_with_column_page(
     width: u16,
     column_page: Option<usize>,
 ) -> Vec<u8> {
+    source_with_note(pages, left, width, column_page, None)
+}
+
+/// 新しい混在ページ対照だけに一段の注記を挟み、既存の所有原本は変更しない。
+fn source_with_note(
+    pages: &[bool],
+    left: u16,
+    width: u16,
+    column_page: Option<usize>,
+    note: Option<(usize, &str)>,
+) -> Vec<u8> {
     let font = 3 + pages.len() * 2;
     let kids = (0..pages.len())
         .map(|i| format!("{} 0 R", 3 + i * 2))
@@ -52,6 +63,14 @@ fn source_with_column_page(
                 };
                 content.push_str(&format!("BT /F1 10 Tf {x} {y} Td ({text}) Tj ET\n"));
             }
+        }
+        if let Some((note_page, text)) = note
+            && note_page == page
+        {
+            content.push_str(&format!(
+                "BT /F1 10 Tf {} 650 Td ({text}) Tj ET\n",
+                left + 10
+            ));
         }
         objects.push(format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {font} 0 R >> >> /Contents {} 0 R >>",4+page*2));
         objects.push(format!(
@@ -184,6 +203,25 @@ fn independent_page_inference_preserves_body_columns_between_ruled_tables() {
     }
 }
 
+/// 新しい表候補が範囲内の注記を出力できなければ、本文を残して表への昇格を止める。
+#[test]
+fn a_new_borderless_table_must_not_drop_an_interleaved_body_note() {
+    let xml = document_xml(&source_with_note(
+        &[true, false],
+        40,
+        240,
+        None,
+        Some((1, "BODY MUST REMAIN")),
+    ));
+    assert!(xml.contains("BODY MUST REMAIN"));
+    assert_eq!(tables_in_xml(&xml), vec![expected(true)]);
+    for row in 0..3 {
+        for col in 0..2 {
+            assert_eq!(xml.matches(&format!("GRID-R{row}C{col}")).count(), 1);
+        }
+    }
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(24))]
     /// 位置・列幅・ページ順を変えても、ページを結合したWord表の内容は独立変換と一致する。
@@ -192,6 +230,19 @@ proptest! {
         let pages=[ruled_first,!ruled_first];
         let independent=pages.into_iter().flat_map(|ruled|tables(&[ruled],left,width)).collect::<Vec<_>>();
         prop_assert_eq!(tables(&pages,left,width),independent);
+    }
+
+    /// 注記の文字・位置・列幅・ページ順が変わっても、表の追加による本文削除を許さない。
+    #[test]
+    fn new_mixed_page_tables_never_discard_owned_note(
+        letters in "[a-z]{1,20}", left in 20u16..60, width in 160u16..240, note_first in any::<bool>()
+    ) {
+        let pages=if note_first {[false,true]}else{[true,false]};
+        let page=usize::from(!note_first);
+        let note=format!("Note{letters}");
+        let xml=document_xml(&source_with_note(&pages,left,width,None,Some((page,&note))));
+        prop_assert_eq!(xml.matches(&note).count(),1);
+        prop_assert_eq!(tables_in_xml(&xml),vec![expected(true)]);
     }
 }
 
