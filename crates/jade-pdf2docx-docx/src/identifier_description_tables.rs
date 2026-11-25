@@ -187,3 +187,61 @@ fn identifier(value: &str) -> bool {
 fn description(value: &str) -> bool {
     value.split_whitespace().count() >= 2 && value.chars().any(|c| c.is_ascii_lowercase())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// SDKが数字の途中で分けた原本断片を、空白を含めず同じbaselineへ並べる。
+    fn fragmented_codes() -> ParsedDocument {
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "owned-fragmented-identifiers.pdf".into(),
+            byte_len: 1,
+            header: "%PDF-1.7".into(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+            text_elements: Vec::new(),
+        };
+        for index in 0..6 {
+            let y = 700.0 - index as f32 * 14.0;
+            for (text, x0, x1) in [
+                ("FIELD_202".to_string(), 54.0, 104.0),
+                (index.to_string(), 104.1, 110.1),
+                (format!("Original description {index}"), 234.0, 450.0),
+            ] {
+                parsed.text_elements.push(ParsedTextElement {
+                    page: 0,
+                    text,
+                    font_size: 10.0,
+                    font_name: Some("Helvetica".into()),
+                    font_weight: None,
+                    fill_color: None,
+                    baseline_y: Some(y),
+                    bounds: ParsedBounds {
+                        x0,
+                        x1,
+                        y0: y,
+                        y1: y + 10.0,
+                    },
+                });
+            }
+        }
+        parsed
+    }
+
+    /// 座標の接するコード断片を旧文字列の補間空白で拒否せず、同じ列の根拠にする。
+    #[test]
+    fn repeated_anchor_uses_geometric_identifier_text_not_legacy_fragment_spaces() {
+        let table = infer(&fragmented_codes(), 0).expect("six geometrically complete code rows");
+        let expected = (0..6)
+            .map(|i| vec![format!("FIELD_202{i}"), format!("Original description {i}")])
+            .collect::<Vec<_>>();
+        assert_eq!(table.table.rows, expected);
+    }
+}

@@ -7,6 +7,11 @@ use std::io::{Cursor, Read};
 
 /// 所有する一ページ原本へ、注記と独立した左右列の表示行を描く。
 fn source(count: usize, reverse: bool, article: bool) -> Vec<u8> {
+    source_fragments(count, reverse, article, false)
+}
+
+/// 同じコードを一つのTjまたは接する二つのTjへ分け、字間以外の意味を変えない。
+fn source_fragments(count: usize, reverse: bool, article: bool, fragments: bool) -> Vec<u8> {
     let mut content = String::from("BT /F1 10 Tf 54 740 Td (Public field notes) Tj ET");
     let mut order = (0..count).collect::<Vec<_>>();
     if reverse {
@@ -19,8 +24,17 @@ fn source(count: usize, reverse: bool, article: bool) -> Vec<u8> {
         } else {
             format!("FIELD_CODE_{index:02}")
         };
+        if fragments {
+            content.push_str(&format!(
+                " BT /F1 10 Tf 54 {y} Td (FIELD_CODE_{}) Tj 73.91 0 Td ({}) Tj ET",
+                index / 10,
+                index % 10
+            ));
+        } else {
+            content.push_str(&format!(" BT /F1 10 Tf 54 {y} Td ({left}) Tj ET"));
+        }
         content.push_str(&format!(
-            " BT /F1 10 Tf 54 {y} Td ({left}) Tj ET BT /F1 10 Tf 260 {y} Td (Description for original item {index:02}) Tj ET"
+            " BT /F1 10 Tf 260 {y} Td (Description for original item {index:02}) Tj ET"
         ));
     }
     content.push_str(" BT /F1 10 Tf 54 100 Td (End of field notes) Tj ET");
@@ -120,6 +134,21 @@ fn spaced_uppercase_labels_do_not_become_identifier_rows() {
         "preserve original offsets and lengths"
     );
     assert!(result(changed.as_bytes()).1.is_empty());
+}
+
+/// 描画operatorの境界に識別子の空白を捏造せず、同じ物理コードとして列原点を数える。
+#[test]
+fn touching_code_fragments_still_support_the_same_column_anchor() {
+    let (_, rows) = result(&source_fragments(30, false, false, true));
+    let expected = (0..30)
+        .map(|i| {
+            vec![
+                format!("FIELD_CODE_{i:02}"),
+                format!("Description for original item {i:02}"),
+            ]
+        })
+        .collect::<Vec<_>>();
+    assert_eq!(rows, expected);
 }
 
 proptest! {
