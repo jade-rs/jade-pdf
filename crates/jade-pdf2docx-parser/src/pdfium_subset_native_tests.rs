@@ -3,6 +3,16 @@ use crate::{ParseLimits, decode::DecodeBudget};
 
 /// binaryの所有CFFを埋め、同じfamily名のfont辞書を別resourceとして配置する。
 fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
+    source_with_file_subtype(weights, broken, unused_last, "/Type1C")
+}
+
+/// 既存の所有対照を同一byte列のまま保ち、stream名の表記だけを別対照で変える。
+fn source_with_file_subtype(
+    weights: &[u16],
+    broken: bool,
+    unused_last: bool,
+    subtype: &str,
+) -> Vec<u8> {
     let program = if broken {
         b"owned-invalid-CFF".to_vec()
     } else {
@@ -22,7 +32,7 @@ fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Count 1 /Kids [3 0 R] >>".to_vec(),
         format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /XObject << /OwnedForm {content_number} 0 R >> >> /Contents {} 0 R >>",content_number+1).into_bytes(),
-        stream(&program, "/Subtype /Type1C"),
+        stream(&program, &format!("/Subtype {subtype}")),
     ];
     for (i, weight) in weights.iter().enumerate() {
         let prefix = ["ABCDEF", "GHIJKL"][i];
@@ -127,6 +137,32 @@ fn native_subset_embedded_descriptor_weight_is_preserved() {
     assert_eq!(
         elements.iter().map(|e| e.font_weight).collect::<Vec<_>>(),
         vec![Some(700)]
+    );
+}
+
+/// PDF nameの同値なescapeを見落とさず、原本の表記を別名へ正規化しない。
+#[test]
+fn native_subset_escaped_stream_subtype_preserves_declared_weight() {
+    let bytes = source_with_file_subtype(&[700], false, false, "/Type1#43");
+    assert_eq!(original_fonts(&bytes), vec![("OwnedSubset".into(), true)]);
+    let elements = native(&bytes);
+    assert_eq!(
+        elements.iter().map(|e| e.font_weight).collect::<Vec<_>>(),
+        vec![Some(700)]
+    );
+}
+
+/// 入口対照の追加で、変換前に固定した元の所有PDFを変更しない。
+#[test]
+fn native_subset_original_owned_source_bytes_remain_frozen() {
+    let bytes = source(&[700], false, false);
+    let hash = hmac_sha256::Hash::hash(&bytes)
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect::<String>();
+    assert_eq!(
+        hash,
+        "36ab0083c92e3b534b20158fb8bc6210edb51367c48443ced5f7c48039603ffa"
     );
 }
 
