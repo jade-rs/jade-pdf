@@ -185,12 +185,25 @@ fn split_rect_at_wide_gaps(
     characters: &PdfPageTextChars<'_>,
     centers: &[Option<(f32, f32)>],
 ) -> Option<Vec<SegmentPiece>> {
+    // まず矩形の中の字だけで照合し、約物が矩形から外れて照合できない場合だけ、短い辺の
+    // 6 割まで広げて拾い直す（広げると隣の文字列の字を拾うことがある）。
+    split_rect_with_slack(rect, text, characters, centers, 0.5).or_else(|| {
+        let wide = ((rect.x1 - rect.x0).abs().min((rect.y1 - rect.y0).abs()) * 0.6).max(0.5);
+        split_rect_with_slack(rect, text, characters, centers, wide)
+    })
+}
+
+/// 矩形を `slack` だけ広げた範囲の字で、本文を 1 em を超える字間で分ける。
+fn split_rect_with_slack(
+    rect: ParsedBounds,
+    text: &str,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+    slack: f32,
+) -> Option<Vec<SegmentPiece>> {
     let horizontal = (rect.x1 - rect.x0).abs() >= (rect.y1 - rect.y0).abs();
     // `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から
     // 中心が矩形に入る文字をテキスト順に拾う。
-    // 字面の矩形は約物の分だけ外れることがあるので、短い辺の 6 割まで広げて拾う
-    // （隣の文字列の字は、下の本文との照合で除かれる）。
-    let slack = ((rect.x1 - rect.x0).abs().min((rect.y1 - rect.y0).abs()) * 0.6).max(0.5);
     let (left, bottom, right, top) = (
         rect.x0.min(rect.x1) - slack,
         rect.y0.min(rect.y1) - slack,
@@ -217,17 +230,33 @@ fn split_rect_at_wide_gaps(
             baseline_y: horizontal_baseline(&character),
         });
     }
-    // 矩形で拾う文字は隣の文字列の文字を含むことがあるため、本文と同じ文字列になる場合だけ分ける。
-    let compact = |text: &str| {
-        text.chars()
-            .filter(|ch| !ch.is_whitespace())
-            .collect::<String>()
-    };
-    let joined = infos
-        .iter()
-        .map(|info| info.text.as_str())
-        .collect::<String>();
-    if compact(&joined) != compact(text) {
+    // 矩形で拾う文字は隣の文字列の字（小数点の字など）を含むことがあるため、本文の字を順に
+    // たどれる字だけを残し、本文のすべての字が見つかった場合だけ分ける。
+    let expected = text
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<Vec<_>>();
+    let mut next = 0usize;
+    let infos = infos
+        .into_iter()
+        .filter(|info| {
+            let body = info
+                .text
+                .chars()
+                .filter(|ch| !ch.is_whitespace())
+                .collect::<Vec<_>>();
+            if body.is_empty() {
+                return next > 0 && next < expected.len();
+            }
+            if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+                next += body.len();
+                true
+            } else {
+                false
+            }
+        })
+        .collect::<Vec<_>>();
+    if expected.is_empty() || next != expected.len() {
         return None;
     }
     let pieces = group_chars_at_wide_gaps(&infos, horizontal);

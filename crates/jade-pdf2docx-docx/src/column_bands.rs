@@ -305,10 +305,20 @@ pub(super) fn merge_margin_band_lines(
                     .chars()
                     .all(|ch| ch.is_ascii_digit() || ('０'..='９').contains(&ch))
                 && margin.iter().enumerate().any(|(other_index, other)| {
+                    // 縦書きの見出しの行は字数×字の大きさの長さを持つとみなし、その範囲に重なる
+                    // 短い行だけを二重に拾ったものとする（離れた位置の同じ字は別の字）。
+                    let size = other
+                        .runs
+                        .iter()
+                        .map(|run| run.style.font_size)
+                        .fold(1.0f32, f32::max);
+                    let extent = size * other.text.trim().chars().count() as f32;
                     other_index != *index
                         && other.text.trim().chars().count() > text.chars().count()
                         && other.text.contains(text)
                         && line_band(other, edges) == line_band(line, edges)
+                        && line.top_y <= other.top_y + 2.0
+                        && line.top_y >= other.top_y - extent - 2.0
                 })
         })
         .map(|(index, _)| index)

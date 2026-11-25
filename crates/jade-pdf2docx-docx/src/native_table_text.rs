@@ -281,6 +281,27 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     )
 }
 
+/// 原本の表示行が上下に重なっているか（行間が字の大きさより狭い）。
+///
+/// 行が重なるセルは原本の行の配置を写せないので、一段落の写し（fallback）にする。
+/// 重ならない複数行のセルは、行ごとの段落のまま残す。
+pub(super) fn has_overlapping_lines(cell: &Cell) -> bool {
+    // 同じ行が左右に分かれただけの行（左右に重ならない）は重なりとしない。
+    cell.lines.iter().enumerate().any(|(index, line)| {
+        cell.lines.iter().skip(index + 1).any(|other| {
+            let size = line
+                .runs
+                .iter()
+                .chain(other.runs.iter())
+                .map(|run| run.style.font_size)
+                .fold(0.0f32, f32::max);
+            (line.top_y - other.top_y).abs() < 0.9 * size
+                && line.left_x < other.right_x
+                && other.left_x < line.right_x
+        })
+    })
+}
+
 /// 原本の字をそのまま写したセルの本文が、組み直したセル本文と同じ語の並びか。
 ///
 /// 字ごとに置いた文字片を写すと語の中に空白が入る（「I t e m」）ので、組み直した本文に

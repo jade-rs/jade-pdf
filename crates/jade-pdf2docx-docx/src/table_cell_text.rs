@@ -133,7 +133,11 @@ pub(crate) fn compose_cell(
             };
             // 項目と数値を離して並べた行や数値だけの行は、右端に届いていても折り返しではない。
             let tabular = previous_text.contains('\t') || is_mostly_numeric(&previous_text);
+            // 折り返した段落の前の行は、次の行より大きく右から始まらない（右寄せの見出しの
+            // 行の後は折り返しではない）。
+            let right_aligned = previous.left > line.left + 2.0 * size;
             let wrapped = !tabular
+                && !right_aligned
                 && previous.right + space + first > content_right + WRAP_TOLERANCE_EM * size;
             if wrapped {
                 if space > 0.0 {
@@ -807,6 +811,14 @@ mod tests {
         fragments.extend(chars(".", 11.0, 100.0, 1.0, 8.0));
         fragments.extend(chars("2530", 15.0, 100.0, 4.0, 8.0));
         assert_eq!(compose_cell_text(&fragments, 0.0, 95.0), "-1.2530");
+    }
+
+    /// 右寄せの見出しの行が右端に届いていても、次の行と連結しない。
+    #[test]
+    fn right_aligned_heading_is_not_joined_with_the_next_line() {
+        let mut fragments = chars("給与差", 60.0, 100.0, 10.0, 10.0);
+        fragments.extend(chars("４級地", 0.0, 86.0, 10.0, 10.0));
+        assert_eq!(compose_cell_text(&fragments, 0.0, 92.0), "給与差\n４級地");
     }
 
     /// 欧文の折り返しでは語間の空白を補う。

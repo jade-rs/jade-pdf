@@ -2312,7 +2312,19 @@ fn text_lines_by_page_from_pdf_text_elements(
                                 })
                         })
                 })
-                .filter(|line| !is_pdf_page_number_line(parsed, page, line))
+                .collect::<Vec<_>>();
+            // ページ番号は行に単独で置く。同じ高さに別の字がある数字（「未収入金 3,186」の
+            // 「3」のように字間で分かれた数の一部）はページ番号として除かない。
+            let lines = lines
+                .iter()
+                .enumerate()
+                .filter(|(index, line)| {
+                    !is_pdf_page_number_line(parsed, page, line)
+                        || lines.iter().enumerate().any(|(other, sibling)| {
+                            other != *index && (sibling.top_y - line.top_y).abs() <= 2.0
+                        })
+                })
+                .map(|(_, line)| line.clone())
                 .collect::<Vec<_>>();
             // 縦罫線で段を区切るページは、左の段から順に読む。
             let lines = if !band_edges.is_empty() {
@@ -2377,28 +2389,9 @@ fn text_element_is_in_table(
     }
     let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
     let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
-    if text_center_is_in_table_bounds(center_x, center_y, table) {
-        return true;
-    }
-    // 上端原点の y で置いた文字片の救済は、表のセルにその文字列があるときだけ使う
-    // （回転したページなどで、上下を反転した位置が別の表に重なる本文を落とさない）。
-    table_accepts_top_origin_text_y(parsed, table)
-        && page_height(parsed, text.page)
-            .map(|height| text_center_is_in_table_bounds(center_x, height - center_y, table))
-            .unwrap_or(false)
-        && table_cells_contain_text(table, &text.text)
-}
-
-/// 表のいずれかのセルが、文字片の文字列（前後の空白を除く）を含むか判定する。
-fn table_cells_contain_text(table: &PositionedTable, text: &str) -> bool {
-    let text = text.trim();
-    !text.is_empty()
-        && table
-            .table
-            .rows
-            .iter()
-            .flatten()
-            .any(|cell| cell.contains(text))
+    // 文字片の座標はページの表示座標にそろえてあるので、上端原点の y を想定した救済はしない
+    // （上下を反転した位置が別の表に重なる本文や、表の下の数字を落としていた）。
+    text_center_is_in_table_bounds(center_x, center_y, table)
 }
 
 /// text center が推定表の矩形内に入るか判定する。
@@ -4138,9 +4131,18 @@ fn docx_table_from_model_with_row_height_and_nested(
                         .and_then(|row| row.get(cell_index))
                         .and_then(Option::as_ref)
                         .filter(|native| native_table_text::agrees_with(native, &cell.text));
+                    // 行が収まらない原本の一段落の写し（fallback）は、組み直した本文が一行か、原本の
+                    // 行が重なっているときだけ使う（重ならない複数行のセルを一段落に潰さない）。
                     let native_paragraph = native_cell
                         .and_then(native_table_text::single_line_paragraph)
-                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph));
+                        .or_else(|| {
+                            native_cell
+                                .filter(|native| {
+                                    !cell.text.trim().contains('\n')
+                                        || native_table_text::has_overlapping_lines(native)
+                                })
+                                .and_then(native_table_text::fallback_paragraph)
+                        });
                     let source_indent = native_cell
                         .filter(|_| native_paragraph.is_some())
                         .and_then(native_table_text::single_line_horizontal_indent);
@@ -6047,13 +6049,6 @@ fn grid_accepts_top_origin_text_y(parsed: &ParsedDocument, page: usize, ys: &[i3
     };
     ys.first()
         .map(|min_y| *min_y as f32 > height * 0.5)
-        .unwrap_or(false)
-}
-
-/// 位置付き表が top-origin text y の補正対象か判定する。
-fn table_accepts_top_origin_text_y(parsed: &ParsedDocument, table: &PositionedTable) -> bool {
-    page_height(parsed, table.page)
-        .map(|height| table.bounds.y0 > height * 0.5)
         .unwrap_or(false)
 }
 
