@@ -1,0 +1,8 @@
+# Seeds for failure cases proptest has generated in the past. It is
+# automatically read and these particular cases re-run before any
+# novel cases are generated.
+#
+# It is recommended to check this file in to source control so that
+# everyone who runs the test benefits from these saved cases.
+# 当初は回帰入力のWinAnsi glyphが置換文字になったケース。現在は明示ToUnicodeと変換前の原文確認を含む。
+cc 81a73608c4eb105cdc0759a09cb195004c6803a7b383eb7d8225023faa6dd6a1 # shrinks to start = 1, count = 2, size = 8, y = 10, shift = 0
