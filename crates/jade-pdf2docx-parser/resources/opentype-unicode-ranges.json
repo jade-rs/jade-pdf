@@ -1,0 +1,8 @@
+{
+  "source": "https://raw.githubusercontent.com/fonttools/fonttools/4.60.1/Lib/fontTools/ttLib/tables/O_S_2f_2.py",
+  "source_sha256": "d4fab65eee2860e25e3d31c2fe14ca8374487ca7a5cb78fa4f5bbf94c4c4a43f",
+  "version": "4.60.1",
+  "license": "MIT",
+  "license_file": "../licenses/fonttools.txt",
+  "reference": "https://learn.microsoft.com/en-us/typography/opentype/spec/os2#ulunicoderange1-bits-031ulunicoderange2-bits-3263ulunicoderange3-bits-6495ulunicoderange4-bits-96127"
+}

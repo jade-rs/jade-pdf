@@ -65,8 +65,8 @@ fn assert_public_conversion(name: &str, page_count: usize) {
     for (page, (actual, expected)) in actual_pages.iter().zip(expected_pages).enumerate() {
         assert!(!actual.trim().is_empty(), "empty output page {}", page + 1);
         assert_eq!(
-            compact(actual),
-            compact(&expected.replace("-\n", "")),
+            actual.split_whitespace().collect::<Vec<_>>(),
+            expected.split_whitespace().collect::<Vec<_>>(),
             "{name}, page {}",
             page + 1
         );
@@ -94,16 +94,12 @@ fn document_pages(xml: &str) -> Vec<String> {
                     pages.push(String::new());
                 }
             }
+            Event::End(element) if element.name().as_ref() == b"w:p" => {
+                pages.last_mut().unwrap().push('\n');
+            }
             Event::Eof => break,
             _ => {}
         }
     }
     pages
-}
-
-/// PDFの行折返しやDOCXのrun分割による空白を比較から除外する。
-fn compact(text: &str) -> String {
-    text.chars()
-        .filter(|character| !character.is_whitespace())
-        .collect()
 }

@@ -42,6 +42,10 @@ mod preview_candidate_budget_tests;
 #[path = "text_operand.rs"]
 mod operand;
 
+#[cfg(test)]
+#[path = "tounicode_empty_targets_tests.rs"]
+mod empty_tounicode_tests;
+
 #[path = "tounicode_input.rs"]
 mod cmap_input;
 
@@ -84,18 +88,53 @@ use cmap_references::parse as parse_tounicode_object_refs;
 mod cmap;
 pub(crate) use cmap::{ToUnicodeCMap, ToUnicodeCMapData};
 
-/// ページ・Formの可視本文を借用し、文書全体の重複除去・文字数制限を適用する。
+/// 実glyphと原文の対応が確認できた単byte codeだけを、描画とclipで共有する。
+pub(crate) fn verified_single_byte_cmap<'a>(
+    budget: &DecodeBudget,
+    mappings: impl IntoIterator<Item = (u8, &'a [u32])>,
+) -> Option<ToUnicodeCMap> {
+    let mut data = ToUnicodeCMapData::default();
+    for (code, scalars) in mappings {
+        budget.charge_tounicode_entries(1)?;
+        let length = scalars.iter().try_fold(0usize, |sum, &s| {
+            sum.checked_add(char::from_u32(s)?.len_utf8())
+        })?;
+        budget.charge_tounicode_bytes((2 + length) as u64)?;
+        data.reserve_mapping(budget)?;
+        let mut key = budget.try_string_capacity(2)?;
+        key.push(char::from(b"0123456789ABCDEF"[usize::from(code >> 4)]));
+        key.push(char::from(b"0123456789ABCDEF"[usize::from(code & 15)]));
+        let mut value = budget.try_string_capacity(length)?;
+        for &scalar in scalars {
+            if budget.is_stopped() {
+                return None;
+            }
+            value.push(char::from_u32(scalar)?);
+        }
+        data.insert_mapping(key, value);
+    }
+    data.insert_code_space_range(budget, "00", "FF")?;
+    let cmap = data.finish(budget);
+    (!budget.is_stopped()).then_some(cmap)
+}
+
+#[path = "type1_mapping.rs"]
+mod type1;
+pub(crate) use type1::{Mapping as Type1Mapping, build as type1_mapping};
+
+#[path = "positioned_preview.rs"]
+mod positioned_preview;
+
+/// 可視本文を借用し、位置付きglyphの行を戻してから重複除去・文字数制限を適用する。
 pub(crate) fn preview_from_text_elements(
     budget: &DecodeBudget,
     elements: &[crate::ParsedTextElement],
 ) -> String {
     let mut builder = preview_result::Builder::default();
-    for element in elements {
-        match builder.push_decoded(budget, &element.text) {
-            Some(true) => {}
-            Some(false) => break,
-            None => return String::new(),
-        }
+    if positioned_preview::visit(budget, elements, |text| builder.push_decoded(budget, text))
+        .is_none()
+    {
+        return String::new();
     }
     builder.finish(budget).unwrap_or_default()
 }

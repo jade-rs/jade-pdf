@@ -1,0 +1,188 @@
+{
+  "schema": 1,
+  "recorded_utc": "2026-11-23T23:35:48.973615+00:00",
+  "change": "Bounded upright Type1 glyph origins and logical TJ space advances in DOCX",
+  "qualified_head": "4f1597df6b49ccb2633444bfc363fb015afdc2bb",
+  "qualified_crates_tree": "7d224ff58352065a2e7b829a871aeee84aa8723d",
+  "base_main": "2ba58970f8e67949bdd435ea116e4cabe952dccb",
+  "production_ready": false,
+  "complete_document_fidelity_accepted": false,
+  "scope": {
+    "runtime": "Pure Rust parser, native file conversion, byte/WASM conversion, DOCX font packaging",
+    "changes": [
+      "One element per verified upright source glyph; preserve original code advances, Tc/Tw/Tz/TJ and ligature routes",
+      "Logical TJ spaces have independent bounds and no source font/code32 assignment",
+      "Verified single-glyph cmap/hmtx or bounded required-rlig measurement; unsupported whole lines keep prior styling",
+      "Owned U+0020-only TTF; reserve embedded, unembedded and renderer-normalized source families; source font bytes retained",
+      "Disable legacy half/full-width balancing only for documents selecting the internal space font",
+      "Retain header/footer/footnote font references when packaging; header/footer owned regressions",
+      "Rebuild bounded1024-character Type1 preview rows before deduplicating; preserve repeated letters and legacy rotated fragments"
+    ],
+    "public_API": "No signature or field additions; upright generated Type1 element granularity and pure baseline_y semantics are documented in README and docs/type1_fonts.md",
+    "inputs": "Only existing3 tracked public PDFs; GNU is an existing reviewed development case; two ToUnicode-removal controls are derived cases, not new documents or holdouts"
+  },
+  "validation": {
+    "default_CI_parity": {
+      "command": "sh scripts/check_rust_features.sh default",
+      "excludes": "jade-pdf-diff, matching the conversion CI script",
+      "passed": 2218,
+      "failed": 0,
+      "ignored": 29
+    },
+    "Python": {
+      "version": "3.12",
+      "passed": 152,
+      "failed": 0
+    },
+    "browser": {
+      "chromium": "72/72",
+      "webkit": "72/72",
+      "selected_source_and_derived_inputs": 6,
+      "default_strict_outcomes_across_both_engines": 24,
+      "all_outcomes_quality_and_nonwhite_OOXML_preserved": true,
+      "candidate_actual_DOCX_bytes_equal_to_reviewed_outputs": true,
+      "wasm_sha256": "360e736f158d105e7bf896ceda16646b894b72f6e00cdda696487a943b7aaeee"
+    },
+    "native": {
+      "frozen_executable_sha256": "697a2261c5eb4ef6fa1d6630f5cde6a0818599fea304a3277b19e6b49048a000",
+      "all4_actual_DOCX_bytes_equal_to_reviewed_outputs": true,
+      "SDK": "7961"
+    },
+    "references": {
+      "word_reference": "Independent pdfplumber0.11.9 with fixed2pt word tolerance on original and rendered PDF pages",
+      "public_original_previews": "Exact original-source extraction prefix, up to1024 characters, for all3 original PDFs",
+      "derived_control_preview": "AGL U+FB00 retained; QA-only compatibility normalization used for Latin ligature reference prefix, never changing product Unicode or frozen gold",
+      "reference_timing": "Known development fixtures, verification after observed regressions; not an uncontaminated holdout claim"
+    },
+    "receipts": {
+      "positioned-final-default": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-default-results.json",
+        "sha256": "a18a9e446170c1ca49bb1644d9cd803d6eb216472294b9a4cd5dee714d295c4d",
+        "log_sha256": "5830e476851020b8e4bc61ee535ec0ea30240af1be65f7313233ce07192761ff"
+      },
+      "positioned-final-Python": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-Python-results.json",
+        "sha256": "77f581db5a524dee1f23ccd23ded2678c0a8e46b5c378e6d4815069f900b6ae3",
+        "log_sha256": "443e8c514be93a246f13a3a1c155f48adbdf80091265e3684d4379e9928de855"
+      },
+      "positioned-final-WASM": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-WASM-results.json",
+        "sha256": "b306fb6d05d0e9e38cc76d2655e34d0085e9b746849f2acfed7d4e721dc8e29c",
+        "log_sha256": "a7b3b077fd19877a47b4728edac3b1aca3bb51a8bb0b0c518a98d7f204ae5e90"
+      },
+      "positioned-final-format": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-final-format-results.json",
+        "sha256": "3ec4adffd012545b8939f810f2a0ccf75575db28027cda8930b609d8f2445acd",
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      "positioned-publish-browser-chromium": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-publish-browser-chromium-results.json",
+        "sha256": "8554110d89b9a40fda6134a27917471493bf1d377c5a797a79ebc9c1758f7c1c",
+        "log_sha256": "1e11b7c16ddde64185d722eafa8de82dfdf75c255de317554632932b058a026b"
+      },
+      "positioned-publish-browser-webkit": {
+        "file": "corpus/wasm-runtime/type1-word-spacing-qualification/positioned-publish-browser-webkit-results.json",
+        "sha256": "0beb1a7cbfbb50d86a904c490e6969e250d23a0b4b4502db1cc2c53f87f04983",
+        "log_sha256": "acd50b624d76ff45ad14d74a7dacaf090dc1d14fdd440c4b887cd6c92de6c0c3"
+      }
+    }
+  },
+  "public_rendering": [
+    {
+      "id": "pdflatex-four-pages",
+      "input_sha256": "f17a09190ad8a04964d78115d8ba7fc7a298557274fa14932ba58612342b7dec",
+      "source_pages": 4,
+      "rendered_pages": 4,
+      "all_nonwhite_rows_equal": true,
+      "all_words_equal": true,
+      "compared_glyph_rows": 166,
+      "max_abs_glyph_origin_x_error_pt": 1.3342537899999911,
+      "max_abs_baseline_y_error_pt": 4.38000000000001,
+      "complete_layout_accepted": false
+    },
+    {
+      "id": "pdflatex-text",
+      "input_sha256": "f723638db6e763cf4ccadad38a3d38a02d9ecab95dab1f0bbf00e801991b5f92",
+      "source_pages": 1,
+      "rendered_pages": 1,
+      "all_nonwhite_rows_equal": true,
+      "all_words_equal": true,
+      "compared_glyph_rows": 9,
+      "max_abs_glyph_origin_x_error_pt": 1.3089999999999975,
+      "max_abs_baseline_y_error_pt": 2.6400000000000006,
+      "complete_layout_accepted": false
+    },
+    {
+      "id": "libreoffice-text",
+      "input_sha256": "fc67ce4f76ffb44e818ebe4f673dbeb6002ad93a59f3856ff14fb1d3625f10a5",
+      "source_pages": 1,
+      "rendered_pages": 1,
+      "all_nonwhite_rows_equal": true,
+      "all_words_equal": true,
+      "compared_glyph_rows": 7,
+      "max_abs_glyph_origin_x_error_pt": 1.7499999999997158,
+      "max_abs_baseline_y_error_pt": 2.099999999999909,
+      "complete_layout_accepted": false
+    }
+  ],
+  "scoped_improvement": {
+    "case": "pdflatex-four-pages",
+    "same_backend": "Actual Chromium production WASM export, rendered by bundled LibreOffice with the same private font config",
+    "source_pages": 4,
+    "PR29_rendered_pages": 8,
+    "candidate_rendered_pages": 4,
+    "word_and_line_boundaries_preserved_on_all4_pages": true
+  },
+  "GNU": {
+    "source_url": "https://www.gnu.org/software/hello/manual/hello.pdf",
+    "source_sha256": "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b",
+    "source_pages": 17,
+    "native_rendered_pages": 26,
+    "pure_WASM_rendered_pages": 25,
+    "accepted": false,
+    "review": "All original pages and GFDL/source-font OFL notices reviewed before conversion; source PDF not committed",
+    "unresolved": [
+      "Index/section pagination and clipping",
+      "Unverified circlecopyrt Unicode",
+      "Native page10 character-count mismatch; page-local SDK fallback retained"
+    ]
+  },
+  "limitations": [
+    "This is a scoped word/page recovery improvement, not production-ready document fidelity",
+    "Type1 public origin errors still reach1.335pt and baseline errors4.38pt; numeric half-twip planning does not guarantee viewer precision",
+    "Microsoft Word rendering is unverified; renderer font-size and percentage quantization remain",
+    "General complex-script shaping, mixed/underlined typography, baseline alignment and wider forms/OCR/bidi accuracy need further qualification",
+    "Owned TTF has deterministic zero head timestamps; FontTools reports low-date warnings. No warning-free metadata claim"
+  ],
+  "rights_and_distribution": {
+    "source_font_assets": "Independent actual DOCX deobfuscation confirms all6 source-font maps match PR29 byte-for-byte; only owned space assets added",
+    "owned_font": "Empty U+0020 outline,1000units/em and1000-unit advance; repository copyright and PolyForm Noncommercial license retained in font name table",
+    "reader": "ttf-parser exactly0.25.1 under supplied MIT notice; no native font installation or runtime Python/fontTools/HarfBuzz dependency",
+    "WASM_notices": "All6 notices and generated binding hashes verified by distribution checker"
+  },
+  "retained_failures": [
+    "Committed Red/Green history, initial compile failures and proptest seeds",
+    "Disk-full unscoped workspace attempt; stale regenerable caches cleaned without source/gold/log loss",
+    "Unscoped workspace used conversion SDK7961 for jade-pdf-diff;2 diff tests failed. Correct conversion CI command excludes that crate; no diff code or expectations changed",
+    "Initial Python fixture lacked newly required notices, later152/152",
+    "PR29 previews split/deduplicated ff; old evidence preserved, corrected previews verified against original source",
+    "QA ZIP variants and absent optional font-rel assumptions failed before corrected independent checks",
+    "Subset-prefixed unembedded source family collision Red then Green; font aliases use the same normalization as final DOCX runs."
+  ],
+  "evidence": {
+    "local_manifest": "corpus/wasm-runtime/type1-word-spacing-qualification/qualification-manifest-as-of-4f1597d.json",
+    "manifest_sha256": "2f504cc9bfa4ac20d7501b7ce4868f102847bec25bf4d18bb853585f6507bf12",
+    "files": 1194,
+    "previous_PR29_manifest_sha256": "18c0f3e4a34ba143c232b9c064c12028474b7fb72e8d30a7598ac53806865380",
+    "all626_previous_records_reverified": true,
+    "artifact_render_inheritance": "Candidate native and both-browser actual DOCX outputs are byte-identical to the already rendered and reviewed7cfcb52 artifacts. No predicted render passes.",
+    "tracked_PDFs": "Exactly the original3 fixtures; no external source PDF or generated document is added to Git",
+    "previous_de177f8_manifest_sha256": "030d560c4f2aa09a1816f3789f52ac56e93ceb72991287a824a76b0e8ae1048f"
+  },
+  "reproduction": [
+    "sh scripts/check_rust_features.sh default",
+    "python3 -m unittest discover -s tests -p \"test_*.py\"",
+    "cargo run --example minimum_pdf_to_docx -- fixtures/input/pdflatex-four-pages.pdf /tmp/jade-type1.docx --clean-output",
+    "Follow tools/wasm-docx-smoke/README.md for the production browser API checks"
+  ]
+}

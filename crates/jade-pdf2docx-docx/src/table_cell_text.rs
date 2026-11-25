@@ -381,8 +381,9 @@ fn line_text(line: &CellLine<'_>, columns: &[f32]) -> (String, Vec<CellTabStop>)
             } else if gap > TAB_GAP_EM * size || (wide_gap && column_starts.contains(&index)) {
                 text.push('\t');
                 segments.push((fragment.bounds.x0, fragment.bounds.x1, String::new()));
-            } else if ((wide_gap || explicit)
+            } else if ((wide_gap || explicit || gap < -0.25 * size)
                 && needs_word_space(text.chars().last(), body.chars().next()))
+                // 重なって置かれた別の語（上下の行が重なったもの）も語間として区切る。
                 // PDF に空白の字があり実際に字間もあいていれば、和文の隣でも空白を残す
                 // （「項目 1」のような和文と数字の間の空白）。
                 || (explicit && gap > EXPLICIT_SPACE_GAP_EM * size)
@@ -570,6 +571,11 @@ pub(crate) fn split_across_boundaries(
             })
             .min_by(|a, b| a.1.total_cmp(&b.1))
             .map(|(index, _)| index);
+        // 空白の無い文字列は、罫線の両側に 1 字ほどの字がある場合だけ字の間で分ける
+        // （罫線にわずかにかかっただけの数字などは分けない）。
+        if space.is_none() && (boundary - bounds.x0 < 0.9 * em || bounds.x1 - boundary < 0.9 * em) {
+            continue;
+        }
         let cut = space.unwrap_or_else(|| {
             (1..chars.len())
                 .min_by(|a, b| {

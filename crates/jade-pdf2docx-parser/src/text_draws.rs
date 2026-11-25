@@ -179,19 +179,24 @@ fn translate(matrix: [f32; 6], x: f32, y: f32) -> [f32; 6] {
 
 /// 同じ文字軸・baseline 上で、推定 advance の半 em 以内に続く描画を判定する。
 pub(crate) fn adjacent(previous: [f32; 6], width: f32, current: [f32; 6], size: f32) -> bool {
+    gap(previous, width, current).is_some_and(|gap| gap.abs() <= size.abs() * 0.5)
+}
+
+/// 同じ文字軸とbaselineにある二描画の、推定advance後の符号つき空きを返す。
+pub(crate) fn gap(previous: [f32; 6], width: f32, current: [f32; 6]) -> Option<f32> {
     if previous[..4] != current[..4] {
-        return false;
+        return None;
     }
     let axis_squared = previous[0] * previous[0] + previous[1] * previous[1];
     if !axis_squared.is_finite() || axis_squared <= f32::EPSILON {
-        return false;
+        return None;
     }
     let end = translate(previous, width, 0.);
     let dx = current[4] - end[4];
     let dy = current[5] - end[5];
     let gap = (dx * previous[0] + dy * previous[1]) / axis_squared;
     let baseline = (dx * previous[1] - dy * previous[0]) / axis_squared.sqrt();
-    baseline.abs() <= 0.0001 && gap.abs() <= size.abs() * 0.5
+    (baseline.abs() <= 0.0001 && gap.is_finite()).then_some(gap)
 }
 
 /// 命令とcontainerを区別し、未完文字列・配列の後続描画へ復帰する。

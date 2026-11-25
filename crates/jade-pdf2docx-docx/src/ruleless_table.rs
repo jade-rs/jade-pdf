@@ -342,6 +342,9 @@ fn table_from_lines(
                 .filter_map(|text| text.font_name.as_deref()),
         ),
         font_embedded: false,
+        embedded_face: None,
+        native_cells: Vec::new(),
+        row_heights_twips: Vec::new(),
         font_size: font_size.filter(|size| (4.0..=96.0).contains(size)),
         column_widths_twips: xs
             .windows(2)

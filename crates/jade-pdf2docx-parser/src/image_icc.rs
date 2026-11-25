@@ -15,6 +15,18 @@ mod gray;
 #[path = "image_icc_profile.rs"]
 mod profile;
 
+/// DeviceCMYKにも同じ四成分DCT復号を渡し、JPEGのRGB自動変換を介さない。
+pub(super) fn cmyk_jpeg_samples(
+    budget: &DecodeBudget,
+    pdf: &[u8],
+    dict: &[u8],
+    data: &[u8],
+    width: u32,
+    height: u32,
+) -> Option<Vec<u8>> {
+    cmyk_jpeg::decode(budget, pdf, dict, data, width, height)
+}
+
 /// 空白・コメント以外に余分なtokenがないnullを検証する。
 pub(super) fn is_null(bytes: &[u8]) -> bool {
     let mut lexer = crate::syntax::Lexer { bytes, cursor: 0 };

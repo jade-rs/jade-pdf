@@ -82,7 +82,7 @@ pub(crate) fn resolve(
         }
         let inherited = inherited.at_node(path, &objects, reference.0, node, limits, budget)?;
         if metadata::has_type(node, b"Page") {
-            let page = inherited.page(path, &objects, reference.0, limits, budget)?;
+            let page = inherited.page(path, &objects, reference.0, node, limits, budget)?;
             crate::metadata_workspace::push(budget, &mut order, page)?;
             check_limit("page count", order.len() as u64, limits.max_pages as u64)?;
         } else if metadata::has_type(node, b"Pages") {

@@ -19,6 +19,22 @@ archive and executable from the existing runtime preparation. It copies the
 production WASM artifact when Cargo reports it, before temporary build artifacts
 can be collected.
 
+The generated directory includes `LICENSE-adobe-glyph-list.txt`,
+`LICENSE-fonttools.txt`, and `LICENSE-reportlab.txt` for the conversion parser's
+glyph and standard encoding tables. ReportLab contributes static glyph-name
+facts and is not a runtime dependency. Distribute these notices with the WASM and
+generated bindings. The build helper verifies their complete contents and records
+their hashes in `build.json`.
+The distribution also includes `LICENSE-open-font-license-1.1.txt`, the standard
+license body used with verified OFL source fonts. Generated font names preserve
+source notices internally and avoid reusing reserved source family names.
+`LICENSE-ttf-parser-0.25.1.txt` covers the pure Rust font advance reader and is
+also required in native converter distributions.
+The owned nonprinting layout font retains the repository license in its name
+table; `LICENSE-jade-layout-font.txt` is included alongside the generated WASM.
+Recheck a copied distribution with
+`python3 tools/wasm-docx-smoke/check_distribution.py --probe <directory>`.
+
 The checks compare the generated DOCX paragraph and table coordinates with
 authored PDF coordinates. Owned Helvetica inputs are created in a temporary
 directory. Both default and strict conversion exports, inspection, Word's maximum
@@ -57,3 +73,26 @@ export; cancelled paths remain accepted. A curve followed by a straight segment
 must not invent a table rule, while a separately drawn rule after a cancelled
 path remains present. These checks do not establish curve rendering or OCR
 recognition. All fourteen earlier input hashes are retained.
+
+Five owned LZW controls exercise the production browser exports: direct content,
+explicit EarlyChange 0, an indirect Contents array with repeated streams and
+cross-stream text state, malformed data, and an unsupported predictor. Valid
+controls check editable text and source x coordinates in both default and strict
+exports; inspection and both conversion modes must reject the invalid controls.
+These controls do not establish filter-chain, indirect parameter, or predictor
+support. Literal controls reset the dictionary per byte; native codec tests
+separately cover 9–12-bit transitions and full-table resets for both EarlyChange
+values.
+
+Six additional Type1 metadata controls check built-in glyph assignments,
+Differences overlays, unknown used glyphs, partial/complete ToUnicode priority,
+and StandardEncoding quotes/ligatures. They verify exact DOCX Unicode and the
+`unverified_encoding` inspection reason; strict export rejects painted unknown
+codes. These controls have no CharStrings and do not establish drawing-font or
+Word fidelity. Complete real Type1 drawing-font controls are separately generated
+with `tools/generate_type1_drawing_controls.py`. All earlier 27 input hashes are
+retained.
+
+The parser now prepares supported static Type1 drawing fonts for DOCX embedding;
+see [support and qualification](../../docs/type1_fonts.md). Browser metadata
+controls alone do not prove the generated drawing fonts render correctly.

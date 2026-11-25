@@ -1,0 +1,135 @@
+{
+  "created_utc": "2026-11-24T13:50:06.440754+00:00",
+  "scope": "Incremental source-baseline fidelity and bounded script-row recovery. This is a qualified change, not whole-document or production readiness.",
+  "production_ready": false,
+  "qualified_Rust_source_head": "aaad714b85b409ffdeac9c3ad37cf45928638683",
+  "Rust_source_files": 693,
+  "base_merged_main": "f9bb95563bf6c6c4eee3cd894d89ed8e69202685",
+  "API_CLI_dependencies_changed": false,
+  "implementation": {
+    "position": "Verified relative baseline differences become signed half-point w:position. Source w:sz retained; no w:vertAlign or Unicode inference. Position scaling follows existing page fitting.",
+    "reference": "Coherent dominant baseline, or finite agreeing nearest dominant anchors on both present sides. Font ratio0.5..0.85, absolute delta0.25..0.6em.",
+    "outlying_rows": "Indexed bounded vertical candidates, at most16 rows. Unique nonoverlapping adjacent body row within2em. No nested or ambiguous moves.",
+    "word_groups": "Source fragments separated by at most0.8em form one group. Groups wider than2em of candidate main font remain separate, including long diagonal footnote lines. This also conservatively rejects some genuine long scripts.",
+    "columns": "Infer existing gutter before any movement. Restrict recovery/font scale to verified source column and vertical body band. Crossing boxes are not eligible.",
+    "spaces": "Restore independent source spaces only in changed rows, checking adjacent baselines and bounded horizontal gaps.",
+    "packaging": "Same private XML preparation for file and bytes. Internal markers compiled before page fitting in body, headers and footers."
+  },
+  "TDD": {
+    "initial_Red": "c02f83f5a80d1572cf840088cf354e5b942f6926",
+    "initial_Green": "7f62746a39537577e77d8b07ee70d06f594ead44",
+    "file_packer_Red": "852365f205522d089512668f9d5fbd508f22baad",
+    "shared_packer_Green": "eb90d44dfbaac831b0dd656d547d469ff91aca6a",
+    "outlying_row_Red": "a44be11923961f135e7fe751101cd6ec242fc577",
+    "outlying_row_Green": "7472cfa7075f54312c4717ed7c7f124ce5bde288",
+    "word_space_Red": "52ad76e178f2ec475b914c4481d45d693666cfb4",
+    "word_space_Green": "9389a0d7d4734af0c5d6825450f827dfbe269ad9",
+    "column_reference_Red": "ce5380e13f26b17c88f14a1581d151c0216d4a07",
+    "column_Green": "1cfd2797892255a8029568cc2687dacd16965f30",
+    "diagonal_note_Red": "d99d9ba83dd3a37efef8dc61319e79bffd1accea",
+    "diagonal_note_Green": "753011d1931745f2a15c08efaf81d12681606acf",
+    "note_properties": "aaad714b85b409ffdeac9c3ad37cf45928638683",
+    "history": "Original pre-rebase commits and partial qualification remain in backup refs and immutable local manifests. Rebased onto merged PR39; duplicate source registration dropped as already upstream.",
+    "test_generator_fix": "Existing positive-f32 fractional geometry ranges retain their full bit domains using integer-bit strategies; avoids a proptest float sampler panic without changing assertions or tolerances."
+  },
+  "local_checks": {
+    "default_workspace_excluding_diff": {
+      "passed": 2325,
+      "failed": 0,
+      "ignored": 30,
+      "groups": 125,
+      "Clippy": "passed",
+      "DOCX_unit_tests": 138
+    },
+    "new_feature_property_samples_per_run": 256,
+    "property_scope": "Signed offsets, translation, unrelated unknown symbols, outlying rows, source word spaces, source column ownership and long diagonal footnote fragmentation/draw order.",
+    "standard_production_WASM_browser_cases_each": 72,
+    "engines": [
+      "Chromium",
+      "WebKit"
+    ],
+    "known11_browser_outcomes": 44,
+    "known_browser_DOCX_byteexact_parent": 28,
+    "known_browser_errors_exact_parent": 10,
+    "known_native_DOCX_byteexact_parent": 8,
+    "known_native_changed_DOCX": [
+      "EfficientNet",
+      "BERT"
+    ],
+    "native_BatchNorm_partial_clip_rejection_no_output_unchanged": true,
+    "new_NASA_NIST_browser_outcomes": 8,
+    "all_strict_errors_inspection_and_permission_results_unchanged": true,
+    "WASM_raw_sha256": "8400d64d53664c220fc03c3d75f40b1b7c15a2ecd359250cd91d1900fda520c7",
+    "WASM_distributed_sha256": "8c6e1752f7ab8df157fd8513f75425a5210faca29f145fa085474c5625e1e238"
+  },
+  "sources": [
+    {
+      "id": "NIST-wallet",
+      "url": "https://physics.nist.gov/cuu/pdf/wallet_2022.pdf",
+      "sha256": "1e7d5131229b2d189932825ce8bbfa2c6a153a990ba034b443286bfe4e420de5",
+      "pages": 2,
+      "original_before_first_conversion_gold": "corpus/nist-wallet-2022-prospective-gold.json",
+      "gold_sha256": "c6286b80a3a616b8b73dec87a4eb049b049757dec6f7b3cc7c5c8529267b2e85",
+      "ordered_complete_numeric_values": 26,
+      "source_bound_exponent_offsets": 19,
+      "maximum_OOXML_quantization_error_pt": 0.11599999999998545,
+      "independent_reader": "Original pdfplumber glyph matrices, separately matched numeric value bounds; both browser engines and native audited.",
+      "remaining": "Table quantity/value/unit associations, pi and k formula structure, title spacing/wrapping and logo overlap remain wrong. Two rendered pages retain nonspace glyph/font-size counters; not whole-table acceptance."
+    },
+    {
+      "id": "GNU-Hello",
+      "url": "https://www.gnu.org/software/hello/manual/hello.pdf",
+      "sha256": "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b",
+      "pages": 17,
+      "current_native_entire_DOCX_exact_merged_parent": true,
+      "independent_source_index_entries_and_references": 46,
+      "index_diagnostic": "Post-discovery expectations from original pdfplumber page17 columns. Intermediate candidate preserved only44/46 associations despite exact global glyph counters; final candidate preserves46/46. Not unseen/preregistered gold."
+    },
+    {
+      "id": "BERT",
+      "url": "https://aclanthology.org/N19-1423.pdf",
+      "sha256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+      "source_pages": 16,
+      "rendered_pages": 27,
+      "existing_table1_gold_45_numeric_cells_contiguous_in5_source_ordered_rows": true,
+      "footnote_diagnostic": "Independent original glyph matrices on physical page5 confirm baseline99.761pt note line. Intermediate candidate appended it to left-column body; final candidate retains independent source note paragraph. Owned test also covers individual glyph fragmentation.",
+      "remaining": "Incorrect paragraph/column flow, table associations/grid, vector diagrams, complex equations, existing underlines and giant final-axis label; some glyphs redistribute across output pages. Whole paper fails."
+    },
+    {
+      "id": "EfficientNet",
+      "url": "https://proceedings.mlr.press/v97/tan19a/tan19a.pdf",
+      "sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+      "source_pages": 10,
+      "rendered_pages": 19,
+      "headers": "All XML properties exactly parent except generated paraId; unchanged fonts/media/permission assets.",
+      "remaining": "Column/paragraph flow, mathematical structure, vector charts, table association and pagination still fail; glyph distribution differs on output pages6/7."
+    },
+    {
+      "id": "NASA-Webb",
+      "url": "https://science.nasa.gov/wp-content/uploads/2024/08/webbfactsheet.pdf",
+      "sha256": "84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e",
+      "source_pages": 2,
+      "inline_change_scope": "Unchanged default browser DOCX from merged CMYK candidate; assets and quality/strict errors unchanged.",
+      "remaining": "Existing unmanaged-color shadow loss, sixoutputvs2sourcepages and other layout failures retained."
+    }
+  ],
+  "evidence_policy": {
+    "all_original_source_pages_rights_privacy_reviewed_before_first_conversion": true,
+    "PDF_and_fonts_added_to_Git": false,
+    "tracked_PDFs": 3,
+    "originals_gold_and_prior_frozen_evidence_unchanged": true,
+    "rendered_paper_counters": "EfficientNet/BERT full rendered nonspace glyph and glyph-weighted font-size counters equal parent. Not sufficient for association acceptance; explicit GNU index and BERT note diagnostics added.",
+    "visual_scope": "All19EfficientNet and27BERT pages viewed at contact-sheet scale; final6BERT changed pages separately reviewed,21others RGBexact previous review. NIST both full pages bound by byteidentical package to prior individual full-page reviews.",
+    "cross_engine_new_source_default_DOCX_bytes_exact": true,
+    "local_receipt_namespace": "script-notes outputs; detailed public-browser comparison uses distinct output-comparison filename from command receipt.",
+    "publication_gate": "Fresh all16 exact-head CI checks, unresolved-review check, unchanged protected checkouts and all frozen manifests before merge."
+  },
+  "not_qualified": [
+    "Whole-document fidelity",
+    "Correct mathematical composition and all source associations",
+    "Complete table geometry and semantics",
+    "Microsoft Word rendering",
+    "New independent unseen holdout acceptance",
+    "Production-ready claim"
+  ]
+}

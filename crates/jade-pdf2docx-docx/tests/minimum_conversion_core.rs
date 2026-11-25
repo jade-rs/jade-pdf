@@ -818,12 +818,12 @@ fn byte_conversion_resizes_image_drawing_from_pdf_ctm_bounds() {
 
     let doc_xml = support::docx_assert::read_document_xml(&output_docx);
     assert!(
-        doc_xml.contains(r#"cx="638175""#),
-        "expected 67px/638175emu width from 50pt CTM; XML: {doc_xml}"
+        doc_xml.contains(r#"cx="635000""#),
+        "expected 635000emu width directly from 50pt CTM; XML: {doc_xml}"
     );
     assert!(
-        doc_xml.contains(r#"cy="504825""#),
-        "expected 53px/504825emu height from 40pt CTM; XML: {doc_xml}"
+        doc_xml.contains(r#"cy="508000""#),
+        "expected 508000emu height directly from 40pt CTM; XML: {doc_xml}"
     );
 
     let _ = fs::remove_file(output_docx);
@@ -860,8 +860,9 @@ fn byte_conversion_floats_and_rotates_image_drawing_from_rotated_ctm() {
         "x offset from CTM bounds must be preserved; XML: {doc_xml}"
     );
     assert!(
-        doc_xml.contains("<wp:posOffset>381000</wp:posOffset>"),
-        "y offset from CTM bounds must be preserved; XML: {doc_xml}"
+        doc_xml
+            .contains("<wp:positionV relativeFrom=\"page\"><wp:posOffset>1651000</wp:posOffset>"),
+        "page-top y must be 200pt page height minus 70pt image upper edge; XML: {doc_xml}"
     );
 
     let _ = fs::remove_file(output_docx);
@@ -894,8 +895,9 @@ fn byte_conversion_floats_image_drawing_from_skewed_ctm() {
         "x offset from skewed CTM bounds must be preserved; XML: {doc_xml}"
     );
     assert!(
-        doc_xml.contains("<wp:posOffset>381000</wp:posOffset>"),
-        "y offset from skewed CTM bounds must be preserved; XML: {doc_xml}"
+        doc_xml
+            .contains("<wp:positionV relativeFrom=\"page\"><wp:posOffset>1651000</wp:posOffset>"),
+        "skewed image page-top y must be 200pt minus 70pt; XML: {doc_xml}"
     );
     let media = read_first_media_file_in_docx(&output_docx);
     assert_eq!(

@@ -95,6 +95,10 @@ pub(crate) struct DecodeBudget {
     legacy_geometry: RefCell<Option<Vec<crate::legacy_page_geometry_validation::Geometry>>>,
     /// 検査済みの元文書に限る完成 CMap の共有索引。
     cmaps: RefCell<crate::tounicode_cache::CMapCache>,
+    /// 有効世代の埋め込みType1表を抽出と診断で共有する。
+    type1: RefCell<crate::resource_cache::Cache<(u16, crate::text::Type1Mapping)>>,
+    /// 同じ検証済み文書の生成fontと、局所resourceが共有するcode別の出力先。
+    type1_output: RefCell<crate::parser::type1_fonts::Cache>,
 }
 
 impl Default for DecodeBudget {
@@ -150,6 +154,8 @@ impl DecodeBudget {
             pages: RefCell::new(None),
             legacy_geometry: RefCell::new(None),
             cmaps: RefCell::new(Default::default()),
+            type1: RefCell::new(Default::default()),
+            type1_output: RefCell::new(Default::default()),
         }
     }
 
@@ -197,6 +203,8 @@ impl DecodeBudget {
         *self.pages.borrow_mut() = None;
         *self.legacy_geometry.borrow_mut() = None;
         *self.cmaps.borrow_mut() = Default::default();
+        *self.type1.borrow_mut() = Default::default();
+        *self.type1_output.borrow_mut() = Default::default();
         let Some(mut index) = crate::stream_index::StreamIndex::new(self, bytes, streams) else {
             return;
         };
@@ -207,6 +215,56 @@ impl DecodeBudget {
             return;
         }
         *self.streams.borrow_mut() = Some(index);
+    }
+
+    /// 同じ有効object世代の完成表を、payloadの再確保なしで借用する。
+    pub(crate) fn cached_type1(
+        &self,
+        number: u32,
+        generation: u16,
+    ) -> Option<crate::text::Type1Mapping> {
+        self.type1
+            .borrow()
+            .get(&number)
+            .filter(|entry| entry.0 == generation)
+            .map(|entry| entry.1.clone())
+    }
+
+    /// source検査から最終font移動まで、生成結果を同じ解析内だけで共有する。
+    pub(crate) fn with_type1_output<T>(
+        &self,
+        access: impl FnOnce(&mut crate::parser::type1_fonts::Cache) -> T,
+    ) -> T {
+        access(&mut self.type1_output.borrow_mut())
+    }
+
+    /// 生成fontも既存fontと同じ件数上限へ数え、超過時は部分文書を公開しない。
+    pub(crate) fn check_embedded_font_count(&self, count: usize) -> Option<()> {
+        if self.is_stopped() {
+            return None;
+        }
+        if count > crate::parser::MAX_EMBEDDED_FONT_COUNT {
+            self.exceeded(
+                "embedded font count",
+                crate::parser::MAX_EMBEDDED_FONT_COUNT as u64,
+                count as u64,
+            );
+            None
+        } else {
+            Some(())
+        }
+    }
+
+    /// 完成表だけを共有cacheへ保存し、追加容量を先に検査する。
+    pub(crate) fn save_type1(
+        &self,
+        number: u32,
+        generation: u16,
+        mapping: crate::text::Type1Mapping,
+    ) -> Option<()> {
+        self.type1
+            .borrow_mut()
+            .insert(self, number, (generation, mapping))
     }
 
     /// 検査済みの元入力から、停止していない解析にだけ完成 stream map を返す。
@@ -275,6 +333,30 @@ impl DecodeBudget {
     /// 正式な page tree の所属を検査済みか返す。
     pub(crate) fn has_page_tree(&self) -> bool {
         self.pages.borrow().is_some()
+    }
+
+    /// 検証済みContentsを描画回数分だけ保存し、結果配列の確保も累積予約する。
+    pub(crate) fn page_content_references(&self) -> Option<Vec<(usize, u32)>> {
+        let pages = self.pages.borrow();
+        let pages = pages.as_ref()?;
+        let Some(count) = pages
+            .iter()
+            .try_fold(0usize, |total, page| total.checked_add(page.contents.len()))
+        else {
+            self.exceeded(
+                "metadata workspace bytes",
+                self.metadata_workspace_limit,
+                u64::MAX,
+            );
+            return Some(Vec::new());
+        };
+        let Some(mut references) = self.metadata_vector(count) else {
+            return Some(Vec::new());
+        };
+        for (page, entry) in pages.iter().enumerate() {
+            references.extend(entry.contents.iter().map(|number| (page, *number)));
+        }
+        Some(references)
     }
 
     /// 合成 metadata を所属順に借用し、出力配列を確保前に累積予約する。
@@ -478,6 +560,14 @@ impl DecodeBudget {
             *self.failure.borrow_mut() = Some(ParseError::Cancelled);
         }
         self.stopped.get()
+    }
+
+    /// 復号不能・未対応の本文を最初の失敗として保持し、空白の成功を防ぐ。
+    pub(crate) fn reject_content(&self, kind: std::io::ErrorKind, reason: &'static str) {
+        if !self.is_stopped() {
+            self.stopped.set(true);
+            *self.failure.borrow_mut() = Some(ParseError::Io(std::io::Error::new(kind, reason)));
+        }
     }
 
     /// ToUnicode のループ開始前に処理数を累積で予約する。
@@ -824,6 +914,15 @@ impl DecodeBudget {
 /// 予算に保存するため、呼び出し側が None を捨てても解析成功にはならない。
 pub(crate) fn decode_zlib(data: &[u8], decode_budget: &DecodeBudget) -> Option<Vec<u8>> {
     decode_zlib_buffer(data, decode_budget, false)
+}
+
+/// LZWの作業配列と展開本文を、Flateと同じ確保・単一/累積展開上限で検査する。
+pub(crate) fn decode_lzw(data: &[u8], budget: &DecodeBudget, early: u8) -> Option<Vec<u8>> {
+    decode_buffer(
+        crate::lzw_content::Decoder::new(data, early, budget)?,
+        budget,
+        false,
+    )
 }
 
 /// Font 展開配列の全ての再確保を保存予算にも数える。

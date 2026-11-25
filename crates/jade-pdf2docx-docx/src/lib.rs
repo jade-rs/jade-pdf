@@ -25,21 +25,61 @@ pub use jade_pdf2docx_ocr::{
 };
 pub use jade_pdf2docx_parser::{ParseCancellation, ParseError, ParseOptions};
 
+mod column_flow;
+mod column_frame;
 #[cfg(test)]
 mod conversion_cancellation_tests;
 mod conversion_control;
+mod prepared_docx;
+use prepared_docx::PreparedDocx;
+mod embedded_face;
+#[cfg(test)]
+mod embedded_style_tests;
+mod glyph_metrics;
+#[cfg(test)]
+mod graphic_table_merge_tests;
+mod graphic_table_outer_edges;
+mod graphic_table_ownership;
+mod layout_space;
+mod normal_weight_package;
+mod positioned_type1;
+mod roman_fallback;
+#[cfg(test)]
+mod roman_fallback_tests;
+mod source_font_weight;
+#[cfg(test)]
+mod source_table_pagination_tests;
+#[cfg(test)]
+mod source_typography_tests;
+mod table_opening;
 
+mod cell_line_rounding;
 mod html_table;
+mod image_anchor;
+mod inline_baseline;
+mod inline_script_rows;
 mod native_baseline;
 mod native_line_pitch;
+mod native_numeric_alignment;
 mod native_spacing;
+mod native_table_rows;
+mod native_table_text;
 mod ocr_reconcile;
 mod output;
 mod package;
+mod page_chrome;
+mod page_chrome_anchor;
 mod paragraph_anchor;
+mod section_chrome_package;
+mod separated_box_table;
+mod text_column_gutter;
+mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
 use package::pack_docx_to_bytes;
+#[cfg(test)]
+mod page_column_isolation_tests;
+mod page_end;
 mod page_ocr;
 mod page_ocr_budget;
 mod positioned_ocr;
@@ -339,6 +379,7 @@ fn convert_pdf_file_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
@@ -374,9 +415,11 @@ fn convert_pdf_file_with_check(
     {
         build_structured_docx_from_owned_images(&mut parsed, &inferred_table, &positioned_tables)?
     } else if request.clean_output && has_body_content(&request.ocr_text_lines, &inferred_table) {
-        build_body_docx(&request.ocr_text_lines, &inferred_table)?
+        build_body_docx(&request.ocr_text_lines, &inferred_table)?.into()
     } else if request.clean_output {
-        Docx::new().add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+        Docx::new()
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into()
     } else {
         let docx = Docx::new()
             .add_paragraph(Paragraph::new().add_run(text_run("minimum pdf to docx conversion")))
@@ -394,7 +437,7 @@ fn convert_pdf_file_with_check(
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     check(Stage::Built)?;
@@ -460,6 +503,7 @@ fn convert_pdf_bytes_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
@@ -641,7 +685,9 @@ fn has_structured_pdf_content(
 }
 
 /// 最小 DOCX の本文・表・画像を組み立てる。
-fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, ConvertError> {
+fn build_minimum_docx(
+    request: &MinimumPdfToDocxBytesRequest,
+) -> Result<PreparedDocx, ConvertError> {
     let version = format!(
         "{}.{}",
         request.parsed.version.major, request.parsed.version.minor
@@ -669,10 +715,11 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
                 .clone()
                 .or_else(|| text_preview_to_body_lines(&normalized_text_preview));
             if has_body_content(&body_lines, &request.ocr_table) {
-                build_body_docx(&body_lines, &request.ocr_table)?
+                build_body_docx(&body_lines, &request.ocr_table)?.into()
             } else {
                 Docx::new()
                     .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+                    .into()
             }
         }
     } else {
@@ -693,7 +740,7 @@ fn build_minimum_docx(request: &MinimumPdfToDocxBytesRequest) -> Result<Docx, Co
             table.validate().map_err(ConvertError::InvalidOcrTable)?;
             docx = docx.add_table(docx_table_from_ocr_table(table));
         }
-        docx
+        docx.into()
     };
 
     Ok(docx)
@@ -704,7 +751,7 @@ fn build_structured_docx_from_parsed(
     parsed: &ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_page_ocr(
         parsed,
         ocr_table,
@@ -719,7 +766,7 @@ fn build_structured_docx_from_owned_images(
     parsed: &mut ParsedDocument,
     ocr_table: &Option<OcrTable>,
     positioned_tables: &[PositionedTable],
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let mut images = Some(
         parsed
             .image_elements
@@ -1125,6 +1172,21 @@ fn split_text_at_vertical_rules(parsed: &mut ParsedDocument) {
     parsed.text_elements = output;
 }
 
+/// 字の矩形より極端に小さい文字サイズ（座標変換で拡大した `1 Tf` の字など）を、矩形の高さに直す。
+///
+/// 文字サイズは字間・語間・列の切れ目の判定の基準になるため、1pt のままでは字間がすべて
+/// 広い語間に見え、セルの本文を罫線の位置で誤って分けてしまう。
+fn repair_tiny_font_sizes(parsed: &mut ParsedDocument) {
+    for text in &mut parsed.text_elements {
+        // 横書きの行は高さ、縦書きの行は幅が字の大きさに当たるので、短い辺と比べる。
+        let bounds = normalized_bounds(text.bounds);
+        let extent = (bounds.y1 - bounds.y0).min(bounds.x1 - bounds.x0);
+        if extent.is_finite() && extent > 0.0 && text.font_size < 0.5 * extent {
+            text.font_size = extent;
+        }
+    }
+}
+
 /// 本文のあるページで、ページの半分以上を覆う白一色の背景画像を取り除く。
 ///
 /// 白い全面画像を inline 画像として出すと、見た目を変えずに本文を次ページへ押し出してしまう。
@@ -1163,7 +1225,7 @@ fn build_structured_docx_with_page_ocr(
     positioned_tables: &[PositionedTable],
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     build_structured_docx_with_image_payloads(
         parsed,
         ocr_table,
@@ -1182,10 +1244,10 @@ fn build_structured_docx_with_image_payloads(
     recognized: &BTreeMap<usize, whole_page_ocr::Lines>,
     region_lines: &BTreeMap<usize, Vec<StructuredTextLine>>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
-) -> Result<Docx, ConvertError> {
+) -> Result<PreparedDocx, ConvertError> {
     let pages = text_lines_by_page_from_pdf_text_elements(parsed, positioned_tables);
-    let page_chrome = extract_repeated_page_chrome(parsed, &pages);
-    let mut pages = remove_repeated_page_chrome_lines(parsed, pages, &page_chrome);
+    let page_chrome = page_chrome::extract(parsed, &pages);
+    let mut pages = page_chrome::remove(pages, &page_chrome);
     region_ocr::merge_lines(&mut pages, region_lines);
     let text_columns_by_page = pages
         .iter()
@@ -1207,16 +1269,15 @@ fn build_structured_docx_with_image_payloads(
             .any(|page| page.lines.iter().any(|line| !line.text.trim().is_empty()));
     if !has_lines && parsed.image_elements.is_empty() && ocr_table.is_none() {
         return Ok(Docx::new()
-            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)"))));
+            .add_paragraph(Paragraph::new().add_run(text_run("(no extractable content)")))
+            .into());
     }
     let can_restore_multi_page_text_columns = recognized.is_empty()
         && region_lines.is_empty()
         && pages.len() > 1
         && text_columns_by_page.iter().any(Option::is_some)
-        && pages.iter().all(|page| !page.lines.is_empty())
-        && positioned_tables.is_empty()
-        && parsed.image_elements.is_empty()
-        && ocr_table.is_none();
+        // 推定表はpositioned_tablesと互換要約の両方で渡される。位置のないOCR表だけを除外する。
+        && (ocr_table.is_none() || !positioned_tables.is_empty());
     if can_restore_multi_page_text_columns {
         return build_multi_page_text_column_docx(
             parsed,
@@ -1224,17 +1285,26 @@ fn build_structured_docx_with_image_payloads(
             positioned_tables,
             &page_chrome,
             &text_columns_by_page,
+            image_payloads,
         );
     }
 
-    let has_mixed_page_sizes = structured_pages_have_mixed_sizes(parsed, &pages);
+    let has_mixed_page_sizes =
+        structured_pages_have_mixed_sizes(parsed, &pages) || !page_chrome.is_uniform();
     let document_layout_page = if has_mixed_page_sizes {
         pages.last()
     } else {
         pages.first()
     };
     let mut docx = document_layout_page
-        .map(|page| structured_docx_with_page_layout(parsed, positioned_tables, page, &page_chrome))
+        .map(|page| {
+            structured_docx_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            )
+        })
         .unwrap_or_else(Docx::new);
     let base_section_property = docx.document.section_property.clone();
     let leading_single_column_section = document_text_columns
@@ -1269,7 +1339,9 @@ fn build_structured_docx_with_image_payloads(
             docx.document.section_property.section_type = Some(SectionType::Continuous);
         }
     }
-    docx = add_repeated_page_chrome_to_docx(docx, &page_chrome);
+    if let Some(page) = document_layout_page {
+        docx = add_repeated_page_chrome_to_docx(docx, page_chrome.page(page.page));
+    }
 
     for (page_index, page) in pages.iter().enumerate() {
         if page_index > 0 && !has_mixed_page_sizes {
@@ -1277,8 +1349,12 @@ fn build_structured_docx_with_image_payloads(
                 docx.add_paragraph(Paragraph::new().add_run(Run::new().add_break(BreakType::Page)));
         }
         if has_mixed_page_sizes && page_index + 1 < pages.len() {
-            let section =
-                structured_section_with_page_layout(parsed, positioned_tables, page, &page_chrome);
+            let section = structured_section_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            );
             let section = if let Some(lines) = recognized.get(&page.page) {
                 page_ocr::add_lines(section, lines)
             } else {
@@ -1292,7 +1368,20 @@ fn build_structured_docx_with_image_payloads(
                     image_payloads,
                 )?
             };
-            docx = append_section_with_repeated_chrome(docx, section, &page_chrome)?;
+            let layout = structured_docx_with_page_layout(
+                parsed,
+                positioned_tables,
+                page,
+                page_chrome.page(page.page),
+            )
+            .document
+            .section_property;
+            docx = append_section_with_repeated_chrome(
+                docx,
+                section,
+                page_chrome.page(page.page),
+                &layout,
+            )?;
         } else {
             let text_column_layout = (pages.len() == 1)
                 .then_some(document_text_columns.as_ref())
@@ -1322,7 +1411,13 @@ fn build_structured_docx_with_image_payloads(
         table.validate().map_err(ConvertError::InvalidOcrTable)?;
         docx = docx.add_table(docx_table_from_ocr_table(table));
     }
-    Ok(docx)
+    Ok(PreparedDocx::new(
+        docx,
+        document_text_columns
+            .into_iter()
+            .map(|layout| layout.frame)
+            .collect(),
+    ))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -1370,8 +1465,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .find(|parsed_page| parsed_page.page_number == page.page)
         .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
         .unwrap_or(f32::MAX);
-    let mut blocks = page
-        .lines
+    // 実段組の行順に並べた行を基準に、表・画像の挿入位置も求める。
+    let ordered_lines = column_flow::ordered_lines(&page.lines, text_column_layout)
+        .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut blocks = ordered_lines
         .iter()
         .enumerate()
         .map(|(flow_index, line)| StructuredBlock::Paragraph {
@@ -1392,7 +1491,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 band_page_width,
             ),
             order_index: column_bands::insertion_index_in_band(
-                &page.lines,
+                &ordered_lines,
                 top_y,
                 (table.bounds.x0 + table.bounds.x1) / 2.0,
                 &band_edges,
@@ -1416,7 +1515,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 band_page_width,
             ),
             order_index: column_bands::insertion_index_in_band(
-                &page.lines,
+                &ordered_lines,
                 top_y,
                 (image.bounds.x0 + image.bounds.x1) / 2.0,
                 &band_edges,
@@ -1428,6 +1527,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    let block_count = blocks.len();
+    if block_count == 0 {
+        return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
+    }
     let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
@@ -1483,11 +1586,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     previous_nonparagraph_bottom_y = None;
                 }
                 previous_column_index = column_index;
-                let paragraph_origin_x = text_columns
-                    .zip(page_width)
-                    .map(|(columns, page_width)| {
-                        docx_column_origin_x(page_width, origin_x, column_index, columns.len())
-                    })
+                let column_origin_twips =
+                    text_columns.zip(page_width).and_then(|(_, page_width)| {
+                        text_column_layout?.frame.origin(page_width, column_index)
+                    });
+                let paragraph_origin_x = column_origin_twips
+                    .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
@@ -1498,6 +1602,20 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
+                if let Some(indent) =
+                    column_origin_twips
+                        .zip(page_width)
+                        .and_then(|(origin, width)| {
+                            paragraph_anchor::column_indent(
+                                line.left_x,
+                                line.right_x,
+                                origin,
+                                width,
+                            )
+                        })
+                {
+                    paragraph = paragraph.indent(Some(indent), None, None, None);
+                }
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {
                         previous_nonparagraph_bottom_y.and_then(|bottom_y| {
@@ -1532,11 +1650,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 {
                     paragraph = paragraph.section_property(section_property.clone());
                 }
-                if let Some(section_property) = section_refs.page_end
-                    && flow_index + 1 == page.lines.len()
-                {
-                    paragraph = paragraph.section_property(section_property.clone());
-                }
+                paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
+                );
                 container = container.add_structured_paragraph(paragraph);
                 previous_line = Some(line);
                 previous_nonparagraph_bottom_y = None;
@@ -1550,6 +1668,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     .map_err(ConvertError::InvalidOcrTable)?;
                 container = container
                     .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                if let Some(boundary) =
+                    page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
+                {
+                    container = container.add_structured_paragraph(boundary);
+                }
                 if gap_after_block[block_index] {
                     container = container.add_structured_paragraph(table_gap_paragraph());
                 }
@@ -1564,9 +1687,18 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 }
                 previous_line = None;
                 previous_nonparagraph_bottom_y = Some(image.bounds.y0.min(image.bounds.y1));
-                container = container.add_structured_paragraph(
-                    Paragraph::new().add_run(Run::new().add_image(pic_from_parsed_image(image))),
+                let source_page = parsed
+                    .pages
+                    .iter()
+                    .find(|page| page.page_number == image.page);
+                let paragraph = Paragraph::new()
+                    .add_run(Run::new().add_image(image_anchor::picture(image, source_page)));
+                let paragraph = page_end::paragraph(
+                    paragraph,
+                    section_refs.page_end,
+                    block_index + 1 == block_count,
                 );
+                container = container.add_structured_paragraph(paragraph);
             }
         }
     }
@@ -1578,24 +1710,28 @@ fn build_multi_page_text_column_docx(
     parsed: &ParsedDocument,
     pages: &[StructuredTextPage],
     positioned_tables: &[PositionedTable],
-    page_chrome: &RepeatedPageChrome,
+    page_chrome: &page_chrome::Plan,
     text_columns_by_page: &[Option<DetectedTextColumnLayout>],
-) -> Result<Docx, ConvertError> {
+    image_payloads: &mut Option<Vec<Vec<u8>>>,
+) -> Result<PreparedDocx, ConvertError> {
     let last_page = pages
         .last()
         .expect("multi-page text layout must have pages");
-    let mut docx = add_repeated_page_chrome_to_docx(
-        structured_docx_with_page_layout(parsed, positioned_tables, last_page, page_chrome),
-        page_chrome,
+    let mut docx = structured_docx_with_page_layout(
+        parsed,
+        positioned_tables,
+        last_page,
+        page_chrome.page(last_page.page),
     );
-    let repeated_chrome_section = docx.document.section_property.clone();
     for (page_index, page) in pages.iter().enumerate() {
-        let base_section = inherit_header_footer(
-            structured_docx_with_page_layout(parsed, positioned_tables, page, page_chrome)
+        let chrome = page_chrome.page(page.page);
+        // 各ページの見出しを登録し、その参照を同ページ内の全段組区間へ渡す。
+        docx.document.section_property =
+            structured_docx_with_page_layout(parsed, positioned_tables, page, chrome)
                 .document
-                .section_property,
-            &repeated_chrome_section,
-        );
+                .section_property;
+        docx = add_repeated_page_chrome_to_docx(docx, chrome);
+        let base_section = docx.document.section_property.clone();
         let text_column_layout = text_columns_by_page
             .get(page_index)
             .and_then(Option::as_ref);
@@ -1616,30 +1752,17 @@ fn build_multi_page_text_column_docx(
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
             },
-            &mut None,
+            image_payloads,
         )?;
     }
-    Ok(docx)
-}
-
-/// 反復 header/footer part と参照をページ固有の section property へ継承する。
-fn inherit_header_footer(
-    mut section: SectionProperty,
-    source: &SectionProperty,
-) -> SectionProperty {
-    section.header_reference = source.header_reference.clone();
-    section.header = source.header.clone();
-    section.first_header_reference = source.first_header_reference.clone();
-    section.first_header = source.first_header.clone();
-    section.even_header_reference = source.even_header_reference.clone();
-    section.even_header = source.even_header.clone();
-    section.footer_reference = source.footer_reference.clone();
-    section.footer = source.footer.clone();
-    section.first_footer_reference = source.first_footer_reference.clone();
-    section.first_footer = source.first_footer.clone();
-    section.even_footer_reference = source.even_footer_reference.clone();
-    section.even_footer = source.even_footer.clone();
-    section
+    Ok(PreparedDocx::new(
+        docx,
+        text_columns_by_page
+            .iter()
+            .flatten()
+            .map(|layout| layout.frame.clone())
+            .collect(),
+    ))
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -1721,32 +1844,39 @@ fn detected_text_columns_for_page(
         infer_text_columns(&page.lines, page_width).filter(|columns| columns.len() == 2)?;
     let leading_single_column_line_count = leading_single_column_line_count(&page.lines);
     let trailing_single_column_line_count = trailing_single_column_line_count(&page.lines);
+    let column_line_count = page
+        .lines
+        .len()
+        .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count);
+    // 少数の大きな行間だけで列候補ができても、本文が次列へ横断するなら実段組へ入れない。
+    if page
+        .lines
+        .iter()
+        .skip(leading_single_column_line_count)
+        .take(column_line_count)
+        .any(|line| {
+            let column = column_index_for_line(line, &columns);
+            columns
+                .get(column + 1)
+                .is_some_and(|next_left| line.right_x > *next_left)
+        })
+    {
+        return None;
+    }
+    let frame = column_frame::Frame::for_lines(
+        page_width,
+        structured_page_left_x(parsed, positioned_tables, page),
+        &page.lines[leading_single_column_line_count
+            ..leading_single_column_line_count + column_line_count],
+        &columns,
+    )?;
     Some(DetectedTextColumnLayout {
+        frame,
         columns,
         leading_single_column_line_count,
-        column_line_count: page
-            .lines
-            .len()
-            .saturating_sub(leading_single_column_line_count + trailing_single_column_line_count),
+        column_line_count,
         trailing_single_column_line_count,
     })
-}
-
-/// 均等段組の指定 column が DOCX ページ上で始まる x 座標（pt）を返す。
-fn docx_column_origin_x(
-    page_width: f32,
-    page_origin_x: f32,
-    column_index: usize,
-    column_count: usize,
-) -> f32 {
-    if column_count < 2 || !page_width.is_finite() || !page_origin_x.is_finite() {
-        return page_origin_x;
-    }
-    let column_space = DEFAULT_DOCX_COLUMN_SPACE_TWIPS / 20.0;
-    let usable_width = (page_width - page_origin_x).max(0.0);
-    let total_space = column_space * column_count.saturating_sub(1) as f32;
-    let column_width = ((usable_width - total_space) / column_count as f32).max(0.0);
-    page_origin_x + column_index.min(column_count - 1) as f32 * (column_width + column_space)
 }
 
 /// DOCX 最終 section の均等段組数を設定する。
@@ -1848,21 +1978,40 @@ fn structured_page_layout(
         .pages
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)?;
-    let min_x = structured_page_left_x(parsed, positioned_tables, page);
-    let max_y = positioned_tables
-        .iter()
-        .filter(|table| table.page == page.page)
-        .map(|table| table.bounds.y1)
-        .chain(page.lines.iter().map(|line| line.top_y))
-        .chain(
-            parsed
-                .image_elements
-                .iter()
-                .filter(|image| image.page == page.page && !image.floating)
-                .map(|image| image.bounds.y1),
-        )
-        .filter(|value| value.is_finite())
-        .fold(f32::NEG_INFINITY, f32::max);
+    // floating画像やheader/footerだけのページにも、確認済みの原本寸法を使う。
+    // 本文flowがない場合の原点は0とし、既定A4の余白へ置き換えない。
+    let has_flow = !page.lines.is_empty()
+        || positioned_tables
+            .iter()
+            .any(|table| table.page == page.page)
+        || parsed
+            .image_elements
+            .iter()
+            .any(|image| image.page == page.page && !image.floating);
+    let display_height = parsed_page_display_size_points(parsed_page).1;
+    let min_x = if has_flow {
+        structured_page_left_x(parsed, positioned_tables, page)
+    } else {
+        0.
+    };
+    let max_y = if has_flow {
+        positioned_tables
+            .iter()
+            .filter(|table| table.page == page.page)
+            .map(|table| table.bounds.y1)
+            .chain(page.lines.iter().map(|line| line.top_y))
+            .chain(
+                parsed
+                    .image_elements
+                    .iter()
+                    .filter(|image| image.page == page.page && !image.floating)
+                    .map(|image| image.bounds.y1),
+            )
+            .filter(|value| value.is_finite())
+            .fold(f32::NEG_INFINITY, f32::max)
+    } else {
+        display_height
+    };
     if !min_x.is_finite() || !max_y.is_finite() {
         return None;
     }
@@ -1875,7 +2024,6 @@ fn structured_page_layout(
         page,
         max_y,
     );
-    let display_height = parsed_page_display_size_points(parsed_page).1;
     let top = pdf_points_to_floor_twips(
         (display_height - max_y - stroke_adjustment + text_bearing_adjustment).max(0.0),
     )
@@ -2019,26 +2167,6 @@ fn pdf_points_to_floor_twips(points: f32) -> Option<i32> {
     Some((points * 20.0).floor() as i32)
 }
 
-/// parser の画像要素から DOCX picture を構築する。
-fn pic_from_parsed_image(mut image: ParsedImageElement) -> Pic {
-    let mut pic = Pic::new_with_dimensions(
-        std::mem::take(&mut image.png_bytes),
-        image.width_px,
-        image.height_px,
-    );
-    if image.floating || image.rotation_degrees != 0 {
-        pic = pic
-            .floating()
-            .offset_x(pdf_points_to_emu(image.bounds.x0).unwrap_or(0))
-            .offset_y(pdf_points_to_emu(image.bounds.y0).unwrap_or(0))
-            .overlapping();
-        if image.rotation_degrees != 0 {
-            pic = pic.rotate(image.rotation_degrees);
-        }
-    }
-    pic
-}
-
 /// PDF point 座標を EMU に変換する。
 fn pdf_points_to_emu(points: f32) -> Option<i32> {
     if !points.is_finite() {
@@ -2076,6 +2204,7 @@ fn text_lines_by_page_from_pdf_text_elements(
     parsed: &ParsedDocument,
     positioned_tables: &[PositionedTable],
 ) -> Vec<StructuredTextPage> {
+    let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     let page_numbers = parsed
         .text_elements
         .iter()
@@ -2139,20 +2268,45 @@ fn text_lines_by_page_from_pdf_text_elements(
                     rows.push(vec![text]);
                 }
             }
-            let lines = rows
-                .iter_mut()
-                .flat_map(|row| {
+            for row in &mut rows {
+                *row = native_spacing::with_interior_spaces(
+                    &parsed.text_elements,
+                    std::mem::take(row),
+                );
+                row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+            }
+            let gutter = (!positioned_tables.iter().any(|table| table.page == page)
+                && !parsed.image_elements.iter().any(|image| image.page == page))
+            .then(|| text_column_gutter::infer(&rows, page_width))
+            .flatten();
+            let cuts = rows
+                .iter()
+                .map(|row| text_row_segments::cuts(row, gutter))
+                .collect::<Vec<_>>();
+            let changed = inline_script_rows::recover(&mut rows, gutter);
+            for (row, changed) in rows.iter_mut().zip(changed) {
+                if changed {
                     *row = native_spacing::with_interior_spaces(
                         &parsed.text_elements,
                         std::mem::take(row),
                     );
                     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                    split_text_row_segments(row)
+                }
+            }
+            let lines = rows
+                .iter()
+                .zip(&cuts)
+                .flat_map(|(row, cuts)| {
+                    text_row_segments::split(row, gutter, cuts)
                         .into_iter()
                         .filter_map(|segment| {
                             structured_text_line_from_segment(&segment, &page_graphics, page_width)
                                 .map(|mut line| {
-                                    mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts);
+                                    mark_embedded_fonts_in_line(
+                                        &mut line,
+                                        &parsed.embedded_fonts,
+                                        &space_family,
+                                    );
                                     line
                                 })
                         })
@@ -2261,38 +2415,6 @@ fn page_height(parsed: &ParsedDocument, page: usize) -> Option<f32> {
         .iter()
         .find(|parsed_page| parsed_page.page_number == page)
         .map(|page| parsed_page_display_size_points(page).1)
-}
-
-/// 1 行分の text element を、段組などの大きな水平ギャップで分割する。
-fn split_text_row_segments<'a>(row: &[&'a ParsedTextElement]) -> Vec<TextRowSegment<'a>> {
-    let Some(first) = row.first() else {
-        return Vec::new();
-    };
-    let avg_height = row
-        .iter()
-        .map(|text| (text.bounds.y1 - text.bounds.y0).abs().max(1.0))
-        .sum::<f32>()
-        / row.len() as f32;
-    let split_gap = avg_height * 8.0;
-    let mut segments: Vec<Vec<&ParsedTextElement>> = vec![vec![*first]];
-    let mut right = first.bounds.x1;
-    for text in row.iter().copied().skip(1) {
-        let gap = text.bounds.x0 - right;
-        if gap > split_gap {
-            segments.push(vec![text]);
-        } else if let Some(segment) = segments.last_mut() {
-            segment.push(text);
-        }
-        right = right.max(text.bounds.x1);
-    }
-    let split_from_row = segments.len() > 1;
-    segments
-        .into_iter()
-        .map(|texts| TextRowSegment {
-            texts,
-            split_from_row,
-        })
-        .collect()
 }
 
 /// text row segment を DOCX 出力用の structured line に変換する。
@@ -2463,6 +2585,7 @@ fn structured_text_runs_from_row(
     let Some(first) = row.first() else {
         return Vec::new();
     };
+    let baseline_offsets = inline_baseline::offsets(row);
     let mut runs = Vec::new();
     let mut right = first.bounds.x1;
     let mut height_sum = (first.bounds.y1 - first.bounds.y0).abs().max(1.0);
@@ -2489,8 +2612,19 @@ fn structured_text_runs_from_row(
                 font_size: text.font_size,
                 font_name: text.font_name.clone(),
                 font_embedded: false,
+                embedded_face: None,
                 fill_color: text.fill_color.clone(),
                 underlined: parsed_text_has_underline(text, page_graphics),
+                source_bounds: text
+                    .baseline_y
+                    .filter(|y| {
+                        y.is_finite()
+                            && *y == text.bounds.y0
+                            && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() < 0.001
+                    })
+                    .map(|_| text.bounds),
+                placement: None,
+                baseline_offset: baseline_offsets[index],
             },
         });
         right = right.max(text.bounds.x1);
@@ -2513,26 +2647,43 @@ fn row_fragment_text(text: &str, index: usize, len: usize) -> &str {
 fn mark_embedded_fonts_in_line(
     line: &mut StructuredTextLine,
     embedded_fonts: &[ParsedEmbeddedFont],
+    space_family: &str,
 ) {
     for run in &mut line.runs {
-        run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|font_name| {
-            embedded_fonts
-                .iter()
-                .any(|font| font.font_name == font_name)
-        });
+        let font = run
+            .style
+            .font_name
+            .as_deref()
+            .and_then(|name| embedded_fonts.iter().find(|font| font.font_name == name));
+        run.style.font_embedded = font.is_some();
+        run.style.embedded_face = font.and_then(|font| embedded_face::Face::read(&font.bytes));
     }
+    positioned_type1::prepare(line, embedded_fonts, space_family);
 }
 
 /// structured run から DOCX run を作る。
 fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     let mut run = text_run(structured_run.text.as_str());
+    if let Some(offset) = structured_run.style.baseline_offset {
+        run = run.style(&inline_baseline::marker(offset));
+    }
+    if let Some(placement) = structured_run.style.placement {
+        run = run
+            .stretch(placement.stretch)
+            .character_spacing(placement.spacing);
+    }
     if let Some(size) = pdf_font_size_to_half_points(structured_run.style.font_size) {
         run = run.size(size);
     }
     if let Some(font_name) = structured_run.style.font_name.as_deref()
         && !font_name.trim().is_empty()
     {
-        run = apply_pdf_font_name_to_run(run, font_name, structured_run.style.font_embedded);
+        run = apply_pdf_font_name_to_run(
+            run,
+            font_name,
+            structured_run.style.font_embedded,
+            structured_run.style.embedded_face,
+        );
     }
     if let Some(color) = structured_run.style.fill_color.as_deref()
         && is_rgb_hex_color(color)
@@ -2545,18 +2696,42 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
     run
 }
 
-/// PDF font 名とそこから推定できる太字・斜体を DOCX run へ反映する。
-fn apply_pdf_font_name_to_run(mut run: Run, font_name: &str, embedded: bool) -> Run {
+/// 埋め込みfaceの属性を優先し、通常の代替fontだけ名前からstyleを推定する。
+fn apply_pdf_font_name_to_run(
+    mut run: Run,
+    font_name: &str,
+    embedded: bool,
+    face: Option<embedded_face::Face>,
+) -> Run {
     run = run.fonts(if embedded {
         run_fonts(font_name)
     } else {
         run_fonts_from_pdf_font_name(font_name)
     });
     let normalized = font_name.to_ascii_lowercase();
-    if normalized.contains("bold") || normalized.contains("black") {
-        run = run.bold();
+    let infer = !(embedded && font_name.starts_with("JadeT1-"));
+    let compatible = (!embedded)
+        .then(|| roman_fallback::known(font_name))
+        .flatten();
+    let named_weight = infer
+        .then(|| source_font_weight::weight(font_name))
+        .flatten();
+    let weight = face
+        .map(|face| face.bold)
+        .or_else(|| compatible.map(|font| font.bold))
+        .or(named_weight);
+    match weight {
+        Some(true) => run = run.bold(),
+        Some(false) => run = run.disable_bold(),
+        None => {}
     }
-    if normalized.contains("italic") || normalized.contains("oblique") {
+    if face.map_or(
+        infer
+            && (normalized.contains("italic")
+                || normalized.contains("oblique")
+                || compatible.is_some_and(|font| font.italic)),
+        |face| face.italic,
+    ) {
         run = run.italic();
     }
     run
@@ -2587,6 +2762,9 @@ fn run_fonts(font_name: &str) -> RunFonts {
 
 /// PDF の subset/PostScript フォント名を DOCX renderer が解決しやすい名前へ正規化する。
 fn docx_font_name_from_pdf_font_name(font_name: &str) -> String {
+    if let Some(compatible) = roman_fallback::known(font_name) {
+        return compatible.family.to_string();
+    }
     let stripped = font_name
         .split_once('+')
         .map(|(_, name)| name)
@@ -2659,7 +2837,7 @@ fn docx_font_stretch_from_pdf_font_name(font_name: &str) -> Option<i32> {
 fn common_usable_pdf_font_name<'a>(
     font_names: impl IntoIterator<Item = &'a str>,
 ) -> Option<String> {
-    let mut common = None::<(String, String)>;
+    let mut common = None::<(String, String, Option<(bool, bool)>)>;
     for font_name in font_names {
         let stripped = font_name.trim().trim_start_matches('/');
         if stripped.is_empty()
@@ -2670,13 +2848,17 @@ fn common_usable_pdf_font_name<'a>(
             continue;
         }
         let normalized = docx_font_name_from_pdf_font_name(stripped);
+        // 同じ互換familyでも異なるRoman faceを表全体の一つのstyleへ統合しない。
+        let compatible_style = roman_fallback::known(stripped).map(|font| (font.bold, font.italic));
         match common.as_ref() {
-            Some((_, current)) if current != &normalized => return None,
+            Some((_, current, style)) if current != &normalized || style != &compatible_style => {
+                return None;
+            }
             Some(_) => {}
-            None => common = Some((font_name.to_string(), normalized)),
+            None => common = Some((font_name.to_string(), normalized, compatible_style)),
         }
     }
-    common.map(|(font_name, _)| font_name)
+    common.map(|(font_name, _, _)| font_name)
 }
 
 /// 表内で共通する妥当な PDF font size（pt）を返す。
@@ -2857,7 +3039,7 @@ fn column_index_for_line(line: &StructuredTextLine, columns: &[f32]) -> usize {
 struct TextRowSegment<'a> {
     /// segment 内の text element。
     texts: Vec<&'a ParsedTextElement>,
-    /// 元 row が複数 segment に分割されたか。
+    /// rowの分割、または複数行で確認した空白帯の本文区間に由来するか。
     split_from_row: bool,
 }
 
@@ -2873,6 +3055,8 @@ struct StructuredTextPage {
 /// 単一ページ内で検出した段組本文と、その前後にある全幅行を表す。
 #[derive(Debug, Clone, PartialEq)]
 struct DetectedTextColumnLayout {
+    /// 梱包する実段幅と、本文indentに共通の段原点。
+    frame: column_frame::Frame,
     /// 段組本文の各 column 左端（pt）。
     columns: Vec<f32>,
     /// 段組本文より前に置く1段行の数。
@@ -2934,7 +3118,7 @@ struct StructuredTextLine {
     alignment: ParagraphAlignment,
     /// PDF text element ごとの DOCX run。
     runs: Vec<StructuredTextRun>,
-    /// 大きな水平ギャップで分割された row に由来するか。
+    /// 水平ギャップでのrow分割、または確認済みの段組み本文区間に由来するか。
     split_from_row: bool,
     /// 行テキスト。
     text: String,
@@ -2949,6 +3133,8 @@ struct RepeatedPageChromeLine {
     edge_distance_twips: i32,
     /// PDF 行右端から page 右端までの距離（twips）。
     right_indent_twips: i32,
+    /// sectionと同じ表示幅のtwip値。未確認寸法は配置補正に使わない。
+    page_width_twips: Option<u32>,
 }
 
 /// PDF page の反復 header/footer 候補。
@@ -2958,90 +3144,10 @@ struct RepeatedPageChrome {
     header: Option<RepeatedPageChromeLine>,
     /// DOCX footer へ移す配置・style 付き反復行。
     footer: Option<RepeatedPageChromeLine>,
-}
-
-/// 全 page の boundary に反復する PDF テキストを header/footer 候補として抽出する。
-fn extract_repeated_page_chrome(
-    parsed: &ParsedDocument,
-    pages: &[StructuredTextPage],
-) -> RepeatedPageChrome {
-    if pages.len() < 2 {
-        return RepeatedPageChrome::default();
-    }
-    let page_count = pages.len();
-    let mut header_counts: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
-    let mut footer_counts: BTreeMap<String, BTreeSet<usize>> = BTreeMap::new();
-    for page in pages {
-        for line in &page.lines {
-            let text = line.text.trim();
-            if text.is_empty() {
-                continue;
-            }
-            if is_pdf_header_line(parsed, page.page, line) {
-                header_counts
-                    .entry(text.to_string())
-                    .or_default()
-                    .insert(page.page);
-            }
-            if is_pdf_footer_line(parsed, page.page, line) {
-                footer_counts
-                    .entry(text.to_string())
-                    .or_default()
-                    .insert(page.page);
-            }
-        }
-    }
-    let header = repeated_text_seen_on_all_pages(header_counts, page_count)
-        .and_then(|text| repeated_chrome_line(parsed, pages, text.as_str(), true));
-    let footer = repeated_text_seen_on_all_pages(footer_counts, page_count)
-        .and_then(|text| repeated_chrome_line(parsed, pages, text.as_str(), false));
-    RepeatedPageChrome { header, footer }
-}
-
-/// 全 page で検出された反復テキストを返す。
-fn repeated_text_seen_on_all_pages(
-    counts: BTreeMap<String, BTreeSet<usize>>,
-    page_count: usize,
-) -> Option<String> {
-    counts
-        .into_iter()
-        .find_map(|(text, pages)| (pages.len() == page_count).then_some(text))
-}
-
-/// 反復テキストに対応する配置・style 付き代表行を返す。
-fn repeated_chrome_line(
-    parsed: &ParsedDocument,
-    pages: &[StructuredTextPage],
-    text: &str,
-    header: bool,
-) -> Option<RepeatedPageChromeLine> {
-    pages.iter().find_map(|page| {
-        let line = page.lines.iter().find(|line| {
-            line.text.trim() == text
-                && if header {
-                    is_pdf_header_line(parsed, page.page, line)
-                } else {
-                    is_pdf_footer_line(parsed, page.page, line)
-                }
-        })?;
-        let parsed_page = parsed
-            .pages
-            .iter()
-            .find(|parsed_page| parsed_page.page_number == page.page)?;
-        let (display_width, display_height) = parsed_page_display_size_points(parsed_page);
-        let distance_points = if header {
-            display_height - line.top_y
-        } else {
-            line.top_y - structured_line_max_font_size(line)
-        };
-        Some(RepeatedPageChromeLine {
-            line: line.clone(),
-            edge_distance_twips: pdf_points_to_floor_twips(distance_points.max(0.0))?,
-            right_indent_twips: pdf_points_to_indent_twips(
-                (display_width - line.right_x).max(0.0),
-            )?,
-        })
-    })
+    /// 先行sectionのheaderを空のpartで明示的に解除する。
+    clear_header: bool,
+    /// 先行sectionのfooterを空のpartで明示的に解除する。
+    clear_footer: bool,
 }
 
 /// structured line 内で最大の PDF font size を返す。
@@ -3054,8 +3160,16 @@ fn structured_line_max_font_size(line: &StructuredTextLine) -> f32 {
 }
 
 /// 反復 page chrome 行を PDF の右端余白も含む DOCX paragraph へ変換する。
-fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine) -> Paragraph {
+fn paragraph_from_repeated_page_chrome_line(
+    chrome_line: &RepeatedPageChromeLine,
+    layout: &SectionProperty,
+) -> Paragraph {
     let paragraph = paragraph_from_structured_line(&chrome_line.line, 0.0, None, None);
+    if let Some((left, right)) = chrome_line.page_width_twips.and_then(|width| {
+        page_chrome_anchor::indents(&chrome_line.line, width, &layout.page_margin)
+    }) {
+        return paragraph.indent(Some(left), None, Some(right), None);
+    }
     if chrome_line.line.alignment == ParagraphAlignment::Right && chrome_line.right_indent_twips > 0
     {
         paragraph.indent(None, None, Some(chrome_line.right_indent_twips), None)
@@ -3066,15 +3180,43 @@ fn paragraph_from_repeated_page_chrome_line(chrome_line: &RepeatedPageChromeLine
 
 /// 反復 page chrome を DOCX の header/footer part へ追加する。
 fn add_repeated_page_chrome_to_docx(mut docx: Docx, chrome: &RepeatedPageChrome) -> Docx {
-    if let Some(header) = chrome.header.as_ref() {
-        docx = docx
-            .header(Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)));
+    if let Some(header) = repeated_header(chrome, &docx.document.section_property) {
+        docx = docx.header(header);
     }
-    if let Some(footer) = chrome.footer.as_ref() {
-        docx = docx
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome, &docx.document.section_property) {
+        docx = docx.footer(footer);
     }
     docx
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空headerを作る。
+fn repeated_header(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Option<Header> {
+    chrome
+        .header
+        .as_ref()
+        .map(|line| {
+            Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
+        })
+        .or_else(|| {
+            chrome
+                .clear_header
+                .then(|| Header::new().add_paragraph(Paragraph::new()))
+        })
+}
+
+/// 原本見出しか、先行ページからの継承を解除する空footerを作る。
+fn repeated_footer(chrome: &RepeatedPageChrome, layout: &SectionProperty) -> Option<Footer> {
+    chrome
+        .footer
+        .as_ref()
+        .map(|line| {
+            Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(line, layout))
+        })
+        .or_else(|| {
+            chrome
+                .clear_footer
+                .then(|| Footer::new().add_paragraph(Paragraph::new()))
+        })
 }
 
 /// 反復header/footerを順に確定し、混在ページの中間sectionへ本文とともに追加する。
@@ -3084,54 +3226,21 @@ fn append_section_with_repeated_chrome(
     mut docx: Docx,
     mut section: Section,
     chrome: &RepeatedPageChrome,
+    layout: &SectionProperty,
 ) -> Result<Docx, ConvertError> {
-    if let Some(footer) = chrome.footer.as_ref() {
-        section = section
-            .footer(Footer::new().add_paragraph(paragraph_from_repeated_page_chrome_line(footer)));
+    if let Some(footer) = repeated_footer(chrome, layout) {
+        section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = chrome.header.as_ref() {
+    if let Some(header) = repeated_header(chrome, layout) {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
             ));
         };
-        docx =
-            docx.add_section(section.header(
-                Header::new().add_paragraph(paragraph_from_repeated_page_chrome_line(header)),
-            ));
+        docx = docx.add_section(section.header(header));
     }
     Ok(docx)
-}
-
-/// DOCX header/footer に移した PDF 行を本文 flow から除外する。
-fn remove_repeated_page_chrome_lines(
-    parsed: &ParsedDocument,
-    pages: Vec<StructuredTextPage>,
-    chrome: &RepeatedPageChrome,
-) -> Vec<StructuredTextPage> {
-    pages
-        .into_iter()
-        .map(|mut page| {
-            page.lines
-                .retain(|line| !is_repeated_page_chrome_line(parsed, page.page, line, chrome));
-            page
-        })
-        .collect()
-}
-
-/// 行が DOCX header/footer へ移した反復 page chrome か判定する。
-fn is_repeated_page_chrome_line(
-    parsed: &ParsedDocument,
-    page: usize,
-    line: &StructuredTextLine,
-    chrome: &RepeatedPageChrome,
-) -> bool {
-    chrome.header.as_ref().is_some_and(|header| {
-        line.text.trim() == header.line.text.trim() && is_pdf_header_line(parsed, page, line)
-    }) || chrome.footer.as_ref().is_some_and(|footer| {
-        line.text.trim() == footer.line.text.trim() && is_pdf_footer_line(parsed, page, line)
-    })
 }
 
 /// PDF page 上部にある header らしい行か判定する。
@@ -3168,10 +3277,18 @@ struct StructuredTextStyle {
     font_name: Option<String>,
     /// PDFに埋め込まれた同名subset fontをDOCXへ再利用できるか。
     font_embedded: bool,
+    /// SFNT内部で確認できた埋め込みfaceの属性。
+    embedded_face: Option<embedded_face::Face>,
     /// RGB hex fill color。
     fill_color: Option<String>,
     /// PDF の短い水平線から推定した下線。
     underlined: bool,
+    /// 正立baselineとem高が確認できた、未加工のsource glyph矩形。
+    source_bounds: Option<ParsedBounds>,
+    /// 検証済みglyph advanceに基づくDOCXの字間と幅指定。
+    placement: Option<positioned_type1::Placement>,
+    /// 確認済みbaselineを持つ小さい文字の、通常行に対する符号付きhalf-point位置。
+    baseline_offset: Option<i32>,
 }
 
 impl Default for StructuredTextStyle {
@@ -3180,8 +3297,12 @@ impl Default for StructuredTextStyle {
             font_size: 10.0,
             font_name: None,
             font_embedded: false,
+            embedded_face: None,
             fill_color: None,
             underlined: false,
+            source_bounds: None,
+            placement: None,
+            baseline_offset: None,
         }
     }
 }
@@ -3305,10 +3426,14 @@ struct PositionedTable {
     font_name: Option<String>,
     /// 表セルの共通fontをPDF埋め込みsubsetから再利用できるか。
     font_embedded: bool,
+    /// SFNT内部で確認できた埋め込みfaceの属性。
+    embedded_face: Option<embedded_face::Face>,
     /// 表セルで共通する妥当な PDF font size（pt）。
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
+    /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
+    row_heights_twips: Vec<f32>,
     /// 表セル。
     table: OcrTable,
     /// セル内テキストへ DOCX 下線を付けるか。
@@ -3319,6 +3444,8 @@ struct PositionedTable {
     cell_vertical_alignments: Vec<Vec<Option<CellVerticalAlignment>>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
+    /// 原本と文字照合できたセルの位置・行・run style。
+    native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
     /// 上から順の各行の高さ（pt）。空の場合は表の高さを行数で等分する。
@@ -3579,7 +3706,7 @@ fn docx_table_from_ocr_table(table: &OcrTable) -> Table {
             .collect();
         rows.push(TableRow::new(cells));
     }
-    Table::new(rows)
+    table_opening::keep_with_next(Table::new(rows))
 }
 
 /// 公開 `OcrTable` の span 情報を DOCX 出力用モデルへ変換する。
@@ -3995,13 +4122,27 @@ fn docx_table_from_model_with_row_height_and_nested(
             let mut grid_col = 0usize;
             let cells = row
                 .iter()
-                .map(|cell| {
+                .enumerate()
+                .map(|(cell_index, cell)| {
                     let nested_tables = parent
                         .map(|parent| {
                             nested_tables_for_cell(parent, row_index, grid_col, cell.grid_span)
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
+                    // 元の字形の行を写せるセル（1 行・数値など）は、その段落をそのまま使う。
+                    let native_cell = parent
+                        .filter(|_| !has_nested_tables)
+                        .and_then(|table| table.native_cells.get(row_index))
+                        .and_then(|row| row.get(cell_index))
+                        .and_then(Option::as_ref)
+                        .filter(|native| native_table_text::agrees_with(native, &cell.text));
+                    let native_paragraph = native_cell
+                        .and_then(native_table_text::single_line_paragraph)
+                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph));
+                    let source_indent = native_cell
+                        .filter(|_| native_paragraph.is_some())
+                        .and_then(native_table_text::single_line_horizontal_indent);
                     // 子表を含むセルは、子表の範囲にある文字片を除いて本文を組み直す。
                     let recomposed = parent.filter(|_| has_nested_tables).and_then(|parent| {
                         cell_text_outside_nested_tables(
@@ -4012,40 +4153,47 @@ fn docx_table_from_model_with_row_height_and_nested(
                             &nested_tables,
                         )
                     });
-                    let text = recomposed
-                        .as_ref()
-                        .map(|parts| parts.above.0.clone())
-                        .unwrap_or_else(|| {
-                            cell_text_without_nested_tables(cell.text.as_str(), &nested_tables)
-                        });
-                    let mut table_cell = TableCell::new();
                     let cell_font_size = parent
                         .and_then(|table| table.cell_font_sizes.get(row_index))
                         .and_then(|row| row.get(grid_col))
                         .copied()
                         .flatten();
-                    let cell_tabs = match recomposed.as_ref() {
-                        Some(parts) => Some(&parts.above.1),
-                        None => parent
-                            .and_then(|table| table.cell_tab_stops.get(row_index))
-                            .and_then(|row| row.get(grid_col)),
-                    };
-                    // 子表の上に本文がないセルは、空の段落を置かずに子表から始める。
-                    let skip_empty_lead = recomposed.is_some() && text.trim().is_empty();
-                    for (line_index, line) in
-                        text.split('\n').enumerate().filter(|_| !skip_empty_lead)
-                    {
-                        let stops = cell_tabs
-                            .and_then(|tabs| tabs.get(line_index))
-                            .map(Vec::as_slice)
-                            .unwrap_or(&[]);
-                        table_cell = table_cell.add_paragraph(table_cell_paragraph(
-                            line,
-                            cell,
-                            parent,
-                            cell_font_size,
-                            stops,
-                        ));
+                    let mut table_cell = TableCell::new();
+                    if let Some(mut paragraph) = native_paragraph {
+                        if let Some(indent) = source_indent.filter(|indent| *indent > 0) {
+                            paragraph = paragraph.indent(Some(indent), None, None, None);
+                        }
+                        table_cell = table_cell.add_paragraph(paragraph);
+                    } else {
+                        let text = recomposed
+                            .as_ref()
+                            .map(|parts| parts.above.0.clone())
+                            .unwrap_or_else(|| {
+                                cell_text_without_nested_tables(cell.text.as_str(), &nested_tables)
+                            });
+                        let cell_tabs = match recomposed.as_ref() {
+                            Some(parts) => Some(&parts.above.1),
+                            None => parent
+                                .and_then(|table| table.cell_tab_stops.get(row_index))
+                                .and_then(|row| row.get(grid_col)),
+                        };
+                        // 子表の上に本文がないセルは、空の段落を置かずに子表から始める。
+                        let skip_empty_lead = recomposed.is_some() && text.trim().is_empty();
+                        for (line_index, line) in
+                            text.split('\n').enumerate().filter(|_| !skip_empty_lead)
+                        {
+                            let stops = cell_tabs
+                                .and_then(|tabs| tabs.get(line_index))
+                                .map(Vec::as_slice)
+                                .unwrap_or(&[]);
+                            table_cell = table_cell.add_paragraph(table_cell_paragraph(
+                                line,
+                                cell,
+                                parent,
+                                cell_font_size,
+                                stops,
+                            ));
+                        }
                     }
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(match cell.vertical_alignment {
@@ -4053,6 +4201,15 @@ fn docx_table_from_model_with_row_height_and_nested(
                             Some(CellVerticalAlignment::Bottom) => VAlignType::Bottom,
                             Some(CellVerticalAlignment::Center) | None => VAlignType::Center,
                         });
+                    }
+                    if source_indent.is_some() {
+                        table_cell.property = table_cell
+                            .property
+                            .margin_left(0, WidthType::Dxa)
+                            .margin_right(0, WidthType::Dxa);
+                    }
+                    if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
+                        table_cell = native;
                     }
                     for nested_table in nested_tables {
                         table_cell = table_cell.add_table(docx_table_from_structured_table(
@@ -4118,7 +4275,19 @@ fn docx_table_from_model_with_row_height_and_nested(
             if parent.is_some() {
                 table_row = table_row.cant_split();
             }
-            if let Some(height) = row_heights.get(row_index)
+            // 元の行の高さ（twips）が分かる行はその高さを使い、伸ばせるかは行の内容で決める。
+            let source_twips = parent
+                .filter(|table| table.nested_tables.is_empty())
+                .and_then(|table| table.row_heights_twips.get(row_index))
+                .copied();
+            if let Some(height) = row_heights
+                .get(row_index)
+                .copied()
+                .map(|height| DocxRowHeight {
+                    twips: source_twips.unwrap_or(height.twips),
+                    ..height
+                })
+                .or(source_twips.map(|twips| DocxRowHeight { twips, exact: true }))
                 && height.twips > 0.0
             {
                 table_row = table_row
@@ -4132,7 +4301,7 @@ fn docx_table_from_model_with_row_height_and_nested(
             table_row
         })
         .collect::<Vec<_>>();
-    Table::without_borders(rows)
+    table_opening::keep_with_next(Table::without_borders(rows))
 }
 
 /// 各セルの最後の段落に keepNext を付け、行を次の行と同じページに置く。
@@ -4169,7 +4338,12 @@ fn table_cell_paragraph(
     }
     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
         let embedded = parent.is_some_and(|table| table.font_embedded);
-        run = apply_pdf_font_name_to_run(run, font_name, embedded);
+        run = apply_pdf_font_name_to_run(
+            run,
+            font_name,
+            embedded,
+            parent.and_then(|table| table.embedded_face),
+        );
         if !embedded && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name) {
             run = run.stretch(stretch);
         }
@@ -4644,6 +4818,9 @@ fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
         stroke_width: 0.0,
         font_name: None,
         font_embedded: false,
+        embedded_face: None,
+        native_cells: Vec::new(),
+        row_heights_twips: Vec::new(),
         font_size: None,
         column_widths_twips,
         table: OcrTable::new(vec![vec![String::new(); cols]]),
@@ -4812,6 +4989,9 @@ fn infer_positioned_tables_from_pdf_graphics_page(
             .cloned()
             .collect::<Vec<_>>(),
     );
+    if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
+        return vec![table];
+    }
     let loose_component_candidates =
         positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 2.0);
     let strict_component_candidates =
@@ -5058,13 +5238,16 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         stroke_width: table.stroke_width,
         font_name: None,
         font_embedded: false,
+        embedded_face: None,
         font_size: None,
         column_widths_twips: width_twips,
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
         cell_vertical_alignments: Vec::new(),
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),
@@ -5427,6 +5610,7 @@ fn infer_positioned_table_from_graphics(
     {
         ys = augmented_ys;
     }
+    xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
     xs = merge_close_edges(&augment_xs_from_partial_verticals(&xs, &ys, &vertical));
     ys = merge_close_edges(&augment_ys_from_partial_horizontals(&xs, &ys, &horizontal));
     let mut text_augmented_columns = false;
@@ -5484,6 +5668,9 @@ fn infer_positioned_table_from_graphics(
     let rows = ys.len() - 1;
     let cols = xs.len() - 1;
     let mut cells = vec![vec![String::new(); cols]; rows];
+    let mut cell_source_texts = vec![vec![Vec::new(); cols]; rows];
+    // 罫線で分けた文字片を含むマス（元の文字片をそのまま写せない）。
+    let mut split_cells = vec![vec![false; cols]; rows];
     let mut cell_underlines = vec![vec![false; cols]; rows];
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
@@ -5526,12 +5713,20 @@ fn infer_positioned_table_from_graphics(
             })
             .collect::<Vec<_>>();
         let mut assigned = false;
-        for piece in table_cell_text::split_across_boundaries(&fragment, &ruled_xs) {
+        let pieces = table_cell_text::split_across_boundaries(&fragment, &ruled_xs);
+        let whole = pieces.len() == 1;
+        for piece in pieces {
             let center_x = (piece.bounds.x0 + piece.bounds.x1) / 2.0;
             let Some(col) = column_index_for_x(center_x, &xs) else {
                 continue;
             };
             let bounds = piece.bounds;
+            // 元の文字片をそのまま写すセル（native）は、分けていない文字片だけで組む。
+            if whole && row_index_for_y(center_y, &ys) == Some(row) {
+                cell_source_texts[row][col].push(text.clone());
+            } else {
+                split_cells[row][col] = true;
+            }
             cell_fragments[row][col].push(piece);
             underline_counts[row][col].1 += 1;
             if parsed_text_has_underline(text, &underline_graphics) {
@@ -5705,13 +5900,31 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
+    for (row, flags) in split_cells.iter().enumerate() {
+        for (col, split) in flags.iter().enumerate() {
+            if *split {
+                cell_source_texts[row][col].clear();
+            }
+        }
+    }
+    let native_cells = native_table_text::cells(
+        parsed,
+        &xs,
+        &ys,
+        &cell_source_texts,
+        &docx_table
+            .clone()
+            .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+    );
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
-    let font_embedded = font_name.as_deref().is_some_and(|font_name| {
+    let embedded_font = font_name.as_deref().and_then(|name| {
         parsed
             .embedded_fonts
             .iter()
-            .any(|font| font.font_name == font_name)
+            .find(|font| font.font_name == name)
     });
+    let font_embedded = embedded_font.is_some();
+    let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
     Some(PositionedTable {
         page,
         bounds: ParsedBounds {
@@ -5723,13 +5936,19 @@ fn infer_positioned_table_from_graphics(
         stroke_width: table_rule_stroke_width(&page_graphics, &xs, &ys),
         font_name,
         font_embedded,
+        embedded_face,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
         column_widths_twips: table_column_widths_twips(&xs),
+        row_heights_twips: native_table_rows::heights(
+            &ys,
+            thin_table_rule_height_adjustment(table_rule_stroke_width(&page_graphics, &xs, &ys)),
+        ),
         table,
         cell_underlines,
         cell_alignments,
         cell_vertical_alignments,
         docx_table,
+        native_cells,
         nested_tables: Vec::new(),
         row_heights_pt,
         row_line_counts,
@@ -5921,21 +6140,9 @@ fn needs_space_between_fragments(left: &str, right: &str) -> bool {
     left.is_ascii_alphanumeric() && right.is_ascii_alphanumeric()
 }
 
-/// span 適用後の model が元 grid cell の text を保持しているか判定する。
+/// 結合後の矩形所有ごとに原本の文字を照合し、欠落・複製・別セルへの移動を拒否する。
 fn model_preserves_grid_cell_texts(model: &DocxTableModel, cells: &[Vec<String>]) -> bool {
-    let model_text = model
-        .rows
-        .iter()
-        .flat_map(|row| row.iter())
-        .map(|cell| cell.text.as_str())
-        .collect::<Vec<_>>()
-        .join("\n");
-    cells
-        .iter()
-        .flatten()
-        .map(|cell| cell.trim())
-        .filter(|cell| !cell.is_empty())
-        .all(|cell| model_text.contains(cell))
+    graphic_table_ownership::preserves(model, cells)
 }
 
 /// 内部 DOCX 表モデルの結合情報を公開 `OcrTable` の矩形 span grid へ変換する。
@@ -6207,6 +6414,72 @@ fn docx_table_model_from_grid(
         .map(|row| row.iter().map(|cell| !cell.trim().is_empty()).collect())
         .collect::<Vec<Vec<bool>>>();
     let rects = table_grid::merged_cells(&merge_horizontal, &merge_vertical, &xs, &ys, &has_text);
+    // 外周の一部だけに罫線がある結合は、DOCX の 1 セルでは罫線を正しく描けないので、
+    // 結合せずにマスごとのセルにする（元の罫線を区間ごとに欠かさず、増やさない）。
+    let rects = {
+        let rows = cells.len();
+        let top = |row: usize| ys[rows - row];
+        let bottom = |row: usize| ys[rows - row - 1];
+        let uniform = |values: Vec<bool>| values.windows(2).all(|pair| pair[0] == pair[1]);
+        rects
+            .into_iter()
+            .flat_map(|rect| {
+                let columns = rect.col0..=rect.col1;
+                let span_rows = rect.row0..=rect.row1;
+                let ok = uniform(
+                    columns
+                        .clone()
+                        .map(|c| {
+                            table_grid::is_ruled(&horizontal, top(rect.row0), xs[c], xs[c + 1])
+                        })
+                        .collect(),
+                ) && uniform(
+                    columns
+                        .clone()
+                        .map(|c| {
+                            table_grid::is_ruled(&horizontal, bottom(rect.row1), xs[c], xs[c + 1])
+                        })
+                        .collect(),
+                ) && uniform(
+                    span_rows
+                        .clone()
+                        .map(|r| table_grid::is_ruled(&vertical, xs[rect.col0], bottom(r), top(r)))
+                        .collect(),
+                ) && uniform(
+                    span_rows
+                        .clone()
+                        .map(|r| {
+                            table_grid::is_ruled(&vertical, xs[rect.col1 + 1], bottom(r), top(r))
+                        })
+                        .collect(),
+                );
+                // 結合の内側に罫線が引かれた辺があれば結合しない。
+                let inner_ruled = (rect.col0 + 1..=rect.col1).any(|c| {
+                    span_rows
+                        .clone()
+                        .any(|r| table_grid::is_ruled(&vertical, xs[c], bottom(r), top(r)))
+                }) || (rect.row0..rect.row1).any(|r| {
+                    columns
+                        .clone()
+                        .any(|c| table_grid::is_ruled(&horizontal, bottom(r), xs[c], xs[c + 1]))
+                });
+                if ok && !inner_ruled {
+                    vec![rect]
+                } else {
+                    span_rows
+                        .flat_map(|row| {
+                            columns.clone().map(move |col| table_grid::CellRect {
+                                row0: row,
+                                col0: col,
+                                row1: row,
+                                col1: col,
+                            })
+                        })
+                        .collect()
+                }
+            })
+            .collect::<Vec<_>>()
+    };
     let has_span = rects
         .iter()
         .any(|rect| rect.row0 != rect.row1 || rect.col0 != rect.col1);
@@ -6290,38 +6563,58 @@ fn docx_table_model_from_grid(
                 grid_span: span,
                 vertical_merge,
                 width_twips: None,
-                borders: Some(DocxCellBorders {
-                    top: table_grid::is_ruled(&horizontal, top_of(row), left, right),
-                    left: table_grid::is_ruled(&vertical, left, bottom_of(row), top_of(row)),
-                    bottom: table_grid::is_ruled(&horizontal, bottom_of(row), left, right),
-                    right: table_grid::is_ruled(&vertical, right, bottom_of(row), top_of(row)),
-                    size_eighths_pt: border_size,
-                    // 辺が破線だけで描かれていれば破線にする（実線と重なる辺は実線）。
-                    dashed: [
-                        table_grid::is_ruled(&dashed_horizontal, top_of(row), left, right)
-                            && !table_grid::is_ruled(&solid_horizontal, top_of(row), left, right),
-                        table_grid::is_ruled(&dashed_vertical, left, bottom_of(row), top_of(row))
-                            && !table_grid::is_ruled(
-                                &solid_vertical,
-                                left,
-                                bottom_of(row),
-                                top_of(row),
-                            ),
-                        table_grid::is_ruled(&dashed_horizontal, bottom_of(row), left, right)
-                            && !table_grid::is_ruled(
+                // 結合セルの罫線は結合した矩形の外周で決める（開始セルが矩形全体の罫線を持つ）。
+                borders: Some({
+                    let (rect_top, rect_bottom) = (top_of(rect.row0), bottom_of(rect.row1));
+                    let ruled = |rules: &[table_grid::Rule], at: f32, from: f32, to: f32| {
+                        table_grid::is_ruled(rules, at, from, to)
+                    };
+                    let dashed_only = |dashed: &[table_grid::Rule],
+                                       solid: &[table_grid::Rule],
+                                       at: f32,
+                                       from: f32,
+                                       to: f32| {
+                        ruled(dashed, at, from, to) && !ruled(solid, at, from, to)
+                    };
+                    let first = row == rect.row0;
+                    DocxCellBorders {
+                        top: first && ruled(&horizontal, rect_top, left, right),
+                        left: ruled(&vertical, left, rect_bottom, rect_top),
+                        bottom: (first || row == rect.row1)
+                            && ruled(&horizontal, rect_bottom, left, right),
+                        right: ruled(&vertical, right, rect_bottom, rect_top),
+                        size_eighths_pt: border_size,
+                        dashed: [
+                            dashed_only(
+                                &dashed_horizontal,
                                 &solid_horizontal,
-                                bottom_of(row),
+                                rect_top,
                                 left,
                                 right,
                             ),
-                        table_grid::is_ruled(&dashed_vertical, right, bottom_of(row), top_of(row))
-                            && !table_grid::is_ruled(
+                            dashed_only(
+                                &dashed_vertical,
+                                &solid_vertical,
+                                left,
+                                rect_bottom,
+                                rect_top,
+                            ),
+                            dashed_only(
+                                &dashed_horizontal,
+                                &solid_horizontal,
+                                rect_bottom,
+                                left,
+                                right,
+                            ),
+                            dashed_only(
+                                &dashed_vertical,
                                 &solid_vertical,
                                 right,
-                                bottom_of(row),
-                                top_of(row),
+                                rect_bottom,
+                                rect_top,
                             ),
-                    ],
+                        ],
+                    }
                 }),
             });
             col += span;
@@ -6672,13 +6965,16 @@ fn infer_positioned_table_from_text_grid_page(
         stroke_width: 0.0,
         font_name: None,
         font_embedded: false,
+        embedded_face: None,
         font_size: None,
         column_widths_twips: Vec::new(),
+        row_heights_twips: Vec::new(),
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
         cell_vertical_alignments: Vec::new(),
         docx_table: None,
+        native_cells: Vec::new(),
         nested_tables: Vec::new(),
         row_heights_pt: Vec::new(),
         row_line_counts: Vec::new(),

@@ -1,0 +1,133 @@
+{
+  "generated_utc": "2026-11-24T07:20:44.276158+00:00",
+  "scope": "Restore verified narrow two-column text with compatible unembedded Roman fallback, explicit Word column frames and one left-to-right column transition. Incremental fidelity improvement; not production readiness.",
+  "production_ready": false,
+  "qualified_runtime_head": "ff7d4ddbf9938e32d4cf3c4964a7a835021e51bf",
+  "qualified_crates_tree": "6c3f7276be7db65615a679bd3d089347972dd80e",
+  "base_main": "f25d5aae8403aa1d578dda33e0edea376531fde9",
+  "publication_status": "Local qualification complete for runtime source; final evidence freeze and exact publication-head CI tracked separately.",
+  "behavior": {
+    "gutter": "At least 4 supporting rows share one central whitespace band; minimum adjacent font-size ratio and broad text on both sides. Reject crossing text, invalid geometry and multiple sustained disjoint gutters.",
+    "frames": "When equal columns overlap original right text, write explicit positive per-column widths and compute paragraph indents from the same rounded frame. Preserve page margins and header/footer coordinates.",
+    "flow": "Sort only adopted column-body interval by column and source vertical position before assigning flow indices. Unpaired rows do not add repeated column breaks; leading/trailing full-width content remains outside the sort.",
+    "Roman_fallback": "Only exact known unembedded NimbusRomNo9L Regu/Medi/ReguItal/MediItal faces, optionally with valid six-uppercase subset prefix, request Times New Roman with matching style. Embedded face/program metadata and unknown names remain unchanged; mixed table styles stay distinct.",
+    "policies_unchanged": "No dependencies, public API/config/CLI changes, source/gold edits, Unicode overrides, font program/permission changes, strict/OCR bypass or new tracked PDF fixtures."
+  },
+  "validation": {
+    "new_tests_vs_PR35": 20,
+    "TDD": "Committed semantic Red/Green/Refactor for gutters, ambiguity, Roman/table styles, column-frame clipping and uneven row flow. Compile/format/tooling failures retained separately and not counted as semantic Reds.",
+    "Rust_default": {
+      "passed": 2283,
+      "failed": 0,
+      "ignored": 29,
+      "groups": 123,
+      "head": "ff7d4ddbf9938e32d4cf3c4964a7a835021e51bf",
+      "receipt": "Flow-default-full-receipt.json"
+    },
+    "source_Rust_file_hash_count": 681,
+    "format": "passed",
+    "Clippy": "passed with existing warnings; no warning-free claim",
+    "Python_tests": 152,
+    "Python_tools": 86,
+    "browser_standard_chromium": 72,
+    "browser_standard_webkit": 72,
+    "actual_sources": 11,
+    "actual_default_strict_outcomes_two_engines": 44,
+    "actual_browser_outputs_identical_across_engines": true,
+    "actual_inspection_and_quality_rejections_unchanged": true,
+    "native_example_inputs": 10,
+    "native_CLI_expected_outcomes": 5,
+    "native_BatchNorm_clip_rejection_without_output": true,
+    "native_example_sha256": "0be85781fc497bb19bd00b0b72f7029023a0998a997bc2c2e61ba9abe5b2e35a",
+    "ordinary_CLI_sha256": "2479c54f0161a168a0d8c208ccbf48fbe26d033d4d64011d4e3e2080d0c5d0f2",
+    "distributed_WASM_sha256": "a63dbd86942412c8ba8b58b542cb8283cd1384f9ebf6c444933a2972ca5fabb4"
+  },
+  "owned_narrow_source": {
+    "source_pages": 2,
+    "source_sha256": "ee6782bdf31732377c77fce420e250b2fdc364699bc370588db17f6059a5e81f",
+    "frozen8files_manifest_sha256": "9339201b08db0e676f9a6df95801b6b7d51f3a98e5c941ea4f735e2656b26413",
+    "prospective_labels": 48,
+    "source_column_starts_pt": [
+      54,
+      309
+    ],
+    "source_ink_advance_gap_pt": 21,
+    "review": "Self-authored synthetic labels, standard14 font references, no embedded font program; all2sourcepages and48labelgold reviewed/frozen before first conversion.",
+    "native_and_pure_pages": 2,
+    "max_native_x_error_pt_parent": 14.9,
+    "max_native_and_pure_x_error_pt_current": 0.1,
+    "max_native_baseline_error_pt_parent": 56,
+    "max_native_and_pure_baseline_error_pt_current": 2,
+    "whole_page_fidelity_accepted": false
+  },
+  "public_regression_sources": [
+    {
+      "id": "EfficientNet",
+      "url": "https://proceedings.mlr.press/v97/tan19a/tan19a.pdf",
+      "sha256": "f82da3f7dfb827fe701fae2088f3653e17cb3216ef61111be1167f01dcc92137",
+      "source_pages": 10,
+      "parent_native_and_pure_pages": 20,
+      "current_native_and_pure_pages": 19,
+      "original59source_gold_files_unchanged": true,
+      "accepted": false
+    },
+    {
+      "id": "BERT",
+      "url": "https://aclanthology.org/N19-1423.pdf",
+      "sha256": "987545ffb087f1ece898142c403a516baeabeb70ce19089397fac6f7db12c3d4",
+      "source_pages": 16,
+      "parent_native_and_pure_pages": 32,
+      "current_native_and_pure_pages": 27,
+      "accepted": false
+    },
+    {
+      "id": "GNU-Hello",
+      "url": "https://www.gnu.org/software/hello/manual/hello.pdf",
+      "sha256": "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b",
+      "source_pages": 17,
+      "parent_native_and_pure_pages": 25,
+      "current_native_pages": 18,
+      "current_pure_pages": 17,
+      "parent_index_pages": 2,
+      "current_index_pages": 1,
+      "selected_ordinary_index_words": 4,
+      "max_native_and_pure_selected_x_error_pt": 0.079,
+      "CMTT_code_option_glyph_visibility": "Still fails on both parent and current; extracted text and unchanged font assets do not establish visible glyphs.",
+      "accepted": false
+    },
+    {
+      "id": "BatchNorm",
+      "url": "https://proceedings.mlr.press/v37/ioffe15/ioffe15.pdf",
+      "sha256": "f2eb20b4e97409aef516a6506ea76c7c051860eeded3006a6d9687c364847b27",
+      "source_pages": 9,
+      "parent_pure_pages": 18,
+      "rejected_pre_flow_candidate_pure_pages": 33,
+      "current_pure_pages": 18,
+      "conclusion_column_breaks_rejected_to_current": [
+        31,
+        1
+      ],
+      "native_default": "Same overlapping partially clipped text rejection; no output.",
+      "FFFD_count_current": 59,
+      "original40source_gold_files_unchanged": true,
+      "numeric_cell_topology": "Unresolved; unchanged prospective32numericgold does not certify current table structure.",
+      "accepted": false
+    }
+  ],
+  "controls": "All 6 old controls (3 public fixtures, owned Form image, owned table columns, owned full-height table) retain exact native/pure DOCX bytes versus qualified PR35 parent. All 10 native outputs are exact pre-flow 38dab0e bytes. Across 11 pure cases, only BatchNorm changed after column-flow fix; all character inventories and original media/font program bytes remain unchanged.",
+  "render_review": "All 19 EfficientNet/27 BERT/17 GNU/18 BatchNorm pure thumbnails viewed; selectedGNUindex full. Native changed 2 EfficientNet + 6 BERT pages andGNUindex reviewed, unchanged pages exact RGB reuse prior review. Owned 2 pages full reviewed and native/pure pixels identical. Thumbnail/selected review does not prove full fidelity.",
+  "rejected_prototypes": [
+    "Gutter-only variants worsened paper pagination; retained.",
+    "Right-margin-only copied-DOCX diagnostic restored wordprefixes at wrong x; not adopted.",
+    "Equal-column pre-frame prototype clipped4 selected ordinary GNU words; explicitframes restorevisibleprefixes and source x.",
+    "Pre-flow pure BatchNorm 33 pages with 31 conclusion columnbreaks; corrected rather than suppressing that source."
+  ],
+  "remaining_failures": [
+    "Scientific paper pagination, math/Unicode and vector figure reconstruction.",
+    "CMTT invisible glyphs despite extractable text and embedded programs.",
+    "Full-height table 3 source pages still render 5; vertical cell placement and table topology.",
+    "Native GNU 18 versus 17 source pages; pure 17 count alone is not glyph/layout acceptance.",
+    "Microsoft Word rendering and unseen holdout fidelity not certified."
+  ],
+  "evidence_root": "Ignored corpus/wasm-runtime/narrow-text-gutter-qualification; source and rendered PDFs not committed. Sources are previously reviewed regression material, not new holdouts."
+}

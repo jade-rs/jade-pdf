@@ -139,22 +139,6 @@ fn close_subpath(
     Some(())
 }
 
-/// 矩形の 4 辺のうち、長さのある辺を返す。
-fn rectangle_edges(x: f32, y: f32, w: f32, h: f32) -> Vec<ParsedBounds> {
-    let (x0, x1) = (x.min(x + w), x.max(x + w));
-    let (y0, y1) = (y.min(y + h), y.max(y + h));
-    let mut edges = Vec::with_capacity(4);
-    if x1 > x0 {
-        edges.push(ParsedBounds { x0, y0, x1, y1: y0 });
-        edges.push(ParsedBounds { x0, y0: y1, x1, y1 });
-    }
-    if y1 > y0 {
-        edges.push(ParsedBounds { x0, y0, x1: x0, y1 });
-        edges.push(ParsedBounds { x0: x1, y0, x1, y1 });
-    }
-    edges
-}
-
 /// ページをまたぐ結果配列へ追記する。失敗時は呼び出し元が全結果を破棄する。
 #[cfg(test)]
 pub(super) fn append(
@@ -314,15 +298,8 @@ pub(super) fn append_with_fills(
                         )?;
                     }
                 }
-                // 矩形の枠線（セル枠を矩形で描く表など）は 4 辺の罫線として出す。
-                if curved {
-                    rectangles.clear();
-                }
-                for [x, y, w, h] in rectangles.drain(..) {
-                    for edge in rectangle_edges(x, y, w, h) {
-                        emit(budget, output, page, edge, state.width, state.dashed)?;
-                    }
-                }
+                // 矩形の枠線は、可視性と切り抜きを確かめる stroked_rectangles が罫線にする。
+                rectangles.clear();
                 point = None;
                 start = None;
                 curved = false;

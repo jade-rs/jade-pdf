@@ -1,0 +1,20 @@
+{
+  "source_id": "nta-bonus-rate-2026-15-16",
+  "source_url": "https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/data/15-16.pdf",
+  "official_source_page": "https://www.nta.go.jp/publication/pamph/gensen/zeigakuhyo2026/01.htm",
+  "source_sha256": "5ab9d7d875ccb14769862757b4f8e027178925dae6e8ac40f903b1d55a9ae71b",
+  "source_bytes": 581604,
+  "pages": 2,
+  "selected_independent_logical_cells": 30,
+  "gold": "corpus/nta-bonus-rate-2026-prospective-gold.json",
+  "gold_sha256": "59cdfe172764e86e308dd2f68b195e84aac4025c3c29f1ca110a5981cb2505da",
+  "rights": "PDL1.0 for unmarked NTA contents; attribution/private QA only; no PDF/font/converted DOCX redistribution",
+  "rights_url": "https://www.nta.go.jp/chuijiko/copy.htm",
+  "candidate_fixed_before_collection": "f7049dbe4620c2bbdee026464d33d405992ab786",
+  "parent_fixed_before_collection": "a8366d70045d34f26c55111f297fd47b556980ae",
+  "first_product_use": false,
+  "reviewed_all_pages_before_product": true,
+  "private_source_path": "/Users/bokuweb/.codex/worktrees/pdf-cell-twip-accumulation/jade-pdf/corpus/wasm-runtime/cell-twip-accumulation-qualification/new-NTA-bonus-rate-2026-before-conversion/source.pdf",
+  "tracked_PDF_fixtures_remain3": true,
+  "production_ready": false
+}

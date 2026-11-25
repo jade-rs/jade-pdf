@@ -138,7 +138,7 @@ fn xref_stream_resolves_compressed_length_object() {
     }
 }
 
-/// stream・Length・格納先を削除しても、過去の xref stream の境界情報を使う。
+/// 過去のstream境界は維持し、削除されたContents参照はエラー、null本文は空白にする。
 #[test]
 fn deleted_stream_resolves_historical_compressed_length_and_owner() {
     for compressed in [false, true] {
@@ -176,6 +176,22 @@ fn deleted_stream_resolves_historical_compressed_length_and_owner() {
                     pdf.extend_from_slice(format!("xref\n3 2\n0000000000 00001 f \n0000000000 {:05} f \n6 1\n0000000000 00001 f \ntrailer << /Size 9 /Root 1 0 R /Prev {prev} >>\n", if compressed {1} else {8}).as_bytes());
                 }
                 pdf.extend_from_slice(format!("startxref\n{xref}\n%%EOF\n").as_bytes());
+                assert!(matches!(
+                    parse_pdf_bytes("deleted-contents.pdf", &pdf),
+                    Err(ParseError::InvalidPdfStructure {
+                        reason: "missing or wrong-generation page attribute",
+                        ..
+                    })
+                ));
+                // 同じbyte長で本文参照だけを外し、過去のxref offsetとstream境界は保つ。
+                let reference = b"/Contents 3 0 R";
+                let empty = b"/Contents null ";
+                assert_eq!(reference.len(), empty.len());
+                let position = pdf
+                    .windows(reference.len())
+                    .position(|word| word == reference)
+                    .unwrap();
+                pdf[position..position + reference.len()].copy_from_slice(empty);
                 let parsed = parse_pdf_bytes("historical-compressed-length.pdf", &pdf).unwrap();
                 assert_eq!(parsed.page_count, 1);
                 assert!(parsed.text_elements.is_empty());

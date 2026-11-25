@@ -45,6 +45,8 @@ pub(crate) struct Page {
     pub(crate) rotation: i32,
     /// Resources 辞書の参照位置。欠落時は空の resource として扱う。
     pub(crate) resources: Option<ResourceLocation>,
+    /// 世代・型・参照先を検証済みの本文stream列。描画順と重複を保持する。
+    pub(crate) contents: Vec<u32>,
 }
 
 impl<'a> Inherited<'a> {
@@ -94,6 +96,7 @@ impl<'a> Inherited<'a> {
         path: &Path,
         objects: &Objects<'a>,
         number: u32,
+        node: &'a [u8],
         limits: &ParseLimits,
         budget: &DecodeBudget,
     ) -> Result<Page, ParseError> {
@@ -126,6 +129,13 @@ impl<'a> Inherited<'a> {
             crop_box,
             rotation,
             resources: self.resources.map(|(_, location)| location),
+            contents: crate::page_contents::resolve(
+                path,
+                objects,
+                metadata::value(node, b"Contents"),
+                limits,
+                budget,
+            )?,
         })
     }
 }

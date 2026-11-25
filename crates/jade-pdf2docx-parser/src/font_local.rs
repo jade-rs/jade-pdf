@@ -7,6 +7,9 @@ use super::{
 /// 1ページで有効なfont resource情報。
 #[derive(Debug, Default)]
 pub(super) struct Resources {
+    /// 同名の別Fontを混同しない、resource固有の生成font選択。
+    pub(super) outlines:
+        crate::metadata_map::Map<String, std::sync::Arc<super::type1_fonts::Routes>>,
     /// resource名からPDF BaseFont名への対応。
     pub(super) base_fonts: crate::metadata_map::Map<String, String>,
     /// resource名からexternal CMap encoding名への対応。
@@ -42,6 +45,20 @@ pub(super) fn build(
             .and_then(|n| objects.get(&n).map(|(_, body)| *body))
             .or_else(|| definition.inline_dictionary.map(str::as_bytes));
         if let Some(dictionary) = dictionary {
+            if let Some(routes) = super::type1_fonts::for_dictionary(
+                decode_budget,
+                bytes,
+                dictionary,
+                objects,
+                stream_offsets,
+            ) {
+                crate::metadata_map::save(
+                    decode_budget,
+                    &mut page_resources.outlines,
+                    name,
+                    routes,
+                );
+            }
             if page_resources
                 .metrics
                 .prepare(decode_budget, name.as_str())
@@ -123,10 +140,21 @@ pub(super) fn build(
         {
             crate::metadata_map::save(decode_budget, &mut page_resources.encodings, name, encoding);
         }
-        if let Some(tounicode_object) = super::font_cmaps::reference(objects, dictionary.as_bytes())
-            && let Some(cmap) =
-                font_cmap_for_object_number(decode_budget, bytes, tounicode_object, stream_offsets)
-            && !cmap.is_empty()
+        let mut resolver = crate::resource_resolver::ResourceResolver::new(objects, decode_budget);
+        if let Some(cmap) = crate::type1_font::read(
+            decode_budget,
+            bytes,
+            dictionary.as_bytes(),
+            None,
+            &mut resolver,
+            stream_offsets,
+        )
+        .map(|mapping| mapping.cmap)
+        .or_else(|| {
+            super::font_cmaps::reference(objects, dictionary.as_bytes()).and_then(|number| {
+                font_cmap_for_object_number(decode_budget, bytes, number, stream_offsets)
+            })
+        }) && !cmap.is_empty()
         {
             crate::metadata_map::save(decode_budget, &mut page_resources.cmaps, name, cmap);
         }

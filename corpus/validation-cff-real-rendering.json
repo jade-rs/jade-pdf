@@ -1,0 +1,133 @@
+{
+  "generated_utc": "2026-11-24T08:22:49.900974+00:00",
+  "scope": "Lossless CFF DICT real representation restores visible CMTT glyphs in tested LibreOffice outputs. Incremental compatibility improvement; not production readiness.",
+  "production_ready": false,
+  "base_main": "52cce7adec3fbb692f216f5dfbd56c9e0fa8d22f",
+  "qualified_runtime_head": "19b580ecba27cf09cca5cb527af50acfdb196402",
+  "full_tested_head": "c69161f2f2c77e54079bd6c536fb4cfe2a30fd29",
+  "source_Rust_file_hash_count": 682,
+  "behavior": {
+    "representation": "Integer significand plus adjusted exponent; preserve all significant decimal digits and finite f64 value/sign. Fixed stack buffers, no new dependencies.",
+    "actual_cause": "Two GNU CMTT FontMatrix values became about0.1times intended scale in bundled LibreOffice Type1 output; integer significands restore about1times. Independent direct FreeType raster already rendered source glyph contours.",
+    "not_changed": "OriginalPDF/gold, glyph programs, cmap, hmtx, units, font rights/metadata, Unicode/strict policy, API/config/CLI, DOCX text/sections/images. Generated CFF bytes and checksums intentionally change.",
+    "references": [
+      {
+        "title": "Adobe CFF DICT data / real nibbles",
+        "url": "https://adobe-type-tools.github.io/font-tech-notes/pdfs/5176.CFF.pdf"
+      },
+      {
+        "title": "LibreOffice readRealVal source, lines1657-1724; arithmetic comparison only, implementation not copied",
+        "url": "https://docs.libreoffice.org/vcl/html/cff_8cxx_source.html"
+      }
+    ]
+  },
+  "TDD": {
+    "semantic_Red": "41a751fb57a74309b76711899320bd4b564c4313",
+    "Green": "2b9a0c01182563a4d6bd0f2069eb4dc99927b51d",
+    "Refactor": "c69161f2f2c77e54079bd6c536fb4cfe2a30fd29",
+    "history_note": "Commit identifiers are original before rebase; retained receipts. Candidate full tree exactly preserved by rebase.",
+    "em_values_exhaustively_tested": 16369,
+    "em_range_inclusive": [
+      16,
+      16384
+    ],
+    "finite_f64_PBT": "Sampled bit patterns; not exhaustive2^64."
+  },
+  "validation": {
+    "Rust_default_passed": 2286,
+    "Rust_default_failed": 0,
+    "Rust_default_ignored": 29,
+    "Rust_default_groups": 123,
+    "after_inherited_test_import_cleanup_docx_tests_passed": 115,
+    "full_suite_scope": "Full atc691; only test imports changed afterward and115docx tests/Clippy reran. Rebase full tree exact.",
+    "Clippy": "Passed with existing warnings; no warning-free claim.",
+    "Python_harness": 152,
+    "Python_tools": 86,
+    "standard_Chromium": 72,
+    "standard_WebKit": 72,
+    "actual_sources": 11,
+    "actual_browser_default_strict_two_engine_outcomes": 44,
+    "both_engine_DOCX_bytes_identical": true,
+    "diagnostics_and_rejections_unchanged": true,
+    "native_example_sources": 10,
+    "shipping_CLI_expected_outcomes": 7,
+    "shipping_CLI_BatchNorm_rejection_without_output": true,
+    "native_example_sha256": "396cc79932c9fcff2cfc93523b8bde4f0929a786defeb9b57603163381069385",
+    "ordinary_CLI_sha256": "89bb417e98dc86229d38e9d726f05001bed2bd4b6521d3833d0d410102111cb7",
+    "distributed_WASM_sha256": "a9164faabc82ebfefff02138381cfed4fc4aeb74c563a7f3c9a0f3b302c44755"
+  },
+  "actual_GNU": {
+    "url": "https://www.gnu.org/software/hello/manual/hello.pdf",
+    "source_sha256": "3c5212427682a49771d653a5f46ae2e69bdee33b4c0cf428d6ec672ab99d5e3b",
+    "source_pages": 17,
+    "source_review": "Previously all17pages/rights/privacy and original physical/logical gold reviewed and frozen before first product conversion; unchanged. Known regression source, not holdout.",
+    "native_render_pages_before_and_after": 18,
+    "pure_render_pages_before_and_after": 17,
+    "targeted_index_words": 7,
+    "measurement_scope": "Retrospective word frames independently verified against extracted glyph positions and actual raster ink; not prospective gold or all-word accuracy.",
+    "dark_pixels_before": [
+      0,
+      0,
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "dark_pixels_after_native_and_pure": [
+      300,
+      141,
+      333,
+      217,
+      360,
+      381,
+      396
+    ],
+    "words": [
+      "--greeting",
+      "--help",
+      "--traditional",
+      "--version",
+      "Makefile.am",
+      "README-dev",
+      "srclist-update"
+    ],
+    "two_CMTT_output_FontMatrix_ratios_before": 0.1000000092,
+    "two_CMTT_output_FontMatrix_ratios_after": 1.000000092
+  },
+  "regression": {
+    "native": "9 of10 DOCX byte-identical to parent; GNU only generatedfont representation differs. All nonfont ZIP parts identical for10.",
+    "pure": "All nonfont ZIP parts identical for17 successful results perengine;4 default documents change generatedfont bytes. Independent fontTools verifies unchanged glyph programs/cmap/hmtx/units/license metadata.",
+    "pure_render_pages": {
+      "EfficientNet": 19,
+      "BERT": 27,
+      "BatchNorm": 18,
+      "GNU-Hello": 17
+    },
+    "all_changed_pure_pages_reviewed_as_thumbnails": true,
+    "all_GNU_native18_pure17_thumbnails_reviewed": true,
+    "GNU_native18_and_pure17_index_full_reviewed": true,
+    "other_native_controls": "Exact DOCX binding reuses qualified prior renders."
+  },
+  "remaining_failures": [
+    "GNU native18pages versus source17; native license-page reflow.",
+    "Scientific papers source10/16/9 still render19/27/18 in pure.",
+    "Math, vector diagrams, table topology, unverified Unicode and native partial clipping guard.",
+    "Microsoft Word and unseen holdout fidelity unqualified."
+  ],
+  "evidence_root": "Ignored corpus/wasm-runtime/cmtt-glyph-visibility-qualification; original PDFs, generated DOCX/fonts, renders and logs not committed. Exactly3trackedPDFfixtures retained.",
+  "evidence_receipts": {
+    "CFF-real-default-full-receipt.json": "20974758d9137558dff308dff0e3e08fccdaa5ccea0fd9cd2be7a119a6617de1",
+    "CFF-real-inherited-docx-tests-receipt.json": "d1f8bc9629166d0aa0db176a238d427eaeea4c43130073e6c886095cd5d513b5",
+    "native-CFF-real/independent-font-and-package-regression.json": "81922e8a337be070200632ba1c202c449f4c18b0b1b05566c57ce3af8bd76c69",
+    "pure-CFF-real-independent-font-and-package-regression.json": "990add9d81a9506a45422bac189a5d03394b0ffec695a8b9fd51a5060a7558f1",
+    "actual-CFF-real-44-outcome-and-nonfont-regression.json": "f668629c23f6e6b4d451c7186fca1fe08a87a7f5db95de98d12dd3f07f42e630",
+    "actual-native-visible-ink-and-matrix-comparison.json": "9cb6a186e5ec45e9008e540f77fb952be0cc9cd62ae55bd24de82291132f038b",
+    "actual-pure-visible-ink-and-matrix-comparison.json": "6be1f4f78e6d4a20497808e4f2c8a82a1bf09fbc0c78e559dd064740b8ccca88",
+    "actual-render-visual-review.json": "b1bc41dc6bc22a7bd097f38a0e40f2b4ec423bdcd2864aaba5432cb9023ea9d9",
+    "pure-CFF-real-pixel-regression.json": "25626818a15525160951b736351531a57a36b9241d3618a5cf8920a7541d5a25",
+    "cli-CFF-real/receipts.json": "43bf813a2b061111344a3eb02f3162f020bdedd413f0a42e79a9d17b3b38e120",
+    "cli-CFF-real/BatchNorm-default-rejection-receipt.json": "6f0f0d1c7cda2f5eef9e81ff453e06c706125138df73c74e463c86de0dab07db",
+    "rebase-after-PR36-verified.json": "04c3700cf53cb8399ad771d7ea98f7e5c97760efa02c62f7a38c927964a74d6d"
+  }
+}

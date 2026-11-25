@@ -1,0 +1,90 @@
+{
+  "scope": "Cumulative source line endpoints avoid per-line twip rounding drift and false overfull-cell fallback",
+  "producer_commit": "f7049dbe4620c2bbdee026464d33d405992ab786",
+  "full_default_commit": "3f4a8016dcdadc1c9d8da566e5583102fa3a229b",
+  "same721_Rust_files": true,
+  "parent_commit": "a8366d70045d34f26c55111f297fd47b556980ae",
+  "tests": {
+    "default_passed": 2405,
+    "default_failed": 0,
+    "default_ignored": 32,
+    "test_groups": 132,
+    "fmt_and_Clippy_passed": true,
+    "TDD_Red_Green_preserved": true,
+    "public_integer_millipoint_oracle_PBT_cases": 24,
+    "accumulator_integer_oracle_PBT_cases": 32,
+    "invalid_input_does_not_advance_accumulator": true
+  },
+  "native": {
+    "existing_outcomes": 26,
+    "existing_success": 23,
+    "existing_expected_rejection": 3,
+    "existing_DOCX_changed_only": ["EfficientNet default", "NTA stamp-tax default"],
+    "existing14_successful_documents_byteexact_parent_except_EfficientNet": true,
+    "owned_new_controls_outcomes": 6,
+    "owned_new_controls_success": 6,
+    "new_NTA_bonus_original_outcomes": 2,
+    "new_NTA_bonus_default_success_and_strict_unchanged_rejection": true,
+    "all_current_candidate_outcomes": 34,
+    "all_current_candidate_success": 30,
+    "all_current_candidate_expected_rejection": 4,
+    "parent_comparison_extra_outcomes_not_counted_as_candidate": 8,
+    "NTA_stamp_tax_cell5_paragraphs_before": 1,
+    "NTA_stamp_tax_cell5_paragraphs_after": 23,
+    "NTA_stamp_tax_cell5_total_spacing_twips": 3740,
+    "NTA_stamp_tax_cell5_nonwhitespace_character_multiset_preserved": true
+  },
+  "browsers": {
+    "engines": ["Chromium", "WebKit"],
+    "cases_per_engine": 25,
+    "outcomes_per_engine": 50,
+    "success_per_engine": 37,
+    "expected_rejection_per_engine": 13,
+    "all_inspections_and_expected_errors_exact_parent": true,
+    "both_engines_all_DOCX_hashes_and_outcomes_exact_each_other": true,
+    "existing21_cases_changed_only_EfficientNet_default": true,
+    "new3_owned_cases_both_modes_byteexact_native": true,
+    "new_NTA_bonus_encrypted_original_rejection_no_clear_derivative": true
+  },
+  "owned_source_oracles": {
+    "three_control_PDFs_gold_before_probe_file_execution": true,
+    "source_labels_in_exact_order": true,
+    "source_halfpoint_sizes_preserved": true,
+    "no_text_underlines": true,
+    "max_endpoint_error_twips": 0.5,
+    "descenders_visually_reviewed": true,
+    "existing_single_line_control_vertical_centering_not_fixed": true
+  },
+  "package_scope": {
+    "non_document_XML_assets_byteexact_parent": true,
+    "unchanged_text_and_styles_outside_restored_cells": true,
+    "same_paragraph_count_cells_spacing_delta_at_most1twip": true,
+    "restored_cells_require_top_alignment_and_zero4_margins": true,
+    "generated_paragraph_ID_shift_bounded_by_restored_paragraph_count_and_no_new_duplicates": true
+  },
+  "visual": {
+    "selected_candidate_rendered_pages": 47,
+    "individually_viewed_candidate_pages": 13,
+    "remaining34_EfficientNet_pages_RGB_exact_parent": true,
+    "all_changed_EfficientNet_pages_individually_viewed": true,
+    "all47_pages_individually_viewed": false,
+    "whole_document_accepted": false,
+    "limitations_documented": "docs/native_cell_twip_rounding.md"
+  },
+  "new_NTA_bonus_holdout": {
+    "source_sha256": "5ab9d7d875ccb14769862757b4f8e027178925dae6e8ac40f903b1d55a9ae71b",
+    "source_pages": 2,
+    "prospective_gold_logical_cells": 30,
+    "before_product_manifest_files": 14,
+    "before_product_manifest_sha256": "df027955168ccf0a6e9de09699ffea6ef2a3bb59d192682c13e58f0f2bec02c5",
+    "candidate_fixed_before_collection": true,
+    "rights_privacy_and_all_pages_reviewed_before_product": true,
+    "first_result": "REJECTED: main table columns flattened, one partial editable table, Word4pages vs source2; no complete logical cell ownership qualification",
+    "after_first_product_source_is_seen_regression_not_new_unseen_holdout": true,
+    "historical_gold_and_first_product_false_markers_immutable": true,
+    "private_only_no_font_rights_inferred": true
+  },
+  "tracked_PDF_fixtures_remain3": true,
+  "local_evidence_namespace": "corpus/wasm-runtime/cell-twip-accumulation-qualification",
+  "production_ready": false
+}

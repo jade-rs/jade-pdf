@@ -1,0 +1,32 @@
+{
+  "created_utc": "2026-11-24T10:21:46.128556+00:00",
+  "scope": "New prospective holdouts after PR38 candidate; no product conversion yet, no whole-document acceptance.",
+  "sources": [
+    {
+      "id": "NASA-Webb",
+      "url": "https://science.nasa.gov/wp-content/uploads/2024/08/webbfactsheet.pdf",
+      "bytes": 2719771,
+      "sha256": "84933f93b67aacaf2871ced720d76cd18d1637fde65ae9c561282ddfc692c71e",
+      "pages": 2,
+      "all_pages_reviewed_before_conversion": true,
+      "privacy": "No private records/identifiable people observed.",
+      "rights_policy": "https://www.nasa.gov/nasa-brand-center/images-and-media/",
+      "storage": "Ignored local corpus only; no tracked source PDF, artwork or fontprogram.",
+      "gold": "nasa-webb-prospective-gold.json",
+      "source_review_manifest_sha256": "efa575fa3deddb38094ca837715b52ead09d07d039255798d3199d9fa9ec3dad"
+    },
+    {
+      "id": "NIST-wallet",
+      "url": "https://physics.nist.gov/cuu/pdf/wallet_2022.pdf",
+      "bytes": 120187,
+      "sha256": "1e7d5131229b2d189932825ce8bbfa2c6a153a990ba034b443286bfe4e420de5",
+      "pages": 2,
+      "all_pages_reviewed_before_conversion": true,
+      "privacy": "No private records/identifiable people observed.",
+      "rights_policy": "https://www.nist.gov/open/license",
+      "storage": "Ignored local corpus only; no tracked source PDF, artwork or fontprogram.",
+      "gold": "nist-wallet-2022-prospective-gold.json",
+      "source_review_manifest_sha256": "c5acd7440e41824d3f1f76ddfe104ab6371fab1f0ac878a397fa9560fab6ad6a"
+    }
+  ]
+}

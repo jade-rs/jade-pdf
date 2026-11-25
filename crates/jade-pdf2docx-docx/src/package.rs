@@ -1,17 +1,33 @@
 //! DOCXの梱包とPDF subset font埋め込みを担当する。
 use crate::ConvertError;
-use docx_rs::Docx;
+use crate::prepared_docx::PreparedDocx;
 use jade_pdf2docx_parser::ParsedEmbeddedFont;
 use std::io::{Cursor, Read, Seek, Write};
+#[path = "font_usage.rs"]
+mod font_usage;
+
+/// bytesとファイルで同じXML処理を通し、位置指定をfont幅補正の後・ページ縮小の前に確定する。
+fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertError> {
+    let PreparedDocx {
+        docx,
+        column_frames,
+    } = prepared;
+    let mut package = crate::section_chrome_package::build(docx)?;
+    crate::column_frame::apply(&mut package.document, &column_frames)?;
+    crate::layout_space::preserve_advance(&mut package)?;
+    crate::inline_baseline::apply(&mut package)?;
+    crate::normal_weight_package::apply(&mut package)?;
+    crate::word_page_fit::fit(&mut package)?;
+    crate::ruby::apply_to_document_xml(&mut package.document);
+    Ok(package)
+}
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
 pub(super) fn pack_docx_to_bytes(
-    docx: Docx,
+    docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
-    let mut package = docx.build();
-    crate::word_page_fit::fit(&mut package)?;
-    crate::ruby::apply_to_document_xml(&mut package.document);
+    let package = prepare_package(docx.into())?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
     let capacity = package
@@ -57,19 +73,16 @@ fn embed_fonts_in_archive<R: Read + Seek, W: Write + Seek>(
     embedded_fonts: &[ParsedEmbeddedFont],
     output: W,
 ) -> Result<bool, ConvertError> {
-    let document_xml = {
-        let mut entry = archive
-            .by_name("word/document.xml")
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        let mut xml = String::new();
-        entry
-            .read_to_string(&mut xml)
-            .map_err(|err| ConvertError::Pack(err.to_string()))?;
-        xml
-    };
+    let usage = font_usage::read(archive, embedded_fonts)?;
+    let space_font = usage.space_family.map(|space_name| ParsedEmbeddedFont {
+        bytes: crate::layout_space::font(&space_name),
+        font_name: space_name,
+    });
     let used_fonts = embedded_fonts
         .iter()
-        .filter(|font| document_xml.contains(font.font_name.as_str()))
+        .zip(usage.source_fonts)
+        .filter_map(|(font, used)| used.then_some(font))
+        .chain(space_font.iter())
         .collect::<Vec<_>>();
     if used_fonts.is_empty() {
         return Ok(false);
@@ -155,11 +168,14 @@ fn add_embedded_fonts_to_font_table(
     let mut definitions = String::new();
     for (index, font) in fonts.iter().enumerate() {
         let key = embedded_font_key(font, index);
+        let face = crate::embedded_face::Face::read(&font.bytes).unwrap_or_default();
         definitions.push_str(&format!(
-            r#"<w:font w:name="{}"><w:embedRegular r:id="rIdEmbeddedFont{}" w:fontKey="{}" w:subsetted="true" /></w:font>"#,
+            r#"<w:font w:name="{}"><w:{} r:id="rIdEmbeddedFont{}" w:fontKey="{}" w:subsetted="{}" /></w:font>"#,
             escape_xml_attribute(font.font_name.as_str()),
+            face.slot(),
             index + 1,
             embedded_font_key_guid(&key),
+            !face.no_subsetting,
         ));
     }
     let Some(close_pos) = xml.rfind("</w:fonts>") else {
@@ -274,14 +290,12 @@ fn escape_xml_attribute(value: &str) -> String {
 /// ファイル変換では梱包済みZIP全体をVecへ保持せず、削除保証付き一時ファイルへ保存する。
 #[cfg(not(target_arch = "wasm32"))]
 pub(super) fn pack_docx_to_file(
-    docx: Docx,
+    docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
-    let mut package = docx.build();
-    crate::word_page_fit::fit(&mut package)?;
-    crate::ruby::apply_to_document_xml(&mut package.document);
+    let package = prepare_package(docx.into())?;
     package
         .pack(&mut output)
         .map_err(|err| ConvertError::Pack(err.to_string()))?;

@@ -18,6 +18,10 @@ mod pages;
 mod need_tests;
 
 #[cfg(test)]
+#[path = "pdfium_clip_source_tests.rs"]
+mod clip_source_tests;
+
+#[cfg(test)]
 #[path = "pdfium_preview_budget_tests.rs"]
 mod preview_budget_tests;
 
@@ -142,10 +146,32 @@ pub(crate) fn parse_pdf(
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
             decode_budget.check()?;
         } else {
-            append_text_preview(decode_budget, &mut text_preview, &page_text.all());
+            let mut preview = page_text.all();
+            crate::pdfium_printed_hyphens::page(decode_budget, path, &mut preview, &characters)?;
+            append_text_preview(decode_budget, &mut text_preview, &preview);
             decode_budget.check()?;
-            let elements =
-                crate::pdfium_text::extract(decode_budget, page_number, &page_text, &characters)?;
+            let mut elements = crate::pdfium_text::extract(
+                decode_budget,
+                path,
+                page_number,
+                &page_text,
+                &characters,
+            )?;
+            if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
+                && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
+            {
+                let (_, indexed) = crate::pdfium_visible_text::extract_recovery_spans(
+                    decode_budget,
+                    path,
+                    page_number,
+                    &characters,
+                    &tags,
+                    &elements,
+                )?;
+                if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
+                    elements = crate::pdfium_text::join_vertical_characters(indexed);
+                }
+            }
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
             decode_budget.check()?;
         }

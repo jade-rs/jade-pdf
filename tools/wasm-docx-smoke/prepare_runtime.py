@@ -11,6 +11,7 @@ import subprocess
 import sys
 import tarfile
 import tempfile
+from check_distribution import NOTICES, check
 
 ROOT = Path(__file__).resolve().parents[2]
 CACHE = ROOT / 'corpus/wasm-runtime'
@@ -76,10 +77,13 @@ def main():
         raw_hash = hashlib.sha256(frozen.read_bytes()).hexdigest()
         subprocess.run([str(bindgen), '--target', 'web', '--out-name', 'jade_pdf2docx_wasm',
                         '--out-dir', str(output), str(frozen)], check=True, cwd=ROOT)
+    for name, source in NOTICES.items():
+        shutil.copyfile(source, output / name)
     report = dict(command=command, raw_wasm_sha256=raw_hash,
                   generated={p.name: hashlib.sha256(p.read_bytes()).hexdigest()
                              for p in sorted(output.iterdir()) if p.is_file() and p.name != 'build.json'})
     (output / 'build.json').write_text(json.dumps(report, indent=2) + '\n')
+    check(output)
     print(json.dumps(dict(output=str(output), raw_wasm_sha256=raw_hash)))
     return 0
 

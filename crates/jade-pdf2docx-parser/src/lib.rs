@@ -18,10 +18,12 @@ mod form_attributes;
 mod form_clip;
 mod form_content;
 mod form_diagnostics;
+mod form_image_state;
 mod form_matrices;
 mod form_operands;
 mod form_storage;
 mod form_text_state;
+mod glyph_names;
 mod image_color_space;
 mod image_filter;
 mod image_metadata;
@@ -34,6 +36,7 @@ mod legacy_page_resources;
 mod legacy_stream;
 mod limits;
 mod lossy_chunks;
+mod lzw_content;
 mod metadata;
 #[cfg(test)]
 mod metadata_extraction_tests;
@@ -53,6 +56,7 @@ mod object_index;
 #[path = "../tests/support/page_attribute_pdf.rs"]
 mod page_attribute_fixture;
 mod page_attributes;
+mod page_contents;
 mod page_geometry_diagnostics;
 mod page_resources;
 mod page_tree;
@@ -66,6 +70,8 @@ mod pdfium_clip;
 mod pdfium_clip_overlap;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_font_tags;
+#[cfg(not(target_arch = "wasm32"))]
+mod pdfium_printed_hyphens;
 #[cfg(not(target_arch = "wasm32"))]
 mod pdfium_raw_cid;
 #[cfg(not(target_arch = "wasm32"))]
@@ -83,12 +89,23 @@ mod syntax;
 mod test_allocations;
 mod text;
 mod text_alpha;
+mod text_baseline;
 mod text_clipping;
 mod text_draws;
 mod text_geometry;
 mod text_rendering;
 mod text_result_storage;
+mod text_word_gap;
 mod tounicode_cache;
+#[cfg(test)]
+#[path = "type1_cluster_embedding_tests.rs"]
+mod type1_cluster_embedding_tests;
+#[cfg(test)]
+mod type1_embedding_tests;
+mod type1_font;
+mod type1_outline;
+mod type1_program;
+mod type1_standard_encoding;
 mod unsupported_content;
 mod xobject_refs;
 mod xref;

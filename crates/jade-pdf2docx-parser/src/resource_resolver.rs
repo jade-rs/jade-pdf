@@ -26,6 +26,11 @@ pub(crate) struct ResourceResolver<'objects, 'bytes> {
 }
 
 impl<'objects, 'bytes> ResourceResolver<'objects, 'bytes> {
+    /// 不変indexが選んだ最新objectの世代を返す。
+    pub(crate) fn generation(&self, number: u32) -> Option<u16> {
+        self.objects.get(&number).map(|(generation, _)| *generation)
+    }
+
     /// 解析対象の object index を借用して空の参照 cache を作る。
     pub(crate) fn new(
         objects: &'objects Objects<'bytes>,

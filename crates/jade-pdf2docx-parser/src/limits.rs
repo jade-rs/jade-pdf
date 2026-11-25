@@ -23,7 +23,7 @@ pub struct ParseLimits {
     /// palette/globals・PNG読み戻しのIDAT/RGBA・fallback画素も数える。zlib展開は別予算。
     /// 再確保と解放後の再作成も数える。codec内部の作業領域とallocator内部は対象外。
     pub max_total_image_storage_bytes: u64,
-    /// zlib/FlateDecode 展開・未圧縮 Contents/ObjStm/Form 本文 1 件の最大バイト数。
+    /// zlib/FlateDecode・LZWDecode展開と、未圧縮Contents/ObjStm/Form本文1件の最大バイト数。
     pub max_decoded_stream_bytes: u64,
     /// zlib 展開・未圧縮 Contents/ObjStm/Form 保存・Form 描画走査の累積。再処理も数える。
     pub max_total_decoded_bytes: u64,
@@ -50,7 +50,8 @@ pub struct ParseLimits {
     /// pop後は容量を再利用し、別ページ/描画での再作成を累積する。
     /// 描画Font診断の集合と診断追加時の出力配列の初回/拡張全slotも数える。
     /// Do/Tf名は本文の範囲とborrowed byte復号比較で保持し、復号名のheapを作らない。
-    /// ページ/CropBox・Form BBox・文字矩形のClip頂点と各辺の交差配列も全要求容量を数える。
+    /// ページ/CropBox・Form BBox・文字/画像矩形のClip頂点と各辺の交差配列も全要求容量を数える。
+    /// Form画像の部分clipを配置へ複製する容量も、描画回数ごとに累積する。
     /// 親Clipは借用し、頂点増加と別描画/別ページでの再作成も累積する。
     /// 未対応XObject/inline image診断の名前索引・ページ状態・重複集合・出力拡張slotも数える。
     /// 索引は既存名を借用し、Contents間のDo名も本文を借用して復号名のheapを作らない。

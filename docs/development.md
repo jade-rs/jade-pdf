@@ -59,3 +59,11 @@ npm run dev
 ```
 
 ビルド時に `jade-pdf2docx-wasm` からブラウザ向けAPIを生成します。
+
+## LZW本文とContentsの解決
+
+正式なpage treeの`Contents`は、間接stream・直接配列・間接配列を解決し、参照世代・循環・型を検査します。配列の同一streamを省略せず、元の順序とstream間の描画状態を保ちます。空配列・null・欠落は空白ページとして扱います。実行回数はxrefの一意entry数とは別に、metadata・確保・累積展開の既存予算で制限します。
+
+直接`/Filter /LZWDecode`はpure Rustで9〜12bitを復号します。直接`DecodeParms`の`EarlyChange`は0/1（既定1）、`Predictor`は1（無予測）のみ対応します。作業辞書と展開配列は共通allocation予算へ事前予約し、単一・累積展開量と協調キャンセルも適用します。破損LZWは`ParseError::Io`の`InvalidData`、未対応LZW parameterは`Unsupported`として返り、部分本文や空白文書を成功扱いしません。
+
+Filterの配列・間接Filter/DecodeParms・LZW予測変換には未対応です。正式な`Contents`を持たないRootなし互換入力の探索や、他のcodecにおける復号不能時の診断は今回の対応範囲外です。画像だけのPDFは画像を保存してもeditable文字にはならず、OCR診断とstrict拒否は引き続き適用します。新しい公開PDFはfixtureへ追加せず、出典・権利・機密情報・全ページを確認してから、一時領域で画素・出現回数・順序と全出力ページを検証します。

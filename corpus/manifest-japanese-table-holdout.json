@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "purpose": "Prospective private Japanese table holdout before first product use. Existing3 tracked fixture PDFs unchanged.",
+  "case": {
+    "id": "NTA-stamp-tax-table-2026-06",
+    "source_url": "https://www.nta.go.jp/publication/pamph/inshi/tebiki/pdf/08.pdf",
+    "landing_url": "https://www.nta.go.jp/taxes/shiraberu/taxanswer/inshi/7140.htm",
+    "bytes": 604798,
+    "sha256": "a74ef38911860b41868e5f1b7d8f870d2ff870ad2dcfd16c637a4e15abfd1e14",
+    "physical_pages": 2,
+    "printed_pages": [
+      "35",
+      "36"
+    ],
+    "rights_policy": "https://www.nta.go.jp/chuijiko/copy.htm",
+    "license_reference": "https://www.digital.go.jp/resources/open_data/public_data_license_v1.0",
+    "rights_assessment": "NTA unmarked official content is under PDL1.0; attribution and modified-content notice retained. No third-party credits or logos observed on either source page. Separate third-party, font and trademark rights are not inferred from the content license. Private QA only; no sourcePDF, font or generatedDOCX redistribution.",
+    "credit": "出典：国税庁「印紙税額の一覧表」（令和8年6月現在）。本検証用goldは原本の一部を選択・加工して独立に作成。",
+    "all_original_pages_individually_reviewed_before_first_product_use": true,
+    "privacy_review_passed": true,
+    "no_filled_personal_information_observed": true,
+    "PDF_encrypted": true,
+    "copy_permission_allowed": true,
+    "owner_password_not_bypassed": true,
+    "pure_API_expected_current_constraint": "Explicit encrypted-input rejection; no decrypted derivative is substituted as an unseen original.",
+    "prospective_gold": "corpus/nta-stamp-tax-table-2026-06-prospective-gold.json",
+    "prospective_gold_sha256": "834e20378634249c9234be716af2f77be655398bad379475a7133531b2c70a65",
+    "selected_cells": 30,
+    "fixed_candidate_before_collection": "7f3234b797caba8ef239793781103a72edd91886",
+    "first_product_use": false,
+    "historical_registration_snapshot_not_to_be_reclassified_after_use": true,
+    "original_PDF_and_images_not_distributed": true,
+    "whole_document_accepted": false
+  }
+}

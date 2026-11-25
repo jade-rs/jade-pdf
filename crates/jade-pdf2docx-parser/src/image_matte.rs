@@ -23,6 +23,8 @@ pub(super) fn read(
     let color = image_attribute(budget, pdf, parent, b"ColorSpace")?;
     let components = if crate::metadata::is_name(&color, b"DeviceRGB") {
         3
+    } else if source_components_verified && crate::metadata::is_name(&color, b"DeviceCMYK") {
+        4
     } else if crate::metadata::is_name(&color, b"DeviceGray")
         || (source_components_verified
             && super::super::image_separation::is_separation(budget, pdf, parent)?)

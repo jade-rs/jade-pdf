@@ -1,6 +1,6 @@
 //! Form訪問のFont診断集合・出力slotの予算迂回を再現する。
 use super::*;
-use crate::{ParseError, QualityIssue, UnsupportedFontReason};
+use crate::{ParseError, QualityIssue, UnsupportedFontReason, font_diagnostics::Selection};
 
 /// 未対応Fontの文字描画を一回だけ行うRootなし互換入力を作る。
 fn fixture() -> Vec<u8> {

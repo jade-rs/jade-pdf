@@ -1,0 +1,43 @@
+{
+  "created_utc": "2026-11-24T13:59:48.438663+00:00",
+  "scope": "Independent source-table holdout collected after inline-baseline candidate was fixed. Original fully reviewed and 24x4cell/exponent expectations fixed before any product conversion. Not an acceptance result.",
+  "candidate_before_collection": "237559930019178b4941e2e6a66ecb2ce029abc3",
+  "first_product_conversion_executed": false,
+  "cases": [
+    {
+      "id": "BIPM-SI-prefixes",
+      "url": "https://www.bipm.org/documents/20126/54630884/SI-Prefixes.pdf/96ec0d91-90ab-c731-1ff2-c53223fb2bd7?t=1672932637741&version=1.2",
+      "landing_url": "https://www.bipm.org/en/measurement-units/si-prefixes",
+      "source_sha256": "88558ac7687b0fd8e8ad3885fc72d9f835ca6c7340d5239f7793662fc798cffa",
+      "bytes": 218130,
+      "pages": 1,
+      "page_size_pt": [
+        841.89,
+        1190.55
+      ],
+      "gold": "corpus/bipm-si-prefixes-prospective-gold.json",
+      "gold_sha256": "8534ea4e41c7194915284c7fc8b263da48678ecaf7a3a94b882e4681b68ddf93",
+      "private_original_manifest_sha256": "aa3d80fb06b460046ec0a748a1f5d0bd3184ea70dcee70c6b49acd83cd337fc4",
+      "rights_review": {
+        "document_terms": "https://www.bipm.org/en/copyright",
+        "document_default": "CC BY4.0 unless stated otherwise, BIPM attribution retained; no endorsement.",
+        "logo_exception_terms": "https://www.bipm.org/en/measurement-units/si-promotion",
+        "logo_exception": "SI logo separate CC BY-ND4.0; private internal fidelity QA only, no derivative/public logo redistribution.",
+        "fonts": "Calibri and FuturaPT embedded, separate permissions unverified; existing product permission rules unchanged.",
+        "privacy": "Public institutional chart, no private personal data; original all1page reviewed."
+      }
+    }
+  ],
+  "not_selected": [
+    {
+      "url": "https://www.nta.go.jp/taxes/shiraberu/zeimokubetsu/shohi/keigenzeiritsu/pdf/qa/01-01.pdf",
+      "reason": "Search snippet suggested isolated sample; actual PDF is250pages. Not downloaded or product-converted in this qualification; full-source review not completed."
+    },
+    {
+      "url": "https://tsapps.nist.gov/publication/get_pdf.cfm?pub_id=960321",
+      "reason": "Web retrieval reported10.7MB; not downloaded or product-converted. No source/gold acceptance claimed."
+    }
+  ],
+  "tracked_PDFs_added": 0,
+  "production_ready": false
+}

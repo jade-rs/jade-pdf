@@ -2,6 +2,9 @@
 use crate::{decode::DecodeBudget, form_clip::Clip};
 use pdfium_render::prelude::*;
 
+#[path = "pdfium_clip_index.rs"]
+mod ownership;
+
 /// nativeの各pathを同じ凸性検証で交差し、未対応pathは既存の品質診断に委ねる。
 pub(crate) fn object_clip(
     budget: &DecodeBudget,
@@ -105,28 +108,33 @@ pub(crate) fn excluded<'a>(
 ) -> Result<Vec<bool>, crate::ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
     let mut result = Vec::new();
+    let mut ownership = None;
     exclude_objects(
         budget,
+        objects,
         objects,
         page_text,
         None,
         [1., 0., 0., 1., 0., 0.],
         0,
         &mut result,
+        &mut ownership,
     )?;
     Ok(result)
 }
 
 /// Formのclipをページ座標で交差し、重なる文字を幾何検索で取り違えずに除外する。
 #[allow(clippy::too_many_arguments)]
-fn exclude_objects<'a>(
+fn exclude_objects<'a, 'r, 't>(
     budget: &DecodeBudget,
     objects: &'a impl PdfPageObjectsCommon<'a>,
-    page_text: &PdfPageText<'_>,
+    root_objects: &'r impl PdfPageObjectsCommon<'r>,
+    page_text: &'t PdfPageText<'_>,
     inherited: Option<&Clip>,
     matrix: [f32; 6],
     depth: usize,
     result: &mut Vec<bool>,
+    ownership: &mut Option<ownership::Index<'t>>,
 ) -> Result<(), crate::ParseError> {
     let _ = budget.check_form_depth(depth);
     budget.check()?;
@@ -140,7 +148,17 @@ fn exclude_objects<'a>(
         let region = clip.as_ref().or(inherited);
         if let Some(form) = object.as_x_object_form_object() {
             if let Some(matrix) = form_matrix(&object, matrix) {
-                exclude_objects(budget, form, page_text, region, matrix, depth + 1, result)?;
+                exclude_objects(
+                    budget,
+                    form,
+                    root_objects,
+                    page_text,
+                    region,
+                    matrix,
+                    depth + 1,
+                    result,
+                    ownership,
+                )?;
             }
         } else if let (Some(text), Some(clip), Ok(bounds)) =
             (object.as_text_object(), region, object.bounds())
@@ -164,7 +182,19 @@ fn exclude_objects<'a>(
                 })?;
                 result.resize(count, false);
             }
-            // wrapperは全index配列とfilter結果を内部確保する。最大容量を呼び出し前に予約する。
+            if ownership.is_none() {
+                *ownership = Some(ownership::Index::new(budget, root_objects, page_text)?);
+            }
+            let index = ownership.as_ref().unwrap();
+            if let Some(entries) = index.entries(text) {
+                for entry in entries {
+                    budget.check()?;
+                    let character = index.character(entry.index).map_err(native_error)?;
+                    exclude_character(budget, &character, clip, result)?;
+                }
+                continue;
+            }
+            // 幾何が一意でないobjectは、既存SDKの厳密な所属検索と予約を維持する。
             budget.charge_metadata_workspace_bytes(
                 count.max(4) as u64 * 3 * std::mem::size_of::<i32>() as u64,
             );
@@ -173,29 +203,41 @@ fn exclude_objects<'a>(
                 .chars(page_text)
                 .map_err(|error| crate::ParseError::Io(std::io::Error::other(error.to_string())))?;
             for character in chars.iter() {
-                budget.check()?;
-                let rect = character.loose_bounds().map_err(|error| {
-                    crate::ParseError::Io(std::io::Error::other(error.to_string()))
-                })?;
-                // loose_boundsは親FormのCTMを含むページ座標で返る。
-                if clip
-                    .transformed_bounds(
-                        budget,
-                        [
-                            rect.left().value,
-                            rect.bottom().value,
-                            rect.right().value,
-                            rect.top().value,
-                        ],
-                        [1., 0., 0., 1., 0., 0.],
-                    )
-                    .is_none()
-                {
-                    result[character.index()] = true;
-                }
-                budget.check()?;
+                exclude_character(budget, &character, clip, result)?;
             }
         }
     }
     Ok(())
+}
+
+/// SDKの失敗を既存と同じ解析I/Oエラーへ変換する。
+fn native_error(error: PdfiumError) -> crate::ParseError {
+    crate::ParseError::Io(std::io::Error::other(error.to_string()))
+}
+
+/// 親FormのCTMを含む文字矩形を同じclip判定へ通し、元indexだけを更新する。
+fn exclude_character(
+    budget: &DecodeBudget,
+    character: &PdfPageTextChar<'_>,
+    clip: &Clip,
+    result: &mut [bool],
+) -> Result<(), crate::ParseError> {
+    budget.check()?;
+    let rect = character.loose_bounds().map_err(native_error)?;
+    if clip
+        .transformed_bounds(
+            budget,
+            [
+                rect.left().value,
+                rect.bottom().value,
+                rect.right().value,
+                rect.top().value,
+            ],
+            [1., 0., 0., 1., 0., 0.],
+        )
+        .is_none()
+    {
+        result[character.index()] = true;
+    }
+    budget.check()
 }

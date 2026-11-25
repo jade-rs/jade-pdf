@@ -41,6 +41,70 @@ fn spacing_advances_origin_without_trailing_bounds() {
     }
 }
 
+/// TJの語間に相当する正方向の空きは、glyph座標や後続原点を変えず空白へ復元する。
+#[test]
+fn tj_word_gaps_preserve_word_boundaries_and_glyph_positions() {
+    for in_form in [false, true] {
+        let parsed = parse(
+            "BT /F 10 Tf 10 10 Td [(Alpha) -600 (Beta)] TJ /F 20 Tf (C) Tj ET",
+            in_form,
+            false,
+        );
+        assert_eq!(parsed.text_elements[0].text, "Alpha Beta");
+        assert_eq!(parsed.text_elements[0].bounds.x0, 10.);
+        assert_eq!(parsed.text_elements[0].bounds.x1, 70.);
+        assert_eq!(parsed.text_elements[1].bounds.x0, 70.);
+    }
+}
+
+/// 明示的な空白と小さなkerningから、余分な単語境界を作らない。
+#[test]
+fn explicit_spaces_and_small_kerning_do_not_gain_extra_spaces() {
+    for (operand, expected) in [
+        ("[(Alpha ) -600 (Beta)]", "Alpha Beta"),
+        ("[(A) -50 (B)]", "AB"),
+    ] {
+        let parsed = parse(
+            &format!("BT /F 10 Tf 10 10 Td {operand} TJ ET"),
+            false,
+            false,
+        );
+        assert_eq!(
+            parsed
+                .text_elements
+                .iter()
+                .map(|element| element.text.as_str())
+                .collect::<String>(),
+            expected
+        );
+    }
+}
+
+/// CJKの位置調整には英語の単語区切りを加えず、元のUnicode文字列を保持する。
+#[test]
+fn cjk_tracking_keeps_original_word_boundaries() {
+    let mut objects = pages("/MediaBox [0 0 500 500] /Resources << /Font << /F 10 0 R >> >>");
+    objects[4] = stream("BT /F 10 Tf 10 10 Td [(A) -600 (B)] TJ ET");
+    objects[5] = stream("");
+    objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Custom /FirstChar 65 /LastChar 66 /Widths [1000 1000] /ToUnicode 11 0 R >>".into());
+    objects.push(stream("2 beginbfchar\n<41> <6F22>\n<42> <5B57>\nendbfchar"));
+    let parsed = parse_pdf_bytes("cjk-tracking.pdf", &pdf(&objects)).unwrap();
+    assert_eq!(parsed.text_elements[0].text, "漢字");
+    assert_eq!(parsed.text_elements[0].bounds.x0, 10.);
+    assert_eq!(parsed.text_elements[0].bounds.x1, 36.);
+}
+
+/// 別のTj命令の隣接描画は従来どおり結合し、TJ配列内の推論を適用しない。
+#[test]
+fn separate_show_operators_do_not_gain_inferred_tj_spaces() {
+    let parsed = parse(
+        "BT /F 10 Tf 20 150 Td (Top) Tj 1 0 0 1 42 150 Tm (Line) Tj ET",
+        false,
+        false,
+    );
+    assert_eq!(parsed.text_elements[0].text, "TopLine");
+}
+
 /// Tz は glyph と間隔/TJ 数値調整を倍率変更し、Tm の位置は変更しない。
 #[test]
 fn horizontal_scaling_applies_to_glyph_spacing_and_tj() {
@@ -125,6 +189,33 @@ fn negative_spacing_and_scaling_keep_all_glyph_extents() {
 
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 同じCourier語間を文字またはTJ移動で表しても、回転・水平倍率・Tc下の文字列と外接範囲は一致する。
+    #[test]
+    fn word_gap_matches_literal_space_geometry(
+        left in 1usize..9,
+        right in 1usize..9,
+        spacing in 0i32..4,
+        scale in 25i32..151,
+        rotation in 0usize..4,
+        in_form in any::<bool>(),
+    ) {
+        let matrix = ["1 0 0 1", "0 1 -1 0", "-1 0 0 -1", "0 -1 1 0"][rotation];
+        let prefix = format!("BT /F 10 Tf {spacing} Tc {scale} Tz {matrix} 200 200 Tm ");
+        let suffix = " /F 20 Tf (Z) Tj ET";
+        let a = "A".repeat(left);
+        let b = "B".repeat(right);
+        let literal = parse(&format!("{prefix}({a} {b}) Tj{suffix}"), in_form, false);
+        let adjustment = -(600 + 100 * spacing);
+        let positioned = parse(&format!("{prefix}[({a}) {adjustment} ({b})] TJ{suffix}"), in_form, false);
+        prop_assert_eq!(literal.text_elements.len(), positioned.text_elements.len());
+        for (a, b) in literal.text_elements.iter().zip(&positioned.text_elements) {
+            prop_assert_eq!(&a.text, &b.text);
+            for (x, y) in [(a.bounds.x0, b.bounds.x0), (a.bounds.x1, b.bounds.x1), (a.bounds.y0, b.bounds.y0), (a.bounds.y1, b.bounds.y1)] {
+                prop_assert!((x-y).abs() < 0.001);
+            }
+        }
+    }
+
     /// Tj/TJ の分割は間隔を含めた glyph の位置と後続原点を変えない。
     #[test]
     fn splitting_show_preserves_spacing(count in 1usize..20, spacing in -3i32..8, scale in 25i32..151) {

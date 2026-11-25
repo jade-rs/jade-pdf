@@ -19,6 +19,7 @@ pub(super) fn budget(capacity: u64) -> DecodeBudget {
         crop_box: None,
         rotation: 0,
         resources: Some(crate::page_attributes::ResourceLocation::Inline(1)),
+        contents: vec![2],
     }]));
     target
 }

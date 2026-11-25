@@ -479,7 +479,7 @@ fn legacy_page_extraction_capacity_is_inclusive_at_public_api() {
     }
 }
 
-/// Contents 配列の初出順・別ページの共有 stream を、コメントと予算境界を含めて保持する。
+/// Contents 配列の実行順・繰り返し・別ページの共有 stream を予算境界でも保持する。
 #[test]
 fn contents_array_order_is_preserved_at_public_budget_boundary() {
     let mut objects =
@@ -516,7 +516,7 @@ fn contents_array_order_is_preserved_at_public_budget_boundary() {
             .iter()
             .map(|text| (text.page, text.text.as_str()))
             .collect::<Vec<_>>(),
-        [(0, "B"), (0, "A"), (1, "A"), (1, "B")]
+        [(0, "B"), (0, "A"), (0, "B"), (1, "A"), (1, "B")]
     );
 }
 

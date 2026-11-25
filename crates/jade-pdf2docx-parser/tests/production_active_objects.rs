@@ -528,18 +528,27 @@ fn content_reference_does_not_alias_another_generation() {
         bytes[header + 2] = b'1';
         let entry = bytes.windows(8).rposition(|w| w == b"00000 n ").unwrap();
         bytes[entry + 4] = b'1';
-        let parsed = parse_pdf_bytes("generation-content.pdf", &bytes).unwrap();
-        let new = parsed
-            .text_elements
-            .iter()
-            .any(|element| element.text == "NEW");
-        assert_eq!(new, generation == 1);
-        assert!(
-            !parsed
-                .text_elements
-                .iter()
-                .any(|element| element.text.contains("OLD"))
-        );
+        let result = parse_pdf_bytes("generation-content.pdf", &bytes);
+        if generation == 0 {
+            assert!(matches!(
+                result,
+                Err(ParseError::InvalidPdfStructure { .. })
+            ));
+        } else {
+            let parsed = result.unwrap();
+            assert!(
+                parsed
+                    .text_elements
+                    .iter()
+                    .any(|element| element.text == "NEW")
+            );
+            assert!(
+                !parsed
+                    .text_elements
+                    .iter()
+                    .any(|element| element.text.contains("OLD"))
+            );
+        }
     }
 }
 
