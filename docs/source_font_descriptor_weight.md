@@ -16,7 +16,7 @@ nativeの文字回復でも、予算付きコピーは確認済みweightを保�
 
 この追加修正を含む739個のRust sourceでdefault全体2,461件が成功した（失敗0、明示ignore32、141 test groups）。native110出力を実行し直し、成功95件のDOCXと拒否15件のログは、下記の宣言weight検証時の親版とすべてbyte単位で一致した。作り直したWASMのJS・WASM・型・ライセンス10ファイルも親版と一致し、同一runtimeに対する下記browser260出力の検証を引き継ぐ。browserの新しい実行や新しい精度評価は主張しない。DOCXが同一なので再描画は追加しない。元PDFと固定goldは変更していない。
 
-Rustで`ParsedTextElement`を直接構築する呼び出し側は、未確認なら`font_weight: None`を追加する必要がある。native SDKから抽出するだけのspanも`None`とする。固定したPDFium 7961の`FPDFText_GetFontWeight`は`StemV`からの推定を返すため、この属性の根拠に使用しない。native側でsourceに基づくspanを再利用する場合のコピーは値を保持するが、SDKしか読めないfontと元resourceの対応を名前だけで推測しない。
+Rustで`ParsedTextElement`を直接構築する呼び出し側は、未確認なら`font_weight: None`を追加する必要がある。native SDKから抽出するだけの未確認spanも`None`とする。固定したPDFium 7961の`FPDFText_GetFontWeight`は`StemV`からの推定を返すため、この属性の根拠に使用しない。native側でsourceに基づくspanを再利用する場合のコピーは値を保持する。限定した埋め込みsubset Type1/CFFでは、解析ローカルのresource識別と実際のSDK埋め込み確認を組み合わせる[追加経路](native_subset_font_weight.md)を持つ。family名だけでは対応を推測しない。
 
 この変更は、罫線のない表の粗いfallbackにセルごとのstyleを追加するものではない。PDFの全太字、回転した見出し、段組み、改ページを含む文書全体の再現性は別途確認が必要である。
 
