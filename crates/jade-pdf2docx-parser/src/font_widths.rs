@@ -14,6 +14,10 @@ mod name_allocation_tests;
 #[path = "font_owned_allocation_tests.rs"]
 mod owned_allocation_tests;
 
+#[cfg(test)]
+#[path = "bold_standard_metrics_tests.rs"]
+mod bold_standard_metrics_tests;
+
 /// 現在対応する標準 Font の幅表。
 #[derive(Debug, Clone, Copy)]
 enum Standard {

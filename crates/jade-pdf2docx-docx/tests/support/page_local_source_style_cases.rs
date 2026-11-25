@@ -123,6 +123,33 @@ fn new_borderless_cells_retain_mixed_source_run_styles() {
     }
 }
 
+/// 末列を通常体の概算幅で切らず、原本Helvetica-Boldのencoded advanceまで確保する。
+#[test]
+fn terminal_mixed_style_cell_covers_its_source_glyph_advances() {
+    let xml = document_xml(&source_with_palette(
+        &[true, false],
+        40,
+        240,
+        None,
+        None,
+        true,
+    ));
+    let mut reader = Reader::from_str(&xml);
+    let mut widths = Vec::<usize>::new();
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(tag) if tag.name().as_ref() == b"w:gridCol" => {
+                widths.push(attribute(&tag, b"w:w").unwrap().parse().unwrap())
+            }
+            Event::Eof => break,
+            _ => (),
+        }
+    }
+    assert_eq!(widths.len(), 4);
+    // GRID-: 28.89pt、R0C1: 30.672pt。twipへの丸めだけを許す。
+    assert!((widths[3] as f32 / 20. - 59.562).abs() < 0.05, "{widths:?}");
+}
+
 proptest! {
     /// 原点・列間隔・ページ順を変えても、太字の原文断片と対応する書式を失わない。
     #[test]
