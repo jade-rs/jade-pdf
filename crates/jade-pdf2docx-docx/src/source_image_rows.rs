@@ -50,24 +50,32 @@ pub(super) fn select(
         }
     }
     // 本文と重なる画像自体は従来のflowへ残し、独立した横並び画像を妨げない。
+    let original_count = images.len();
     images.retain(|(_, image)| !text.iter().any(|text| overlap(text.bounds, image.bounds)));
+    let unresolved_flow = images.len() != original_count;
     if images.len() < 2 {
         return Vec::new();
     }
-    let mut row = false;
+    let mut row_members = vec![false; images.len()];
     for (at, (_, a)) in images.iter().enumerate() {
-        for (_, b) in &images[at + 1..] {
+        for (next, (_, b)) in images.iter().enumerate().skip(at + 1) {
             let across = a.bounds.x1 + 1. <= b.bounds.x0 || b.bounds.x1 + 1. <= a.bounds.x0;
             let common = a.bounds.y1.min(b.bounds.y1) - a.bounds.y0.max(b.bounds.y0);
             let smaller = (a.bounds.y1 - a.bounds.y0).min(b.bounds.y1 - b.bounds.y0);
-            row |= across && common >= smaller * 0.5;
+            if across && common >= smaller * 0.5 {
+                row_members[at] = true;
+                row_members[next] = true;
+            }
         }
     }
-    if row {
-        images.into_iter().map(|(index, _)| index).collect()
-    } else {
-        Vec::new()
+    if !row_members.iter().any(|member| *member) {
+        return Vec::new();
     }
+    images
+        .into_iter()
+        .enumerate()
+        .filter_map(|(at, (index, _))| (!unresolved_flow || row_members[at]).then_some(index))
+        .collect()
 }
 
 /// 非有限・反転・面積0の本文矩形を、重なりなしの根拠に使わない。
