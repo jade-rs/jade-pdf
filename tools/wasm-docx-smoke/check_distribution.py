@@ -7,6 +7,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 NOTICES = {
+    'LICENSE-adobe-japan1-ucs2.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/adobe-japan1-ucs2.txt',
     'LICENSE-adobe-glyph-list.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/adobe-glyph-list.txt',
     'LICENSE-fonttools.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/fonttools.txt',
     'LICENSE-reportlab.txt': ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt',

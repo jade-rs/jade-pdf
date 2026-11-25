@@ -22,6 +22,27 @@ pub(crate) fn decode_bytes(
     cmap: &ToUnicodeCMap,
     encoding: Option<&str>,
 ) -> Option<String> {
+    if let Some(collection) = cmap.registered() {
+        if !bytes.len().is_multiple_of(2) {
+            budget.invalid_registered_cid("Identity-H character code has an incomplete byte pair");
+            return None;
+        }
+        return collect(budget, |emit| {
+            for pair in bytes.chunks_exact(2) {
+                if budget.is_stopped() {
+                    return None;
+                }
+                let Some(text) = collection.lookup(u16::from_be_bytes([pair[0], pair[1]])) else {
+                    budget.invalid_registered_cid(
+                        "code is not defined in the declared Adobe-Japan1 supplement",
+                    );
+                    return None;
+                };
+                emit(text.as_bytes())?;
+            }
+            Some(())
+        });
+    }
     if !cmap.is_empty() {
         let mut hex = budget.metadata_vector(bytes.len().checked_mul(2)?)?;
         for &byte in bytes {

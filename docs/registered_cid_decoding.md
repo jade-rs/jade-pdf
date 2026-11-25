@@ -1,0 +1,17 @@
+# 登録済みAdobe-Japan1 CIDの復号
+
+国立天文台の2026年暦要項では、非埋め込みType0フォントが`Identity-H`とAdobe/Japan1 Supplement 2を宣言し、ToUnicodeを持たない。旧bytes/WASM経路はCIDをShift_JISへ流していた。元PDFのpage 1から内容・フォントを保って作った既知抜粋では、ChromiumとWebKitのdefault/strict全4出力が同じ文字化けを含むDOCXになった。strictも成功しており、原文の非空白306文字に対し出力298文字、文字の内訳も不一致だった。ネイティブ版の両モードは306文字の内訳を保持した。
+
+入力PDFと出典・利用条件、抜粋前後の検査、PDFKitによる全ページ描画、原文に基づくgoldは、製品修正前にローカル研究領域へ保存した。元の5ページPDFと既存goldは変更していない。抜粋は既知対照であり、未見資料の成績には数えない。
+
+今回の対応は、間接FontオブジェクトのType0/Identity-H、単一CIDFontType0またはCIDFontType2、ToUnicode不在、Adobe/Japan1登録、整数Supplement 0〜7を全て確認した場合に限定する。属性の重複、参照先の世代違い、循環、宣言外の登録名を採用しない。RegistryとOrderingは元PDFの有効revisionから文字列byteを読み、hexとliteral escapeも確認する。構造走査用に文字列を隠した本文から登録名を推測しない。明示ToUnicodeと登録表は混合しない。
+
+UnicodeはAdobe公式の[Mapping Resources for PDF](https://github.com/adobe-type-tools/mapping-resources-pdf/tree/2dd5e53fb74a01718b9dfd448a0d1cce6fff2aa5)の`Adobe-Japan1-UCS2` version 10.002を使う。入力SHA-256は`6a9693361647a37996312cc57071bb79f8c06411207be7c730a83fda1254cd82`。`python3 tools/generate_registered_cids.py`が固定入力の全23,060 CIDを検査し、UTF-8本文とlittle endian offset表を生成する。補助面文字・variation sequenceを保持する。データは静的に借用し、新しいruntime依存や実行時ネットワーク要求はない。出力容量は既存metadata予算に数える。
+
+不完全な二byte対、CID 0、宣言Supplement外のCIDは`ParseError::InvalidRegisteredCid`で解析を中断し、部分本文を公開しない。既に発生した資源上限エラーを後のCIDエラーで置き換えない。登録情報が未確認のFont、Identity-V、独自Encoding、inline Fontはこの対応の対象外で、従来の対応範囲を改善したとは主張しない。
+
+原表および生成データはBSD-3-Clause。`crates/jade-pdf2docx-parser/licenses/adobe-japan1-ucs2.txt`をソース・ネイティブ実行ファイル・WASM配布物に同梱する。WASM生成・配布検査は同一noticeの内容とhashを検査する。lawrenceanumの実装コードは流用していない。
+
+公開API回帰の最初のRedは7件中5件が失敗し、PBTの最小入力は「日」に対応するCID一つだった。最初の接続実装も同じ5件が失敗し、元の登録文字列を読む接続後に7件が通過した。間接Subtypeと正符号付きSupplementの追加Redも別ログで保存した。
+
+実ブラウザー・ネイティブの再変換、全既存対照との比較、DOCX描画と全体検証はまだ完了していない。この変更は未適格であり、文字復号の単体結果を日本語組版・表・太字・縦書き・ページ再現の合格に読み替えない。

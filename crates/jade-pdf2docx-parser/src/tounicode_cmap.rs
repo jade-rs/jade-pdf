@@ -10,6 +10,8 @@ use std::{
 pub(crate) struct ToUnicodeCMap {
     /// 非空mapの共有保存領域。空mapはheapを使わず静的領域を参照する。
     data: Option<Arc<ToUnicodeCMapData>>,
+    /// ToUnicode不在時に検証した、Font局所の登録CID対応。
+    registered: Option<crate::registered_cid::Collection>,
 }
 
 /// ToUnicode CMap の構築中だけ変更できる lookup 情報。
@@ -106,6 +108,18 @@ impl Deref for ToUnicodeCMap {
 }
 
 impl ToUnicodeCMap {
+    /// 入力ToUnicodeと混合せず、検証済み登録表だけを選択する。
+    pub(crate) fn for_registered(collection: crate::registered_cid::Collection) -> Self {
+        Self {
+            data: None,
+            registered: Some(collection),
+        }
+    }
+
+    /// 登録CID表を持つ場合だけ、二byte復号専用の情報を返す。
+    pub(crate) fn registered(&self) -> Option<crate::registered_cid::Collection> {
+        self.registered
+    }
     /// 完成 map の保存領域を共有しているか検査する。
     #[cfg(test)]
     pub(crate) fn shares_storage_with(&self, other: &Self) -> bool {
@@ -114,7 +128,7 @@ impl ToUnicodeCMap {
 
     /// CMap に文字対応が無いか返す。
     pub(crate) fn is_empty(&self) -> bool {
-        self.mappings.is_empty()
+        self.registered.is_none() && self.mappings.is_empty()
     }
 
     /// 単byte codeの許可範囲内の明示文字列を、非BMP・複数文字も保持して借用する。
@@ -195,6 +209,7 @@ impl ToUnicodeCMapData {
         } else {
             ToUnicodeCMap {
                 data: budget.budgeted_arc(self),
+                registered: None,
             }
         }
     }

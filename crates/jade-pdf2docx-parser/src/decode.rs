@@ -592,6 +592,14 @@ impl DecodeBudget {
         }
     }
 
+    /// 登録済みcollectionで復号不能なCIDは部分本文を公開せず、最初の失敗を保持する。
+    pub(crate) fn invalid_registered_cid(&self, reason: &'static str) {
+        if !self.is_stopped() {
+            self.stopped.set(true);
+            *self.failure.borrow_mut() = Some(ParseError::InvalidRegisteredCid { reason });
+        }
+    }
+
     /// mapping の key/value を確保する前に payload byte 数を累積予約する。
     pub(crate) fn charge_tounicode_bytes(&self, length: u64) -> Option<()> {
         if self.is_stopped() {

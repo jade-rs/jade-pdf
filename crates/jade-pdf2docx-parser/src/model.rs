@@ -138,6 +138,11 @@ pub enum ParseError {
         /// 不正と判断した理由。
         reason: &'static str,
     },
+    /// 登録済みCIDのbyte幅または宣言Supplementの範囲が不正。
+    InvalidRegisteredCid {
+        /// 復号を中断した理由。
+        reason: &'static str,
+    },
     /// 設定された解析上限を超過した。
     ResourceLimit {
         /// 超過した資源名。
@@ -199,6 +204,9 @@ impl Display for ParseError {
             ParseError::Io(err) => write!(f, "io error: {err}"),
             ParseError::InvalidToUnicode { reason } => {
                 write!(f, "invalid ToUnicode CMap: {reason}")
+            }
+            ParseError::InvalidRegisteredCid { reason } => {
+                write!(f, "invalid registered CID: {reason}")
             }
             ParseError::ResourceLimit {
                 resource,

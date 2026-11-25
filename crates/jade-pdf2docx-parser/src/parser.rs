@@ -729,16 +729,28 @@ pub(crate) fn parser_source_with_compressed_objects(
     if let Some(source) = decode_budget.parser_source(bytes) {
         return crate::metadata_source::Source::Shared(source);
     }
+    let mut source = parser_source_preserving_strings(decode_budget, bytes);
+    if decode_budget.is_stopped() {
+        return crate::metadata_source::Source::Owned(Vec::new());
+    }
+    crate::metadata::mask_ignored(&mut source);
+    crate::metadata_source::store(decode_budget, bytes, source)
+}
+
+/// 有効revisionのmetadataを展開し、登録情報用のPDF文字列をbyteのまま保持する。
+pub(crate) fn parser_source_preserving_strings(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+) -> Vec<u8> {
     let mut source = crate::text::pdf_bytes_without_stream_payloads(decode_budget, bytes);
     append_compressed_objects_as_indirect_objects(decode_budget, bytes, &mut source);
     if decode_budget.is_stopped() {
-        return crate::metadata_source::Source::Owned(Vec::new());
+        return Vec::new();
     }
     if let Some(index) = decode_budget.stream_index(bytes) {
         index.mask_references(&mut source);
     }
-    crate::metadata::mask_ignored(&mut source);
-    crate::metadata_source::store(decode_budget, bytes, source)
+    source
 }
 
 /// object stream 展開済み body を `n 0 obj ... endobj` として追記する。
