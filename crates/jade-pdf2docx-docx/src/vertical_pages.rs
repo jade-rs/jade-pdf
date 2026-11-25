@@ -30,6 +30,19 @@ const MIN_TIER_GAP: f32 = 4.0;
 /// 段を区切る罫線（ページの幅いっぱいの横の線、回した座標では縦の線）とみなす長さの割合と太さ。
 const SEPARATOR_SPAN: f32 = 0.8;
 const MAX_SEPARATOR_THICKNESS: f32 = 6.0;
+/// 柱（ページの上端の、罫線の上に横組みで置いた日付・紙名・号数）を探す、ページの上からの
+/// 範囲（表示の高さ比）。
+const RUNNING_HEAD_ZONE: f32 = 0.15;
+/// 柱の文字片を本文から外すときに、ページ番号へ足す印。柱は縦書きの section の header に
+/// 横組みのまま置く（[`running_head`]）ので、回した本文の組みには加えない。
+pub(crate) const RUNNING_HEAD_PAGE: usize = 1 << 30;
+/// 浮かせた図の直下の横組みの添え書き（題字の下の発行者名など）を本文から外すときに、
+/// ページ番号へ足す印。図と同じく header に原本の向きのまま置く（[`captions`]）。
+pub(crate) const CAPTION_PAGE: usize = 1 << 29;
+/// 本文から外した文字片の印。
+pub(crate) const TAKEN_PAGE: usize = RUNNING_HEAD_PAGE | CAPTION_PAGE;
+/// 図の下端から添え書きを探す範囲（pt）。
+const CAPTION_REACH: f32 = 30.0;
 
 /// 縦書きとして回したページか。
 pub(crate) fn is_vertical(page: &ParsedPage) -> bool {
@@ -143,6 +156,292 @@ pub(super) fn keep_separator_glyphs(parsed: &mut ParsedDocument) {
             })
             .collect::<Vec<_>>();
         parsed.graphics.extend(rules);
+    }
+}
+
+/// 縦書きのページの柱を、回す前に本文から外す（ページ番号に [`RUNNING_HEAD_PAGE`] を足す）。
+///
+/// 柱は、ページの上端近くの幅いっぱいの横罫線より上にある、横組みの 1 行の文字片とする。
+/// 縦の行の字（2 字以上で縦長の文字片）がある場合は柱とみなさない。
+fn take_running_head(parsed: &mut ParsedDocument, page: usize, (width, height): (f32, f32)) {
+    let Some(rule) = parsed
+        .graphics
+        .iter()
+        .filter(|graphic| graphic.page == page)
+        .map(|graphic| normalized_bounds(graphic.bounds))
+        .filter(|bounds| {
+            bounds.y1 - bounds.y0 <= MAX_SEPARATOR_THICKNESS
+                && bounds.x1 - bounds.x0 >= SEPARATOR_SPAN * width
+                && bounds.y0 >= (1.0 - RUNNING_HEAD_ZONE) * height
+        })
+        .map(|bounds| bounds.y1)
+        .reduce(f32::min)
+    else {
+        return;
+    };
+    let head = |text: &ParsedTextElement| {
+        text.page == page
+            && !is_rule_font(text)
+            && normalized_bounds(text.bounds).y0 >= rule
+            && !text.text.trim().is_empty()
+    };
+    let texts = parsed
+        .text_elements
+        .iter()
+        .filter(|text| head(text))
+        .collect::<Vec<_>>();
+    let size = texts
+        .iter()
+        .map(|text| text.font_size)
+        .fold(0.0f32, f32::max);
+    let (low, high) = texts
+        .iter()
+        .fold((f32::INFINITY, f32::NEG_INFINITY), |(low, high), text| {
+            let bounds = normalized_bounds(text.bounds);
+            (low.min(bounds.y0), high.max(bounds.y1))
+        });
+    let upright = texts.iter().any(|text| {
+        let bounds = normalized_bounds(text.bounds);
+        char_count(text) >= 2 && bounds.y1 - bounds.y0 >= ASPECT * (bounds.x1 - bounds.x0)
+    });
+    if texts.len() < 2 || upright || !(size > 0.0) || high - low > 2.0 * size {
+        return;
+    }
+    let mut indices = (0..parsed.text_elements.len())
+        .filter(|&index| head(&parsed.text_elements[index]))
+        .collect::<Vec<_>>();
+    indices.sort_by(|&a, &b| {
+        let (a, b) = (&parsed.text_elements[a], &parsed.text_elements[b]);
+        normalized_bounds(a.bounds)
+            .x0
+            .total_cmp(&normalized_bounds(b.bounds).x0)
+    });
+    // 柱の語の間の広い空き（日付・紙名・号数の間）は全角の空白で埋め、原本の位置に近づける。
+    for pair in indices.windows(2) {
+        let next_x0 = normalized_bounds(parsed.text_elements[pair[1]].bounds).x0;
+        let text = &mut parsed.text_elements[pair[0]];
+        let bounds = normalized_bounds(text.bounds);
+        let gap = next_x0 - bounds.x1.max(bounds.x0 + set_width(text));
+        let count = (gap / text.font_size).round();
+        if gap >= JOIN_GAP_EM * text.font_size && count >= 1.0 {
+            text.text.truncate(text.text.trim_end().len());
+            text.text.push_str(&"\u{3000}".repeat(count as usize));
+            text.bounds = ParsedBounds {
+                x1: next_x0,
+                ..bounds
+            };
+        }
+    }
+    for index in indices {
+        parsed.text_elements[index].page |= RUNNING_HEAD_PAGE;
+    }
+}
+
+/// 縦書きのページの浮かせた図の直下にある横組みの添え書きを、回す前に本文から外す。
+///
+/// 図の左右の範囲に収まり、図の下端から [`CAPTION_REACH`] 以内に上端がある文字片で、縦の行の
+/// 字（2 字以上で縦長）を含まないものとする。
+fn take_captions(parsed: &mut ParsedDocument, page: usize) {
+    let images = parsed
+        .image_elements
+        .iter()
+        .filter(|image| image.page == page)
+        .map(|image| normalized_bounds(image.bounds))
+        .collect::<Vec<_>>();
+    for image in images {
+        let below = |text: &ParsedTextElement| {
+            let bounds = normalized_bounds(text.bounds);
+            text.page == page
+                && !is_rule_font(text)
+                && !text.text.trim().is_empty()
+                && bounds.x0 >= image.x0 - text.font_size
+                && bounds.x1 <= image.x1 + text.font_size
+                && bounds.y1 <= image.y0 + 2.0
+                && bounds.y1 >= image.y0 - CAPTION_REACH
+        };
+        let upright = parsed
+            .text_elements
+            .iter()
+            .filter(|text| below(text))
+            .any(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                char_count(text) >= 2 && bounds.y1 - bounds.y0 >= ASPECT * (bounds.x1 - bounds.x0)
+            });
+        if upright {
+            continue;
+        }
+        for text in parsed.text_elements.iter_mut().filter(|text| below(text)) {
+            text.page |= CAPTION_PAGE;
+        }
+    }
+}
+
+/// 縦書きのページ `page` から外した添え書きの行（表示座標のまま、上の行から。行の中は左から）。
+pub(crate) fn captions(parsed: &ParsedDocument, page: usize) -> Vec<Vec<&ParsedTextElement>> {
+    let mut texts = parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page | CAPTION_PAGE)
+        .collect::<Vec<_>>();
+    texts.sort_by(|a, b| {
+        normalized_bounds(b.bounds)
+            .y1
+            .total_cmp(&normalized_bounds(a.bounds).y1)
+    });
+    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
+    for text in texts {
+        let bounds = normalized_bounds(text.bounds);
+        let centre = (bounds.y0 + bounds.y1) / 2.0;
+        match rows.last_mut() {
+            Some(row)
+                if {
+                    let first = normalized_bounds(row[0].bounds);
+                    centre >= first.y0 && centre <= first.y1
+                } =>
+            {
+                row.push(text)
+            }
+            _ => rows.push(vec![text]),
+        }
+    }
+    for row in &mut rows {
+        row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+    }
+    rows
+}
+
+/// 縦書きのページ `page` から外した柱の文字片（表示座標のまま、左から順）。
+pub(crate) fn running_head(parsed: &ParsedDocument, page: usize) -> Vec<&ParsedTextElement> {
+    let mut texts = parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page | RUNNING_HEAD_PAGE)
+        .collect::<Vec<_>>();
+    texts.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+    texts
+}
+
+/// 縦書きのページの、原本の向きの表示寸法（幅、高さ。pt）。
+pub(crate) fn display_size(page: &ParsedPage) -> (f32, f32) {
+    (band_height(page), page.width)
+}
+
+/// 見出しの囲み（両側の長い罫線の間の、端の帯に短い線を並べた網掛け）とみなす罫線の長さの
+/// 下限、両側の罫線の間隔の範囲、端の帯の短い線の数の下限。
+const FRAME_MIN_LENGTH: f32 = 60.0;
+const FRAME_SPAN: (f32, f32) = (8.0, 40.0);
+const FRAME_MIN_HATCHES: usize = 4;
+
+/// 縦書きのページの網掛けの見出しの囲み（「省令」「法規的告示」など）を、閉じた枠にする。
+///
+/// 囲みは見出しの両側の長い罫線（外の太線と内の細線）と、両端の帯に並べた短い線で描かれ、
+/// 端を閉じる線が無い。そのままでは表の枠とみなされず、短い線は段落の罫線になる。両側の
+/// 外の罫線の間の線（内の細線・短い線）を除き、両端を閉じる線を足して、目次の囲みと同じく
+/// 枠のある表にする。
+pub(super) fn close_hatched_frames(parsed: &mut ParsedDocument) {
+    let pages = parsed
+        .pages
+        .iter()
+        .filter(|page| !is_vertical(page) && page_is_vertical(parsed, page.page_number))
+        .map(|page| page.page_number)
+        .collect::<Vec<_>>();
+    for page in pages {
+        // 表示座標の縦の長い罫線（x、下端、上端、太さ）。
+        let long = parsed
+            .graphics
+            .iter()
+            .filter(|graphic| graphic.page == page && !graphic.dashed)
+            .map(|graphic| (normalized_bounds(graphic.bounds), graphic.stroke_width))
+            .filter(|(bounds, _)| {
+                bounds.x1 - bounds.x0 <= 0.5 && bounds.y1 - bounds.y0 >= FRAME_MIN_LENGTH
+            })
+            .map(|(bounds, stroke)| (bounds.x0, bounds.y0, bounds.y1, stroke))
+            .collect::<Vec<_>>();
+        let mut frames = Vec::new();
+        for &(left, y0, y1, stroke) in &long {
+            let Some(&(right, ..)) = long
+                .iter()
+                .filter(|&&(x, b0, b1, width)| {
+                    x - left >= FRAME_SPAN.0
+                        && x - left <= FRAME_SPAN.1
+                        && (b0 - y0).abs() <= 1.0
+                        && (b1 - y1).abs() <= 1.0
+                        && (width - stroke).abs() <= 0.1
+                })
+                .min_by(|a, b| a.0.total_cmp(&b.0))
+            else {
+                continue;
+            };
+            let inside = |bounds: &ParsedBounds| {
+                bounds.x0 > left + 0.25
+                    && bounds.x1 < right - 0.25
+                    && bounds.y0 >= y0 - 1.0
+                    && bounds.y1 <= y1 + 1.0
+            };
+            let hatches = parsed
+                .graphics
+                .iter()
+                .filter(|graphic| graphic.page == page)
+                .map(|graphic| normalized_bounds(graphic.bounds))
+                .filter(|bounds| {
+                    inside(bounds)
+                        && bounds.x1 - bounds.x0 <= 0.5
+                        && bounds.y1 - bounds.y0 < 0.5 * (y1 - y0)
+                })
+                .collect::<Vec<_>>();
+            // 網掛けの帯は両端の 2 本だけ（字の間にも帯がある囲みは、帯で区切った表のままにする）。
+            let mut bands = hatches
+                .iter()
+                .map(|bounds| bounds.y0.round() as i32)
+                .collect::<Vec<_>>();
+            bands.sort_unstable();
+            bands.dedup();
+            let ends = bands.len() == 2
+                && bands[0] <= (y0 + 1.0).round() as i32
+                && hatches.iter().any(|bounds| bounds.y1 >= y1 - 1.0);
+            let hatches = if ends { hatches.len() } else { 0 };
+            let titled = parsed.text_elements.iter().any(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                let (x, y) = ((bounds.x0 + bounds.x1) / 2.0, (bounds.y0 + bounds.y1) / 2.0);
+                text.page == page && x > left && x < right && y > y0 && y < y1
+            });
+            if hatches >= FRAME_MIN_HATCHES && titled {
+                frames.push((left, right, y0, y1, stroke));
+            }
+        }
+        // 外の太線の囲みの中の、内の細線どうしの組は囲みにしない。
+        let outer = frames
+            .iter()
+            .filter(|&&(left, right, ..)| {
+                !frames
+                    .iter()
+                    .any(|&(outer_left, outer_right, ..)| outer_left < left && right < outer_right)
+            })
+            .copied()
+            .collect::<Vec<_>>();
+        for (left, right, y0, y1, stroke) in outer {
+            parsed.graphics.retain(|graphic| {
+                let bounds = normalized_bounds(graphic.bounds);
+                graphic.page != page
+                    || !(bounds.x0 > left + 0.25
+                        && bounds.x1 < right - 0.25
+                        && bounds.y0 >= y0 - 1.0
+                        && bounds.y1 <= y1 + 1.0)
+            });
+            for y in [y0, y1] {
+                parsed.graphics.push(ParsedGraphicElement {
+                    page,
+                    bounds: ParsedBounds {
+                        x0: left,
+                        y0: y,
+                        x1: right,
+                        y1: y,
+                    },
+                    stroke_width: stroke,
+                    dashed: false,
+                });
+            }
+        }
     }
 }
 
@@ -637,8 +936,7 @@ fn pad_row_gaps(parsed: &mut ParsedDocument, page: usize, tiers: &[(f32, f32)], 
         // 半角の漢数字も全角で組まれるので、段の終わりを越えない数に減らす。
         let limit = tiers
             .get(tier)
-            .map_or(f32::MAX, |&(_, end)| end.max(candidate.bounds.x1))
-            + 0.25 * size;
+            .map_or(f32::MAX, |&(_, end)| end.max(candidate.bounds.x1));
         // 始め括弧の字形は字の枠の後ろ半分にあり、字の枠は外接矩形より半字前から始まる。
         let opening = candidate
             .text
@@ -786,6 +1084,8 @@ pub(super) fn rotate(parsed: &mut ParsedDocument) {
         .map(|page| (page.page_number, parsed_page_display_size_points(page)))
         .collect::<Vec<_>>();
     for (page, (display_width, display_height)) in pages {
+        take_running_head(parsed, page, (display_width, display_height));
+        take_captions(parsed, page);
         for text in parsed
             .text_elements
             .iter_mut()
@@ -1212,6 +1512,157 @@ mod tests {
                 "大臣"
             ]
         );
+    }
+
+    /// ページの上端の横罫線より上の横組みの柱は本文から外し、語の間の広い空きは全角の空白で
+    /// 埋める。縦の行の字が罫線の上にあるときは柱とみなさない。
+    #[test]
+    fn the_running_head_above_the_top_rule_is_taken_out_of_the_body() {
+        let rule = ParsedGraphicElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 38.0,
+                y0: 785.0,
+                x1: 558.0,
+                y1: 785.0,
+            },
+            stroke_width: 0.6,
+            dashed: false,
+        };
+        let mut parsed = document(vec![
+            text("令和八年", 88.0, 788.0, 120.0, 798.0),
+            text("官報", 268.0, 788.0, 290.0, 798.0),
+            text("本文の縦の行", 500.0, 600.0, 510.0, 700.0),
+        ]);
+        parsed.graphics.push(rule.clone());
+        take_running_head(&mut parsed, 0, (595.0, 842.0));
+        let head = running_head(&parsed, 0)
+            .iter()
+            .map(|text| text.text.clone())
+            .collect::<Vec<_>>();
+        // 「令和八年」の字の枠の終わり（120）から「官報」（268）まで 148pt、8pt の字で 19 字分。
+        assert_eq!(
+            head,
+            [format!("令和八年{}", "\u{3000}".repeat(19)), "官報".into()]
+        );
+        assert_eq!(parsed.text_elements[2].page, 0);
+
+        let mut upright = document(vec![
+            text("令和八年", 88.0, 788.0, 120.0, 798.0),
+            text("縦の見出し", 300.0, 788.0, 308.0, 830.0),
+        ]);
+        upright.graphics.push(rule);
+        take_running_head(&mut upright, 0, (595.0, 842.0));
+        assert!(upright.text_elements.iter().all(|text| text.page == 0));
+    }
+
+    /// 両端だけを網掛けした見出しの囲みは、中の線を除いて両端を閉じた枠にする。字の間にも
+    /// 網掛けの帯がある囲み（目次）はそのまま残す。
+    #[test]
+    fn hatched_heading_frames_are_closed() {
+        let line = |x: f32, y0: f32, y1: f32, stroke_width: f32| ParsedGraphicElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0: x,
+                y0,
+                x1: x,
+                y1,
+            },
+            stroke_width,
+            dashed: false,
+        };
+        let frame = |bands: &[(f32, f32)]| {
+            let mut graphics = vec![
+                line(524.0, 123.0, 363.0, 1.08),
+                line(526.0, 123.0, 363.0, 0.36),
+                line(542.0, 123.0, 363.0, 0.36),
+                line(544.0, 123.0, 363.0, 1.08),
+            ];
+            for &(y0, y1) in bands {
+                graphics.extend((0..7).map(|step| line(528.0 + 2.0 * step as f32, y0, y1, 0.36)));
+            }
+            graphics
+        };
+        // 縦書きのページにするための縦の行と、囲みの中の見出し。
+        let body = (0..8)
+            .map(|column| {
+                text(
+                    "縦の行の本文",
+                    100.0 + 12.0 * column as f32,
+                    400.0,
+                    108.0 + 12.0 * column as f32,
+                    700.0,
+                )
+            })
+            .chain([
+                text("省", 530.0, 300.0, 538.0, 308.0),
+                text("令", 530.0, 170.0, 538.0, 178.0),
+            ])
+            .collect::<Vec<_>>();
+
+        let mut parsed = document(body.clone());
+        parsed.graphics = frame(&[(123.0, 155.0), (331.0, 363.0)]);
+        close_hatched_frames(&mut parsed);
+        let mut edges = parsed
+            .graphics
+            .iter()
+            .map(|graphic| {
+                let bounds = graphic.bounds;
+                (bounds.x0, bounds.y0, bounds.x1, bounds.y1)
+            })
+            .collect::<Vec<_>>();
+        edges.sort_by(|a, b| a.partial_cmp(b).unwrap());
+        assert_eq!(
+            edges,
+            [
+                (524.0, 123.0, 524.0, 363.0),
+                (524.0, 123.0, 544.0, 123.0),
+                (524.0, 363.0, 544.0, 363.0),
+                (544.0, 123.0, 544.0, 363.0),
+            ]
+        );
+
+        let mut divided = document(body);
+        divided.graphics = frame(&[(123.0, 155.0), (220.0, 260.0), (331.0, 363.0)]);
+        let before = divided.graphics.len();
+        close_hatched_frames(&mut divided);
+        assert_eq!(divided.graphics.len(), before);
+    }
+
+    /// 浮かせた図の直下の横組みの添え書きは、行ごとに上から外す。
+    #[test]
+    fn captions_under_a_floating_picture_are_taken_out_by_row() {
+        let mut parsed = document(vec![
+            text("発行", 480.0, 618.0, 496.0, 626.0),
+            text("内閣府", 510.0, 618.0, 534.0, 626.0),
+            text("（原稿作成）", 476.0, 608.0, 540.0, 615.0),
+            text("本文の縦の行", 400.0, 500.0, 410.0, 700.0),
+        ]);
+        parsed.image_elements.push(ParsedImageElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 474.0,
+                y0: 638.0,
+                x1: 548.5,
+                y1: 775.5,
+            },
+            png_bytes: Vec::new(),
+            width_px: 1,
+            height_px: 1,
+            floating: true,
+            rotation_degrees: 0,
+        });
+        take_captions(&mut parsed, 0);
+        let rows = captions(&parsed, 0)
+            .iter()
+            .map(|row| {
+                row.iter()
+                    .map(|text| text.text.as_str())
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(rows, [vec!["発行", "内閣府"], vec!["（原稿作成）"]]);
+        assert_eq!(parsed.text_elements[3].page, 0);
     }
 
     /// 段を区切る罫線があるページでは、段の下端のページ番号の帯は罫線までの段に入る。

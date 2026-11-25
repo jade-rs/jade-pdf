@@ -385,6 +385,7 @@ fn convert_pdf_file_with_check(
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     vertical_pages::keep_separator_glyphs(&mut parsed);
+    vertical_pages::close_hatched_frames(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
@@ -512,6 +513,7 @@ fn convert_pdf_bytes_with_check(
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     vertical_pages::keep_separator_glyphs(&mut parsed);
+    vertical_pages::close_hatched_frames(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
@@ -1446,6 +1448,8 @@ fn build_structured_docx_with_image_payloads(
                         leading_single_column: leading_single_column_section.as_ref(),
                         column_before_trailing: column_section_before_trailing.as_ref(),
                         page_end: None,
+                        header_pictures: page_index + 1 == pages.len()
+                            && (pages.len() == 1 || has_mixed_page_sizes),
                     },
                     image_payloads,
                 )?
@@ -1474,11 +1478,67 @@ trait StructuredPageContainer: Sized {
     fn add_structured_paragraph(self, paragraph: Paragraph) -> Self;
     /// container へ表を追加する。
     fn add_structured_table(self, table: Table) -> Self;
+    /// 浮かせた図だけの run を header の先頭の段落へ、位置を決めた枠の段落を header の末尾へ
+    /// 加える（header を持たない container では本文の段落にする）。
+    fn add_header_runs(self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        let mut paragraph = column_break_paragraph();
+        paragraph.children.clear();
+        let container =
+            self.add_structured_paragraph(runs.into_iter().fold(paragraph, Paragraph::add_run));
+        frames.into_iter().fold(container, |container, mut frame| {
+            frame.property.frame_property = None;
+            container.add_structured_paragraph(frame)
+        })
+    }
 }
 
 impl StructuredPageContainer for Docx {
     fn add_structured_paragraph(self, paragraph: Paragraph) -> Self {
         self.add_paragraph(paragraph)
+    }
+
+    fn add_header_runs(mut self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        let Some((_, header)) = self.document.section_property.header.as_mut() else {
+            let paragraph = runs.into_iter().fold(Paragraph::new(), Paragraph::add_run);
+            let anchor = !frames.is_empty();
+            let header = frames.into_iter().fold(
+                Header::new().add_paragraph(paragraph),
+                Header::add_paragraph,
+            );
+            let header = if anchor {
+                header.add_paragraph(column_break_paragraph_without_break())
+            } else {
+                header
+            };
+            return self.header(header);
+        };
+        let anchor = !frames.is_empty();
+        for frame in frames {
+            let taken = std::mem::replace(header, Header::new());
+            *header = taken.add_paragraph(frame);
+        }
+        // LibreOffice は枠の段落を後ろの段落に結びつけるので、枠の後ろに空の段落を置く。
+        if anchor {
+            let taken = std::mem::replace(header, Header::new());
+            *header = taken.add_paragraph(column_break_paragraph_without_break());
+        }
+        let first = header.children.iter_mut().find_map(|child| match child {
+            docx_rs::HeaderChild::Paragraph(paragraph) => Some(paragraph),
+            _ => None,
+        });
+        if let Some(paragraph) = first {
+            for run in runs.into_iter().rev() {
+                paragraph
+                    .children
+                    .insert(0, ParagraphChild::Run(Box::new(run)));
+            }
+            self
+        } else {
+            let paragraph = runs.into_iter().fold(Paragraph::new(), Paragraph::add_run);
+            let taken = std::mem::replace(header, Header::new());
+            *header = taken.add_paragraph(paragraph);
+            self
+        }
     }
 
     fn add_structured_table(self, table: Table) -> Self {
@@ -1591,17 +1651,22 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     if let Some(vertical) = vertical
         && !vertical_images.is_empty()
     {
-        let mut paragraph = column_break_paragraph();
-        paragraph.children.clear();
+        let mut runs = Vec::new();
         for (image_index, mut image) in vertical_images {
             if let Some(payloads) = image_payloads {
                 image.png_bytes = std::mem::take(&mut payloads[image_index]);
             }
             if let Some(picture) = vertical_pages::floating_picture(image, vertical) {
-                paragraph = paragraph.add_run(Run::new().add_image(picture));
+                runs.push(Run::new().add_image(picture));
             }
         }
-        container = container.add_structured_paragraph(paragraph);
+        container = if section_refs.header_pictures {
+            container.add_header_runs(runs, vertical_caption_frames(parsed, page.page, vertical))
+        } else {
+            let mut paragraph = column_break_paragraph();
+            paragraph.children.clear();
+            container.add_structured_paragraph(runs.into_iter().fold(paragraph, Paragraph::add_run))
+        };
     }
     let block_count = blocks.len();
     if block_count == 0 {
@@ -1662,7 +1727,30 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             .filter(|_| tier > 0)
             .map_or(origin_x, |(x0, _)| *x0)
     };
+    let mut leading_tier_gap = vertical.is_some();
     for (block_index, block) in blocks.into_iter().enumerate() {
+        // 縦書きの最初の段が、ほかの段より下から始まるときは（題字の図の下から始まる目次など）、
+        // その空きを空きの高さの空の段落で置く（LibreOffice は縦書きの section の最初の段落の
+        // 段落前の空きを、ほかの段の頭にも足してしまう）。
+        if let Some(vertical) = vertical
+            && std::mem::take(&mut leading_tier_gap)
+            && vertical_pages::tier_of(vertical, block.top_y()) == 0
+            && let Some(gap) = pdf_vertical_blank_gap_between_y(
+                vertical_pages::tier_top(vertical, vertical_top, 0),
+                block.top_y(),
+            )
+            .filter(|gap| *gap > 0)
+        {
+            container = container.add_structured_paragraph(
+                Paragraph::new().line_spacing(
+                    LineSpacing::new()
+                        .before(0)
+                        .after(0)
+                        .line(i32::try_from(gap).unwrap_or(i32::MAX))
+                        .line_rule(docx_rs::LineSpacingType::Exact),
+                ),
+            );
+        }
         // 縦書きの表・画像が次の段で始まるときは、先に改段する。
         if let Some(vertical) = vertical
             && !matches!(block, StructuredBlock::Paragraph { .. })
@@ -1880,6 +1968,7 @@ fn build_multi_page_text_column_docx(
                 leading_single_column: sections.leading_single_column.as_ref(),
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
+                header_pictures: is_last_page,
             },
             image_payloads,
         )?;
@@ -2053,6 +2142,66 @@ fn column_break_paragraph() -> Paragraph {
                 .line(20)
                 .line_rule(docx_rs::LineSpacingType::Exact),
         )
+}
+
+/// 縦書きのページの図の添え書きを、原本の位置に置いた枠の段落にする（同じ枠の設定の段落は
+/// Word・LibreOffice で 1 つの枠にまとまる）。
+fn vertical_caption_frames(
+    parsed: &ParsedDocument,
+    page: usize,
+    vertical: &ParsedPage,
+) -> Vec<Paragraph> {
+    let rows = vertical_pages::captions(parsed, page);
+    let bounds = rows
+        .iter()
+        .flatten()
+        .map(|text| normalized_bounds(text.bounds));
+    let (x0, x1, y1) = bounds.fold(
+        (f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY),
+        |(x0, x1, y1), bounds| (x0.min(bounds.x0), x1.max(bounds.x1), y1.max(bounds.y1)),
+    );
+    let (width, height) = vertical_pages::display_size(vertical);
+    if !(x0.is_finite() && x1 > x0 && y1.is_finite()) {
+        return Vec::new();
+    }
+    let twips = |points: f32| (points * 20.0).round() as i32;
+    let frame = docx_rs::FrameProperty {
+        w: u32::try_from(twips(x1 - x0 + 2.0)).ok(),
+        wrap: Some("none".into()),
+        h_anchor: Some("page".into()),
+        v_anchor: Some("page".into()),
+        x: Some(twips(x0)),
+        y: Some(twips(height - y1)),
+        ..Default::default()
+    };
+    rows.into_iter()
+        .filter_map(|texts| {
+            let segment = TextRowSegment {
+                texts,
+                split_from_row: false,
+            };
+            let line = structured_text_line_from_segment(&segment, &[], width)?;
+            let size = structured_line_max_font_size(&line);
+            let mut paragraph = paragraph_from_structured_line(&line, line.left_x, None, None)
+                .line_spacing(
+                    LineSpacing::new()
+                        .before(0)
+                        .after(0)
+                        .line((size * 20.0 * 1.15).round() as i32)
+                        .line_rule(docx_rs::LineSpacingType::Exact),
+                );
+            paragraph.property.indent = None;
+            paragraph.property.frame_property = Some(frame.clone());
+            Some(paragraph)
+        })
+        .collect()
+}
+
+/// 最小の高さの空の段落。
+fn column_break_paragraph_without_break() -> Paragraph {
+    let mut paragraph = column_break_paragraph();
+    paragraph.children.clear();
+    paragraph
 }
 
 /// 縦書きとして回したページ。
@@ -2401,6 +2550,7 @@ fn text_lines_by_page_from_pdf_text_elements(
         .map(|text| text.page)
         .chain(positioned_tables.iter().map(|table| table.page))
         .chain(parsed.image_elements.iter().map(|image| image.page))
+        .filter(|page| page & vertical_pages::TAKEN_PAGE == 0)
         .collect::<BTreeSet<_>>();
 
     page_numbers
@@ -3301,6 +3451,10 @@ struct StructuredPageSectionRefs<'a> {
     column_before_trailing: Option<&'a SectionProperty>,
     /// 非最終 PDF ページの末尾へ付与する section property。
     page_end: Option<&'a SectionProperty>,
+    /// 縦書きのページの浮かせた図を、本文ではなく最終 section の header に置くか。
+    /// Word・LibreOffice は header を横に組むので、ページ基準の位置を原本の向きのまま使える
+    /// （LibreOffice は縦書きの本文に置いた図のページ基準の位置を回して解釈する）。
+    header_pictures: bool,
 }
 
 impl DetectedTextColumnLayout {
