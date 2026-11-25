@@ -82,7 +82,7 @@ pub(super) fn refine(mut table: PositionedTable) -> PositionedTable {
     table
 }
 
-/// どの非空列にも同じ三行以上があり、各行boxが原本の帯に収まる場合だけ分割する。
+/// 三行以上の同期した本文と、任意の小さい単位行が原本の帯に収まる場合だけ分割する。
 fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Option<Split> {
     if row.len() != native.len()
         || row.iter().any(|cell| cell.vertical_merge.is_some())
@@ -101,10 +101,17 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         return None;
     }
     let first = occupied[0];
-    let count = first.lines.len();
-    if count < 3
+    let count = occupied.iter().map(|cell| cell.lines.len()).max()?;
+    let minimum = occupied.iter().map(|cell| cell.lines.len()).min()?;
+    if minimum < 3
+        || count - minimum > 1
         || occupied.iter().any(|cell| {
-            cell.lines.len() != count || cell.top != first.top || cell.bottom != first.bottom
+            cell.top != first.top
+                || cell.bottom != first.bottom
+                || (count != minimum
+                    && cell.lines.len() == count
+                    && structured_line_max_font_size(&cell.lines[0])
+                        >= structured_line_max_font_size(&cell.lines[1]) * 0.8)
         })
     {
         return None;
@@ -113,13 +120,13 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
     for index in 0..count {
         let top = occupied
             .iter()
-            .map(|cell| cell.lines[index].top_y)
+            .filter_map(|cell| line_at(cell, index, count).map(|line| line.top_y))
             .fold(f32::NEG_INFINITY, f32::max);
         if !top.is_finite()
-            || occupied.iter().any(|cell| {
-                let line = &cell.lines[index];
-                !line.top_y.is_finite() || top - line.top_y > TEXT_ROW_Y_TOLERANCE_PT
-            })
+            || occupied
+                .iter()
+                .filter_map(|cell| line_at(cell, index, count))
+                .any(|line| !line.top_y.is_finite() || top - line.top_y > TEXT_ROW_Y_TOLERANCE_PT)
         {
             return None;
         }
@@ -151,11 +158,11 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 borders.top &= index == 0;
                 borders.bottom &= index + 1 == count;
             }
-            let cell = if model.text.trim().is_empty() {
-                None
-            } else {
+            let line = original
+                .as_ref()
+                .and_then(|cell| line_at(cell, index, count));
+            let cell = if let Some(line) = line {
                 let original = original.as_ref()?;
-                let line = original.lines.get(index)?;
                 let mut cell = original.clone();
                 cell.top = edges[index];
                 cell.bottom = edges[index + 1];
@@ -167,6 +174,10 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 table_cell(&cell)?;
                 model.text = line.text.clone();
                 Some(cell)
+            } else {
+                model.text.clear();
+                model.underlined = false;
+                None
             };
             next_row.push(model);
             next_cells.push(cell);
@@ -180,4 +191,10 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         cells,
         heights,
     })
+}
+
+/// 単位行を持たない列を先頭の空セルで揃え、本文の各行を一度だけ参照する。
+fn line_at(cell: &Cell, index: usize, count: usize) -> Option<&StructuredTextLine> {
+    cell.lines
+        .get(index.checked_sub(count.checked_sub(cell.lines.len())?)?)
 }
