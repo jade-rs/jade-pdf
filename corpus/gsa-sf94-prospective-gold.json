@@ -1,0 +1,17 @@
+{
+  "id": "GSA-SF94-2020",
+  "url": "https://www.gsa.gov/system/files/2024-02/SF94-20b.pdf",
+  "source_sha256": "0500fcb8995e1a625dfb110f8d6c8e88bcc0ceed95f6694210bbdb2e34c7b0ff",
+  "source_bytes": 848850,
+  "original_pages": 3,
+  "source_nonwhite_count": 3641,
+  "criterion_count": 71,
+  "source_gold_path": "/Users/bokuweb/.codex/worktrees/pdf-gsa-sf94-holdout/jade-pdf/corpus/wasm-runtime/gsa-sf94-holdout-qualification/new-GSA-SF94-before-first-product/original-source-gold-before-first-product.json",
+  "source_gold_sha256": "5ce748e5593710d622356c7b9f674e8d2774ce940ee222c5c4816239fbe00883",
+  "source_manifest": "/Users/bokuweb/.codex/worktrees/pdf-gsa-sf94-holdout/jade-pdf/corpus/wasm-runtime/gsa-sf94-holdout-qualification/new-GSA-SF94-before-first-product/source-and-gold-manifest-before-first-product.json",
+  "source_manifest_sha256": "8b90fa7688e7148b5e934869807c80dfc66e0ff9be28bd342178e3c063a07c68",
+  "fixed_before_first_product": true,
+  "all3_original_pages_rights_privacy_reviewed": true,
+  "first_product_NOT_invoked": true,
+  "production_ready": false
+}
