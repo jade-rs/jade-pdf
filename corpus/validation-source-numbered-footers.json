@@ -1,0 +1,81 @@
+{
+  "scope": "Conservative decorated consecutive source page-number footer relocation with raw text and style preservation",
+  "production_source_commit": "f099feb636c3ee2a197662cf52f53d95160969f0",
+  "full_default_and_runtime_binding_commit": "bf63e267c51107435ab865f7e7c3a16e43cd5cc0",
+  "source_Rust_files": 728,
+  "qualified_parent_commit": "5c1548a9336869aac23d7c535b869915f04002c6",
+  "qualified_parent_full_tree": "192011567621d1a2a0cf2f7271234db7e673d48a",
+  "tests": {
+    "default_passed": 2429,
+    "default_failed": 0,
+    "default_ignored": 32,
+    "groups": 136,
+    "fmt_and_Clippy_passed": true,
+    "verified_literal_Unicode_parent_Red": "88d3108d85920bee95ee8e0704adcfa5a4309b2c",
+    "public_PBT_cases": 24,
+    "source_section_relationship_order_raw_text_and_sizes_verified": true,
+    "initial_unsupported_WinAnsi_control_not_claimed_valid_footer_Red": true,
+    "extra_workspace_diff2_failures_reproduced_parent_with_DOCX_SDK7961_and_both_passed_with_pinned_diff_SDK8111": true
+  },
+  "native": {
+    "raw_candidate_outcomes": 58,
+    "invalid_uniqueness_control_outcomes_excluded": 2,
+    "qualified_candidate_outcomes": 56,
+    "qualified_success": 52,
+    "expected_rejection": 4,
+    "only_changed_existing_DOCX": "NTA bonus-rate default",
+    "all_other_existing_successful_DOCX_byteexact_parent": true,
+    "all_original_strict_rejections_exact_parent": true
+  },
+  "browsers": {
+    "engines": ["Chromium", "WebKit"],
+    "raw_candidate_outcomes": 148,
+    "invalid_uniqueness_control_outcomes_excluded": 4,
+    "qualified_candidate_outcomes": 144,
+    "qualified_cases_per_engine": 36,
+    "qualified_success_per_engine": 59,
+    "expected_rejection_per_engine": 13,
+    "all28_existing_cases_DOCX_byteexact_parent": true,
+    "known11_order_and_single_browser_history_preserved": true,
+    "both_engines_all_outputs_hashes_and_inspections_exact": true,
+    "owned8_valid_controls_include_corrected_before_file_product_uniqueness_input": true,
+    "owned_positive2_strict_native_browser_difference_only_generated_content_paragraph_IDs": true,
+    "all_other_XML_styles_geometry_relationships_parts_exact_native": true
+  },
+  "known_NTA_bonus_original": {
+    "source_sha256": "5ab9d7d875ccb14769862757b4f8e027178925dae6e8ac40f903b1d55a9ae71b",
+    "gold_before_first_product_sha256": "59cdfe172764e86e308dd2f68b195e84aac4025c3c29f1ca110a5981cb2505da",
+    "source_pages": 2,
+    "Word_pages_before": 3,
+    "Word_pages_after": 2,
+    "all_raw_characters_including_whitespace_exact_parent_multiset": true,
+    "all_footer_raw_runs_and_styles_exact_parent": true,
+    "source15_and16_bound_to_corresponding_section_footers": true,
+    "tables": 2,
+    "grid_columns": [9, 10],
+    "right_aligned_numeric_paragraphs": 328,
+    "all_table_structure_and_nonfooter_body_elements_exact_except_generated_paragraph_IDs_and_source_page_transitions": true,
+    "selected30_visible_logical_column_and_relative_row_associations_manually_matched_again": true,
+    "all_logical_tax_rows_are_separate_Word_rows": false,
+    "footer_number_horizontal_center_difference_points_approx": [15, 11],
+    "footer_number_top_difference_points_approx": [-7, -7],
+    "whole_document_accepted": false
+  },
+  "visual": {
+    "selected_candidate_rendered_pages": 7,
+    "all7_individually_viewed": true,
+    "all_changed_existing_original_pages_viewed": true,
+    "viewer_resized_image_full_resolution_review_not_claimed": true,
+    "owned_blue_bold_counter_digits_and_page_order_visible": true,
+    "Microsoft_Word_not_verified": true,
+    "remaining_limitations": "docs/source_numbered_footers.md"
+  },
+  "rights_and_provenance": {
+    "existing_reviewed_private_original_reused_no_unseen_accuracy_claim": true,
+    "invalid_gold_inputs_outputs_and_diagnostics_preserved": true,
+    "original_PDF_fonts_generated_DOCX_not_redistributed": true,
+    "tracked_PDF_fixtures_remain3": true
+  },
+  "local_evidence_namespace": "corpus/wasm-runtime/source-page-number-footer-qualification",
+  "production_ready": false
+}

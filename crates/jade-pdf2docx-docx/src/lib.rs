@@ -64,6 +64,7 @@ mod native_numeric_alignment;
 mod native_spacing;
 mod native_table_rows;
 mod native_table_text;
+mod numbered_page_footers;
 mod ocr_reconcile;
 mod output;
 mod package;
