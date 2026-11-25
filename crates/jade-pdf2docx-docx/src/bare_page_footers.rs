@@ -173,3 +173,86 @@ fn overlaps_decoration(parsed: &ParsedDocument, page: usize, line: &StructuredTe
             b.x0 <= line.right_x && b.x1 >= line.left_x && b.y0 <= line.top_y && b.y1 >= bottom
         })
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 向きが未確認の数字を、有限の矩形と連番だけで水平footerとして確定しない。
+    #[test]
+    fn footer_candidates_require_confirmed_upright_source_baselines() {
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "unverified-footer-direction.pdf".into(),
+            byte_len: 1,
+            header: "%PDF-1.7".into(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 4,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            text_elements: Vec::new(),
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        let mut pages = Vec::new();
+        for page in 0..4 {
+            parsed.pages.push(ParsedPage {
+                page_number: page,
+                width: 612.0,
+                height: 792.0,
+                rotation: 0,
+            });
+            let text = format!("Body{page}");
+            pages.push(StructuredTextPage {
+                page,
+                lines: vec![StructuredTextLine {
+                    top_y: 712.0,
+                    left_x: 72.0,
+                    right_x: 150.0,
+                    alignment: ParagraphAlignment::Left,
+                    runs: vec![StructuredTextRun {
+                        text: text.clone(),
+                        style: Default::default(),
+                    }],
+                    split_from_row: false,
+                    text: text.clone(),
+                }],
+            });
+            parsed.text_elements.push(ParsedTextElement {
+                page,
+                text,
+                font_size: 12.0,
+                font_name: Some("Helvetica".into()),
+                font_weight: None,
+                fill_color: None,
+                baseline_y: Some(700.0),
+                bounds: ParsedBounds {
+                    x0: 72.0,
+                    x1: 150.0,
+                    y0: 700.0,
+                    y1: 712.0,
+                },
+            });
+            parsed.text_elements.push(ParsedTextElement {
+                page,
+                text: (page + 1).to_string(),
+                font_size: 11.04,
+                font_name: Some("Helvetica".into()),
+                font_weight: None,
+                fill_color: None,
+                baseline_y: None,
+                bounds: ParsedBounds {
+                    x0: 303.0,
+                    x1: 309.0,
+                    y0: 52.0,
+                    y1: 63.04,
+                },
+            });
+        }
+        assert!(
+            select(&parsed, &pages).is_empty(),
+            "a source bounding box does not verify horizontal writing"
+        );
+    }
+}
