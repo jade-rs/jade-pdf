@@ -145,6 +145,16 @@ fn three_column_prose_keeps_unqualified_legacy_fallback() {
     assert_eq!(inventory(&text), inventory(&expected));
 }
 
+/// 短い識別子列を無視して、残り二列の説明だけを散文の二段組と誤認しない。
+#[test]
+fn three_column_code_and_prose_rows_keep_their_editable_table() {
+    let (source, expected) = source_with_columns(10, 8, true, 3);
+    let (tables, rows, columns, text) = properties(&document(&source));
+    assert_eq!((tables, rows), (1, 10));
+    assert!(!columns);
+    assert_eq!(inventory(&text), inventory(&expected));
+}
+
 proptest! {
     #![proptest_config(ProptestConfig {
         cases: 24,
@@ -162,6 +172,20 @@ proptest! {
         let (tables,_,columns,text)=properties(&document(&source));
         prop_assert_eq!(tables,0);
         prop_assert!(columns);
+        prop_assert_eq!(inventory(&text),inventory(&expected));
+    }
+
+    /// 行数・文字幅・識別子の有無が変わっても、三列を新しい二列経路へ入れない。
+    #[test]
+    fn three_column_fallback_is_not_promoted_to_two_columns(
+        rows in 8usize..=18,
+        size in 8u16..=10,
+        codes in any::<bool>(),
+    ) {
+        let (source,expected)=source_with_columns(rows,size,codes,3);
+        let (tables,actual_rows,columns,text)=properties(&document(&source));
+        prop_assert_eq!((tables,actual_rows),(1,rows));
+        prop_assert!(!columns);
         prop_assert_eq!(inventory(&text),inventory(&expected));
     }
 }
