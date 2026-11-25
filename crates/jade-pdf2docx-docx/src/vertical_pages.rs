@@ -639,7 +639,18 @@ fn pad_row_gaps(parsed: &mut ParsedDocument, page: usize, tiers: &[(f32, f32)], 
             .get(tier)
             .map_or(f32::MAX, |&(_, end)| end.max(candidate.bounds.x1))
             + 0.25 * size;
-        let mut count = ((candidate.bounds.x0 - set_end) / size).round().max(0.0);
+        // 始め括弧の字形は字の枠の後ろ半分にあり、字の枠は外接矩形より半字前から始まる。
+        let opening = candidate
+            .text
+            .trim_start()
+            .starts_with(['「', '（', '〔', '『', '【', '［', '｛', '〈', '《']);
+        let target = candidate.bounds.x0
+            - if opening {
+                0.5 * candidate.font_size
+            } else {
+                0.0
+            };
+        let mut count = ((target - set_end) / size).round().max(0.0);
         while count > 0.0 && set_end + count * size + set_width(candidate) > limit {
             count -= 1.0;
         }
@@ -1263,6 +1274,30 @@ mod tests {
             .map(|text| (text.bounds.x0, text.bounds.x1))
             .collect::<Vec<_>>();
         assert_eq!(bounds, vec![(110.0, 150.0), (150.0, 238.0)]);
+    }
+
+    /// 約物を詰めて組んだ全角の文字片は原本の長さに収まる字間にし、詰めていない文字片は
+    /// そのまま組む。
+    #[test]
+    fn compressed_punctuation_gets_a_negative_character_spacing() {
+        // 20 字を 19 字分の長さに組んだ行
+        let compressed = piece(
+            "あるのは「の令和八年度」と、「当該交付前",
+            0.0,
+            152.0,
+            0.0,
+            8.0,
+        );
+        let placement = compressed_punctuation_placement(&compressed).expect("condensed");
+        assert_eq!(placement.spacing, -7);
+        let plain = piece(
+            "生した時において、当該災害に際し災害救",
+            0.0,
+            151.0,
+            0.0,
+            8.0,
+        );
+        assert!(compressed_punctuation_placement(&plain).is_none());
     }
 
     /// 表のマスの境目の罫線をまたいで空白で埋めない。

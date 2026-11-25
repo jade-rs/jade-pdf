@@ -2806,7 +2806,7 @@ fn structured_text_runs_from_row(
                             && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() < 0.001
                     })
                     .map(|_| text.bounds),
-                placement: None,
+                placement: compressed_punctuation_placement(text),
                 baseline_offset: baseline_offsets[index],
             },
         });
@@ -2815,6 +2815,38 @@ fn structured_text_runs_from_row(
     }
     runs
 }
+
+/// 全角の字だけの文字片を全角の送りで組むと原本の長さを半字以上越えるとき（原本が約物を
+/// 詰めて組んでいる）、原本の長さに収まる字間を返す。越えたままだと行が折り返す。
+fn compressed_punctuation_placement(
+    text: &ParsedTextElement,
+) -> Option<positioned_type1::Placement> {
+    let body = text.text.trim();
+    let count = body.chars().count();
+    let size = text.font_size;
+    if count < MIN_COMPRESSED_CHARS
+        || !(size.is_finite() && size > 0.0)
+        || !body.chars().all(|ch| u32::from(ch) >= 0x2E80)
+    {
+        return None;
+    }
+    let bounds = normalized_bounds(text.bounds);
+    // 外接矩形は字の枠より字の両端の余白の分だけ短い。
+    let extent = bounds.x1 - bounds.x0 + 0.15 * size;
+    let set = count as f32 * size;
+    if set - extent < 0.5 * size {
+        return None;
+    }
+    let spacing = ((extent - set) / count as f32 * 20.0).floor() as i32;
+    Some(positioned_type1::Placement {
+        stretch: 100,
+        spacing,
+        logical_space: false,
+    })
+}
+
+/// 詰めて組んだとみなす文字片の字数の下限。
+const MIN_COMPRESSED_CHARS: usize = 6;
 
 /// 行の外側の空白だけを除き、断片間の空白は原文通り返す。
 fn row_fragment_text(text: &str, index: usize, len: usize) -> &str {
