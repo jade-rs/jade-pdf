@@ -22,7 +22,7 @@ can be collected.
 The generated directory includes `LICENSE-adobe-glyph-list.txt`,
 `LICENSE-fonttools.txt`, and `LICENSE-reportlab.txt` for the conversion parser's
 glyph and standard encoding tables. ReportLab contributes static glyph-name
-facts and is not a runtime dependency. Distribute these notices with the WASM and
+facts and standard Helvetica bold ASCII advances and is not a runtime dependency. Distribute these notices with the WASM and
 generated bindings. The build helper verifies their complete contents and records
 their hashes in `build.json`.
 The distribution also includes `LICENSE-open-font-license-1.1.txt`, the standard
