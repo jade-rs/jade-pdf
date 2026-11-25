@@ -209,15 +209,64 @@ fn split_rect_with_slack(
         .chars()
         .filter(|ch| !ch.is_whitespace())
         .collect::<Vec<_>>();
-    let mut next = 0usize;
+    let keep = matched_chars(&infos, &expected)?;
     let infos = infos
         .into_iter()
-        .filter(|info| {
-            let body = info
-                .text
+        .zip(keep)
+        .filter_map(|(info, keep)| keep.then_some(info))
+        .collect::<Vec<_>>();
+    let pieces = group_chars_at_wide_gaps(&infos, horizontal);
+    (pieces.len() > 1).then_some(pieces)
+}
+
+/// 矩形の中の字（テキスト順）のうち、本文の字に当たるものを選ぶ。
+///
+/// 本文が字の並びにそのまま続けて現れる場合はその部分を選ぶ（2 行にまたがる矩形では、
+/// 隣の行の同じ字を本文の字と取り違えない）。続けて現れない場合だけ、本文の字を順に
+/// たどれる字を飛び飛びに選ぶ。本文のすべての字が見つからなければ `None`。
+fn matched_chars(infos: &[CharInfo], expected: &[char]) -> Option<Vec<bool>> {
+    if expected.is_empty() {
+        return None;
+    }
+    let bodies = infos
+        .iter()
+        .map(|info| {
+            info.text
                 .chars()
                 .filter(|ch| !ch.is_whitespace())
-                .collect::<Vec<_>>();
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    // 続けて現れる部分（字のない文字は途中に挟まってよい）。
+    for start in 0..bodies.len() {
+        if bodies[start].is_empty() {
+            continue;
+        }
+        let mut next = 0usize;
+        let mut keep = vec![false; bodies.len()];
+        for (index, body) in bodies.iter().enumerate().skip(start) {
+            if next == expected.len() {
+                break;
+            }
+            if body.is_empty() {
+                keep[index] = next > 0;
+                continue;
+            }
+            if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+                next += body.len();
+                keep[index] = true;
+            } else {
+                break;
+            }
+        }
+        if next == expected.len() {
+            return Some(keep);
+        }
+    }
+    let mut next = 0usize;
+    let keep = bodies
+        .iter()
+        .map(|body| {
             if body.is_empty() {
                 return next > 0 && next < expected.len();
             }
@@ -229,11 +278,7 @@ fn split_rect_with_slack(
             }
         })
         .collect::<Vec<_>>();
-    if expected.is_empty() || next != expected.len() {
-        return None;
-    }
-    let pieces = group_chars_at_wide_gaps(&infos, horizontal);
-    (pieces.len() > 1).then_some(pieces)
+    (next == expected.len()).then_some(keep)
 }
 
 /// 文字 index から回復した文字片（PDF の文字列 object ごと）を、1 em を超える字間で分ける。
@@ -667,6 +712,39 @@ mod split_tests {
             fill_color: None,
             baseline_y: None,
         }
+    }
+
+    /// 2 行にまたがる矩形では、前の行の同じ字ではなく本文が続けて現れる字を選ぶ。
+    #[test]
+    fn matching_prefers_a_contiguous_run_over_the_previous_line() {
+        let infos = [
+            "北", "緯", "3", "4", "度", "1", "4", "分", "4", "8", "\n", "度", "1", "4", "分", "5",
+            "7", "秒",
+        ]
+        .iter()
+        .enumerate()
+        .map(|(index, text)| info(text, index as f32 * 8.0, index as f32 * 8.0 + 8.0))
+        .collect::<Vec<_>>();
+        let expected = "度14分57秒".chars().collect::<Vec<_>>();
+        let keep = matched_chars(&infos, &expected).unwrap();
+        let picked = (0..infos.len())
+            .filter(|&index| keep[index])
+            .collect::<Vec<_>>();
+        assert_eq!(picked, (11..18).collect::<Vec<_>>());
+    }
+
+    /// 続けて現れない場合は、本文の字を順にたどれる字を飛び飛びに選ぶ。
+    #[test]
+    fn matching_falls_back_to_an_ordered_subsequence() {
+        let infos = ["1", ".", "2", "3"]
+            .iter()
+            .enumerate()
+            .map(|(index, text)| info(text, index as f32 * 8.0, index as f32 * 8.0 + 8.0))
+            .collect::<Vec<_>>();
+        let expected = "123".chars().collect::<Vec<_>>();
+        let keep = matched_chars(&infos, &expected).unwrap();
+        assert_eq!(keep, vec![true, false, true, true]);
+        assert!(matched_chars(&infos, &"124".chars().collect::<Vec<_>>()).is_none());
     }
 
     /// 隣の表の列ほど離れた文字は別の要素に分け、語間の空白では分けない。
