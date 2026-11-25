@@ -1,0 +1,266 @@
+{
+  "time_utc": "2026-11-25T21:06:39.337237+00:00",
+  "source_head": "32bbbf37b1fb093cf105da6de1231d7fd16b9b8d",
+  "source_tree": "f3f36da8b5bb7fd1c55e256251985578c7f7dccb",
+  "Rust_files": 771,
+  "full_default": {
+    "passed": 2564,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 149,
+    "log_sha256": "0bca593ac3b20071e0475ad66bf7ac34558d2cfcb3394e10209c1f9f110fa885"
+  },
+  "native_outcomes": 188,
+  "native_success": 166,
+  "native_rejected": 22,
+  "native_binary_sha256": "63c7246818fcd6e7fc1b8c0d61a6610c811878eb8208c6dfc972a6b556fc7017",
+  "browser_outcomes": 392,
+  "browser_each_success": 169,
+  "browser_each_rejected": 27,
+  "total_outcomes": 580,
+  "all574_statuses_exact_qualified_parent": true,
+  "prior_payloads_RAW_byteexact568": true,
+  "changed6_only_dense_prose": true,
+  "all30_owned_source_oracles_pass": true,
+  "parent6_dense_table_source_gold_failures_now_pass": true,
+  "all6_dense_modes_100_literal_body_paragraphs_once_and_actual4_two_column_sections": true,
+  "all6_dense_DOCX_RAW_byteexact_directly_reviewed4_pages": true,
+  "no_source_footer_synthesized": true,
+  "other_table_and_font_style_golds_inherited_by568_payload_byte_identity": true,
+  "Census_all6_outputs_RAW_byteexact_parent_97_fields_7981_nonwhite_4_pages": true,
+  "Census_known_original130_followup128_pass2_fail_inherited": true,
+  "Census_initial_unseen4_pass126_fail_frozen": true,
+  "cross_engine196_payloads98_inspections_exact": true,
+  "all97_unaffected_inspections_exact_each_parent": true,
+  "one_dense_inspection_change_only_inferred_table_statistics": true,
+  "scoped_native_browser_RAW_byteexact108": true,
+  "scoped_native_browser_generated_paragraph_ID_only4": true,
+  "ID_different7_page_RGB_review_inherited_by_parent_byte_identity": true,
+  "WASM_distribution_files": 11,
+  "raw_WASM_sha256": "bf25fa9dcada6f7cc6d083788452d15c687089518f30544d7ec3ca12f48b0645",
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "parent_original_gold_files_reverified": 33093,
+  "all_original_gold_files_unchanged": true,
+  "word_boundary_supplement_after_prototype_is_known_source_NOT_unseen": true,
+  "all_followups_known_NOT_unseen_accuracy_rate": true,
+  "component_qualified": true,
+  "three_column_compatibility6_passed_source_no_table6_failed_retained": [
+    {
+      "runtime": "native",
+      "id": "prose-three-column-negative",
+      "mode": "default",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    },
+    {
+      "runtime": "native",
+      "id": "prose-three-column-negative",
+      "mode": "strict",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    },
+    {
+      "runtime": "chromium",
+      "id": "prose-three-column-negative",
+      "mode": "default",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    },
+    {
+      "runtime": "chromium",
+      "id": "prose-three-column-negative",
+      "mode": "strict",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    },
+    {
+      "runtime": "webkit",
+      "id": "prose-three-column-negative",
+      "mode": "default",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    },
+    {
+      "runtime": "webkit",
+      "id": "prose-three-column-negative",
+      "mode": "strict",
+      "oracle": {
+        "source_no_table_gold_passed": false,
+        "source_table_failure_NOT_waived": true,
+        "literal31_source_strings_once": true,
+        "source_nonwhite_inventory_exact": true,
+        "table_count": 1,
+        "table_rows": [
+          10
+        ],
+        "table_column_counts": [
+          [
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3,
+            3
+          ]
+        ],
+        "has_two_column_section": false,
+        "scoped_legacy_fallback_structure_passed": true,
+        "whole_document_accepted": false
+      }
+    }
+  ],
+  "all574_existing_payloads_RAW_byteexact_held6423": true,
+  "component_scope": "Exactly two-column dense prose table non-invention; three-column fallback preserved, its source no-table failure retained.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Three-column plain prose still gains an invented fallback table; compatibility is not source correctness.",
+    "Dense prose original numeric footer labels remain lost because bare-footer recovery still excludes unqualified dense prose; source substitute-font baseline/glyph differences remain.",
+    "Long lower-case whitespace-delimited prose is a conservative heuristic; general borderless table semantics, non-Latin prose, images and mixed layouts still need independent holdouts.",
+    "Census header underline/alignment and spacing; BERT legacy pagination, NAOJ vectors and date separators remain."
+  ],
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-source-prose-column-non-invention/jade-pdf/corpus/wasm-runtime/source-prose-two-column-qualification",
+  "full_default_log": "/Users/bokuweb/.codex/worktrees/pdf-source-prose-column-non-invention/jade-pdf/corpus/wasm-runtime/source-prose-two-column-qualification/prose-two-CI-default-full.log",
+  "qualified_receipt": "/Users/bokuweb/.codex/worktrees/pdf-source-prose-column-non-invention/jade-pdf/corpus/wasm-runtime/source-prose-two-column-qualification/final-native188-browser392-prose-two-column-component-qualification.json",
+  "reference": {
+    "url": "https://github.com/bokuweb/lawrenceanum",
+    "commit": "8322ad7895d8e15f7002c80e3f67c993edce99fd",
+    "independent_implementation_no_code_or_dependency_import": true
+  },
+  "genuine_reds": [
+    "prose-public-table-non-invention-Red",
+    "prose-three-column-boundary-public-Red",
+    "prose-three-column-short-label-public-Red"
+  ],
+  "failed_build_invocation_retained": "prose-two-post-full-native-build: wrong package name, corrected without changing source in prose-two-post-full-native-build-correct-package"
+}
