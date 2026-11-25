@@ -10,6 +10,87 @@ struct Glyph {
     weight: Option<u16>,
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use proptest::prelude::*;
+
+    /// 正面積で重なる全glyphが同値の場合だけ確認し、未知・混在を除く。
+    #[test]
+    fn overlapping_weights_must_be_confirmed_and_uniform() {
+        let budget = DecodeBudget::default();
+        let rect = PdfRect::new_from_values(0., 0., 10., 10.);
+        for other in [Some(400), None] {
+            let index = Index {
+                usable: true,
+                glyphs: vec![
+                    Glyph {
+                        bounds: [1., 1., 3., 3.],
+                        weight: Some(700),
+                    },
+                    Glyph {
+                        bounds: [2., 2., 4., 4.],
+                        weight: other,
+                    },
+                ],
+            };
+            assert_eq!(index.weight(&budget, rect).unwrap(), None);
+        }
+        let index = Index {
+            usable: true,
+            glyphs: vec![
+                Glyph {
+                    bounds: [1., 1., 3., 3.],
+                    weight: Some(700),
+                },
+                Glyph {
+                    bounds: [11., 11., 12., 12.],
+                    weight: None,
+                },
+            ],
+        };
+        assert_eq!(index.weight(&budget, rect).unwrap(), Some(700));
+    }
+
+    /// 面積0の未知glyphも矩形内にあれば無視せず、隣の既知glyphで上書きしない。
+    #[test]
+    fn zero_area_unknown_glyph_blocks_confirmation() {
+        let index = Index {
+            usable: true,
+            glyphs: vec![
+                Glyph {
+                    bounds: [1., 1., 3., 3.],
+                    weight: Some(700),
+                },
+                Glyph {
+                    bounds: [2., 2., 2., 2.],
+                    weight: None,
+                },
+            ],
+        };
+        assert_eq!(
+            index
+                .weight(
+                    &DecodeBudget::default(),
+                    PdfRect::new_from_values(0., 0., 10., 10.)
+                )
+                .unwrap(),
+            None
+        );
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(24))]
+        /// ゼロ幅の未知glyphは位置や宣言weightにかかわらず確認済みへ吸収しない。
+        #[test]
+        fn zero_width_unknown_glyph_never_inherits_weight(weight in 1u16..=1000, x in 1u16..99, y in 1u16..99) {
+            let x=f32::from(x);let y=f32::from(y);
+            let index=Index {usable:true,glyphs:vec![Glyph{bounds:[0.,0.,100.,100.],weight:Some(weight)},Glyph{bounds:[x,y,x,y+1.],weight:None}]};
+            prop_assert_eq!(index.weight(&DecodeBudget::default(),PdfRect::new_from_values(0.,0.,100.,100.)).unwrap(),None);
+        }
+    }
+}
+
 /// ページ内の全非空白glyph。矩形ごとのSDK呼出しを増やさない。
 pub(super) struct Index {
     /// 共有metadata予算で予約した観察値。
