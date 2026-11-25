@@ -1626,7 +1626,6 @@ const MIN_BAND_COLUMN_RATIO: f32 = 0.15;
 const MARGIN_BAND_RATIO: f32 = 0.1;
 /// 段の中で表の横に置いてよい行の数の上限（それより多いと、表の前に積むと高くなりすぎる）。
 const MAX_LINES_BESIDE_TABLE: usize = 3;
-
 /// 段の区切り線（ページの高さの大半にわたる縦罫線）で分けたページで、行・表を段ごとに
 /// 分けられるとき、その分け方を返す。
 ///
@@ -2175,20 +2174,27 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     if block_count == 0 {
         return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
     }
-    let section_origin_x = section_refs.band.map(|range| range.left).map_or_else(
-        || structured_page_left_x(parsed, positioned_tables, page),
-        |left| left,
-    );
+    let section_origin_x = section_refs
+        .band
+        .map(|range| range.left)
+        .unwrap_or_else(|| structured_page_left_x(parsed, positioned_tables, page));
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
     } else {
         0.0
     };
+    // 段のセルの中では、右の字下げをセルの右端（段の右の区切り線）から測る。
     let page_width = parsed
         .pages
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)
-        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0);
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
+        .map(|width| {
+            section_refs
+                .band
+                .filter(|range| range.x1.is_finite())
+                .map_or(width, |range| range.x1.min(width))
+        });
     let gap_after_block = blocks
         .iter()
         .enumerate()
@@ -2298,7 +2304,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or_else(|| tier_origin(column_index));
-                if text_columns.is_some() {
+                // 段のセルの中の中央の行は、原本の位置の左の字下げで組む（ページの原点で中央を
+                // 求めると、右の字下げがセルの幅を越える）。
+                if text_columns.is_some()
+                    || (section_refs.band.is_some() && line.alignment == ParagraphAlignment::Center)
+                {
                     line.alignment = ParagraphAlignment::Left;
                 }
                 let mut paragraph = paragraph_from_structured_line(
