@@ -6,6 +6,9 @@ use std::io::{Cursor, Read};
 #[path = "floating_image_anchor_tests.rs"]
 mod floating_images;
 
+#[path = "source_image_row_tests.rs"]
+mod source_image_rows;
+
 #[path = "page_chrome_occurrence_tests.rs"]
 mod page_chrome_occurrences;
 
