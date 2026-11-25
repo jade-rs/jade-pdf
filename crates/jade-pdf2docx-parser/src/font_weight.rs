@@ -1,7 +1,5 @@
 //! FontDescriptorの明示値だけを読み、名前やStemVからweightを推測しない。
-use crate::{
-    decode::DecodeBudget, metadata, page_attributes, resource_resolver::ResourceResolver, syntax,
-};
+use crate::{decode::DecodeBudget, metadata, resource_resolver::ResourceResolver, syntax};
 /// 完全な辞書直下で、一度だけ現れる属性を借用する。
 fn unique<'a>(dictionary: &'a [u8], key: &[u8], budget: &DecodeBudget) -> Option<&'a [u8]> {
     if !metadata::dictionary_entries_complete(dictionary) {
@@ -18,6 +16,42 @@ fn unique<'a>(dictionary: &'a [u8], key: &[u8], budget: &DecodeBudget) -> Option
         }
     }
     found
+}
+
+/// 十進表記の整数値だけを正確に読み、丸めで端数や範囲外の値を確認しない。
+/// 既存互換の小数部ゼロは許し、指数や0でない小数部は採用しない。
+fn exact_weight(value: &[u8], budget: &DecodeBudget) -> Option<u16> {
+    let value = value.trim_ascii();
+    let value = value.strip_prefix(b"+").unwrap_or(value);
+    let mut number = 0u16;
+    let mut fraction = false;
+    let mut digits = false;
+    for (index, byte) in value.iter().copied().enumerate() {
+        if index % 256 == 0 {
+            budget.check().ok()?;
+        }
+        match byte {
+            b'.' if !fraction => fraction = true,
+            b'0'..=b'9' => {
+                digits = true;
+                if fraction {
+                    if byte != b'0' {
+                        return None;
+                    }
+                } else {
+                    number = number
+                        .checked_mul(10)?
+                        .checked_add(u16::from(byte - b'0'))?;
+                    if number > 1000 {
+                        return None;
+                    }
+                }
+            }
+            _ => return None,
+        }
+    }
+    budget.check().ok()?;
+    (digits && number > 0).then_some(number)
 }
 /// Type0は単一descendantを使い、simple Fontでは自分のdescriptorだけを解決する。
 fn descriptor<'a>(
@@ -54,7 +88,5 @@ pub(crate) fn read<'a>(
     if !metadata::is_name(kind, b"FontDescriptor") {
         return None;
     }
-    let number = page_attributes::number_value(value)?;
-    (number.is_finite() && number.fract() == 0. && (1. ..=1000.).contains(&number))
-        .then_some(number as u16)
+    exact_weight(value, budget)
 }
