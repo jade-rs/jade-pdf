@@ -24,6 +24,8 @@
 
 ## 固定した検証記録
 
-最終source `a4e76da`の754 Rustファイルで、default全体検査は2,507成功・0失敗・37ignore（142群）。CLIは144条件で123成功・21拒否、Chromium/WebKitは各152条件で126成功・26拒否。従来の128 native＋272 browserのDOCX・拒否内容はbyte単位で一致し、混在表2件の変更だけを別途確認した。
+登録CID・native空白保持と統合したsource `95d7a9d`の761 Rustファイルで、default全体検査は2,529成功・0失敗・40ignore（144群）。CLIは152条件で130成功・22拒否、Chromium/WebKitは各160条件で133成功・27拒否。従来の148 native＋312 browserのDOCX・拒否内容は、それぞれの検証済み親とbyte単位で一致する。
 
-8件の所有対照の文字・表構造は3 runtime×2 modeの48出力で照合し、新規2件の太字・サイズ・色は12出力で照合した。変更または追加された4種類のDOCXを全8ページ描画して確認し、他runtime/modeの対応出力もbyte単位で一致した。16,065件の親・原本・goldファイルを再照合した。これらは既知の対照のcomponent検証であり、未見文書の精度率や文書全体の本番品質の合格ではない。詳細は[検証台帳](../corpus/validation-mixed-table-source-styles.json)を参照。
+描画順だけを変えた追加2件は、原本の全4ページを確認し、元の対照とRGBも一致する。修正前には文字の集合が一致したまま8出力すべてで行順が反転したが、修正後の12出力は原本の行順に一致し、表示が同等の正しい対照DOCXともbyte単位で一致する。
+
+10件の所有表対照の文字・表構造は3 runtime×2 modeの60出力で確認し、太字・サイズ・色の12出力の照合も保持する。書式・配置段階で全8ページを確認した4種類のDOCXと対応出力がbyte単位で一致するため、同じ描画確認を継承する。19,778件の親・原本・goldファイルを再照合した。これらは既知の対照のcomponent検証であり、未見文書の精度率や文書全体の本番品質の合格ではない。詳細は[最終検証台帳](../corpus/validation-mixed-table-physical-source-order.json)と[書式・配置段階の台帳](../corpus/validation-mixed-table-source-styles.json)を参照。
