@@ -16,7 +16,7 @@ fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
         .join(" ");
     let used = count - usize::from(unused_last);
     let content = (0..used)
-        .map(|i| format!("BT /F{i} 20 Tf {} 150 Td (A) Tj ET\n", 20 + i * 50))
+        .map(|i| format!("BT /F{i} 20 Tf {} 150 Td <01> Tj ET\n", 20 + i * 50))
         .collect::<String>();
     let mut objects = vec![
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
@@ -26,7 +26,7 @@ fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
     ];
     for (i, weight) in weights.iter().enumerate() {
         let prefix = ["ABCDEF", "GHIJKL"][i];
-        objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /{prefix}+OwnedSubset /FirstChar 65 /LastChar 65 /Widths [600] /Encoding /WinAnsiEncoding /FontDescriptor {} 0 R >>",6+i*2).into_bytes());
+        objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /{prefix}+OwnedSubset /FirstChar 1 /LastChar 1 /Widths [600] /Encoding << /BaseEncoding /WinAnsiEncoding /Differences [1 /A] >> /FontDescriptor {} 0 R >>",6+i*2).into_bytes());
         objects.push(format!("<< /Type /FontDescriptor /FontName /{prefix}+OwnedSubset /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontWeight {weight} /FontFile3 4 0 R >>").into_bytes());
     }
     objects.push(stream(content.as_bytes(), &format!("/Type /XObject /Subtype /Form /BBox [0 0 200 200] /Resources << /Font << {resources} >> >>")));
@@ -81,6 +81,11 @@ fn original_fonts(bytes: &[u8]) -> Vec<(String, bool)> {
 
 /// 入力をファイルへ保存せず、通常のnative backendを通した本文spanだけを返す。
 fn native(bytes: &[u8]) -> Vec<crate::ParsedTextElement> {
+    let pure = crate::parser::parse_pdf_bytes_pure("owned-subset.pdf".into(), bytes).unwrap();
+    eprintln!(
+        "owned pure spans: {:?}; issues: {:?}",
+        pure.text_elements, pure.quality.issues
+    );
     let limits = ParseLimits::default();
     crate::pdfium_backend::parse_pdf(
         std::path::Path::new("owned-subset.pdf"),
