@@ -146,8 +146,8 @@ fn terminal_mixed_style_cell_covers_its_source_glyph_advances() {
         }
     }
     assert_eq!(widths.len(), 4);
-    // GRID-: 28.89pt、R0C1: 30.672pt。twipへの丸めだけを許す。
-    assert!((widths[3] as f32 / 20. - 59.562).abs() < 0.05, "{widths:?}");
+    // GRID-: 28.33pt、R0C1: 30.672pt。固定ReportLabのglyph幅と符号名表で照合。
+    assert!((widths[3] as f32 / 20. - 59.002).abs() < 0.05, "{widths:?}");
 }
 
 proptest! {
