@@ -51,8 +51,8 @@ pub(super) fn verified_page_frame(image: &ParsedImageElement, page: &ParsedPage)
         && image.bounds.y1 > image.bounds.y0
         && image.bounds.x1 <= page.width
         && image.bounds.y1 <= page.height
-        && pdf_points_to_emu(image.bounds.x0).is_some()
-        && pdf_points_to_emu(page.height - image.bounds.y1).is_some()
+        && fits_signed_emu(image.bounds.x0)
+        && fits_signed_emu(page.height - image.bounds.y1)
 }
 
 /// 正立した画像の有限な原本矩形だけを使い、回転前の辺が不明な画像は従来値へ戻す。
@@ -86,4 +86,10 @@ fn axis_extent(start: f32, end: f32) -> Option<u32> {
     let emu = points * 12_700.;
     (points.is_finite() && points > 0. && emu <= f64::from(u32::MAX))
         .then(|| (emu.round() as u32).max(1))
+}
+
+/// 既存変換の飽和castを成功と誤認せず、位置を丸める前に符号付きEMU範囲を検査する。
+fn fits_signed_emu(points: f32) -> bool {
+    let emu = (f64::from(points) * 12_700.).round();
+    emu.is_finite() && emu >= f64::from(i32::MIN) && emu <= f64::from(i32::MAX)
 }

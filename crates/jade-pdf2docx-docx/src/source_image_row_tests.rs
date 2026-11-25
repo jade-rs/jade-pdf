@@ -94,12 +94,32 @@ proptest! {
     }
 }
 
-/// page内でもWordの符号付きEMUを超える座標を、0位置のanchorへ読み替えない。
+/// page内でもWordの符号付きEMUを超える座標を、上限で飽和したanchorへ読み替えない。
 #[test]
 fn unrepresentable_page_offsets_keep_existing_flow() {
-    let mut parsed=image_row();parsed.pages[0].width=300_000.;
-    for (index,image) in parsed.image_elements.iter_mut().enumerate().take(2) {
-        image.bounds.x0=170_000.+index as f32*100.;image.bounds.x1=image.bounds.x0+48.;
+    let mut parsed = image_row();
+    parsed.pages[0].width = 300_000.;
+    for (index, image) in parsed.image_elements.iter_mut().enumerate().take(2) {
+        image.bounds.x0 = 170_000. + index as f32 * 100.;
+        image.bounds.x1 = image.bounds.x0 + 48.;
     }
-    assert!(crate::source_image_rows::select(&parsed,0,&[],false).is_empty());
+    assert!(crate::source_image_rows::select(&parsed, 0, &[], false).is_empty());
+}
+
+/// 回転page・切断された矩形・不一致の表示寸法・本文重なりをcanvasと推測しない。
+#[test]
+fn ambiguous_source_frames_keep_existing_flow() {
+    for case in 0..4 {
+        let mut parsed = image_row();
+        match case {
+            0 => parsed.pages[0].rotation = 90,
+            1 => parsed.image_elements[0].bounds.x0 = -1.,
+            2 => parsed.image_elements[0].width_px += 1,
+            3 => parsed.text_elements[0].bounds = parsed.image_elements[0].bounds,
+            _ => unreachable!(),
+        }
+        let (xml, _) = package_source(parsed);
+        assert_eq!(xml.matches("<wp:anchor ").count(), 0, "case={case}");
+        assert_eq!(xml.matches("<wp:inline ").count(), 3, "case={case}");
+    }
 }
