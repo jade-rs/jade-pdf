@@ -206,9 +206,8 @@ fn indirect_subtype_and_signed_integer_supplement_are_supported() {
             CHILD.replace("/Supplement 2", "/Supplement +2"),
         ),
     ] {
-        let mut objects = fixture::pages(&format!(
-            "/MediaBox [0 0 300 300] /Resources << /Font << /F 10 0 R >> >>"
-        ));
+        let mut objects =
+            fixture::pages("/MediaBox [0 0 300 300] /Resources << /Font << /F 10 0 R >> >>");
         objects[4] = fixture::stream("BT /F 10 Tf 20 100 Td <0cd4> Tj ET");
         objects[5] = fixture::stream("");
         objects.extend([font, child, "null".into(), "null".into(), "/Type0".into()]);
