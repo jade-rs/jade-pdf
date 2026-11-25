@@ -82,19 +82,30 @@ fn original_fonts(bytes: &[u8]) -> Vec<(String, bool)> {
 /// 入力をファイルへ保存せず、通常のnative backendを通した本文spanだけを返す。
 fn native(bytes: &[u8]) -> Vec<crate::ParsedTextElement> {
     let pure = crate::parser::parse_pdf_bytes_pure("owned-subset.pdf".into(), bytes).unwrap();
-    eprintln!(
-        "owned pure spans: {:?}; issues: {:?}",
-        pure.text_elements, pure.quality.issues
+    assert!(!pure.text_elements.is_empty());
+    assert!(
+        pure.text_elements
+            .iter()
+            .all(|e| e.text.chars().all(|ch| ch == '\u{1}'))
     );
     let limits = ParseLimits::default();
-    crate::pdfium_backend::parse_pdf(
+    let elements = crate::pdfium_backend::parse_pdf(
         std::path::Path::new("owned-subset.pdf"),
         bytes,
         &limits,
         &DecodeBudget::new(&limits),
     )
     .unwrap()
-    .text_elements
+    .text_elements;
+    assert_eq!(
+        elements
+            .iter()
+            .flat_map(|e| e.text.chars())
+            .filter(|ch| !ch.is_whitespace())
+            .collect::<String>(),
+        "A".repeat(pure.text_elements.len())
+    );
+    elements
 }
 
 /// metadataが700でも、実際にSDKで埋め込みが成立するfontだけを確認値にする。
