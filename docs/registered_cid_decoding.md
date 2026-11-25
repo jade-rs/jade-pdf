@@ -20,4 +20,4 @@ UnicodeはAdobe公式の[Mapping Resources for PDF](https://github.com/adobe-typ
 
 5種類のDOCXを13ページに描画し、全13ページを個別に確認した。ブラウザーの日本語は読めるようになった。一方、ネイティブの抜粋では、旧版で`1 12`だった月日が`112`になり、日曜表でも区切りが減った。非空白文字の内訳一致だけでは検出できない退行である。`pdfium_reconcile`は非空白件数が一致したページでpure側の空白配置を採用するため、登録CIDの正しい復号によってこの経路が新たに成立することが原因候補である。原文数値の書体差、数値の折り返し・clipping、表の位置、月相図形の欠落も残る。
 
-比較結果は`corpus/validation-registered-japan1-cid-held.json`に記録した。元の44基準の全評価は未完了である。**この変更はHELD／未適格で、PR未作成**。次の修正ではnativeの論理的な空白とvariation sequenceを検証し、元PDF・元gold・今回の比較結果は変更しない。日本語組版・表・太字・縦書き・ページ再現の合格は主張しない。
+比較結果は`corpus/validation-registered-japan1-cid-held.json`に記録した。これは`e618126`時点のprototypeを**HELD／未適格・PR未作成**として固定した記録である。その後の[span内語間とvariation sequenceの修正](native_source_word_boundaries.md)では、元PDF・元gold・この比較結果を変えず、部品としての検証を完了した。元の44基準の全評価は引き続き未完了であり、日本語組版・表・太字・縦書き・ページ再現やproduction-readyの合格は主張しない。
