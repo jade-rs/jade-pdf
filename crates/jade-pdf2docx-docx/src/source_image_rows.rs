@@ -1,0 +1,83 @@
+//! 横並び画像を含む非重複canvasを、本文flowから分離して原本page座標へ置く。
+use super::*;
+
+/// 正立page内の独立画像だけを返し、単画像・table・段組・本文重なりの旧経路を保つ。
+pub(super) fn select(
+    parsed: &ParsedDocument,
+    page: usize,
+    tables: &[PositionedTable],
+    has_text_columns: bool,
+) -> Vec<usize> {
+    if has_text_columns || tables.iter().any(|table| table.page == page) {
+        return Vec::new();
+    }
+    let Some(geometry) = parsed
+        .pages
+        .iter()
+        .find(|source| source.page_number == page)
+    else {
+        return Vec::new();
+    };
+    let images = parsed
+        .image_elements
+        .iter()
+        .enumerate()
+        .filter(|(_, image)| image.page == page)
+        .take(65)
+        .collect::<Vec<_>>();
+    if !(2..=64).contains(&images.len())
+        || images
+            .iter()
+            .any(|(_, image)| image.floating || !image_anchor::verified_page_frame(image, geometry))
+    {
+        return Vec::new();
+    }
+    let text = parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page && !text.text.trim().is_empty())
+        .take(4097)
+        .collect::<Vec<_>>();
+    if text.is_empty()
+        || text.len() > 4096
+        || text.iter().any(|text| {
+            !positive(text.bounds)
+                || images
+                    .iter()
+                    .any(|(_, image)| overlap(text.bounds, image.bounds))
+        })
+    {
+        return Vec::new();
+    }
+    let mut row = false;
+    for (at, (_, a)) in images.iter().enumerate() {
+        for (_, b) in &images[at + 1..] {
+            if overlap(a.bounds, b.bounds) {
+                return Vec::new();
+            }
+            let across = a.bounds.x1 + 1. <= b.bounds.x0 || b.bounds.x1 + 1. <= a.bounds.x0;
+            let common = a.bounds.y1.min(b.bounds.y1) - a.bounds.y0.max(b.bounds.y0);
+            let smaller = (a.bounds.y1 - a.bounds.y0).min(b.bounds.y1 - b.bounds.y0);
+            row |= across && common >= smaller * 0.5;
+        }
+    }
+    if row {
+        images.into_iter().map(|(index, _)| index).collect()
+    } else {
+        Vec::new()
+    }
+}
+
+/// 非有限・反転・面積0の本文矩形を、重なりなしの根拠に使わない。
+fn positive(bounds: ParsedBounds) -> bool {
+    [bounds.x0, bounds.x1, bounds.y0, bounds.y1]
+        .iter()
+        .all(|x| x.is_finite())
+        && bounds.x0 < bounds.x1
+        && bounds.y0 < bounds.y1
+}
+
+/// 正面積の交差だけを重なりとして扱い、接する原本端を推測で広げない。
+fn overlap(a: ParsedBounds, b: ParsedBounds) -> bool {
+    a.x0.max(b.x0) < a.x1.min(b.x1) && a.y0.max(b.y0) < a.y1.min(b.y1)
+}
