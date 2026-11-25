@@ -6,7 +6,8 @@ use docx_rs::BuildXML;
 fn run_xml(name: &str, prior_bold: bool, face: Option<embedded_face::Face>) -> String {
     let run = Run::new().add_text("same source text");
     let run = if prior_bold { run.bold() } else { run };
-    String::from_utf8(apply_pdf_font_name_to_run(run, name, face.is_some(), face).build()).unwrap()
+    String::from_utf8(apply_pdf_font_name_to_run(run, name, face.is_some(), face, None).build())
+        .unwrap()
 }
 
 /// 明示的な通常体は、既に付いた見出しの太字を解除する。
@@ -97,9 +98,20 @@ fn explicit_bold_survives_and_unknown_weight_preserves_prior_style() {
 #[test]
 fn packaged_source_regular_disables_complex_script_bold_as_well() {
     use std::io::{Cursor, Read};
-    let regular =
-        apply_pdf_font_name_to_run(Run::new().add_text("normal"), "Source-Regular", false, None);
-    let bold = apply_pdf_font_name_to_run(Run::new().add_text("bold"), "Source-Bold", false, None);
+    let regular = apply_pdf_font_name_to_run(
+        Run::new().add_text("normal"),
+        "Source-Regular",
+        false,
+        None,
+        None,
+    );
+    let bold = apply_pdf_font_name_to_run(
+        Run::new().add_text("bold"),
+        "Source-Bold",
+        false,
+        None,
+        None,
+    );
     let p = Paragraph::new().add_run(regular).add_run(bold);
     let docx = Docx::new()
         .header(Header::new().add_paragraph(p.clone()))
@@ -120,5 +132,34 @@ fn packaged_source_regular_disables_complex_script_bold_as_well() {
             1,
             "the neighbouring source bold must survive: {name}: {xml}"
         );
+    }
+}
+
+/// family名がなくても、独立に確認されたdescriptorの太字を保持する。
+#[test]
+fn declared_weight_survives_missing_font_name() {
+    for name in [None, Some(String::new()), Some(" ".into())] {
+        let run = StructuredTextRun {
+            text: "Weight".into(),
+            style: StructuredTextStyle {
+                font_name: name,
+                font_weight: Some(700),
+                ..Default::default()
+            },
+        };
+        let xml = String::from_utf8(docx_run_from_structured_run(&run).build()).unwrap();
+        assert!(xml.contains("<w:b />"), "{xml}");
+    }
+}
+
+proptest::proptest! {
+    #![proptest_config(proptest::test_runner::Config::with_cases(24))]
+    /// 実際の埋め込みfaceは、反対のdescriptor weightでも上書きしない。
+    #[test]
+    fn intrinsic_face_precedes_declared_weight(bold in proptest::prelude::any::<bool>(), weight in 1u16..=1000) {
+        let face=embedded_face::Face {bold, ..Default::default()};
+        let xml=String::from_utf8(apply_pdf_font_name_to_run(Run::new(),"Owned",true,Some(face),Some(weight)).build()).unwrap();
+        proptest::prop_assert_eq!(xml.contains("<w:b />"),bold);
+        proptest::prop_assert_eq!(xml.contains("<w:b w:val=\"false\""),!bold);
     }
 }
