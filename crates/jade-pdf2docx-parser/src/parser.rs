@@ -2661,8 +2661,26 @@ fn extract_text_elements_with_matrices<'clip>(
             && page_matrix
                 .and_then(crate::text_baseline::upright)
                 .is_some();
+        let separate_numeric_position = source_baseline.is_some()
+            && page_matrix.is_some_and(|current| {
+                last_draw.is_some_and(|(last_begin, matrix, width)| {
+                    last_begin == begin
+                        && last_sequence == Some(sequence)
+                        && crate::text_draws::gap(matrix, width, current).is_some_and(|gap| {
+                            elements.last().is_some_and(|previous| {
+                                crate::numeric_tj_gap::separates(
+                                    &previous.text,
+                                    &text,
+                                    gap,
+                                    state.size,
+                                )
+                            })
+                        })
+                })
+            });
         let merge = !positioned
             && !last_positioned
+            && !separate_numeric_position
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
