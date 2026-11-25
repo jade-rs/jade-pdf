@@ -267,3 +267,29 @@ fn a_partial_rule_splits_columns_above_a_full_width_table() {
     assert!(container < right && right < wide_table, "{xml}");
     assert!(xml[..right].matches("<w:tbl>").count() >= 1);
 }
+
+/// 横に何も無い狭い表は字の幅に合わせて組まれたとみなし、横に字がある表や広い表はみなさない。
+#[test]
+fn a_narrow_table_with_nothing_beside_it_has_its_natural_width() {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    let xs = [100, 180, 260];
+    let ys = [500, 540, 580];
+    assert!(table_has_natural_width(&parsed, 0, &xs, &ys));
+    assert!(!table_has_natural_width(&parsed, 0, &[40, 300, 560], &ys));
+    parsed.text_elements.push(ParsedTextElement {
+        baseline_y: Some(520.),
+        page: 0,
+        bounds: ParsedBounds {
+            x0: 330.,
+            y0: 520.,
+            x1: 400.,
+            y1: 530.,
+        },
+        font_size: 10.,
+        font_name: None,
+        fill_color: None,
+        text: "BESIDE".into(),
+    });
+    assert!(!table_has_natural_width(&parsed, 0, &xs, &ys));
+}

@@ -6930,11 +6930,18 @@ fn infer_positioned_table_from_graphics(
             }
         }
     }
+    // 字の幅に合わせて組んだ表（ページの幅の大半が空き、横に何も無い狭い表）のセルは、
+    // 字が収まる幅まで広がるので折り返さない。行の切れ目はどれも原本の改行とする。
+    let natural_width = table_has_natural_width(parsed, page, &xs, &ys);
     let mut cell_tab_stops = vec![vec![Vec::new(); cols]; rows];
     for (row_index, row) in cell_fragments.iter().enumerate() {
         for (col, fragments) in row.iter().enumerate() {
-            let composed =
-                table_cell_text::compose_cell(fragments, xs[col] as f32, xs[col + 1] as f32);
+            let cell_right = if natural_width {
+                f32::INFINITY
+            } else {
+                xs[col + 1] as f32
+            };
+            let composed = table_cell_text::compose_cell(fragments, xs[col] as f32, cell_right);
             cell_tab_stops[row_index][col] = composed
                 .tab_stops
                 .iter()
@@ -8657,6 +8664,40 @@ fn has_open_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]
         .all(|y| table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9);
     xs.len() >= 3 && (columns_ruled || rows_ruled)
 }
+
+/// 表が字の幅に合わせて組まれたか（ページの幅の [`NATURAL_TABLE_WIDTH_RATIO`] 未満で、表の
+/// 高さの範囲の左右に字が無い）。
+fn table_has_natural_width(parsed: &ParsedDocument, page: usize, xs: &[i32], ys: &[i32]) -> bool {
+    let (Some(&left), Some(&right), Some(&bottom), Some(&top)) =
+        (xs.first(), xs.last(), ys.first(), ys.last())
+    else {
+        return false;
+    };
+    // 縦書きのページ（回した座標）は対象外。
+    let Some(page_width) = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page)
+        .filter(|parsed_page| !vertical_pages::is_vertical(parsed_page))
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
+    else {
+        return false;
+    };
+    if ((right - left) as f32) >= NATURAL_TABLE_WIDTH_RATIO * page_width {
+        return false;
+    }
+    !parsed.text_elements.iter().any(|text| {
+        let bounds = normalized_bounds(text.bounds);
+        text.page == page
+            && !text.text.trim().is_empty()
+            && bounds.y1 > bottom as f32
+            && bounds.y0 < top as f32
+            && (bounds.x1 < left as f32 - 2.0 || bounds.x0 > right as f32 + 2.0)
+    })
+}
+
+/// 字の幅に合わせて組んだとみなす表の幅の上限（ページの幅比）。
+const NATURAL_TABLE_WIDTH_RATIO: f32 = 0.6;
 
 /// 左右の外枠が全高にわたり、上端以外のどの行の境界にも幅の大半にわたる横罫線がある表か
 /// 判定する（上端は外側の枠の線に任せて開いていてよい）。
