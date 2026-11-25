@@ -6,6 +6,16 @@ use std::io::{Cursor, Read};
 
 /// ページごとの表を独立した内容streamへ置き、正確なxrefを持つ所有PDFを作る。
 fn source(pages: &[bool], left: u16, width: u16) -> Vec<u8> {
+    source_with_column_page(pages, left, width, None)
+}
+
+/// 一つだけ長い左右本文を置く追加対照を作り、既存の所有PDFの生成結果を保つ。
+fn source_with_column_page(
+    pages: &[bool],
+    left: u16,
+    width: u16,
+    column_page: Option<usize>,
+) -> Vec<u8> {
     let font = 3 + pages.len() * 2;
     let kids = (0..pages.len())
         .map(|i| format!("{} 0 R", 3 + i * 2))
@@ -27,14 +37,20 @@ fn source(pages: &[bool], left: u16, width: u16) -> Vec<u8> {
                 content.push_str(&format!("{x} 540 m {x} 720 l S\n"));
             }
         }
-        for row in 0..3 {
+        let columns = column_page == Some(page);
+        for row in 0..if columns { 12 } else { 3 } {
             for col in 0..2 {
                 let x = left + col * width + 10;
-                let y = 680 - row * 60;
-                let label = if ruled { "RULED" } else { "GRID" };
-                content.push_str(&format!(
-                    "BT /F1 10 Tf {x} {y} Td ({label}-R{row}C{col}) Tj ET\n"
-                ));
+                let y = 680 - row * if columns { 20 } else { 60 };
+                let text = if columns {
+                    format!(
+                        "COLUMN {} ROW {row}",
+                        if col == 0 { "LEFT" } else { "RIGHT" }
+                    )
+                } else {
+                    format!("{}-R{row}C{col}", if ruled { "RULED" } else { "GRID" })
+                };
+                content.push_str(&format!("BT /F1 10 Tf {x} {y} Td ({text}) Tj ET\n"));
             }
         }
         objects.push(format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {font} 0 R >> >> /Contents {} 0 R >>",4+page*2));
@@ -71,11 +87,14 @@ fn source(pages: &[bool], left: u16, width: u16) -> Vec<u8> {
 
 /// 公開byte変換の梱包済みWord表を読み、通常段落に文字があるだけの結果と区別する。
 fn tables(pages: &[bool], left: u16, width: u16) -> Vec<Vec<Vec<String>>> {
-    let bytes = convert_minimum_pdf_bytes_to_docx_bytes(
-        "owned-page-local-tables.pdf",
-        &source(pages, left, width),
-    )
-    .unwrap();
+    let xml = document_xml(&source(pages, left, width));
+    tables_in_xml(&xml)
+}
+
+/// 表数だけでは捉えられない実段組も、同じ公開変換の完成パッケージから確認する。
+fn document_xml(source: &[u8]) -> String {
+    let bytes =
+        convert_minimum_pdf_bytes_to_docx_bytes("owned-page-local-tables.pdf", source).unwrap();
     let mut archive = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
     archive
@@ -83,7 +102,12 @@ fn tables(pages: &[bool], left: u16, width: u16) -> Vec<Vec<Vec<String>>> {
         .unwrap()
         .read_to_string(&mut xml)
         .unwrap();
-    let mut reader = Reader::from_str(&xml);
+    xml
+}
+
+/// 実際のWord表だけを読み、本文段落を追加セルとして数えない。
+fn tables_in_xml(xml: &str) -> Vec<Vec<Vec<String>>> {
+    let mut reader = Reader::from_str(xml);
     let mut result = Vec::new();
     let mut table = Vec::new();
     let mut row = Vec::new();
@@ -138,6 +162,25 @@ fn a_ruled_table_on_another_page_does_not_remove_the_borderless_table() {
             tables(&pages, 40, 240),
             pages.into_iter().map(expected).collect::<Vec<_>>()
         );
+    }
+}
+
+/// 別ページの罫線表がある原本で、長い左右本文の実段組を偽の表へ変えない。
+#[test]
+fn independent_page_inference_preserves_body_columns_between_ruled_tables() {
+    for column_page in 0..3 {
+        let mut pages = [true; 3];
+        pages[column_page] = false;
+        let source = source_with_column_page(&pages, 40, 240, Some(column_page));
+        let xml = document_xml(&source);
+        assert_eq!(tables_in_xml(&xml), vec![expected(true); 2]);
+        assert_eq!(xml.matches("w:num=\"2\"").count(), 1);
+        assert_eq!(xml.matches("<w:sectPr").count(), 3);
+        for side in ["LEFT", "RIGHT"] {
+            for row in 0..12 {
+                assert!(xml.contains(&format!("COLUMN {side} ROW {row}")));
+            }
+        }
     }
 }
 
