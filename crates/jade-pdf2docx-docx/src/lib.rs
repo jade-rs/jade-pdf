@@ -4722,11 +4722,12 @@ fn grid_accepts_top_origin_text_y(parsed: &ParsedDocument, page: usize, ys: &[i3
         .unwrap_or(false)
 }
 
-/// 位置付き表が top-origin text y の補正対象か判定する。
+/// 原本座標を照合したrunを持たない旧表だけ、top-origin text yの補正対象にする。
 fn table_accepts_top_origin_text_y(parsed: &ParsedDocument, table: &PositionedTable) -> bool {
-    page_height(parsed, table.page)
-        .map(|height| table.bounds.y0 > height * 0.5)
-        .unwrap_or(false)
+    table.source_cell_runs.is_empty()
+        && page_height(parsed, table.page)
+            .map(|height| table.bounds.y0 > height * 0.5)
+            .unwrap_or(false)
 }
 
 /// PDF の列境界を DOCX cell width（twips）へ変換する。
