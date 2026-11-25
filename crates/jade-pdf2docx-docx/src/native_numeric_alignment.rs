@@ -141,6 +141,19 @@ mod tests {
         );
     }
 
+    /// 半emの桁差がPDF座標の丸めで微小に縮んでも、同じ右端の数値を左揃えへ戻さない。
+    #[test]
+    fn half_em_digit_difference_survives_source_coordinate_rounding() {
+        let mut lines = [
+            line("6.1", 142.438_92, 152.878_92),
+            line("21.0", 138.958_92, 152.878_92),
+        ];
+        for line in &mut lines {
+            line.runs[0].style.font_size = 6.96;
+        }
+        assert_eq!(right_anchors(&lines, 126., 154.), [true, true]);
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
         /// 字形端の差がemの10%未満なら保持し、それを明確に超える配置差は原点・sizeに依存せず拒否する。
