@@ -170,15 +170,32 @@ fn split_at_wide_gaps(
     characters: &PdfPageTextChars<'_>,
     centers: &[Option<(f32, f32)>],
 ) -> Option<Vec<SegmentPiece>> {
-    let rect = segment.bounds();
-    let horizontal = rect.width().value >= rect.height().value;
+    split_rect_at_wide_gaps(
+        parsed_bounds_from_pdf_rect(segment.bounds()),
+        &segment.text(),
+        characters,
+        centers,
+    )
+}
+
+/// 矩形と本文が分かっている文字列を、矩形の中の文字の位置で 1 em を超える字間で分ける。
+fn split_rect_at_wide_gaps(
+    rect: ParsedBounds,
+    text: &str,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
+    let horizontal = (rect.x1 - rect.x0).abs() >= (rect.y1 - rect.y0).abs();
     // `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から
-    // 中心が segment の矩形に入る文字をテキスト順に拾う。
+    // 中心が矩形に入る文字をテキスト順に拾う。
+    // 字面の矩形は約物の分だけ外れることがあるので、短い辺の 6 割まで広げて拾う
+    // （隣の文字列の字は、下の本文との照合で除かれる）。
+    let slack = ((rect.x1 - rect.x0).abs().min((rect.y1 - rect.y0).abs()) * 0.6).max(0.5);
     let (left, bottom, right, top) = (
-        rect.left().value - 0.5,
-        rect.bottom().value - 0.5,
-        rect.right().value + 0.5,
-        rect.top().value + 0.5,
+        rect.x0.min(rect.x1) - slack,
+        rect.y0.min(rect.y1) - slack,
+        rect.x0.max(rect.x1) + slack,
+        rect.y0.max(rect.y1) + slack,
     );
     let mut infos = Vec::new();
     for (index, center) in centers.iter().enumerate() {
@@ -200,8 +217,7 @@ fn split_at_wide_gaps(
             baseline_y: horizontal_baseline(&character),
         });
     }
-    // 矩形で拾う文字は隣の segment の文字を含むことがあるため、segment の本文と
-    // 同じ文字列になる場合だけ分ける。
+    // 矩形で拾う文字は隣の文字列の文字を含むことがあるため、本文と同じ文字列になる場合だけ分ける。
     let compact = |text: &str| {
         text.chars()
             .filter(|ch| !ch.is_whitespace())
@@ -211,11 +227,51 @@ fn split_at_wide_gaps(
         .iter()
         .map(|info| info.text.as_str())
         .collect::<String>();
-    if compact(&joined) != compact(&segment.text()) {
+    if compact(&joined) != compact(text) {
         return None;
     }
     let pieces = group_chars_at_wide_gaps(&infos, horizontal);
     (pieces.len() > 1).then_some(pieces)
+}
+
+/// 文字 index から回復した文字片（PDF の文字列 object ごと）を、1 em を超える字間で分ける。
+///
+/// 文字列 object は表の隣り合う列の見出しを 1 つの `TJ` で組むことがあり、そのままでは
+/// 列をまたぐ 1 つの文字片になる。分けた部分の文字サイズは字ごとの実効サイズにする。
+pub(crate) fn split_recovered_at_wide_gaps(
+    elements: Vec<ParsedTextElement>,
+    characters: &PdfPageTextChars<'_>,
+) -> Vec<ParsedTextElement> {
+    let centers = characters
+        .iter()
+        .map(|character| {
+            character.loose_bounds().ok().map(|bounds| {
+                (
+                    (bounds.left().value + bounds.right().value) / 2.0,
+                    (bounds.bottom().value + bounds.top().value) / 2.0,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut out = Vec::with_capacity(elements.len());
+    for element in elements {
+        match split_rect_at_wide_gaps(element.bounds, &element.text, characters, &centers) {
+            Some(pieces) => out.extend(pieces.into_iter().filter_map(|piece| {
+                let text = piece.text.trim().to_string();
+                (!text.is_empty()).then(|| ParsedTextElement {
+                    baseline_y: piece.baseline_y,
+                    page: element.page,
+                    bounds: piece.bounds,
+                    font_size: piece.font_size,
+                    font_name: piece.font_name.or_else(|| element.font_name.clone()),
+                    fill_color: piece.fill_color.or_else(|| element.fill_color.clone()),
+                    text,
+                })
+            })),
+            None => out.push(element),
+        }
+    }
+    out
 }
 
 /// 字送り方向に 1 em を超えて離れた文字の間で、文字列を複数の要素へ分ける。

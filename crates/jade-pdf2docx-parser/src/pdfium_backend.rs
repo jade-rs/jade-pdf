@@ -169,7 +169,9 @@ pub(crate) fn parse_pdf(
                     &elements,
                 )?;
                 if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
-                    elements = crate::pdfium_text::join_vertical_characters(indexed);
+                    elements = crate::pdfium_text::join_vertical_characters(
+                        crate::pdfium_text::split_recovered_at_wide_gaps(indexed, &characters),
+                    );
                 }
             }
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);

@@ -2709,8 +2709,19 @@ fn extract_text_elements_with_matrices<'clip>(
             && page_matrix
                 .and_then(crate::text_baseline::upright)
                 .is_some();
+        // 同じ文字列配列の中でも、字送りで 1.5 em を超えて離した部分（表の隣の列の見出しなど）は
+        // 別の文字片にする。
+        let wide_gap = page_matrix
+            .and_then(|current| {
+                let (last_begin, matrix, width) = last_draw?;
+                (last_begin == begin)
+                    .then(|| crate::text_draws::gap(matrix, width, current))
+                    .flatten()
+            })
+            .is_some_and(|gap| state.size > 0. && gap > 1.5 * state.size);
         let merge = !positioned
             && !last_positioned
+            && !wide_gap
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
