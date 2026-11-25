@@ -66,3 +66,52 @@ proptest! {
   prop_assert_eq!(weights(&entries,indirect.then_some(scalar.as_str()),cid),vec![Some(value)]);
  }
 }
+
+/// 浮動小数点への丸めで、境界の外や端数のある値を整数と確認しない。
+#[test]
+fn weight_numeral_near_integer_and_non_pdf_exponents_stay_unconfirmed() {
+    for value in [
+        "0.999999999999999999",
+        "699.999999999999999999",
+        "700.000000000000000001",
+        "1000.000000000000000001",
+        "700e0",
+        "7e2",
+    ] {
+        assert_eq!(
+            weights(&format!("/FontWeight {value}"), None, false),
+            vec![None],
+            "{value}"
+        );
+    }
+}
+
+/// PDFの符号・先頭ゼロ・小数部ゼロは、整数としての意味を変えない。
+#[test]
+fn weight_numeral_exact_decimal_integer_spellings_remain_supported() {
+    for (value, expected) in [
+        ("+700", 700),
+        ("000700", 700),
+        ("700.", 700),
+        ("700.000", 700),
+        ("+000700.000", 700),
+        ("1.000", 1),
+        ("1000.0", 1000),
+    ] {
+        assert_eq!(
+            weights(&format!("/FontWeight {value}"), None, false),
+            vec![Some(expected)],
+            "{value}"
+        );
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig {cases:24,failure_persistence:Some(Box::new(proptest::test_runner::FileFailurePersistence::Direct("tests/production_exact_font_weights.proptest-regressions"))),..Default::default()})]
+    /// 正の整数へ近づく小数も、0でない小数部を消して確認値にしない。
+    #[test]
+    fn weight_numeral_nonzero_decimal_tail_is_never_rounded_into_confirmation(weight in 1u16..=1000, zeros in 8usize..32) {
+        let number=format!("{weight}.{}1","0".repeat(zeros));
+        prop_assert_eq!(weights(&format!("/FontWeight {number}"),None,false),vec![None]);
+    }
+}
