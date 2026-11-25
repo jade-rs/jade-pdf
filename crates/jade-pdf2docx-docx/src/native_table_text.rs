@@ -18,6 +18,8 @@ pub(super) struct Cell {
     single_line_runs: Vec<StructuredTextRun>,
     /// 複数行の配置が収まらない場合も、旧本文と完全一致するrunの書式は保持する。
     fallback_runs: Vec<StructuredTextRun>,
+    /// 原本の同期した反復行から分割し、一行でも元の上端と余白を使うセル。
+    logical_row: bool,
 }
 
 /// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
@@ -147,6 +149,7 @@ fn cells_impl(
                                 .all(|v| v.is_finite())
                         }))
                     .then(|| Cell {
+                        logical_row: false,
                         left,
                         right,
                         top,
@@ -334,7 +337,7 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
-    if cell.lines.len() < 2 {
+    if cell.lines.is_empty() || (cell.lines.len() < 2 && !cell.logical_row) {
         return None;
     }
     let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
@@ -385,6 +388,14 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[cfg(test)]
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
+
+#[path = "native_table_logical_rows.rs"]
+mod logical_rows;
+
+/// 横結合した見出しを維持し、確認できた本文の反復行だけを編集可能なWord行へ分ける。
+pub(super) fn refine_logical_rows(table: PositionedTable) -> PositionedTable {
+    logical_rows::refine(table)
+}
 
 /// 別々に量子化する横辺・縦辺の端点差は1ptまで、高さは従来の半point以内でgridと照合する。
 fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
