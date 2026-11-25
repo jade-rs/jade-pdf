@@ -3752,6 +3752,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 has_graphic_tables,
             )
         })
+        .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
     tables.sort_by(|a, b| {
         a.page

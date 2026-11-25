@@ -18,6 +18,8 @@ pub(super) struct Cell {
     single_line_runs: Vec<StructuredTextRun>,
     /// 複数行の配置が収まらない場合も、旧本文と完全一致するrunの書式は保持する。
     fallback_runs: Vec<StructuredTextRun>,
+    /// 原本の数値群で確認した右寄せ。分割済みなら一行でも元の上端と余白を使う。
+    logical_row_right_anchor: Option<bool>,
 }
 
 /// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
@@ -147,6 +149,7 @@ fn cells_impl(
                                 .all(|v| v.is_finite())
                         }))
                     .then(|| Cell {
+                        logical_row_right_anchor: None,
                         left,
                         right,
                         top,
@@ -334,11 +337,10 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
-    if cell.lines.len() < 2 {
+    if cell.lines.is_empty() || (cell.lines.len() < 2 && cell.logical_row_right_anchor.is_none()) {
         return None;
     }
-    let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
-    let mut rounding = cell_line_rounding::Accumulator::default();
+    let spacings = line_spacings(cell)?;
     let mut out = TableCell::new().vertical_align(VAlignType::Top);
     out.property = out
         .property
@@ -346,17 +348,16 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_bottom(0, WidthType::Dxa)
         .margin_left(0, WidthType::Dxa)
         .margin_right(0, WidthType::Dxa);
-    let mut previous_bottom = cell.top;
-    let right_anchors = native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right);
-    for (index, line) in cell.lines.iter().enumerate() {
-        let before = (previous_bottom - line.top_y).max(0.0);
-        let height = structured_line_max_font_size(line);
-        let (before, line_twips, used) = rounding.line(before, height)?;
-        if used > capacity {
-            return None;
-        }
-        let mut paragraph = paragraph_from_structured_line(line, cell.left, None, None)
-            .line_spacing(native_line_pitch::spacing_twips(line_twips, before, 0)?);
+    let right_anchors = cell
+        .logical_row_right_anchor
+        .map(|right| vec![right])
+        .unwrap_or_else(|| {
+            native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right)
+        });
+    for (index, (line, spacing)) in cell.lines.iter().zip(spacings).enumerate() {
+        let spacing = spacing?;
+        let mut paragraph =
+            paragraph_from_structured_line(line, cell.left, None, None).line_spacing(spacing);
         if right_anchors[index] {
             let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
             paragraph =
@@ -365,9 +366,25 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
                     .indent(Some(0), None, Some(right), None);
         }
         out = out.add_paragraph(paragraph);
-        previous_bottom = line.top_y - height;
     }
     Some(out)
+}
+
+/// 容量検査と累積丸めを、段落IDを生成しない遅延iteratorとして実際のbuilderと共有する。
+fn line_spacings(cell: &Cell) -> Option<impl Iterator<Item = Option<LineSpacing>> + '_> {
+    let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
+    let mut rounding = cell_line_rounding::Accumulator::default();
+    let mut previous_bottom = cell.top;
+    Some(cell.lines.iter().map(move |line| {
+        let before = (previous_bottom - line.top_y).max(0.0);
+        let height = structured_line_max_font_size(line);
+        let (before, line_twips, used) = rounding.line(before, height)?;
+        if used > capacity {
+            return None;
+        }
+        previous_bottom = line.top_y - height;
+        native_line_pitch::spacing_twips(line_twips, before, 0)
+    }))
 }
 
 /// style対応を確認済みの一行だけ、既存段落を作り直さず水平原点の相対量を返す。
@@ -385,6 +402,14 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[cfg(test)]
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
+
+#[path = "native_table_logical_rows.rs"]
+mod logical_rows;
+
+/// 横結合した見出しを維持し、確認できた本文の反復行だけを編集可能なWord行へ分ける。
+pub(super) fn refine_logical_rows(table: PositionedTable) -> PositionedTable {
+    logical_rows::refine(table)
+}
 
 /// 別々に量子化する横辺・縦辺の端点差は1ptまで、高さは従来の半point以内でgridと照合する。
 fn is_grid_border(graphic: &ParsedGraphicElement, xs: &[i32], ys: &[i32]) -> bool {
