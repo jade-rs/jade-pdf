@@ -6675,6 +6675,7 @@ fn infer_positioned_table_from_graphics(
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
             && !(has_open_edges && has_open_grid_lines(&page_graphics, &xs, &ys))
             && !has_covered_grid_lines(&page_graphics, &xs, &ys)
+            && !has_side_framed_grid_lines(&page_graphics, &xs, &ys)
     {
         return None;
     }
@@ -8570,6 +8571,37 @@ fn has_open_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]
         .all(|y| table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9);
     xs.len() >= 3 && (columns_ruled || rows_ruled)
 }
+
+/// 左右の外枠が全高にわたり、上端以外のどの行の境界にも幅の大半にわたる横罫線がある表か
+/// 判定する（上端は外側の枠の線に任せて開いていてよい）。
+///
+/// 新旧対照表の表のように、左端の狭い列が全行にまたがり、行の横罫線がその列の右から引かれて
+/// いても、表として扱う。
+fn has_side_framed_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (Some(&min_y), Some(&max_y)) = (ys.first(), ys.last()) else {
+        return false;
+    };
+    let (Some(&min_x), Some(&max_x)) = (xs.first(), xs.last()) else {
+        return false;
+    };
+    if xs.len() < 3 || ys.len() < 3 {
+        return false;
+    }
+    let sides = [min_x, max_x].iter().all(|x| {
+        table_grid::coverage(&vertical, *x as f32, min_y as f32, max_y as f32)
+            >= SIDE_FRAME_COVERAGE
+    });
+    let rows = ys[..ys.len() - 1].iter().all(|y| {
+        table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32)
+            >= SIDE_FRAMED_ROW_COVERAGE
+    });
+    sides && rows
+}
+
+/// 左右の外枠とみなす縦罫線の高さの割合と、行の境界とみなす横罫線の幅の割合。
+const SIDE_FRAME_COVERAGE: f32 = 0.95;
+const SIDE_FRAMED_ROW_COVERAGE: f32 = 0.8;
 
 /// 抽出座標が表格子として使えるだけの水平/垂直線を持つか判定する。
 fn has_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {

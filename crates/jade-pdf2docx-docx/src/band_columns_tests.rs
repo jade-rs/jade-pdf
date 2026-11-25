@@ -189,3 +189,29 @@ fn amounts_on_a_label_row_join_the_label_paragraph() {
         vec![(0, vec!["18,346".to_string()])]
     );
 }
+
+/// 左右の外枠が全高にわたり、行の横罫線が左端の狭い列の右から引かれた表（上端は開いている）は
+/// 表の格子として扱う。行の横罫線が足りない枠は扱わない。
+#[test]
+fn a_side_framed_table_with_an_open_top_is_a_grid() {
+    let rule = |x0: f32, y0: f32, x1: f32, y1: f32| ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds { x0, y0, x1, y1 },
+        stroke_width: 0.36,
+        dashed: false,
+    };
+    let mut graphics = vec![
+        rule(83., 359., 83., 549.),
+        rule(115., 359., 115., 549.),
+        rule(411., 359., 411., 549.),
+        rule(83., 359., 411., 359.),
+    ];
+    for y in [377., 421., 439., 482., 500.] {
+        graphics.push(rule(115., y, 411., y));
+    }
+    let xs = [83, 115, 180, 411];
+    let ys = [359, 377, 421, 439, 482, 500, 546];
+    assert!(has_side_framed_grid_lines(&graphics, &xs, &ys));
+    graphics.retain(|graphic| graphic.bounds.y0 != 439.);
+    assert!(!has_side_framed_grid_lines(&graphics, &xs, &ys));
+}
