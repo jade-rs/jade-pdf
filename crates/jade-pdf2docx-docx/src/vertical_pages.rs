@@ -290,6 +290,7 @@ fn collapse_horizontal_runs(parsed: &mut ParsedDocument, page: usize, tiers: &[(
         char_count(text) >= 2 && height >= ASPECT * width
     };
     let mut remove = BTreeSet::new();
+    let mut collapsed = Vec::new();
     for index in 0..parsed.text_elements.len() {
         if parsed.text_elements[index].page != page
             || remove.contains(&index)
@@ -335,18 +336,50 @@ fn collapse_horizontal_runs(parsed: &mut ParsedDocument, page: usize, tiers: &[(
         }
         let text = &mut parsed.text_elements[index];
         let size = text.font_size.max(1.0);
-        let (_, tier_end) = tiers
-            .get(nearest_tier(tiers, text.bounds.x0, text.bounds.x1))
+        let center = (text.bounds.y0 + text.bounds.y1) / 2.0;
+        let tier = nearest_tier(tiers, text.bounds.x0, text.bounds.x1);
+        let length = set_width(text);
+        text.bounds.y0 = center - size / 2.0;
+        text.bounds.y1 = center + size / 2.0;
+        collapsed.push((index, tier, length));
+    }
+    // 原本で上下に重ねた横組みの行（題字の下の発行者の 2 行など）は、回した座標では同じ
+    // 行に並ぶ。原本の上の行から順に続けて組み、段の終わりを越えるなら全体を段の中へ戻す
+    // （越えると行が折り返し、その後の行がすべて送られる）。
+    collapsed.sort_by(|a, b| {
+        parsed.text_elements[a.0]
+            .bounds
+            .x0
+            .total_cmp(&parsed.text_elements[b.0].bounds.x0)
+    });
+    let mut placed = vec![false; collapsed.len()];
+    for first in 0..collapsed.len() {
+        if placed[first] {
+            continue;
+        }
+        let (index, tier, _) = collapsed[first];
+        let row = parsed.text_elements[index].bounds;
+        let group = (first..collapsed.len())
+            .filter(|&other| {
+                let bounds = parsed.text_elements[collapsed[other].0].bounds;
+                let center = (bounds.y0 + bounds.y1) / 2.0;
+                !placed[other] && collapsed[other].1 == tier && center >= row.y0 && center <= row.y1
+            })
+            .collect::<Vec<_>>();
+        let (tier_start, tier_end) = tiers
+            .get(tier)
             .copied()
             .unwrap_or((f32::NEG_INFINITY, f32::INFINITY));
-        let center = (text.bounds.y0 + text.bounds.y1) / 2.0;
-        let length = size * char_count(text) as f32;
-        text.bounds = ParsedBounds {
-            x0: text.bounds.x0,
-            y0: center - size / 2.0,
-            x1: (text.bounds.x0 + length).min(tier_end.max(text.bounds.x0 + size)),
-            y1: center + size / 2.0,
-        };
+        let total = group.iter().map(|&member| collapsed[member].2).sum::<f32>();
+        let mut cursor = row.x0.min(tier_end - total).max(tier_start);
+        for member in group {
+            placed[member] = true;
+            let (index, _, length) = collapsed[member];
+            let bounds = &mut parsed.text_elements[index].bounds;
+            bounds.x0 = cursor;
+            bounds.x1 = cursor + length;
+            cursor += length;
+        }
     }
     let mut index = 0;
     parsed.text_elements.retain(|_| {
@@ -1214,6 +1247,22 @@ mod tests {
             parsed.text_elements[0].text,
             "（中部六二）\u{3000}\u{3000}\u{3000}\u{3000}"
         );
+    }
+
+    /// 原本で上下に重ねた横組みの 2 行は、上の行から続けて組み、段の終わりを越えない。
+    #[test]
+    fn stacked_horizontal_runs_follow_each_other_inside_the_tier() {
+        let mut parsed = document(vec![
+            piece("発行内閣府", 193.0, 202.0, 470.0, 515.0),
+            piece("（原稿作成国立印刷局）", 205.0, 212.0, 455.0, 530.0),
+        ]);
+        collapse_horizontal_runs(&mut parsed, 0, &[(61.0, 238.0)]);
+        let bounds = parsed
+            .text_elements
+            .iter()
+            .map(|text| (text.bounds.x0, text.bounds.x1))
+            .collect::<Vec<_>>();
+        assert_eq!(bounds, vec![(110.0, 150.0), (150.0, 238.0)]);
     }
 
     /// 表のマスの境目の罫線をまたいで空白で埋めない。
