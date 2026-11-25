@@ -86,10 +86,13 @@ mod tests {
     fn body() -> Vec<Vec<ParsedTextElement>> {
         (0..4)
             .map(|i| {
-                vec![
+                let mut row = vec![
                     text(90., 294., 700. - i as f32 * 20.),
                     text(318., 522., 700. - i as f32 * 20.),
-                ]
+                ];
+                row[0].text = "left prose content".into();
+                row[1].text = "right prose content".into();
+                row
             })
             .collect()
     }
@@ -110,15 +113,30 @@ mod tests {
                 "outside body at y={y}"
             );
         }
-        let within = [text(280., 298., 680.), text(314., 332., 680.)];
+        let mut within = [text(280., 298., 680.), text(314., 332., 680.)];
+        within[0].text = "left prose".into();
+        within[1].text = "right prose".into();
         assert!(!cuts(&within.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
         let wide = [text(90., 108., 740.), text(318., 336., 740.)];
         assert!(!cuts(&wide.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
     }
 
+    /// 本文と同じ高さでも、数値の表記だけの隙間を散文の段間へ昇格しない。
+    #[test]
+    fn numeric_fields_do_not_supply_narrow_prose_column_cuts() {
+        let rows = body();
+        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
+        for (left, right) in [("224", "144"), ("224", "7 - 6.67%"), ("21.0", "−2.4"), ("1,234", "(4.82%)")] {
+            let mut row = [text(280., 298., 680.), text(314., 332., 680.)];
+            row[0].text = left.into(); row[1].text = right.into();
+            assert!(cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), "{left} | {right}");
+        }
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
-        /// 一様倍率と平行移動によらず、狭い段間の適用を元の本文の垂直区間だけへ限定する。
+        /// 一様倍率と平行移動によらず、上下の全幅数値行を本文の段組へ混ぜない。
         #[test]
         fn narrow_gutter_keeps_its_vertical_scope_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {
             let transform = |text: &mut ParsedTextElement| {
@@ -135,6 +153,7 @@ mod tests {
             let gutter = text_column_gutter::infer(&refs, 612. * scale).unwrap();
             for (y, should_split) in [(740., false), (600., false), (680., true)] {
                 let mut row = [text(280., 298., y), text(314., 332., y)];
+                if should_split { row[0].text = "left prose".into(); row[1].text = "right prose".into(); }
                 for text in &mut row { transform(text); }
                 prop_assert_eq!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), should_split);
             }
