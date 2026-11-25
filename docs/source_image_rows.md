@@ -1,0 +1,23 @@
+# 原本の横並び画像をpage座標へ保持
+
+正立した原本page内に、本文と重ならない横並び画像がある場合、画像を本文の縦積みから分離し、Wordのpage相対anchorで原本のX座標・上端・point寸法を渡す。画像は最初の実在する原本本文段落に所属させ、余分な段落を生成しない。画像mediaは再符号化せず保持する。
+
+対象は2〜64画像、非空本文4,096要素以下のpageに限定する。有限な正のpage・画像・本文矩形、page内の完全画像、表示pxとの寸法一致、符号付きEMUの座標範囲を確認する。画像どうしの重なり、回転、tableや本文段組があれば従来の経路へ戻す。横並びは1point以上のX間隔と、小さい画像高の半分以上のY重なりで判断する。本文と重なる画像はinlineのまま残す。そのような未解決画像がある場合、孤立画像までanchorへ移さず、横並びを確認できた画像だけに限定する。新しい依存や公開APIは追加しない。
+
+## 原本から固定した図配置と検証
+
+親変更で収集した[GSA SF94](https://www.gsa.gov/reference/forms/statement-of-witness)の原本5図すべてについて、今回の最初のfile prototypeより前にX・上端・幅・高さを固定した。元の71項目と初回未見評価も変更しない。この変更は既知資料への追試であり、未見精度として数えない。
+
+初期prototypeは本文との重なり1件でpage全体を除外し、図配置が改善しなかった。次のprototypeは4画像をanchor化したが、inline画像が残る本文flowと孤立した方位図が重なり、instructionの文字を覆った。全12出力ページの個別確認で検出し、このprototypeは不採用とした。原本bboxの末尾空白を推測したfont幅で削る方法は使っていない。混在flowでは実際の横並び2画像に限定する回帰テストを先に追加して解決した。
+
+8つの内部IRテスト（24例のproperty testを含む）を確認した。公開byte APIのRedとは扱わない。EMU上限と混在flowの失敗テスト、compile失敗、誤った上限guard、formatのみ未commitだった最初のfull検査はそのまま保存し、最終qualificationから除外した。最終的にcommitを固定して全体検査をやり直し、2,579成功・0失敗・42ignored、150 groupsとなった。775 Rustファイルをnative/WASMのproducerと照合した。fixture hygiene2件、distribution10件、fmtも成功した。
+
+CLI190回（167成功・23期待拒否）、Chromium/WebKit計396回（各170成功・28期待拒否）、合計586回を比較した。変更はSF94のdefault3成果物だけで、他583成果物は親とRAW byte一致する。両engineの198成果物・99inspectionは一致し、各99inspectionは親とも一致する。SF94は原本3,641非空白文字、本文全体と実効太字・斜体、全6画像mediaを親と同一に保つ。
+
+最終成果物は個別確認済みの2-anchor prototypeとRAW一致する。変更したnative/browserの4ページを直接確認し、残り8ページは直接確認済みの親PNGとRAW一致する。横並び2図は原本page内座標と寸法に一致し、新たな方位図による文字隠れはない。元の5図goldは各defaultで2成功・3失敗のままであり、2図へ減らしていない。親・原本・gold36,966ファイルも変更なく再照合した。[検証台帳](../corpus/validation-source-image-rows.json)に範囲とhashを記録する。
+
+## 残る問題
+
+SF94は原本3ページからWord6ページへ増えたままで、画像の所属段落が置かれる物理ページも原本どおりではない。大きい事故図・歩行者・方位図・署名矢印の配置、form罫線と29入力欄、header、nativeの分割label、footer overflowも未達である。page内座標の一致だけで原本との物理ページ対応を承認しない。
+
+元の71項目の既知追試はnative56成功・15失敗、各browser59成功・12失敗で、今回の2図改善だけでは増えない。strict3件の画像/OCR拒否を保持し、成功には数えない。Censusの見出し、NAOJの図形、3列散文の表誤生成、dense proseのfooter、一般的なfont・改ページの課題も残る。この変更は横並び画像の限定したcomponent検証であり、文書全体のproduction readinessは未達である。
