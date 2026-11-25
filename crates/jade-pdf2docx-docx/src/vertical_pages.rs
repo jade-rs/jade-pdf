@@ -204,7 +204,7 @@ fn take_running_head(parsed: &mut ParsedDocument, page: usize, (width, height): 
         let bounds = normalized_bounds(text.bounds);
         char_count(text) >= 2 && bounds.y1 - bounds.y0 >= ASPECT * (bounds.x1 - bounds.x0)
     });
-    if texts.len() < 2 || upright || !(size > 0.0) || high - low > 2.0 * size {
+    if texts.len() < 2 || upright || size <= 0.0 || high - low > 2.0 * size {
         return;
     }
     let mut indices = (0..parsed.text_elements.len())

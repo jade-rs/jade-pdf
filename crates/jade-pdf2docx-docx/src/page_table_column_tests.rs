@@ -3,6 +3,9 @@ use super::*;
 
 #[path = "page_section_evidence.rs"]
 mod evidence;
+
+#[path = "band_columns_tests.rs"]
+mod band_columns;
 use evidence::sections;
 
 /// 自作の2行2列の表を、原本ページ末尾に配置する。

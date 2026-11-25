@@ -1338,8 +1338,13 @@ fn build_structured_docx_with_image_payloads(
         );
     }
 
-    let has_mixed_page_sizes =
-        structured_pages_have_mixed_sizes(parsed, &pages) || !page_chrome.is_uniform();
+    // 縦書きのページは段組み・柱がページごとに違うので、ページごとの section にする。
+    let has_mixed_page_sizes = structured_pages_have_mixed_sizes(parsed, &pages)
+        || !page_chrome.is_uniform()
+        || (pages.len() > 1
+            && pages
+                .iter()
+                .any(|page| vertical_page(parsed, page.page).is_some()));
     let document_layout_page = if has_mixed_page_sizes {
         pages.last()
     } else {
@@ -1392,6 +1397,7 @@ fn build_structured_docx_with_image_payloads(
         docx = add_repeated_page_chrome_to_docx(docx, page_chrome.page(page.page));
     }
 
+    let mut header_media = Vec::new();
     for (page_index, page) in pages.iter().enumerate() {
         if page_index > 0 && !has_mixed_page_sizes {
             docx =
@@ -1404,18 +1410,28 @@ fn build_structured_docx_with_image_payloads(
                 page,
                 page_chrome.page(page.page),
             );
-            let section = if let Some(lines) = recognized.get(&page.page) {
-                page_ocr::add_lines(section, lines)
+            let (section, pictures) = if let Some(lines) = recognized.get(&page.page) {
+                (
+                    page_ocr::add_lines(section, lines),
+                    HeaderPictures::default(),
+                )
             } else {
-                add_structured_page_blocks(
-                    section,
+                let held = add_structured_page_blocks(
+                    SectionWithHeaderPictures {
+                        section,
+                        pictures: HeaderPictures::default(),
+                    },
                     parsed,
                     page,
                     positioned_tables,
                     None,
-                    StructuredPageSectionRefs::default(),
+                    StructuredPageSectionRefs {
+                        header_pictures: true,
+                        ..Default::default()
+                    },
                     image_payloads,
-                )?
+                )?;
+                (held.section, held.pictures)
             };
             let layout = structured_docx_with_page_layout(
                 parsed,
@@ -1430,6 +1446,8 @@ fn build_structured_docx_with_image_payloads(
                 section,
                 page_chrome.page(page.page),
                 &layout,
+                pictures,
+                &mut header_media,
             )?;
         } else {
             let text_column_layout = (pages.len() == 1)
@@ -1448,6 +1466,7 @@ fn build_structured_docx_with_image_payloads(
                         leading_single_column: leading_single_column_section.as_ref(),
                         column_before_trailing: column_section_before_trailing.as_ref(),
                         page_end: None,
+                        band: None,
                         header_pictures: page_index + 1 == pages.len()
                             && (pages.len() == 1 || has_mixed_page_sizes),
                     },
@@ -1469,7 +1488,435 @@ fn build_structured_docx_with_image_payloads(
             .map(|layout| layout.frame)
             .collect(),
     )
-    .with_vertical_tiers(vertical_section_tiers(parsed, &pages)))
+    .with_vertical_tiers(vertical_section_tiers(parsed, &pages))
+    .with_header_media(header_media))
+}
+
+/// header の図の中身を外し、部品の中で一意の関係 ID を付ける（梱包のときに media へ戻す）。
+fn take_header_media(header: &mut Header, header_media: &mut Vec<(String, Vec<u8>)>) {
+    for child in &mut header.children {
+        let docx_rs::HeaderChild::Paragraph(paragraph) = child else {
+            continue;
+        };
+        for child in &mut paragraph.children {
+            let ParagraphChild::Run(run) = child else {
+                continue;
+            };
+            for child in &mut run.children {
+                let docx_rs::RunChild::Drawing(drawing) = child else {
+                    continue;
+                };
+                let Some(docx_rs::DrawingData::Pic(picture)) = drawing.data.as_mut() else {
+                    continue;
+                };
+                if picture.image.is_empty() {
+                    continue;
+                }
+                let id = format!("rIdSectionHeaderImage{}", header_media.len() + 1);
+                picture.id.clone_from(&id);
+                header_media.push((id, std::mem::take(&mut picture.image)));
+            }
+        }
+    }
+}
+
+/// 縦書きのページの header に置く図の run と、位置を決めた枠の段落。
+#[derive(Default)]
+struct HeaderPictures {
+    runs: Vec<Run>,
+    frames: Vec<Paragraph>,
+}
+
+impl HeaderPictures {
+    fn is_empty(&self) -> bool {
+        self.runs.is_empty() && self.frames.is_empty()
+    }
+
+    /// 図の run を header の先頭の段落の頭に、枠の段落を末尾に加える。
+    fn merge(self, header: Option<Header>) -> Header {
+        let Self { runs, frames } = self;
+        let mut header = header.unwrap_or_default();
+        let anchor = !frames.is_empty();
+        let first = header.children.iter_mut().find_map(|child| match child {
+            docx_rs::HeaderChild::Paragraph(paragraph) => Some(paragraph),
+            _ => None,
+        });
+        if let Some(paragraph) = first {
+            for run in runs.into_iter().rev() {
+                paragraph
+                    .children
+                    .insert(0, ParagraphChild::Run(Box::new(run)));
+            }
+        } else {
+            header =
+                header.add_paragraph(runs.into_iter().fold(Paragraph::new(), Paragraph::add_run));
+        }
+        header = frames.into_iter().fold(header, Header::add_paragraph);
+        // LibreOffice は枠の段落を後ろの段落に結びつけるので、枠の後ろに空の段落を置く。
+        if anchor {
+            header = header.add_paragraph(column_break_paragraph_without_break());
+        }
+        header
+    }
+}
+
+/// 途中の section と、その header に置く図（section の header は追加時に決まるので、別に持つ）。
+struct SectionWithHeaderPictures {
+    section: Section,
+    pictures: HeaderPictures,
+}
+
+impl StructuredPageContainer for SectionWithHeaderPictures {
+    fn add_structured_paragraph(mut self, paragraph: Paragraph) -> Self {
+        self.section = self.section.add_paragraph(paragraph);
+        self
+    }
+
+    fn add_structured_table(mut self, table: Table) -> Self {
+        self.section = self.section.add_table(table);
+        self
+    }
+
+    fn add_header_runs(mut self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        self.pictures.runs.extend(runs);
+        self.pictures.frames.extend(frames);
+        self
+    }
+}
+
+/// 段のセルの中身を組む container。
+struct BandCell(TableCell);
+
+impl StructuredPageContainer for BandCell {
+    fn add_structured_paragraph(self, paragraph: Paragraph) -> Self {
+        Self(self.0.add_paragraph(paragraph))
+    }
+
+    fn add_structured_table(self, table: Table) -> Self {
+        Self(self.0.add_table(table))
+    }
+}
+
+/// 段のセルの中身を組む範囲（左右の x、原点）。`flat` の範囲はその中を段に分けない。
+#[derive(Clone, Copy)]
+struct BandRange {
+    x0: f32,
+    x1: f32,
+    left: f32,
+    flat: bool,
+}
+
+impl BandRange {
+    /// 表がこの範囲の段にあるか（表の中央で決める）。
+    fn holds_table(&self, bounds: &ParsedBounds) -> bool {
+        let x = (bounds.x0 + bounds.x1) / 2.0;
+        x > self.x0 && x < self.x1
+    }
+}
+
+/// 段を並べるページの、中身のある段（左右の範囲と左端、pt）と、段の上・下に全幅で組む行の番号。
+struct BandLayout {
+    bands: Vec<(f32, f32, f32)>,
+    above: Vec<usize>,
+    below: Vec<usize>,
+}
+
+/// ページの段の区切りとみなす帯の幅の下限の割合と、ページの端の余白の帯とみなす幅の割合。
+const MIN_BAND_COLUMN_RATIO: f32 = 0.15;
+const MARGIN_BAND_RATIO: f32 = 0.1;
+/// 段の中で表の横に置いてよい行の数の上限（それより多いと、表の前に積むと高くなりすぎる）。
+const MAX_LINES_BESIDE_TABLE: usize = 3;
+
+/// 段の区切り線（ページの高さの大半にわたる縦罫線）で分けたページで、行・表を段ごとに
+/// 分けられるとき、その分け方を返す。
+///
+/// 段組みの section は Word の段の幅を明示できないので、段ごとのセルを横に並べた罫線の無い表に
+/// して、原本の段を横に並べる（官報の横長のページの、区切り線で分けた座標の表など）。段を
+/// またぐ行は、段の中身の上か下にあれば段の外に全幅で組み、段の中身と高さが重なるなら、その
+/// 行がまたぐ区切り線を外して段をまとめる（まとめた段は、セルの中で残りの区切り線で分ける）。
+fn band_columns(
+    parsed: &ParsedDocument,
+    page: &StructuredTextPage,
+    positioned_tables: &[PositionedTable],
+    edges: &[f32],
+    range: Option<BandRange>,
+) -> Option<BandLayout> {
+    if edges.is_empty()
+        || parsed
+            .image_elements
+            .iter()
+            .any(|image| image.page == page.page)
+    {
+        return None;
+    }
+    let page_width = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)?;
+    let (outer_x0, outer_x1) = range.map_or((f32::NEG_INFINITY, f32::INFINITY), |range| {
+        (range.x0, range.x1)
+    });
+    let tables = positioned_tables
+        .iter()
+        .filter(|table| {
+            table.page == page.page && range.is_none_or(|range| range.holds_table(&table.bounds))
+        })
+        .map(|table| normalized_bounds(table.bounds))
+        .collect::<Vec<_>>();
+    let mut edges = edges.to_vec();
+    loop {
+        if edges.is_empty() {
+            return None;
+        }
+        let band_of = |x: f32| column_bands::band_of(x, &edges);
+        let one_band = |x0: f32, x1: f32| {
+            let band = band_of(x0 + 1.0);
+            (band_of((x1 - 1.0).max(x0 + 1.0)) == band).then_some(band)
+        };
+        let mut lefts = BTreeMap::<usize, f32>::new();
+        let mut spanning = Vec::new();
+        let (mut banded_top, mut banded_bottom) = (f32::NEG_INFINITY, f32::INFINITY);
+        for (index, line) in page.lines.iter().enumerate() {
+            if !(line.left_x.is_finite() && line.right_x >= line.left_x) {
+                return None;
+            }
+            let Some(band) = one_band(line.left_x, line.right_x) else {
+                spanning.push(index);
+                continue;
+            };
+            let left = lefts.entry(band).or_insert(line.left_x);
+            *left = left.min(line.left_x);
+            banded_top = banded_top.max(line.top_y);
+            banded_bottom = banded_bottom.min(line.top_y - structured_line_max_font_size(line));
+        }
+        let mut crossing_tables = Vec::new();
+        for bounds in &tables {
+            let Some(band) = one_band(bounds.x0, bounds.x1) else {
+                crossing_tables.push(*bounds);
+                continue;
+            };
+            let left = lefts.entry(band).or_insert(bounds.x0);
+            *left = left.min(bounds.x0);
+            banded_top = banded_top.max(bounds.y1);
+            banded_bottom = banded_bottom.min(bounds.y0);
+        }
+        // 段の中身と高さが重なる、段をまたぐ行・表がまたぐ区切り線を外して、やり直す。
+        let (mut above, mut below, mut merge) = (Vec::new(), Vec::new(), Vec::new());
+        for index in spanning {
+            let line = &page.lines[index];
+            if line.top_y - structured_line_max_font_size(line) >= banded_top - 1.0 {
+                above.push(index);
+            } else if line.top_y <= banded_bottom + 1.0 {
+                below.push(index);
+            } else {
+                merge.push((line.left_x, line.right_x));
+            }
+        }
+        merge.extend(crossing_tables.iter().map(|bounds| (bounds.x0, bounds.x1)));
+        if !merge.is_empty() {
+            let before = edges.len();
+            edges.retain(|edge| {
+                !merge
+                    .iter()
+                    .any(|(x0, x1)| *edge > x0 + 1.0 && *edge < x1 - 1.0)
+            });
+            if edges.len() == before {
+                return None;
+            }
+            continue;
+        }
+        // 段の中で行と表が横に並ぶ（表の高さの範囲に表の外の行がある）ときは、セルの中で縦に
+        // 積むと原本より高くなり、行の高さがページを越えるので、段を並べない。
+        let taken = above.iter().chain(&below).copied().collect::<BTreeSet<_>>();
+        let mut beside_counts = BTreeMap::<usize, usize>::new();
+        for (index, line) in page.lines.iter().enumerate() {
+            if taken.contains(&index) {
+                continue;
+            }
+            let band = band_of(line.left_x + 1.0);
+            let y = line.top_y - 0.5 * structured_line_max_font_size(line);
+            if tables.iter().any(|table| {
+                band_of(table.x0 + 1.0) == band
+                    && y > table.y0
+                    && y < table.y1
+                    && (line.right_x <= table.x0 || line.left_x >= table.x1)
+            }) {
+                *beside_counts.entry(band).or_default() += 1;
+            }
+        }
+        // 表の横の短い見出し（縦書きの「教育費」など数行）は、表の前に積んでも高さは変わらない。
+        let beside = beside_counts
+            .values()
+            .any(|count| *count > MAX_LINES_BESIDE_TABLE);
+        // 段は本文の段の幅のもの（財務表の金額の列を区切る縦罫線のような、狭い帯は段にしない）。
+        // ページの端の狭い帯（余白の柱など）は除いて数える。
+        let bounds_of = |band: usize| {
+            let start = if band == 0 {
+                outer_x0.max(0.0)
+            } else {
+                edges[band - 1]
+            };
+            let end = edges.get(band).copied().unwrap_or(outer_x1.min(page_width));
+            (start, end)
+        };
+        let narrow = lefts.keys().any(|&band| {
+            let (start, end) = bounds_of(band);
+            let margin = (band == 0 && end < MARGIN_BAND_RATIO * page_width)
+                || (band == edges.len() && start > (1.0 - MARGIN_BAND_RATIO) * page_width);
+            !margin && end - start < MIN_BAND_COLUMN_RATIO * page_width
+        });
+        if lefts.len() < 2 || beside || narrow {
+            return None;
+        }
+        return Some(BandLayout {
+            bands: lefts
+                .into_iter()
+                .map(|(band, left)| {
+                    let (start, end) = bounds_of(band);
+                    let start = if band == 0 { outer_x0 } else { start };
+                    let end = if band == edges.len() { outer_x1 } else { end };
+                    (start, end, left)
+                })
+                .collect(),
+            above,
+            below,
+        });
+    }
+}
+
+/// 段ごとの中身をセルに組み、罫線の無い 1 行の表として横に並べる。
+#[allow(clippy::too_many_arguments)]
+fn add_band_columns<C: StructuredPageContainer>(
+    container: C,
+    parsed: &ParsedDocument,
+    page: &StructuredTextPage,
+    positioned_tables: &[PositionedTable],
+    layout: &BandLayout,
+    page_width: f32,
+    section_refs: StructuredPageSectionRefs<'_>,
+    image_payloads: &mut Option<Vec<Vec<u8>>>,
+) -> Result<C, ConvertError> {
+    let bands = layout.bands.as_slice();
+    let origin = section_refs.band.map_or_else(
+        || structured_page_left_x(parsed, positioned_tables, page),
+        |range| range.left,
+    );
+    let outer = section_refs
+        .band
+        .map_or((f32::NEG_INFINITY, f32::INFINITY), |range| {
+            (range.x0, range.x1)
+        });
+    let right_edge = section_refs
+        .band
+        .map_or(page_width, |range| range.x1.min(page_width));
+    // 段の上・下の全幅の行は、この範囲の原点で組む（その中は段に分けない）。
+    let mut container = container;
+    let full_width = |indices: &[usize]| StructuredTextPage {
+        page: page.page,
+        lines: indices
+            .iter()
+            .map(|&index| page.lines[index].clone())
+            .collect(),
+    };
+    let flat = BandRange {
+        x0: outer.0,
+        x1: outer.1,
+        left: origin,
+        flat: true,
+    };
+    let no_tables = BandRange {
+        x0: f32::INFINITY,
+        ..flat
+    };
+    if !layout.above.is_empty() {
+        container = add_structured_page_blocks(
+            container,
+            parsed,
+            &full_width(&layout.above),
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(no_tables),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+    }
+    let taken = layout
+        .above
+        .iter()
+        .chain(&layout.below)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let twips = |points: f32| (points * 20.0).round().max(0.0) as usize;
+    let mut cells = Vec::new();
+    let mut grid = Vec::new();
+    for (index, &(x0, x1, left)) in bands.iter().enumerate() {
+        let right = bands
+            .get(index + 1)
+            .map_or(right_edge, |&(_, _, next)| next);
+        let width = twips(right - left);
+        let band_page = StructuredTextPage {
+            page: page.page,
+            lines: page
+                .lines
+                .iter()
+                .enumerate()
+                .filter(|(index, line)| {
+                    let x = line.left_x + 1.0;
+                    !taken.contains(index) && x > x0 && x < x1
+                })
+                .map(|(_, line)| line.clone())
+                .collect(),
+        };
+        let BandCell(cell) = add_structured_page_blocks(
+            BandCell(
+                TableCell::new()
+                    .width(width, WidthType::Dxa)
+                    .vertical_align(VAlignType::Top)
+                    .clear_all_border(),
+            ),
+            parsed,
+            &band_page,
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(BandRange {
+                    x0,
+                    x1,
+                    left,
+                    flat: false,
+                }),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+        // セルは段落で終える（表だけのセルは Word が開けない）。
+        cells.push(cell.add_paragraph(page_end::empty_page(None)));
+        grid.push(width);
+    }
+    let table = Table::without_borders(vec![TableRow::new(cells)])
+        .set_grid(grid)
+        .layout(TableLayoutType::Fixed)
+        .indent(i32::try_from(twips((bands[0].2 - origin).max(0.0))).unwrap_or(0))
+        .margins(TableCellMargins::new().margin(0, 0, 0, 0));
+    container = container.add_structured_table(table);
+    if !layout.below.is_empty() {
+        container = add_structured_page_blocks(
+            container,
+            parsed,
+            &full_width(&layout.below),
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(no_tables),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+    }
+    Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -1498,46 +1945,13 @@ impl StructuredPageContainer for Docx {
     }
 
     fn add_header_runs(mut self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
-        let Some((_, header)) = self.document.section_property.header.as_mut() else {
-            let paragraph = runs.into_iter().fold(Paragraph::new(), Paragraph::add_run);
-            let anchor = !frames.is_empty();
-            let header = frames.into_iter().fold(
-                Header::new().add_paragraph(paragraph),
-                Header::add_paragraph,
-            );
-            let header = if anchor {
-                header.add_paragraph(column_break_paragraph_without_break())
-            } else {
-                header
-            };
-            return self.header(header);
-        };
-        let anchor = !frames.is_empty();
-        for frame in frames {
+        let extras = HeaderPictures { runs, frames };
+        if let Some((_, header)) = self.document.section_property.header.as_mut() {
             let taken = std::mem::replace(header, Header::new());
-            *header = taken.add_paragraph(frame);
-        }
-        // LibreOffice は枠の段落を後ろの段落に結びつけるので、枠の後ろに空の段落を置く。
-        if anchor {
-            let taken = std::mem::replace(header, Header::new());
-            *header = taken.add_paragraph(column_break_paragraph_without_break());
-        }
-        let first = header.children.iter_mut().find_map(|child| match child {
-            docx_rs::HeaderChild::Paragraph(paragraph) => Some(paragraph),
-            _ => None,
-        });
-        if let Some(paragraph) = first {
-            for run in runs.into_iter().rev() {
-                paragraph
-                    .children
-                    .insert(0, ParagraphChild::Run(Box::new(run)));
-            }
+            *header = extras.merge(Some(taken));
             self
         } else {
-            let paragraph = runs.into_iter().fold(Paragraph::new(), Paragraph::add_run);
-            let taken = std::mem::replace(header, Header::new());
-            *header = taken.add_paragraph(paragraph);
-            self
+            self.header(extras.merge(None))
         }
     }
 
@@ -1580,6 +1994,38 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .find(|parsed_page| parsed_page.page_number == page.page)
         .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
         .unwrap_or(f32::MAX);
+    // 段を並べられるページは、段ごとのセルを横に並べる（段のセルの中も、その範囲の内側の
+    // 区切り線でさらに分ける）。
+    let range_edges = band_edges
+        .iter()
+        .copied()
+        .filter(|edge| {
+            section_refs
+                .band
+                .is_none_or(|range| !range.flat && *edge > range.x0 && *edge < range.x1)
+        })
+        .collect::<Vec<_>>();
+    if section_refs.band.is_none_or(|range| !range.flat)
+        && text_column_layout.is_none()
+        && let Some(layout) = band_columns(
+            parsed,
+            page,
+            positioned_tables,
+            &range_edges,
+            section_refs.band,
+        )
+    {
+        return add_band_columns(
+            container,
+            parsed,
+            page,
+            positioned_tables,
+            &layout,
+            band_page_width,
+            section_refs,
+            image_payloads,
+        );
+    }
     // 実段組の行順に並べた行を基準に、表・画像の挿入位置も求める。
     let ordered_lines = column_flow::ordered_lines(&page.lines, text_column_layout)
         .into_iter()
@@ -1594,10 +2040,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             line: line.clone(),
         })
         .collect::<Vec<_>>();
-    for table in positioned_tables
-        .iter()
-        .filter(|table| table.page == page.page)
-    {
+    for table in positioned_tables.iter().filter(|table| {
+        table.page == page.page
+            && section_refs
+                .band
+                .is_none_or(|range| range.holds_table(&table.bounds))
+    }) {
         let top_y = table.bounds.y1;
         blocks.push(StructuredBlock::Table {
             band_rank: column_bands::reading_rank(
@@ -1672,7 +2120,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     if block_count == 0 {
         return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
     }
-    let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
+    let section_origin_x = section_refs.band.map(|range| range.left).map_or_else(
+        || structured_page_left_x(parsed, positioned_tables, page),
+        |left| left,
+    );
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
     } else {
@@ -1968,6 +2419,7 @@ fn build_multi_page_text_column_docx(
                 leading_single_column: sections.leading_single_column.as_ref(),
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
+                band: None,
                 header_pictures: is_last_page,
             },
             image_payloads,
@@ -3451,6 +3903,9 @@ struct StructuredPageSectionRefs<'a> {
     column_before_trailing: Option<&'a SectionProperty>,
     /// 非最終 PDF ページの末尾へ付与する section property。
     page_end: Option<&'a SectionProperty>,
+    /// 段の区切り線で分けたページの 1 つの段だけを、その段の左端を原点に組む（段ごとの
+    /// セルの中身を組むとき）。
+    band: Option<BandRange>,
     /// 縦書きのページの浮かせた図を、本文ではなく最終 section の header に置くか。
     /// Word・LibreOffice は header を横に組むので、ページ基準の位置を原本の向きのまま使える
     /// （LibreOffice は縦書きの本文に置いた図のページ基準の位置を回して解釈する）。
@@ -3596,12 +4051,22 @@ fn append_section_with_repeated_chrome(
     mut section: Section,
     chrome: &RepeatedPageChrome,
     layout: &SectionProperty,
+    pictures: HeaderPictures,
+    header_media: &mut Vec<(String, Vec<u8>)>,
 ) -> Result<Docx, ConvertError> {
     if let Some(footer) = repeated_footer(chrome, layout) {
         section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = repeated_header(chrome, layout) {
+    let header = repeated_header(chrome, layout);
+    let header = if pictures.is_empty() {
+        header
+    } else {
+        let mut header = pictures.merge(header);
+        take_header_media(&mut header, header_media);
+        Some(header)
+    };
+    if let Some(header) = header {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
@@ -6017,6 +6482,7 @@ fn infer_positioned_table_from_graphics(
     // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
     let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
     let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
+    let open_ys = clip_open_edges_at_page_edges(parsed, page, &ys, open_ys);
     let has_open_edges = horizontal_only || open_ys.len() > ys.len() || open_xs.len() > xs.len();
     ys = open_ys;
     xs = open_xs;
@@ -7545,6 +8011,49 @@ fn row_index_for_y(y: f32, ys: &[i32]) -> Option<usize> {
     ys.windows(2)
         .position(|pair| y >= pair[0] as f32 - 1.0 && y <= pair[1] as f32 + 1.0)
         .map(|bottom_interval| ys.len().saturating_sub(2).saturating_sub(bottom_interval))
+}
+
+/// 縦罫線の端で補った上下の外枠のうち、用紙の端にあるもの（原本はクリップで表の外を隠して
+/// いる）は、外側の横罫線から行の間隔 1 つ分までにする。その間に字が無ければ外枠を補わない。
+fn clip_open_edges_at_page_edges(
+    parsed: &ParsedDocument,
+    page: usize,
+    ruled: &[i32],
+    open: Vec<i32>,
+) -> Vec<i32> {
+    let (Some(height), Some(&low), Some(&high)) =
+        (page_height(parsed, page), ruled.first(), ruled.last())
+    else {
+        return open;
+    };
+    if ruled.len() < 3 || open.len() <= ruled.len() {
+        return open;
+    }
+    let mut pitches = ruled
+        .windows(2)
+        .map(|pair| pair[1] - pair[0])
+        .collect::<Vec<_>>();
+    pitches.sort_unstable();
+    let pitch = pitches[pitches.len() / 2];
+    let texts_between = |from: i32, to: i32| {
+        parsed.text_elements.iter().any(|text| {
+            let bounds = normalized_bounds(text.bounds);
+            let y = (bounds.y0 + bounds.y1) / 2.0;
+            text.page == page && !text.text.trim().is_empty() && y > from as f32 && y < to as f32
+        })
+    };
+    let at_edge = |edge: i32| edge <= 1 || edge as f32 >= height - 1.0;
+    open.into_iter()
+        .filter_map(|edge| {
+            if edge > high && at_edge(edge) && edge - high > pitch + pitch / 2 {
+                texts_between(high, high + pitch).then_some(high + pitch)
+            } else if edge < low && at_edge(edge) && low - edge > pitch + pitch / 2 {
+                texts_between(low - pitch, low).then_some(low - pitch)
+            } else {
+                Some(edge)
+            }
+        })
+        .collect()
 }
 
 /// 外枠を欠く表の辺を、揃った罫線の端から補った座標列を返す。
