@@ -36,6 +36,11 @@ fn source_with_units(
             content.push_str(&format!(" BT /F1 10 Tf 182 {y} Td (Value-{index}) Tj ET"));
         }
     }
+    owned_pdf_content(&content)
+}
+
+/// 内容streamから既存と同じobject順・xref形式を生成し、所有対照のbyteを保つ。
+fn owned_pdf_content(content: &str) -> Vec<u8> {
     let objects = [
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
@@ -59,6 +64,9 @@ fn source_with_units(
     );
     bytes
 }
+
+#[path = "support/source_table_logical_numeric_cases.rs"]
+mod numeric_cases;
 
 /// 公開byte APIのDOCXから、Word表の行とセルの本文を読み戻す。
 fn table_rows(source: &[u8]) -> Vec<Vec<String>> {
