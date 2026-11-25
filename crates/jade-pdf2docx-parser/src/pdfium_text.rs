@@ -202,34 +202,7 @@ fn split_rect_with_slack(
     slack: f32,
 ) -> Option<Vec<SegmentPiece>> {
     let horizontal = (rect.x1 - rect.x0).abs() >= (rect.y1 - rect.y0).abs();
-    // `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から
-    // 中心が矩形に入る文字をテキスト順に拾う。
-    let (left, bottom, right, top) = (
-        rect.x0.min(rect.x1) - slack,
-        rect.y0.min(rect.y1) - slack,
-        rect.x0.max(rect.x1) + slack,
-        rect.y0.max(rect.y1) + slack,
-    );
-    let mut infos = Vec::new();
-    for (index, center) in centers.iter().enumerate() {
-        let Some((center_x, center_y)) = *center else {
-            continue;
-        };
-        if center_x < left || center_x > right || center_y < bottom || center_y > top {
-            continue;
-        }
-        let character = characters.get(index).ok()?;
-        let bounds = character.loose_bounds().ok()?;
-        let name = character.font_name();
-        infos.push(CharInfo {
-            text: character.unicode_string().unwrap_or_default(),
-            bounds: parsed_bounds_from_pdf_rect(bounds),
-            font_size: effective_font_size(&character),
-            font_name: (!name.is_empty()).then_some(name),
-            fill_color: character.fill_color().ok().map(|color| color.to_hex()),
-            baseline_y: horizontal_baseline(&character),
-        });
-    }
+    let infos = chars_in_rect(rect, characters, centers, slack)?;
     // 矩形で拾う文字は隣の文字列の字（小数点の字など）を含むことがあるため、本文の字を順に
     // たどれる字だけを残し、本文のすべての字が見つかった場合だけ分ける。
     let expected = text
@@ -283,7 +256,41 @@ pub(crate) fn split_recovered_at_wide_gaps(
         })
         .collect::<Vec<_>>();
     let mut out = Vec::with_capacity(elements.len());
-    for element in elements {
+    for (index, element) in elements.iter().enumerate() {
+        // 文字列 object の矩形に本文以外の字が入っている（本文と矩形の対応が崩れた）場合は、
+        // 矩形の中のすべての字から組み直し、ほかの要素と同じ位置・本文の部分は除く。
+        if let Some(pieces) = rebuild_from_box(element, characters, &centers) {
+            // ほかの要素と重なる部分はその要素の字なので、重ならない部分（どの要素にも
+            // 入っていない字）だけを補う。
+            let duplicate = |piece: &SegmentPiece| {
+                elements.iter().enumerate().any(|(other, existing)| {
+                    other != index
+                        && existing.bounds.x0 < piece.bounds.x1
+                        && piece.bounds.x0 < existing.bounds.x1
+                        && existing.bounds.y0 < piece.bounds.y1
+                        && piece.bounds.y0 < existing.bounds.y1
+                })
+            };
+            out.extend(
+                pieces
+                    .into_iter()
+                    .filter(|piece| !duplicate(piece))
+                    .filter_map(|piece| {
+                        let text = piece.text.trim().to_string();
+                        (!text.is_empty()).then(|| ParsedTextElement {
+                            baseline_y: piece.baseline_y,
+                            page: element.page,
+                            bounds: piece.bounds,
+                            font_size: piece.font_size,
+                            font_name: piece.font_name.or_else(|| element.font_name.clone()),
+                            fill_color: piece.fill_color.or_else(|| element.fill_color.clone()),
+                            text,
+                        })
+                    }),
+            );
+            continue;
+        }
+        let element = element.clone();
         match split_rect_at_wide_gaps(element.bounds, &element.text, characters, &centers) {
             Some(pieces) => out.extend(pieces.into_iter().filter_map(|piece| {
                 let text = piece.text.trim().to_string();
@@ -301,6 +308,117 @@ pub(crate) fn split_recovered_at_wide_gaps(
         }
     }
     out
+}
+
+/// 中心が矩形（`slack` だけ広げた範囲）に入るページの文字を、テキスト順に取り出す。
+///
+/// `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から拾う。
+fn chars_in_rect(
+    rect: ParsedBounds,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+    slack: f32,
+) -> Option<Vec<CharInfo>> {
+    let (left, bottom, right, top) = (
+        rect.x0.min(rect.x1) - slack,
+        rect.y0.min(rect.y1) - slack,
+        rect.x0.max(rect.x1) + slack,
+        rect.y0.max(rect.y1) + slack,
+    );
+    let mut infos = Vec::new();
+    for (index, center) in centers.iter().enumerate() {
+        let Some((center_x, center_y)) = *center else {
+            continue;
+        };
+        if center_x < left || center_x > right || center_y < bottom || center_y > top {
+            continue;
+        }
+        let character = characters.get(index).ok()?;
+        let bounds = character.loose_bounds().ok()?;
+        let name = character.font_name();
+        infos.push(CharInfo {
+            text: character.unicode_string().unwrap_or_default(),
+            bounds: parsed_bounds_from_pdf_rect(bounds),
+            font_size: effective_font_size(&character),
+            font_name: (!name.is_empty()).then_some(name),
+            fill_color: character.fill_color().ok().map(|color| color.to_hex()),
+            baseline_y: horizontal_baseline(&character),
+        });
+    }
+    Some(infos)
+}
+
+/// 文字列 object の本文の字は矩形の中にあるが、矩形にほかの字も入っている場合に、矩形の中の
+/// すべての字を字間で分けた部分を返す（本文と矩形の対応が崩れていない場合は `None`）。
+fn rebuild_from_box(
+    element: &ParsedTextElement,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
+    let infos = chars_in_rect(element.bounds, characters, centers, 0.5)?;
+    let expected = element
+        .text
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<Vec<_>>();
+    let mut next = 0usize;
+    let mut unmatched = 0usize;
+    for info in &infos {
+        let body = info
+            .text
+            .chars()
+            .filter(|ch| !ch.is_whitespace())
+            .collect::<Vec<_>>();
+        if body.is_empty() {
+            continue;
+        }
+        if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+            next += body.len();
+        } else {
+            unmatched += body.len();
+        }
+    }
+    if expected.is_empty() || next != expected.len() || unmatched == 0 {
+        return None;
+    }
+    // 本文の字が矩形の半分以上を占める場合は、矩形と本文の対応は崩れていない。
+    let (horizontal_box, along) = {
+        let (width, height) = (
+            (element.bounds.x1 - element.bounds.x0).abs(),
+            (element.bounds.y1 - element.bounds.y0).abs(),
+        );
+        (width >= height, width.max(height))
+    };
+    let matched_extent = {
+        let mut next = 0usize;
+        let mut low = f32::INFINITY;
+        let mut high = f32::NEG_INFINITY;
+        for info in &infos {
+            let body = info
+                .text
+                .chars()
+                .filter(|ch| !ch.is_whitespace())
+                .collect::<Vec<_>>();
+            if body.is_empty() || expected.get(next..next + body.len()) != Some(body.as_slice()) {
+                continue;
+            }
+            next += body.len();
+            let (a, b) = if horizontal_box {
+                (info.bounds.x0, info.bounds.x1)
+            } else {
+                (info.bounds.y0, info.bounds.y1)
+            };
+            low = low.min(a.min(b));
+            high = high.max(a.max(b));
+        }
+        high - low
+    };
+    if !(matched_extent.is_finite() && matched_extent < 0.5 * along) {
+        return None;
+    }
+    let horizontal = (element.bounds.x1 - element.bounds.x0).abs()
+        >= (element.bounds.y1 - element.bounds.y0).abs();
+    Some(group_chars_at_wide_gaps(&infos, horizontal))
 }
 
 /// 字送り方向に 1 em を超えて離れた文字の間で、文字列を複数の要素へ分ける。

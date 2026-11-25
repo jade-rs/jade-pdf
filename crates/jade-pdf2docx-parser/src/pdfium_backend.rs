@@ -157,6 +157,8 @@ pub(crate) fn parse_pdf(
                 &page_text,
                 &characters,
             )?;
+            // 回転したページなどで segment の本文と矩形の対応が崩れたものを、矩形の中の字から組み直す。
+            elements = crate::pdfium_text::split_recovered_at_wide_gaps(elements, &characters);
             if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
                 && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
             {
