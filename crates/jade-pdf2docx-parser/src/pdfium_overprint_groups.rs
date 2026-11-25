@@ -44,10 +44,10 @@ mod tests {
         )
         .unwrap();
         let mut tags = Tagged::prepare_weights(&budget, &bytes, false).unwrap();
-        let sdk = pdfium_auto::bind_pdfium_silent().unwrap();
-        let confirmed = tags.confirm_embedded(&budget, &sdk, 1000).unwrap();
-        assert!(confirmed);
         let outcome = {
+            let sdk = pdfium_auto::bind_pdfium_silent().unwrap();
+            let confirmed = tags.confirm_embedded(&budget, &sdk, 1000).unwrap();
+            assert!(confirmed);
             let doc = sdk.load_pdf_from_byte_slice(&tags.bytes, None).unwrap();
             let page = doc.pages().get(0).unwrap();
             std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| check(&page, &tags)))
