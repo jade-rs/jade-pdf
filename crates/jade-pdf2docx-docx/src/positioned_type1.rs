@@ -127,6 +127,7 @@ mod tests {
         StructuredTextRun {
             text: text.into(),
             style: StructuredTextStyle {
+                font_weight: None,
                 font_name: name.map(str::to_string),
                 font_embedded: name.is_some(),
                 font_size: 10.,

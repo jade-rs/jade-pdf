@@ -2064,6 +2064,7 @@ fn structured_text_runs_from_row(
         runs.push(StructuredTextRun {
             text: value,
             style: StructuredTextStyle {
+                font_weight: text.font_weight,
                 font_size: text.font_size,
                 font_name: text.font_name.clone(),
                 font_embedded: false,
@@ -2138,6 +2139,7 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
             font_name,
             structured_run.style.font_embedded,
             structured_run.style.embedded_face,
+            structured_run.style.font_weight,
         );
     }
     if let Some(color) = structured_run.style.fill_color.as_deref()
@@ -2157,6 +2159,7 @@ fn apply_pdf_font_name_to_run(
     font_name: &str,
     embedded: bool,
     face: Option<embedded_face::Face>,
+    source_weight: Option<u16>,
 ) -> Run {
     run = run.fonts(if embedded {
         run_fonts(font_name)
@@ -2173,6 +2176,11 @@ fn apply_pdf_font_name_to_run(
         .flatten();
     let weight = face
         .map(|face| face.bold)
+        .or_else(|| {
+            source_weight
+                .filter(|value| (1..=1000).contains(value))
+                .map(|value| value >= 700)
+        })
         .or_else(|| compatible.map(|font| font.bold))
         .or(named_weight);
     match weight {
@@ -2726,6 +2734,8 @@ struct StructuredTextRun {
 /// structured DOCX へ反映する text style。
 #[derive(Debug, Clone, PartialEq)]
 struct StructuredTextStyle {
+    /// 明示されたsource FontDescriptorのweight。未確認はNone。
+    font_weight: Option<u16>,
     /// font size（pt）。
     font_size: f32,
     /// PDF BaseFont 名。
@@ -2749,6 +2759,7 @@ struct StructuredTextStyle {
 impl Default for StructuredTextStyle {
     fn default() -> Self {
         Self {
+            font_weight: None,
             font_size: 10.0,
             font_name: None,
             font_embedded: false,
@@ -3461,6 +3472,7 @@ fn docx_table_from_model_with_row_height_and_nested(
                             font_name,
                             embedded,
                             parent.and_then(|table| table.embedded_face),
+                            None,
                         );
                         if !embedded
                             && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name)
