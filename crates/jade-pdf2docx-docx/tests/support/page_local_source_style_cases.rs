@@ -123,6 +123,29 @@ fn new_borderless_cells_retain_mixed_source_run_styles() {
     }
 }
 
+proptest! {
+    /// 原点・列間隔・ページ順を変えても、太字の原文断片と対応する書式を失わない。
+    #[test]
+    fn mixed_source_styles_follow_their_cells(
+        left in 20usize..80,
+        width in 160usize..250,
+        styled_first in any::<bool>(),
+    ) {
+        let pages = if styled_first { [false, true] } else { [true, false] };
+        let xml = document_xml(&source_with_palette(&pages, left, width, None, None, true));
+        prop_assert_eq!(tables_in_xml(&xml), pages.into_iter().map(expected).collect::<Vec<_>>());
+        let runs = styled_runs(&xml);
+        let grid_page = usize::from(!styled_first);
+        let bold = runs.iter().filter(|run| run.table == grid_page && run.bold == Some(true)).collect::<Vec<_>>();
+        prop_assert_eq!(bold.len(), 3);
+        for (row, run) in bold.into_iter().enumerate() {
+            prop_assert_eq!(&run.text, &format!("R{row}C1"));
+            prop_assert_eq!(run.size, Some(24));
+            prop_assert_eq!(run.color.as_deref(), Some("FF0000"));
+        }
+    }
+}
+
 /// 等分列・平均行高で原本の反復位置を変えず、borderlessセルへ罫線を発明しない。
 #[test]
 fn new_borderless_table_uses_source_columns_rows_and_unruled_edges() {
