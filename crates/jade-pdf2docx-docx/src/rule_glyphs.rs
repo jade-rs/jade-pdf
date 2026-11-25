@@ -22,9 +22,11 @@ fn is_rule_glyph_text(text: &ParsedTextElement) -> bool {
         .font_name
         .as_deref()
         .is_some_and(|font| font.contains("Line"));
+    // 字に戻せる私用領域の字（DynaFont の「－」など）は罫線にしない。
     rule_font
         || body.chars().all(|ch| {
-            ('\u{E000}'..='\u{F8FF}').contains(&ch) || raw_cid_glyphs::raw_cid(ch).is_some()
+            (('\u{E000}'..='\u{F8FF}').contains(&ch) && dynafont_private_use_glyph(ch).is_none())
+                || raw_cid_glyphs::raw_cid(ch).is_some()
         })
 }
 
@@ -127,10 +129,16 @@ mod tests {
                     (339.5, 537.3, 340.5, 539.0),
                 ),
                 text("DFHSMinchoRPro6N-W3", "合計", (100.0, 500.0, 116.0, 508.0)),
+                // 字に戻せる細い私用領域の字（「－」）は罫線にしない
+                text(
+                    "DFHSMinchoRPro6N-W3",
+                    "\u{E61C}",
+                    (150.0, 503.0, 156.0, 504.0),
+                ),
             ],
         };
         convert_to_graphics(&mut parsed);
-        assert_eq!(parsed.text_elements.len(), 2);
+        assert_eq!(parsed.text_elements.len(), 3);
         let rules = parsed
             .graphics
             .iter()
