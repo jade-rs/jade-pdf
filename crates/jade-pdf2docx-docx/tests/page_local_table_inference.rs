@@ -151,3 +151,25 @@ proptest! {
         prop_assert_eq!(tables(&pages,left,width),independent);
     }
 }
+
+/// 別の新規一時名前空間だけへ、原本全ページを確認するための所有対照を書き出す。
+#[test]
+#[ignore = "new JADE_PAGE_LOCAL_TABLE_EXPORT_DIR required; review all source pages before file conversion"]
+fn export_owned_page_local_table_sources_before_file_conversion() {
+    let dir =
+        std::path::PathBuf::from(std::env::var_os("JADE_PAGE_LOCAL_TABLE_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&dir).unwrap();
+    for (name, pages) in [
+        ("ruled-only", vec![true]),
+        ("borderless-only", vec![false]),
+        ("ruled-then-borderless", vec![true, false]),
+        ("borderless-then-ruled", vec![false, true]),
+    ] {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(dir.join(format!("{name}.pdf")))
+            .unwrap();
+        std::io::Write::write_all(&mut file, &source(&pages, 40, 240)).unwrap();
+    }
+}

@@ -3689,50 +3689,56 @@ fn table_border_size_for_pdf_rule(stroke_width: f32) -> usize {
 
 /// PDF から抽出した要素を位置付き `OcrTable` 群へ変換する。
 fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<PositionedTable> {
-    let mut graphic_tables = parsed
+    let pages = parsed
         .graphics
         .iter()
         .map(|graphic| graphic.page)
-        .collect::<BTreeSet<_>>()
+        .chain(parsed.text_elements.iter().map(|text| text.page))
+        .collect::<BTreeSet<_>>();
+    let mut tables = pages
         .into_iter()
-        .flat_map(|page| infer_positioned_tables_from_pdf_graphics_page(parsed, page))
+        .flat_map(|page| infer_positioned_tables_for_page(parsed, page))
         .collect::<Vec<_>>();
+    tables.sort_by(|a, b| {
+        a.page
+            .cmp(&b.page)
+            .then(b.bounds.y1.total_cmp(&a.bounds.y1))
+    });
+    tables
+}
+
+/// 罫線・反復列の選択を同じページ内だけで比較し、別ページの表を上書きしない。
+fn infer_positioned_tables_for_page(parsed: &ParsedDocument, page: usize) -> Vec<PositionedTable> {
+    let graphic_tables = infer_positioned_tables_from_pdf_graphics_page(parsed, page);
     if !graphic_tables.is_empty() {
-        if graphic_tables.len() == 1 {
-            let text_tables = infer_positioned_tables_from_text_grid(parsed);
-            if let Some(best_text_table) = text_tables
+        if graphic_tables.len() == 1
+            && let Some(best_text_table) = infer_positioned_table_from_text_grid_page(parsed, page)
+        {
+            let has_graphic_span_model = graphic_tables
                 .iter()
-                .max_by_key(|table| ocr_table_non_empty_cell_count(&table.table))
-            {
-                let has_graphic_span_model = graphic_tables
-                    .iter()
-                    .any(|table| table.docx_table.is_some());
-                let max_graphic_non_empty = graphic_tables
-                    .iter()
-                    .map(|table| ocr_table_non_empty_cell_count(&table.table))
-                    .max()
-                    .unwrap_or(0);
-                let best_text_cols = best_text_table.table.col_count().unwrap_or(0);
-                let max_graphic_cols = graphic_tables
-                    .iter()
-                    .filter_map(|table| table.table.col_count())
-                    .max()
-                    .unwrap_or(0);
-                let text_non_empty = ocr_table_non_empty_cell_count(&best_text_table.table);
-                let text_gain = text_non_empty.saturating_sub(max_graphic_non_empty);
-                if !has_graphic_span_model && best_text_cols <= max_graphic_cols && text_gain > 2 {
-                    return text_tables;
-                }
+                .any(|table| table.docx_table.is_some());
+            let max_graphic_non_empty = graphic_tables
+                .iter()
+                .map(|table| ocr_table_non_empty_cell_count(&table.table))
+                .max()
+                .unwrap_or(0);
+            let best_text_cols = best_text_table.table.col_count().unwrap_or(0);
+            let max_graphic_cols = graphic_tables
+                .iter()
+                .filter_map(|table| table.table.col_count())
+                .max()
+                .unwrap_or(0);
+            let text_non_empty = ocr_table_non_empty_cell_count(&best_text_table.table);
+            let text_gain = text_non_empty.saturating_sub(max_graphic_non_empty);
+            if !has_graphic_span_model && best_text_cols <= max_graphic_cols && text_gain > 2 {
+                return vec![best_text_table];
             }
         }
-        graphic_tables.sort_by(|a, b| {
-            a.page
-                .cmp(&b.page)
-                .then(b.bounds.y1.total_cmp(&a.bounds.y1))
-        });
         return attach_nested_positioned_tables(graphic_tables);
     }
-    infer_positioned_tables_from_text_grid(parsed)
+    infer_positioned_table_from_text_grid_page(parsed, page)
+        .into_iter()
+        .collect()
 }
 
 /// 包含された表を親表の子表として組み直す。
@@ -5126,18 +5132,6 @@ fn nearest_text_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
         .enumerate()
         .min_by(|(_, a), (_, b)| (x - **a).abs().total_cmp(&(x - **b).abs()))
         .map(|(index, _)| index)
-}
-
-/// PDF の座標付き text element を位置付き `OcrTable` 群へ変換する。
-fn infer_positioned_tables_from_text_grid(parsed: &ParsedDocument) -> Vec<PositionedTable> {
-    parsed
-        .text_elements
-        .iter()
-        .map(|text| text.page)
-        .collect::<BTreeSet<_>>()
-        .into_iter()
-        .filter_map(|page| infer_positioned_table_from_text_grid_page(parsed, page))
-        .collect()
 }
 
 /// 指定 page の座標付き text element を反復列の表へ変換する。
