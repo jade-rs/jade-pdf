@@ -127,8 +127,9 @@ fn ambiguous_source_frames_keep_existing_flow() {
 /// 本文と重なる独立した第三画像は従来処理へ残し、確認できる横並び二画像を妨げない。
 #[test]
 fn text_overlap_outside_verified_row_keeps_only_that_image_inline() {
-    let mut parsed=image_row();parsed.text_elements[0].bounds=parsed.image_elements[2].bounds;
-    let (xml,_)=package_source(parsed);
-    assert_eq!(xml.matches("<wp:anchor ").count(),2);
-    assert_eq!(xml.matches("<wp:inline ").count(),1);
+    let mut parsed = image_row();
+    parsed.text_elements[0].bounds = parsed.image_elements[2].bounds;
+    let (xml, _) = package_source(parsed);
+    assert_eq!(xml.matches("<wp:anchor ").count(), 2);
+    assert_eq!(xml.matches("<wp:inline ").count(), 1);
 }

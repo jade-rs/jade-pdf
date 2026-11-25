@@ -18,7 +18,7 @@ pub(super) fn select(
     else {
         return Vec::new();
     };
-    let images = parsed
+    let mut images = parsed
         .image_elements
         .iter()
         .enumerate()
@@ -38,23 +38,25 @@ pub(super) fn select(
         .filter(|text| text.page == page && !text.text.trim().is_empty())
         .take(4097)
         .collect::<Vec<_>>();
-    if text.is_empty()
-        || text.len() > 4096
-        || text.iter().any(|text| {
-            !positive(text.bounds)
-                || images
-                    .iter()
-                    .any(|(_, image)| overlap(text.bounds, image.bounds))
-        })
-    {
+    if text.is_empty() || text.len() > 4096 || text.iter().any(|text| !positive(text.bounds)) {
+        return Vec::new();
+    }
+    for (at, (_, a)) in images.iter().enumerate() {
+        if images[at + 1..]
+            .iter()
+            .any(|(_, b)| overlap(a.bounds, b.bounds))
+        {
+            return Vec::new();
+        }
+    }
+    // 本文と重なる画像自体は従来のflowへ残し、独立した横並び画像を妨げない。
+    images.retain(|(_, image)| !text.iter().any(|text| overlap(text.bounds, image.bounds)));
+    if images.len() < 2 {
         return Vec::new();
     }
     let mut row = false;
     for (at, (_, a)) in images.iter().enumerate() {
         for (_, b) in &images[at + 1..] {
-            if overlap(a.bounds, b.bounds) {
-                return Vec::new();
-            }
             let across = a.bounds.x1 + 1. <= b.bounds.x0 || b.bounds.x1 + 1. <= a.bounds.x0;
             let common = a.bounds.y1.min(b.bounds.y1) - a.bounds.y0.max(b.bounds.y0);
             let smaller = (a.bounds.y1 - a.bounds.y0).min(b.bounds.y1 - b.bounds.y0);
