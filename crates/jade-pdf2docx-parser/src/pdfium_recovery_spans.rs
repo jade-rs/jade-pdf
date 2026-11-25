@@ -56,6 +56,7 @@ pub(super) fn join(
         && size > 0.
         && size == next.font_size
         && previous.page == next.page
+        && previous.font_weight == next.font_weight
         && previous.font_name == next.font_name
         && previous.fill_color == next.fill_color
         && previous.baseline_y.is_some_and(|v| v.is_finite())
@@ -82,6 +83,8 @@ struct Signature<'a> {
     text: &'a str,
     /// font・色・ページを含む、先頭文字のstyle。
     style: (usize, u32, Option<&'a str>, Option<&'a str>, Option<u32>),
+    /// 明示されたdescriptor値を、未確認や別の太さと区別する。
+    weight: Option<u16>,
     /// 文字loose boundsではなく、元矩形に対応するobject幾何。
     bounds: [u32; 4],
 }
@@ -97,6 +100,7 @@ fn signature(text: &ParsedTextElement, bounds: [f32; 4]) -> Signature<'_> {
             text.fill_color.as_deref(),
             text.baseline_y.map(f32::to_bits),
         ),
+        weight: text.font_weight,
         bounds: bounds.map(f32::to_bits),
     }
 }
@@ -111,7 +115,6 @@ fn duplicate(
     let color = crate::text_result_storage::copy(budget, text.fill_color.as_deref());
     budget.check()?;
     Ok(ParsedTextElement {
-        font_weight: None,
         text: content.flatten().unwrap_or_default(),
         font_name: font.flatten(),
         fill_color: color.flatten(),
