@@ -21,6 +21,7 @@ enum Deviation {
     Duplicate,
     Background,
     InteriorSpace,
+    DenseColumns,
 }
 
 /// 原本の位置・サイズを変え、指定した一ページだけに拒否すべき不一致を与える。
@@ -65,6 +66,14 @@ fn source_at(numbers: &[u32], size: f64, y: f64, deviation: Deviation) -> Vec<u8
         let mut content = format!(
             "BT /F1 12 Tf 72 700 Td (Body{body}) Tj ET BT /F1 {size} Tf {x:.5} {y} Td ({label}) Tj ET"
         );
+        if matches!(deviation, Deviation::DenseColumns) {
+            for row in 0..12 {
+                let row_y = 650 - row * 20;
+                content.push_str(&format!(
+                    " BT /F1 10 Tf 72 {row_y} Td (Left long paragraph item {row} page {body}) Tj ET BT /F1 10 Tf 330 {row_y} Td (Right long paragraph item {row} page {body}) Tj ET"
+                ));
+            }
+        }
         if i == 1 && matches!(deviation, Deviation::Duplicate) {
             content.push_str(&format!(
                 " BT /F1 {size} Tf {} {} Td (99) Tj ET",
@@ -217,6 +226,22 @@ fn nonconsecutive_bare_numbers_do_not_create_footer_parts() {
 #[test]
 fn two_bare_numbers_are_not_enough_for_a_verified_sequence() {
     assert!(package(&[1, 2]).1.is_empty());
+}
+
+/// footerの追加だけで既存の段組改ページを押し広げないよう、密な本文段組を除外する。
+#[test]
+fn dense_multicolumn_body_does_not_gain_unqualified_bare_footers() {
+    let (document, footers) = package_bytes(&source_at(
+        &[1, 2, 3, 4],
+        11.04,
+        52.344,
+        Deviation::DenseColumns,
+    ));
+    assert!(text(&document).contains("Left long paragraph item 0 page A"));
+    assert!(
+        footers.is_empty(),
+        "bare footer must not alter the unqualified dense multicolumn flow"
+    );
 }
 
 /// 9から10へ桁数が変わっても、原本の中央と同じWord書式を保った連番として扱う。
