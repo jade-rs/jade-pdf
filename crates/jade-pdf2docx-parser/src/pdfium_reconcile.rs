@@ -1,6 +1,10 @@
 //! pure/native文字対応の索引・文字配列・結果コピーを累積予算へ予約する。
 use crate::{ParsedTextElement, QualityReport, decode::DecodeBudget, metadata_map::Map};
 
+#[cfg(test)]
+#[path = "pdfium_reconcile_source_tests.rs"]
+mod source_tests;
+
 /// 一つのページでnative文字とpure文字数・対応位置を共有する。
 struct Page {
     /// 非空白native文字の必要件数。
