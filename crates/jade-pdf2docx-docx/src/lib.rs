@@ -4443,10 +4443,21 @@ fn nested_tables_for_cell(
             parent.bounds.x0 + width * col.min(col_count) as f32
         }
     };
+    // 行の高さが分かる場合は実際の行境界、分からない場合は等分の境界を使う。
+    let row_y = |row: usize| {
+        if parent.row_heights_pt.len() == row_count {
+            parent.bounds.y1
+                - parent.row_heights_pt[..row.min(row_count)]
+                    .iter()
+                    .sum::<f32>()
+        } else {
+            parent.bounds.y1 - height * row.min(row_count) as f32
+        }
+    };
     let x0 = column_x(col_index);
     let x1 = column_x(col_index + col_span.max(1));
-    let y1 = parent.bounds.y1 - height * row_index as f32;
-    let y0 = parent.bounds.y1 - height * (row_index + 1).min(row_count) as f32;
+    let y1 = row_y(row_index);
+    let y0 = row_y(row_index + 1);
     parent
         .nested_tables
         .iter()
@@ -4631,7 +4642,37 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 .then(b.bounds.y1.total_cmp(&a.bounds.y1))
         });
     }
+    drop_tables_inside_larger_tables(tables)
+}
+
+/// 別の推定で同じ範囲に重ねて作った表（大きい表の範囲の 8 割以上に入る小さい表）を除く。
+///
+/// 大きい表のセルはその範囲の文字片を本文に持つので、重ねて出すと本文が二重になる。
+fn drop_tables_inside_larger_tables(tables: Vec<PositionedTable>) -> Vec<PositionedTable> {
+    let area = |bounds: ParsedBounds| {
+        let bounds = normalized_bounds(bounds);
+        (bounds.x1 - bounds.x0).max(0.0) * (bounds.y1 - bounds.y0).max(0.0)
+    };
+    let inside = |small: &PositionedTable, large: &PositionedTable| {
+        let (a, b) = (
+            normalized_bounds(small.bounds),
+            normalized_bounds(large.bounds),
+        );
+        let overlap =
+            (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0) * (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
+        small.page == large.page
+            && area(large.bounds) > area(small.bounds)
+            && overlap >= 0.8 * area(small.bounds)
+    };
+    let keep = tables
+        .iter()
+        .map(|table| !tables.iter().any(|other| inside(table, other)))
+        .collect::<Vec<_>>();
     tables
+        .into_iter()
+        .zip(keep)
+        .filter_map(|(table, keep)| keep.then_some(table))
+        .collect()
 }
 
 /// 罫線（と罫線のない頁の文字格子）から表を推定する。
