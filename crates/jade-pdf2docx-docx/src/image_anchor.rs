@@ -51,6 +51,8 @@ pub(super) fn verified_page_frame(image: &ParsedImageElement, page: &ParsedPage)
         && image.bounds.y1 > image.bounds.y0
         && image.bounds.x1 <= page.width
         && image.bounds.y1 <= page.height
+        && pdf_points_to_emu(image.bounds.x0).is_some()
+        && pdf_points_to_emu(page.height - image.bounds.y1).is_some()
 }
 
 /// 正立した画像の有限な原本矩形だけを使い、回転前の辺が不明な画像は従来値へ戻す。
