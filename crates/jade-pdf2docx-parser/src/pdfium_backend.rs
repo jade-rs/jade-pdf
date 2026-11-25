@@ -81,11 +81,9 @@ pub(crate) fn parse_pdf(
                 }
             )
         });
-    // Type1C streamはobject stream内に置けないため、辞書走査前の保守的な入口に使う。
+    // 共有済みの構造metadataを使い、PDF nameのescapeを正規化コピーなしで確認する。
     let needs_weights = !decode_budget.is_pdf20()
-        && bytes
-            .windows(b"/Type1C".len())
-            .any(|window| window == b"/Type1C");
+        && crate::pdfium_subset_weight::has_stream_name(decode_budget, bytes);
     let mut tags = if needs_weights {
         let result =
             crate::pdfium_font_tags::Tagged::prepare_weights(decode_budget, bytes, needs_type3);

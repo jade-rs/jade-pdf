@@ -5,6 +5,31 @@ use crate::{decode::DecodeBudget, metadata, resource_resolver::ResourceResolver,
 #[path = "pdfium_subset_weight_tests.rs"]
 mod tests;
 
+/// 共有済みmetadataのnameだけを調べ、escapeを読み、文字列・payloadの偽keywordを除く。
+pub(crate) fn has_stream_name(budget: &DecodeBudget, bytes: &[u8]) -> bool {
+    if budget.is_stopped() {
+        return false;
+    }
+    let Some(source) = budget.parser_source(bytes) else {
+        return false;
+    };
+    let mut lexer = syntax::Lexer {
+        bytes: &source,
+        cursor: 0,
+    };
+    let mut count = 0;
+    while let Some((token, _)) = lexer.next_spanned() {
+        if count % 256 == 0 && budget.is_stopped() {
+            return false;
+        }
+        count += 1;
+        if matches!(token,syntax::Token::Name(name) if syntax::name_is(name,b"Type1C")) {
+            return true;
+        }
+    }
+    false
+}
+
 /// 辞書から確認した候補。実際の採用にはSDKの埋め込み確認を別途必要とする。
 pub(crate) struct Candidate<'a> {
     /// 埋め込みが成立した場合にSDKが返す、subset prefixを除いたASCII名。
