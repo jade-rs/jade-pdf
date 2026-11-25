@@ -8,11 +8,30 @@ use page_attribute_pdf::{pages, pdf, stream};
 
 /// 所有するCourier原本に、明示的な30pointの列間隔を持つ二つの値を置く。
 fn source_with(content: &str) -> Vec<u8> {
+    source_with_font(content, "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+}
+
+/// 未確認幅の対照も、同じ所有object配置とxrefで作る。
+fn source_with_font(content: &str, font: &str) -> Vec<u8> {
     let mut objects = pages("/MediaBox [0 0 500 500] /Resources << /Font << /F 10 0 R >> >>");
     objects[4] = stream(content);
     objects[5] = stream("");
-    objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".into());
+    objects.push(font.into());
     pdf(&objects)
+}
+
+/// 幅表のない非標準fontをUnicode文字数から推定した配置は、新しい数値列分離へ使わない。
+#[test]
+fn unmeasured_font_widths_keep_numeric_operands_merged() {
+    for font in [
+        "<< /Type /Font /Subtype /Type1 /BaseFont /OwnedUnknown >>",
+        "<< /Type /Font /Subtype /TrueType /BaseFont /OwnedUnknown >>",
+    ] {
+        let input = source_with_font("BT /F 10 Tf 20 100 Td [(376) -3000 (-2.4)] TJ ET", font);
+        let parsed = parse_pdf_bytes("owned-unmeasured-numeric.pdf", &input).unwrap();
+        assert_eq!(parsed.text_elements.len(), 1, "{font}");
+        assert_eq!(parsed.text_elements[0].text, "376 -2.4");
+    }
 }
 
 /// 表セルへの割当前に、別々の原本数値と各原点・幅を公開byte APIで確認する。
