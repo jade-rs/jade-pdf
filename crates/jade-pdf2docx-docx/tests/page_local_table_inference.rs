@@ -267,3 +267,27 @@ fn export_owned_page_local_table_sources_before_file_conversion() {
         std::io::Write::write_all(&mut file, &source(&pages, 40, 240)).unwrap();
     }
 }
+
+/// 注記を挟む追加対照は別の新規一時名前空間へ書き、固定済み原本を上書きしない。
+#[test]
+#[ignore = "new JADE_PAGE_LOCAL_NOTE_EXPORT_DIR required; review all source pages before file conversion"]
+fn export_owned_mixed_page_note_sources_before_file_conversion() {
+    let dir =
+        std::path::PathBuf::from(std::env::var_os("JADE_PAGE_LOCAL_NOTE_EXPORT_DIR").unwrap());
+    std::fs::create_dir(&dir).unwrap();
+    for (name, pages, page) in [
+        ("ruled-then-note", [true, false], 1),
+        ("note-then-ruled", [false, true], 0),
+    ] {
+        let mut file = std::fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(dir.join(format!("{name}.pdf")))
+            .unwrap();
+        std::io::Write::write_all(
+            &mut file,
+            &source_with_note(&pages, 40, 240, None, Some((page, "BODY MUST REMAIN"))),
+        )
+        .unwrap();
+    }
+}

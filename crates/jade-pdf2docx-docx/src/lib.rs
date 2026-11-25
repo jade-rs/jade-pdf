@@ -74,6 +74,7 @@ mod paragraph_anchor;
 mod section_chrome_package;
 mod separated_box_table;
 mod text_column_gutter;
+mod text_grid_ownership;
 mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output::validate_distinct_paths;
@@ -3705,17 +3706,17 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         })
         .collect::<Vec<_>>();
     // 以前は別ページの罫線表で抑止されていた候補だけに、既存の段組モデルも照合する。
-    let body_column_pages = if graphic_tables.iter().any(|(_, tables)| !tables.is_empty())
-        && graphic_tables.iter().any(|(_, tables)| tables.is_empty())
-    {
-        text_lines_by_page_from_pdf_text_elements(parsed, &[])
-            .into_iter()
-            .filter(|page| has_dense_body_columns(parsed, page))
-            .map(|page| page.page)
-            .collect::<BTreeSet<_>>()
-    } else {
-        BTreeSet::new()
-    };
+    let has_graphic_tables = graphic_tables.iter().any(|(_, tables)| !tables.is_empty());
+    let body_column_pages =
+        if has_graphic_tables && graphic_tables.iter().any(|(_, tables)| tables.is_empty()) {
+            text_lines_by_page_from_pdf_text_elements(parsed, &[])
+                .into_iter()
+                .filter(|page| has_dense_body_columns(parsed, page))
+                .map(|page| page.page)
+                .collect::<BTreeSet<_>>()
+        } else {
+            BTreeSet::new()
+        };
     let mut tables = graphic_tables
         .into_iter()
         .flat_map(|(page, tables)| {
@@ -3724,6 +3725,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 page,
                 tables,
                 body_column_pages.contains(&page),
+                has_graphic_tables,
             )
         })
         .collect::<Vec<_>>();
@@ -3741,6 +3743,7 @@ fn infer_positioned_tables_for_page(
     page: usize,
     graphic_tables: Vec<PositionedTable>,
     dense_body_columns: bool,
+    preserve_source_text: bool,
 ) -> Vec<PositionedTable> {
     if !graphic_tables.is_empty() {
         if graphic_tables.len() == 1
@@ -3762,7 +3765,12 @@ fn infer_positioned_tables_for_page(
                 .unwrap_or(0);
             let text_non_empty = ocr_table_non_empty_cell_count(&best_text_table.table);
             let text_gain = text_non_empty.saturating_sub(max_graphic_non_empty);
-            if !has_graphic_span_model && best_text_cols <= max_graphic_cols && text_gain > 2 {
+            if !has_graphic_span_model
+                && best_text_cols <= max_graphic_cols
+                && text_gain > 2
+                && (!preserve_source_text
+                    || text_grid_ownership::preserves(parsed, &best_text_table))
+            {
                 return vec![best_text_table];
             }
         }
@@ -3773,6 +3781,7 @@ fn infer_positioned_tables_for_page(
     }
     infer_positioned_table_from_text_grid_page(parsed, page)
         .into_iter()
+        .filter(|table| !preserve_source_text || text_grid_ownership::preserves(parsed, table))
         .collect()
 }
 
