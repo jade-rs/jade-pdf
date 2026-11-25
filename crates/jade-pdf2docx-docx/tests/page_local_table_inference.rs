@@ -7,6 +7,9 @@ use std::io::{Cursor, Read};
 #[path = "support/page_local_source_style_cases.rs"]
 mod source_style_cases;
 
+#[path = "support/page_local_source_order_cases.rs"]
+mod source_order_cases;
+
 /// ページごとの表を独立した内容streamへ置き、正確なxrefを持つ所有PDFを作る。
 fn source(pages: &[bool], left: u16, width: u16) -> Vec<u8> {
     source_with_column_page(pages, left, width, None)
