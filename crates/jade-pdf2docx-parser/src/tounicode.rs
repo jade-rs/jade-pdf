@@ -12,136 +12,158 @@ pub(super) fn parse_tounicode_cmap_from_bytes(
     let Some(source) = super::cmap_input::cmap_text(budget, bytes) else {
         return cmap;
     };
-    let mut in_bfchar = false;
-    let mut in_bfrange = false;
-    let mut in_codespace_range = false;
-    for line in source.lines() {
-        if budget.is_stopped() {
+    let mut mode = Mode::None;
+    let mut tokens = tokens::Tokens::new(&source).peekable();
+    while let Some(token) = tokens.next() {
+        if budget.check().is_err() {
             break;
         }
-        let trimmed = line.trim();
-        if trimmed.ends_with("begincodespacerange") {
-            in_codespace_range = true;
-            continue;
-        }
-        if trimmed.ends_with("endcodespacerange") {
-            in_codespace_range = false;
-            continue;
-        }
-        if trimmed.ends_with("beginbfchar") {
-            in_bfchar = true;
-            continue;
-        }
-        if trimmed.ends_with("endbfchar") {
-            in_bfchar = false;
-            continue;
-        }
-        if trimmed.ends_with("beginbfrange") {
-            in_bfrange = true;
-            continue;
-        }
-        if trimmed.ends_with("endbfrange") {
-            in_bfrange = false;
-            continue;
-        }
-        let mut hexes = HexTokens::new(trimmed);
-        let (Some(first), Some(second)) = (hexes.next(), hexes.next()) else {
-            continue;
-        };
-        if first.is_empty() {
-            continue;
-        }
-        if in_codespace_range {
-            if budget.charge_tounicode_entries(1).is_none() {
-                break;
-            }
-            if cmap
-                .insert_code_space_range(budget, first, second)
-                .is_none()
-            {
-                break;
-            }
-        } else if in_bfchar {
-            if budget.charge_tounicode_entries(1).is_none() {
-                break;
-            }
-            if insert_utf16_mapping(budget, &mut cmap, MappingKey::Hex(first), second).is_none() {
-                break;
-            }
-        } else if in_bfrange {
-            let Some(start) = u32::from_str_radix(first, 16).ok() else {
-                continue;
-            };
-            let Some(end) = u32::from_str_radix(second, 16).ok() else {
-                continue;
-            };
-            if start > end {
-                continue;
-            }
-            let count = u64::from(end) - u64::from(start) + 1;
-            let width = first.len();
-            if trimmed.contains('[') {
-                let count = count.min(hexes.clone().count() as u64);
-                if budget.charge_tounicode_entries(count).is_none() {
+        match token {
+            tokens::Token::Word(word) => match word {
+                b"begincodespacerange" => mode = Mode::CodeSpace,
+                b"beginbfchar" => mode = Mode::Char,
+                b"beginbfrange" => mode = Mode::Range,
+                b"endcodespacerange" | b"endbfchar" | b"endbfrange" => mode = Mode::None,
+                _ => {}
+            },
+            tokens::Token::Hex(first) if mode != Mode::None => {
+                let second = match tokens.peek().copied() {
+                    Some(tokens::Token::Hex(value)) => {
+                        tokens.next();
+                        value
+                    }
+                    _ => continue,
+                };
+                if mode == Mode::Range {
+                    if range(budget, &mut cmap, first, second, &mut tokens).is_none() {
+                        break;
+                    }
+                    continue;
+                }
+                let (Some(first), Some(second)) = (first, second) else {
+                    continue;
+                };
+                if first.is_empty() {
+                    continue;
+                }
+                if budget.charge_tounicode_entries(1).is_none() {
                     break;
                 }
-                for (offset, dst_hex) in hexes.take(count as usize).enumerate() {
-                    // count は source 範囲以下のため、u64 の和は u32 に収まる。
-                    let code = (u64::from(start) + offset as u64) as u32;
-                    if insert_utf16_mapping(
-                        budget,
-                        &mut cmap,
-                        MappingKey::Code(code, width),
-                        dst_hex,
-                    )
-                    .is_none()
-                    {
-                        break;
-                    }
-                }
-                continue;
-            }
-            let Some(dst_start) = hexes
-                .next()
-                .and_then(|hex| u32::from_str_radix(hex, 16).ok())
-            else {
-                continue;
-            };
-            if budget.charge_tounicode_entries(count).is_none() {
-                break;
-            }
-            if u64::from(dst_start) + count - 1 > u64::from(u32::MAX) {
-                budget.invalid_tounicode("bfrange destination exceeds u32");
-                break;
-            }
-            for code in start..=end {
-                let dst = dst_start + (code - start);
-                if let Some(ch) = char::from_u32(dst) {
-                    let key = MappingKey::Code(code, width);
-                    if budget
-                        .charge_tounicode_bytes(
-                            (key.len() as u64).saturating_add(ch.len_utf8() as u64),
-                        )
-                        .is_none()
-                    {
-                        break;
-                    }
-                    if cmap.reserve_mapping(budget).is_none() {
-                        break;
-                    }
-                    let Some(key) = key.allocate(budget) else {
-                        break;
-                    };
-                    let Some(mut value) = budget.try_string_capacity(ch.len_utf8()) else {
-                        break;
-                    };
-                    value.push(ch);
-                    cmap.insert_mapping(key, value);
+                let result = if mode == Mode::CodeSpace {
+                    cmap.insert_code_space_range(budget, first, second)
+                } else {
+                    insert_utf16_mapping(budget, &mut cmap, MappingKey::Hex(first), second)
+                };
+                if result.is_none() {
+                    break;
                 }
             }
+            _ => {}
         }
     }
     cmap
+}
+
+#[path = "tounicode_tokens.rs"]
+mod tokens;
+
+/// 対応するCMapのrecord種別。
+#[derive(Clone, Copy, PartialEq, Eq)]
+enum Mode {
+    /// 有効なmapping blockの外側。
+    None,
+    /// source codeの範囲。
+    CodeSpace,
+    /// sourceと宛先のpair。
+    Char,
+    /// source範囲と宛先scalarまたは配列。
+    Range,
+}
+
+/// 有限のsource範囲と元のhex桁幅を確認する。
+fn source_range(first: Option<&str>, second: Option<&str>) -> Option<(u32, u32, usize)> {
+    let first = first.filter(|s| !s.is_empty())?;
+    let start = u32::from_str_radix(first, 16).ok()?;
+    let end = u32::from_str_radix(second?, 16).ok()?;
+    (start <= end).then_some((start, end, first.len()))
+}
+
+/// 配列の全体を閉じるまで読んでから、反復数を予約してmappingを作る。
+fn range<'a>(
+    budget: &DecodeBudget,
+    cmap: &mut ToUnicodeCMapData,
+    first: Option<&'a str>,
+    second: Option<&'a str>,
+    tokens: &mut std::iter::Peekable<tokens::Tokens<'a>>,
+) -> Option<()> {
+    let bounds = source_range(first, second);
+    match tokens.peek().copied() {
+        Some(tokens::Token::Hex(destination)) => {
+            tokens.next();
+            if let (Some((start, end, width)), Some(destination)) = (bounds, destination) {
+                scalar_range(budget, cmap, start, end, width, destination)?;
+            }
+        }
+        Some(tokens::Token::Open(false)) => {
+            tokens.next();
+            let beginning = tokens.clone();
+            let mut scan = tokens::ArrayHex::new(tokens.clone(), budget);
+            let available = scan.by_ref().count() as u64;
+            let closed = scan.closed;
+            *tokens = scan.tokens;
+            if budget.is_stopped() {
+                return None;
+            }
+            if let (true, Some((start, end, width))) = (closed, bounds) {
+                let count = (u64::from(end) - u64::from(start) + 1).min(available);
+                budget.charge_tounicode_entries(count)?;
+                for (offset, destination) in tokens::ArrayHex::new(beginning, budget)
+                    .take(count as usize)
+                    .enumerate()
+                {
+                    let code = (u64::from(start) + offset as u64) as u32;
+                    insert_utf16_mapping(budget, cmap, MappingKey::Code(code, width), destination)?;
+                }
+            }
+        }
+        _ => {}
+    }
+    Some(())
+}
+
+/// scalarの既存の加算規則と予算予約を保ち、overflow・取消しを先に確認する。
+fn scalar_range(
+    budget: &DecodeBudget,
+    cmap: &mut ToUnicodeCMapData,
+    start: u32,
+    end: u32,
+    width: usize,
+    destination: &str,
+) -> Option<()> {
+    let Ok(dst_start) = u32::from_str_radix(destination, 16) else {
+        return Some(());
+    };
+    let count = u64::from(end) - u64::from(start) + 1;
+    budget.charge_tounicode_entries(count)?;
+    if u64::from(dst_start) + count - 1 > u64::from(u32::MAX) {
+        budget.invalid_tounicode("bfrange destination exceeds u32");
+        return None;
+    }
+    for code in start..=end {
+        budget.check().ok()?;
+        let dst = dst_start + (code - start);
+        if let Some(ch) = char::from_u32(dst) {
+            let key = MappingKey::Code(code, width);
+            budget
+                .charge_tounicode_bytes((key.len() as u64).saturating_add(ch.len_utf8() as u64))?;
+            cmap.reserve_mapping(budget)?;
+            let key = key.allocate(budget)?;
+            let mut value = budget.try_string_capacity(ch.len_utf8())?;
+            value.push(ch);
+            cmap.insert_mapping(key, value);
+        }
+    }
+    Some(())
 }
 
 /// allocation 前に桁幅を決定できる mapping key。
@@ -224,48 +246,4 @@ fn insert_utf16_mapping(
     }
     cmap.insert_mapping(key, value);
     Some(())
-}
-
-/// 一行内の hex operand を allocation なしで借用する iterator。
-#[derive(Clone)]
-struct HexTokens<'a> {
-    /// UTF-8 境界を保った入力行。
-    line: &'a str,
-    /// 次の operand を探す byte 位置。
-    cursor: usize,
-}
-
-impl<'a> HexTokens<'a> {
-    /// 行の先頭から借用走査を始める。
-    fn new(line: &'a str) -> Self {
-        Self { line, cursor: 0 }
-    }
-}
-
-impl<'a> Iterator for HexTokens<'a> {
-    type Item = &'a str;
-
-    /// 空の宛先も保持し、不正hexだけを読み飛ばす。空のsource codeは呼出側で拒否する。
-    fn next(&mut self) -> Option<Self::Item> {
-        let bytes = self.line.as_bytes();
-        while self.cursor < bytes.len() {
-            let position = self.cursor;
-            self.cursor += 1;
-            if bytes[position] != b'<' || bytes.get(position + 1) == Some(&b'<') {
-                continue;
-            }
-            let start = self.cursor;
-            let Some(length) = bytes[start..].iter().position(|byte| *byte == b'>') else {
-                self.cursor = bytes.len();
-                return None;
-            };
-            let end = start + length;
-            self.cursor = end + 1;
-            let hex = &self.line[start..end];
-            if hex.bytes().all(|byte| byte.is_ascii_hexdigit()) {
-                return Some(hex);
-            }
-        }
-        None
-    }
 }
