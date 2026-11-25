@@ -11,6 +11,27 @@ const MARKER_INDEX_START: usize = MARKER_PREFIX.len() + 32 + 1;
 /// prefix・二つのseed・区切り・indexを合わせたASCII名の長さ。
 const MARKER_LEN: usize = MARKER_INDEX_START + 16;
 
+#[path = "pdfium_font_tag_preflight.rs"]
+mod preflight;
+
+/// 不可視paintの例外と、元descriptorの太さを別の根拠として保持する。
+#[derive(Clone, Copy)]
+enum Kind {
+    /// 既存のType3識別。
+    Type3,
+    /// SDKによる実際の埋め込み確認前の宣言weight。
+    Weight(u16),
+}
+
+/// 呼出し前に必要と判断した識別用途だけを有効にする。
+#[derive(Clone, Copy)]
+struct Mode {
+    /// subset Type1Cのweight候補を追加する。
+    weights: bool,
+    /// 実際に使用されたType3の既存判定が必要な場合だけ識別する。
+    type3: bool,
+}
+
 /// 文字APIがSubtypeを公開しないType3を、解析ごとの識別名で判定する。
 #[derive(Default)]
 pub(crate) struct Tagged {
@@ -18,6 +39,8 @@ pub(crate) struct Tagged {
     pub(crate) bytes: Vec<u8>,
     /// name末尾のindexで検索する、元のFont名と識別名。
     tags: Vec<Tag>,
+    /// 全weight候補が実際に使われ、SDKが埋め込みを確認した場合だけ真にする。
+    weights_confirmed: bool,
 }
 
 /// Type3一辞書に付与する、予測困難な解析ローカルの名前。
@@ -26,6 +49,8 @@ struct Tag {
     marker: [u8; MARKER_LEN],
     /// 公開IRへ戻す元のBaseFont名。
     original: Option<String>,
+    /// Type3とweightの用途を混同しない識別種別。
+    kind: Kind,
 }
 
 /// 一つのobjectの借用本文と、Font名だけを置き換える範囲。
@@ -42,18 +67,53 @@ struct Object<'a> {
 
 impl Tagged {
     /// 識別名をindexで検索し、通常Fontの名前をType3へ誤対応させない。
-    fn tag(&self, name: &str) -> Option<&Tag> {
+    fn tag_index(&self, name: &str) -> Option<usize> {
         if name.len() != MARKER_LEN || !name.as_bytes().starts_with(MARKER_PREFIX) {
             return None;
         }
         let index = usize::from_str_radix(name.get(MARKER_INDEX_START..)?, 16).ok()?;
         let tag = self.tags.get(index)?;
-        (name.as_bytes() == tag.marker).then_some(tag)
+        (name.as_bytes() == tag.marker).then_some(index)
+    }
+
+    /// 完全一致した解析ローカルの識別名だけを参照する。
+    fn tag(&self, name: &str) -> Option<&Tag> {
+        self.tag_index(name).map(|index| &self.tags[index])
     }
 
     /// native文字のFontが元PDFでType3だったかを返す。
     pub(crate) fn is_type3(&self, name: &str) -> bool {
-        self.tag(name).is_some()
+        self.tag(name)
+            .is_some_and(|tag| matches!(tag.kind, Kind::Type3))
+    }
+
+    /// Type3を含む場合だけ、従来の文字index抽出を強制する。
+    pub(crate) fn has_type3(&self) -> bool {
+        self.tags.iter().any(|tag| matches!(tag.kind, Kind::Type3))
+    }
+
+    /// SDK確認が必要なweight候補があるかを返す。
+    pub(crate) fn has_weights(&self) -> bool {
+        self.tags
+            .iter()
+            .any(|tag| matches!(tag.kind, Kind::Weight(_)))
+    }
+
+    /// 元resourceとSDK埋め込みの両方を確認した値だけを返す。
+    pub(crate) fn weight(&self, name: &str) -> Option<u16> {
+        if !self.weights_confirmed {
+            return None;
+        }
+        match self.tag(name)?.kind {
+            Kind::Weight(value) => Some(value),
+            Kind::Type3 => None,
+        }
+    }
+
+    /// 確認済みweightの元resourceを、family名と独立した解析ローカルindexで返す。
+    pub(crate) fn source_key(&self, name: &str) -> Option<usize> {
+        self.weight(name)?;
+        self.tag_index(name)
     }
 
     /// 識別名を公開せず、元のFont名へ戻す。
@@ -67,6 +127,34 @@ impl Tagged {
     /// 元の検査済みstream境界と圧縮object cacheから、privateな入力を作る。
     /// 本文・編集位置・xref配列を全て共有metadata容量で制限する。
     pub(crate) fn prepare(budget: &DecodeBudget, bytes: &[u8]) -> Option<Self> {
+        Self::prepare_mode(
+            budget,
+            bytes,
+            Mode {
+                weights: false,
+                type3: true,
+            },
+        )
+    }
+
+    /// 既存Type3と、別途SDK確認する保守的なsubset Type1C候補を識別する。
+    pub(crate) fn prepare_weights(
+        budget: &DecodeBudget,
+        bytes: &[u8],
+        type3: bool,
+    ) -> Option<Self> {
+        Self::prepare_mode(
+            budget,
+            bytes,
+            Mode {
+                weights: true,
+                type3,
+            },
+        )
+    }
+
+    /// 呼出し側の用途だけを追加し、元streamを保つ既存の再配置を共有する。
+    fn prepare_mode(budget: &DecodeBudget, bytes: &[u8], mode: Mode) -> Option<Self> {
         let source = crate::parser::parser_source_with_compressed_objects(budget, bytes);
         let objects = crate::object_index::build(budget, &source)?;
         let index = budget.stream_index(bytes)?;
@@ -89,7 +177,15 @@ impl Tagged {
             {
                 continue;
             }
-            let edits = edits(budget, object.body, &mut resolver, seed, &mut result.tags)?;
+            let edits = edits(
+                budget,
+                object.body,
+                &mut resolver,
+                seed,
+                &mut result.tags,
+                mode,
+                (bytes, &index),
+            )?;
             metadata_workspace::try_push(
                 budget,
                 &mut raw,
@@ -102,7 +198,15 @@ impl Tagged {
             )?;
         }
         for (number, body) in compressed.iter() {
-            let edits = edits(budget, body, &mut resolver, seed, &mut result.tags)?;
+            let edits = edits(
+                budget,
+                body,
+                &mut resolver,
+                seed,
+                &mut result.tags,
+                mode,
+                (bytes, &index),
+            )?;
             metadata_workspace::try_push(
                 budget,
                 &mut raw,
@@ -202,6 +306,8 @@ fn edits<'a>(
     resolver: &mut ResourceResolver<'_, 'a>,
     seed: [u64; 2],
     tags: &mut Vec<Tag>,
+    mode: Mode,
+    original: (&'a [u8], &crate::stream_index::StreamIndex),
 ) -> Option<Vec<(Range<usize>, usize)>> {
     let Some(dictionary) = metadata::dictionary_iter(body).next() else {
         return Some(Vec::new());
@@ -226,7 +332,17 @@ fn edits<'a>(
                 let type3 = metadata::value(current, b"Subtype")
                     .and_then(|value| resolver.resolve(value))
                     .is_some_and(|(value, _)| metadata::is_name(value, b"Type3"));
-                if !type3 {
+                if type3 && !mode.type3 {
+                    continue;
+                }
+                let candidate = (!type3 && mode.weights)
+                    .then(|| {
+                        crate::pdfium_subset_weight::read_indexed(
+                            resolver, current, budget, original.0, original.1,
+                        )
+                    })
+                    .flatten();
+                if !type3 && candidate.is_none() {
                     continue;
                 }
                 let range = metadata::value(current, b"BaseFont").map_or(
@@ -237,9 +353,21 @@ fn edits<'a>(
                     },
                 );
                 let tag = tags.len();
-                let original = metadata::value(current, b"BaseFont")
-                    .and_then(|value| resolver.resolve(value))
-                    .and_then(|(value, _)| crate::metadata_names::value(budget, value));
+                let (original, kind) = if let Some(candidate) = candidate {
+                    let mut name = budget.metadata_vector(candidate.native_name.len())?;
+                    name.extend_from_slice(candidate.native_name.as_bytes());
+                    (
+                        Some(String::from_utf8(name).ok()?),
+                        Kind::Weight(candidate.weight),
+                    )
+                } else {
+                    (
+                        metadata::value(current, b"BaseFont")
+                            .and_then(|value| resolver.resolve(value))
+                            .and_then(|(value, _)| crate::metadata_names::value(budget, value)),
+                        Kind::Type3,
+                    )
+                };
                 if budget.is_stopped() {
                     return None;
                 }
@@ -249,6 +377,7 @@ fn edits<'a>(
                     Tag {
                         marker: marker(seed, tag),
                         original,
+                        kind,
                     },
                 )?;
                 metadata_workspace::try_push(budget, &mut edits, (range, tag))?;

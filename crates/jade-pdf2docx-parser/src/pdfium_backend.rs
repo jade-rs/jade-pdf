@@ -71,7 +71,7 @@ pub(crate) fn parse_pdf(
     if !needs_text {
         return Ok(parsed);
     }
-    let tags = if !decode_budget.is_pdf20()
+    let needs_type3 = !decode_budget.is_pdf20()
         && parsed.quality.issues.iter().any(|issue| {
             matches!(
                 issue,
@@ -80,20 +80,38 @@ pub(crate) fn parse_pdf(
                     ..
                 }
             )
-        }) {
+        });
+    // 共有済みの構造metadataを使い、PDF nameのescapeを正規化コピーなしで確認する。
+    let needs_weights = !decode_budget.is_pdf20()
+        && crate::pdfium_subset_weight::has_stream_name(decode_budget, bytes);
+    let mut tags = if needs_weights {
+        let result =
+            crate::pdfium_font_tags::Tagged::prepare_weights(decode_budget, bytes, needs_type3);
+        decode_budget.check()?;
+        result.ok_or_else(|| pdfium_error(path, "subset font tagging failed"))?
+    } else if needs_type3 {
         let result = crate::pdfium_font_tags::Tagged::prepare(decode_budget, bytes);
         decode_budget.check()?;
         result.ok_or_else(|| pdfium_error(path, "Type3 font tagging failed"))?
     } else {
         crate::pdfium_font_tags::Tagged::default()
     };
+    decode_budget.check()?;
+    let pdfium = library::bind(path)?;
+    if tags.has_weights() && !tags.confirm_embedded(decode_budget, &pdfium, limits.max_pages)? {
+        tags = if needs_type3 {
+            let result = crate::pdfium_font_tags::Tagged::prepare(decode_budget, bytes);
+            decode_budget.check()?;
+            result.ok_or_else(|| pdfium_error(path, "Type3 font tagging failed"))?
+        } else {
+            crate::pdfium_font_tags::Tagged::default()
+        };
+    }
     let native_bytes = if tags.bytes.is_empty() {
         bytes
     } else {
         &tags.bytes
     };
-    decode_budget.check()?;
-    let pdfium = library::bind(path)?;
     decode_budget.check()?;
     let document = pdfium
         .load_pdf_from_byte_slice(native_bytes, None)
@@ -129,52 +147,80 @@ pub(crate) fn parse_pdf(
         let page_text = page.text().map_err(|err| pdfium_error(path, err))?;
         let characters = crate::pdfium_text::characters(decode_budget, &page_text)?;
         let excluded = crate::pdfium_clip::excluded(decode_budget, page.objects(), &page_text)?;
-        if crate::pdfium_visible_text::has_hidden(&characters, &tags)
-            || !tags.bytes.is_empty()
-            || excluded.iter().any(|excluded| *excluded)
-        {
-            let (preview, elements) = crate::pdfium_visible_text::extract(
-                decode_budget,
-                path,
-                page_number,
-                &characters,
-                &tags,
-                &excluded,
-            )?;
-            append_text_preview(decode_budget, &mut text_preview, &preview);
-            decode_budget.check()?;
-            crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
-            decode_budget.check()?;
-        } else {
-            let mut preview = page_text.all();
-            crate::pdfium_printed_hyphens::page(decode_budget, path, &mut preview, &characters)?;
-            append_text_preview(decode_budget, &mut text_preview, &preview);
-            decode_budget.check()?;
-            let mut elements = crate::pdfium_text::extract(
-                decode_budget,
-                path,
-                page_number,
-                &page_text,
-                &characters,
-            )?;
-            if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
-                && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
+        let preview_prefix_length = text_preview.len();
+        let (mut preview, mut elements) =
+            if crate::pdfium_visible_text::has_hidden(&characters, &tags)
+                || tags.has_type3()
+                || excluded.iter().any(|excluded| *excluded)
             {
-                let (_, indexed) = crate::pdfium_visible_text::extract_recovery_spans(
+                let (preview, elements) = crate::pdfium_visible_text::extract(
                     decode_budget,
                     path,
                     page_number,
                     &characters,
                     &tags,
-                    &elements,
+                    &excluded,
                 )?;
-                if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
-                    elements = indexed;
+                append_text_preview(decode_budget, &mut text_preview, &preview);
+                decode_budget.check()?;
+                (preview, elements)
+            } else {
+                let mut preview = page_text.all();
+                crate::pdfium_printed_hyphens::page(
+                    decode_budget,
+                    path,
+                    &mut preview,
+                    &characters,
+                )?;
+                append_text_preview(decode_budget, &mut text_preview, &preview);
+                decode_budget.check()?;
+                let mut elements = crate::pdfium_text::extract_tagged(
+                    decode_budget,
+                    path,
+                    page_number,
+                    &page_text,
+                    &characters,
+                    &tags,
+                )?;
+                if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
+                    && crate::pdfium_text::index_preserves_controls(
+                        decode_budget,
+                        path,
+                        &characters,
+                    )?
+                {
+                    let (_, indexed) = crate::pdfium_visible_text::extract_recovery_spans(
+                        decode_budget,
+                        path,
+                        page_number,
+                        &characters,
+                        &tags,
+                        &elements,
+                    )?;
+                    if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
+                        elements = indexed;
+                    }
                 }
-            }
-            crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
-            decode_budget.check()?;
+                (preview, elements)
+            };
+        let recovery = crate::pdfium_overprint_page::Context {
+            budget: decode_budget,
+            sdk: &pdfium,
+            bytes: native_bytes,
+            tags: &tags,
+            path,
+            page: page_number,
+        };
+        if let Some(recovered) =
+            recovery.recover(&page, &characters, &excluded, &preview, &elements)?
+        {
+            preview = recovered.preview;
+            elements = recovered.elements;
+            text_preview.truncate(preview_prefix_length);
+            append_text_preview(decode_budget, &mut text_preview, &preview);
         }
+        decode_budget.check()?;
+        crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
         decode_budget.check()?;
     }
 

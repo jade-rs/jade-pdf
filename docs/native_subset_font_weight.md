@@ -1,0 +1,23 @@
+# nativeの埋め込みsubset Type1/CFFの宣言weight
+
+SDKからしか読めない文字も、元のfont resourceを確認できればFontDescriptorの太さを保持する。同じfamily名の別resourceに400と700があっても、名前から一つの値を推測しない。既存のType3用の一時入力を拡張し、対象BaseFontだけに解析ローカルの識別名を与える。元PDF、font program、公開IRのfamily名は変更しない。製品の依存やCLI設定は追加しない。
+
+対象はType1、6大文字と`+`を持つ未escape ASCII subset名、一致するFontDescriptorのFontName、有効な整数weight、非symbolic flags、検査済みFontFile3/Type1C streamを持つresourceに限定する。Type1CのPDF name escapeは解釈する。FontFile/FontFile2の併存、Symbol、ZapfDingbats、TrueType、Type0、Type3はこの候補に含めない。宣言値の型・範囲・参照・重複の扱いは既存のweight読取りに従う。
+
+候補ごとの使用とSDKの`is_embedded()`を、最終抽出の前に確認する。未使用・埋め込み失敗など一つでも確認できなければ、weight用の書換え全体を採用せず元入力を使う。SDKのStemV推定値は使わない。通常のsegment抽出では、範囲内の全glyphが同じ確認値の場合だけweightを与える。未知・異なるweight・面積0の未知glyphが重なる範囲には値を与えない。glyphの借用観察値を予算付き空間索引に持ち、SDKを矩形ごとに全走査し直さない。weightだけの識別によって既存の抽出経路は変更しない。
+
+所有対照では、同じfamily・完全に同じ位置で別resourceから描く2つの文字が、元SDKでも1文字になる事例を保持した。元の`AA`という期待値を保ち、ページの全text objectが一つの完全重畳groupに属し、通常抽出が1要素・1つの非空白文字となる場合だけ回復する。各元objectをpaint順に別のSDK文書で確認し、他objectだけをSDK内で不可視化する。元resource、実埋め込み、weight、Unicode、clip、矩形・サイズ・baselineの完全一致を確認してから採用する。他のtext objectがあるページや複数groupへは一般化しない。描画が重なる2文字をWordで重ねて再現する機能でもない。
+
+追加配列は既存のmetadata容量予算へ予約し、停止後は再開しない。SDK再読込みは入力長を累積処理量の代理値として同じ予算へ予約する。これはSDK内部の正確なメモリ使用量を測定するものではない。未確認の対応を通常体や太字へ補完しない。
+
+失敗する所有対照を先に保持した。実際のnative fallbackを通るよう、元の文字コードは純Rust経路でU+0001、SDK経路でUnicode `A`となることも固定した。面積0の未知glyphの最小seedと失敗ログ、同じ位置の2文字を失った段階も保存した。escapeされたType1Cでの太さ欠落もRedから修正している。748個のRust sourceでdefault全体2,489件が成功した（失敗0、明示ignore34、141 test groups）。
+
+native128出力は107成功・21拒否で、すべて親版と成功・拒否の結果が同じだった。既存116出力は100 DOCXと15拒否ログがbyte単位で一致し、NASA資料1件だけは`w:b`・`w:bCs`が変わった。本文・順序・幾何・他書式・画像・他ZIP内容は一致する。事前の独立したresource対応記録にある太字17文字とDOCXの太字17文字は文字inventoryが一致するが、これを読み順・位置の合格には数えない。
+
+新しい所有対照6件のdefault/strict計12出力は固定したUnicode・太字または拒否の期待値を満たした。壊れたprogramと未使用候補の4出力は未確認値を採用しないためのguardで、書式精度の測定ではない。3つのDOCX差分は太字指定だけ、完全重畳の対照は`A`から`AA`へ変わり、400/700の順を保った。元programは自作の三角形を`A`と名付けたものであり、字形の再現性の合格ではない。これらは既知の所有対照で、未知PDFの精度率ではない。
+
+7 DOCXを17ページへ描画し、異なるRGB画像11ページを一覧で、新しいstyleの3ページは個別にも確認した。通常体・太字と2文字の保持を確認した。NASAの全6ページは親版とRGB一致だが、原本2ページに対して6ページのままである。白い文字の欠落、誤った表、回転・段組み・改ページを含む文書全体は未合格である。
+
+再ビルドしたWASMのJS・WASM・型・ライセンス10ファイルは親版とbyte単位で一致した。同一runtimeに対するChromium/WebKit計272出力の検証を引き継ぎ、新しいbrowser実行や今回のCFF対照のbrowser合格は主張しない。原本、固定gold、保存済みfixture 3件は変更していない。
+
+[先行する私的resource対応調査](native_font_source_identity_research.md)は実装前の観察記録である。[PDFiumの固定source](https://pdfium.googlesource.com/pdfium/+/dd3583292697a0356cca1f64892892a92f0a2770/core/fpdftext/cpdf_textpage.cpp)では同位置のtext objectの重複判定にfont resourceを使わない経路を確認した。このsourceの固定は、使用SDK binaryの完全なsource同一性の証明ではない。外部実装のcodeは取り込まず、元resourceを保持する考え方を独立実装している。

@@ -9,6 +9,36 @@ pub(crate) use resource::values::field as resource_field;
 mod bounds;
 #[path = "type1_outline_cff.rs"]
 mod cff;
+/// native回帰だけで使う所有の三角glyphを、既存のCFF writerで作る。
+#[cfg(test)]
+pub(crate) fn owned_subset_cff() -> Vec<u8> {
+    let glyphs = [
+        cff::Entry {
+            name: b".notdef",
+            program: &[28, 130, 88, 14],
+        },
+        cff::Entry {
+            name: b"A",
+            program: &[
+                28, 130, 88, 139, 139, 21, 248, 136, 139, 5, 251, 142, 249, 80, 5, 251, 142, 253,
+                80, 5, 14,
+            ],
+        },
+    ];
+    cff::encode(
+        &crate::decode::DecodeBudget::default(),
+        &cff::Font {
+            units_per_em: 1000,
+            name: b"OwnedSubset",
+            notice: b"Jade self-authored geometric glyph; unrestricted test use",
+            bbox: [0, 0, 500, 700],
+            italic_angle: 0.,
+            is_fixed_pitch: false,
+            glyphs: &glyphs,
+        },
+    )
+    .unwrap()
+}
 #[path = "type1_outline_cff_index.rs"]
 mod cff_index;
 #[path = "type1_outline_charstring.rs"]
