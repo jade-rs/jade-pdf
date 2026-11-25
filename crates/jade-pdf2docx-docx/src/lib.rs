@@ -380,6 +380,7 @@ fn convert_pdf_file_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    drop_overprinted_duplicates(&mut parsed);
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
@@ -504,6 +505,7 @@ fn convert_pdf_bytes_with_check(
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     drop_blank_page_backgrounds(&mut parsed);
+    drop_overprinted_duplicates(&mut parsed);
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
@@ -1171,6 +1173,45 @@ fn split_text_at_vertical_rules(parsed: &mut ParsedDocument) {
         }
     }
     parsed.text_elements = output;
+}
+
+/// 同じ文字列をほぼ同じ位置に重ねた文字片（重ね打ちの太字や、抽出の重複）を 1 つにする。
+///
+/// lawrenceanum の kanpo-pdf と同じく、同じ字を 0.1 em ほどの範囲に重ねたものは 1 字とみなす。
+/// ここでは矩形の 8 割以上が重なる同じ本文の文字片を重複とする。
+fn drop_overprinted_duplicates(parsed: &mut ParsedDocument) {
+    let mut keep = vec![true; parsed.text_elements.len()];
+    for index in 0..parsed.text_elements.len() {
+        if !keep[index] {
+            continue;
+        }
+        let text = &parsed.text_elements[index];
+        let body = text.text.trim();
+        if body.is_empty() {
+            continue;
+        }
+        let a = normalized_bounds(text.bounds);
+        let area_a = (a.x1 - a.x0).max(0.0) * (a.y1 - a.y0).max(0.0);
+        for other in index + 1..parsed.text_elements.len() {
+            let candidate = &parsed.text_elements[other];
+            if !keep[other] || candidate.page != text.page || candidate.text.trim() != body {
+                continue;
+            }
+            let b = normalized_bounds(candidate.bounds);
+            let area_b = (b.x1 - b.x0).max(0.0) * (b.y1 - b.y0).max(0.0);
+            let overlap = (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0)
+                * (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
+            if area_a > 0.0 && area_b > 0.0 && overlap >= 0.8 * area_a.max(area_b) {
+                keep[other] = false;
+            }
+        }
+    }
+    let mut index = 0;
+    parsed.text_elements.retain(|_| {
+        let kept = keep[index];
+        index += 1;
+        kept
+    });
 }
 
 /// 字の矩形より極端に小さい文字サイズ（座標変換で拡大した `1 Tf` の字など）を、矩形の高さに直す。
