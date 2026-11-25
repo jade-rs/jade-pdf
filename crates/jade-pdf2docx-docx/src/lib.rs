@@ -76,6 +76,7 @@ mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
 mod separated_box_table;
+mod source_prose_columns;
 mod text_column_gutter;
 mod text_grid_ownership;
 mod text_row_segments;
@@ -3731,18 +3732,19 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
             )
         })
         .collect::<Vec<_>>();
-    // 以前は別ページの罫線表で抑止されていた候補だけに、既存の段組モデルも照合する。
+    // 罫線のない原本の散文列は表へ昇格せず、従来の混在文書の段組条件も維持する。
     let has_graphic_tables = graphic_tables.iter().any(|(_, tables)| !tables.is_empty());
-    let body_column_pages =
-        if has_graphic_tables && graphic_tables.iter().any(|(_, tables)| tables.is_empty()) {
-            text_lines_by_page_from_pdf_text_elements(parsed, &[])
-                .into_iter()
-                .filter(|page| has_dense_body_columns(parsed, page))
-                .map(|page| page.page)
-                .collect::<BTreeSet<_>>()
-        } else {
-            BTreeSet::new()
-        };
+    let body_column_pages = text_lines_by_page_from_pdf_text_elements(parsed, &[])
+        .into_iter()
+        .filter(|page| {
+            !graphic_tables
+                .iter()
+                .any(|(number, tables)| *number == page.page && !tables.is_empty())
+                && (source_prose_columns::has_dense_rows(parsed, page)
+                    || (has_graphic_tables && has_dense_body_columns(parsed, page)))
+        })
+        .map(|page| page.page)
+        .collect::<BTreeSet<_>>();
     let mut tables = graphic_tables
         .into_iter()
         .flat_map(|(page, tables)| {
