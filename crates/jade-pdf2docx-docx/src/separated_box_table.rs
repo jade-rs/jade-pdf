@@ -184,6 +184,7 @@ pub(super) fn infer(
         cell_alignments: vec![vec![ParagraphAlignment::Left; width]; height],
         docx_table: Some(model),
         native_cells,
+        source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
     })
 }
