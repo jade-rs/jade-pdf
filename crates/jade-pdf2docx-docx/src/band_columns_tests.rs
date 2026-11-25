@@ -90,3 +90,26 @@ fn a_full_width_line_below_the_bands_follows_the_band_table() {
     let last_table_end = xml.rfind("</w:tbl>").unwrap();
     assert!(note > last_table_end);
 }
+
+/// ページの端の狭い帯にある、字数に比べて幅のごく狭い行は、下から上へ読む段落にする。
+#[test]
+fn a_narrow_margin_line_is_set_sideways() {
+    let line = |text: &str, left_x: f32, right_x: f32| StructuredTextLine {
+        top_y: 500.,
+        left_x,
+        right_x,
+        alignment: ParagraphAlignment::Left,
+        runs: vec![StructuredTextRun {
+            text: text.into(),
+            style: StructuredTextStyle::default(),
+        }],
+        split_from_row: false,
+        text: text.into(),
+    };
+    assert!(sideways_margin_line(&[line("令和八年八月十三日官報", 41., 54.)], 57., 842.).is_some());
+    // 横に組んだ普通の行、本文の段の幅の帯は対象外。
+    assert!(sideways_margin_line(&[line("令和八年", 10., 50.)], 57., 842.).is_none());
+    assert!(
+        sideways_margin_line(&[line("令和八年八月十三日官報", 41., 54.)], 200., 842.).is_none()
+    );
+}

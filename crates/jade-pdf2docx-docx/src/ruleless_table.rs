@@ -14,6 +14,12 @@ const ROW_GAP_RATIO: f32 = 2.5;
 const MIN_ROWS: usize = 3;
 /// セルの平均文字数の上限（長い文を並べた本文の段組を除く）。
 const MAX_AVERAGE_CELL_CHARS: f32 = 24.0;
+/// 表の外側の余白と段の区切り線の間に空ける距離（pt）。
+const EDGE_CLEARANCE_PT: f32 = 2.5;
+/// 数値の少ない行の多い範囲でも、一覧表とみなすセルの平均文字数の上限。
+const MAX_LIST_AVERAGE_CELL_CHARS: f32 = 10.0;
+/// 一覧表とみなす列の数の下限（2 列の短い語の並びは本文の段組と区別できない）。
+const MIN_LIST_COLUMNS: usize = 3;
 
 /// 1 行分の文字片。
 struct TextLine<'a> {
@@ -216,9 +222,20 @@ fn table_from_lines(
         return None;
     }
     let pad = 0.25 * size;
-    let mut xs = vec![left - pad];
+    // 外側の余白は、すぐ外の段の区切り線を越えない（越えると区切り線が表の罫線とみなされ、
+    // 段に分けられなくなる）。
+    let edges = column_bands::column_band_edges(parsed, page, &[]);
+    let outer_left = edges
+        .iter()
+        .filter(|edge| **edge <= left && **edge >= left - pad - EDGE_CLEARANCE_PT)
+        .fold(left - pad, |x, edge| x.max(edge + EDGE_CLEARANCE_PT));
+    let outer_right = edges
+        .iter()
+        .filter(|edge| **edge >= right && **edge <= right + pad + EDGE_CLEARANCE_PT)
+        .fold(right + pad, |x, edge| x.min(edge - EDGE_CLEARANCE_PT));
+    let mut xs = vec![outer_left.min(left)];
     xs.extend(boundaries.iter().copied());
-    xs.push(right + pad);
+    xs.push(outer_right.max(right));
     let rows = lines.len();
     // 各列がほとんどの行で使われ、各行が 2 列以上を使い、セルが短いこと。
     let mut fragments;
@@ -288,7 +305,13 @@ fn table_from_lines(
         .flatten()
         .filter(|cell| is_numeric_cell(cell))
         .count();
-    if text_grid_page_is_dense_article_like(0, rows) && numeric_cells * 10 < filled_cells * 3 {
+    // 一覧表（名称・住所などの短いセルが並ぶもの）は、数値が少なくても表にする。
+    let list_like = cols >= MIN_LIST_COLUMNS
+        && characters as f32 / filled_cells.max(1) as f32 <= MAX_LIST_AVERAGE_CELL_CHARS;
+    if text_grid_page_is_dense_article_like(0, rows)
+        && numeric_cells * 10 < filled_cells * 3
+        && !list_like
+    {
         return None;
     }
     let bounds = ParsedBounds {
@@ -452,4 +475,105 @@ fn is_numeric_cell(cell: &str) -> bool {
         .filter(|ch| ch.is_ascii_digit() || ('０'..='９').contains(ch))
         .count();
     !body.is_empty() && digits * 2 >= body.chars().filter(|ch| !ch.is_whitespace()).count()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 字を 1 つの文字片にする。
+    fn text(body: &str, x0: f32, y0: f32) -> ParsedTextElement {
+        let width = 8.0 * body.chars().count() as f32;
+        ParsedTextElement {
+            baseline_y: Some(y0),
+            page: 0,
+            bounds: ParsedBounds {
+                x0,
+                y0,
+                x1: x0 + width,
+                y1: y0 + 8.0,
+            },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.into(),
+        }
+    }
+
+    /// 横長のページ（右に段の区切り線）に、短いセルの一覧を 30 行置く。
+    fn list_page(rule_x: Option<f32>) -> ParsedDocument {
+        let mut text_elements = Vec::new();
+        for row in 0..30 {
+            let y = 520.0 - 12.0 * row as f32;
+            text_elements.push(text("生第一号", 433.0, y));
+            text_elements.push(text("化成肥料", 500.0, y));
+            text_elements.push(text("株式会社", 580.0, y));
+            text_elements.push(text("東京都港区", 660.0, y));
+        }
+        // 区切り線の左の段の本文（区切り線とみなすのに、左右に字が要る）。
+        for row in 0..6 {
+            text_elements.push(text("左の段の本文", 100.0, 520.0 - 12.0 * row as f32));
+        }
+        let graphics = rule_x
+            .map(|x| ParsedGraphicElement {
+                page: 0,
+                bounds: ParsedBounds {
+                    x0: x,
+                    y0: 40.0,
+                    x1: x,
+                    y1: 560.0,
+                },
+                stroke_width: 0.5,
+                dashed: false,
+            })
+            .into_iter()
+            .collect();
+        ParsedDocument {
+            quality: Default::default(),
+            path: "list.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".into(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: vec![ParsedPage {
+                page_number: 0,
+                width: 842.0,
+                height: 595.0,
+                rotation: 0,
+            }],
+            graphics,
+            fills: Vec::new(),
+            text_elements,
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        }
+    }
+
+    /// 行の多い範囲でも、短いセルが並ぶ一覧は数値が少なくても表にする。
+    #[test]
+    fn a_long_list_of_short_cells_becomes_a_table() {
+        let mut parsed = list_page(None);
+        parsed.text_elements.retain(|text| text.bounds.x0 > 400.0);
+        let tables = infer_ruleless_tables(&parsed, &[]);
+        assert_eq!(tables.len(), 1);
+        assert_eq!(tables[0].table.rows.len(), 30);
+        assert_eq!(tables[0].table.rows[0].len(), 4);
+    }
+
+    /// 表の外側の余白は、すぐ左の段の区切り線を越えない。
+    #[test]
+    fn the_list_margin_stays_clear_of_the_band_rule() {
+        let parsed = list_page(Some(429.0));
+        let tables = infer_ruleless_tables(&parsed, &[]);
+        let list = tables
+            .iter()
+            .find(|table| table.bounds.x1 > 700.0)
+            .expect("list table");
+        assert!(list.bounds.x0 >= 429.0 + EDGE_CLEARANCE_PT);
+        assert_eq!(
+            column_bands::column_band_edges(&parsed, 0, &tables),
+            vec![429.0]
+        );
+    }
 }

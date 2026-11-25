@@ -1726,6 +1726,27 @@ fn band_columns(
             }
             continue;
         }
+        // 段は本文の段の幅のもの。財務表の金額の列を区切る縦罫線のような狭い帯は、左の段に
+        // まとめてやり直す（ページの端の狭い帯（余白の柱など）はそのまま）。
+        let bounds_of = |band: usize| {
+            let start = if band == 0 {
+                outer_x0.max(0.0)
+            } else {
+                edges[band - 1]
+            };
+            let end = edges.get(band).copied().unwrap_or(outer_x1.min(page_width));
+            (start, end)
+        };
+        let narrow = lefts.keys().copied().find(|&band| {
+            let (start, end) = bounds_of(band);
+            let margin = (band == 0 && end < MARGIN_BAND_RATIO * page_width)
+                || (band == edges.len() && start > (1.0 - MARGIN_BAND_RATIO) * page_width);
+            !margin && end - start < MIN_BAND_COLUMN_RATIO * page_width
+        });
+        if let Some(band) = narrow {
+            edges.remove(if band == 0 { 0 } else { band - 1 });
+            continue;
+        }
         // 段の中で行と表が横に並ぶ（表の高さの範囲に表の外の行がある）ときは、セルの中で縦に
         // 積むと原本より高くなり、行の高さがページを越えるので、段を並べない。
         let taken = above.iter().chain(&below).copied().collect::<BTreeSet<_>>();
@@ -1749,24 +1770,7 @@ fn band_columns(
         let beside = beside_counts
             .values()
             .any(|count| *count > MAX_LINES_BESIDE_TABLE);
-        // 段は本文の段の幅のもの（財務表の金額の列を区切る縦罫線のような、狭い帯は段にしない）。
-        // ページの端の狭い帯（余白の柱など）は除いて数える。
-        let bounds_of = |band: usize| {
-            let start = if band == 0 {
-                outer_x0.max(0.0)
-            } else {
-                edges[band - 1]
-            };
-            let end = edges.get(band).copied().unwrap_or(outer_x1.min(page_width));
-            (start, end)
-        };
-        let narrow = lefts.keys().any(|&band| {
-            let (start, end) = bounds_of(band);
-            let margin = (band == 0 && end < MARGIN_BAND_RATIO * page_width)
-                || (band == edges.len() && start > (1.0 - MARGIN_BAND_RATIO) * page_width);
-            !margin && end - start < MIN_BAND_COLUMN_RATIO * page_width
-        });
-        if lefts.len() < 2 || beside || narrow {
+        if lefts.len() < 2 || beside {
             return None;
         }
         return Some(BandLayout {
@@ -1784,6 +1788,40 @@ fn band_columns(
         });
     }
 }
+
+/// ページの端の狭い帯にある、字数に比べて幅のごく狭い行（横に倒して組んだ柱の字を縦に
+/// 積んだもの）を、下から上へ読む 1 つの段落にする。
+fn sideways_margin_line(
+    lines: &[StructuredTextLine],
+    band_width: f32,
+    page_width: f32,
+) -> Option<Paragraph> {
+    if lines.is_empty() || band_width > MARGIN_BAND_RATIO * page_width {
+        return None;
+    }
+    let sideways = lines.iter().all(|line| {
+        let size = structured_line_max_font_size(line).max(1.0);
+        let chars = line.text.chars().filter(|ch| !ch.is_whitespace()).count();
+        chars >= MIN_SIDEWAYS_CHARS
+            && line.right_x - line.left_x <= MAX_SIDEWAYS_WIDTH_RATIO * chars as f32 * size
+    });
+    if !sideways {
+        return None;
+    }
+    let mut lines = lines.iter().collect::<Vec<_>>();
+    lines.sort_by(|a, b| a.top_y.total_cmp(&b.top_y));
+    let paragraph = lines
+        .into_iter()
+        .flat_map(|line| &line.runs)
+        .fold(Paragraph::new(), |paragraph, run| {
+            paragraph.add_run(docx_run_from_structured_run(run))
+        });
+    Some(paragraph.line_spacing(LineSpacing::new().before(0).after(0)))
+}
+
+/// 横に倒した柱とみなす行の字数の下限と、行の幅の上限（横に組んだときの長さ比）。
+const MIN_SIDEWAYS_CHARS: usize = 4;
+const MAX_SIDEWAYS_WIDTH_RATIO: f32 = 0.3;
 
 /// 段ごとの中身をセルに組み、罫線の無い 1 行の表として横に並べる。
 #[allow(clippy::too_many_arguments)]
@@ -1870,6 +1908,23 @@ fn add_band_columns<C: StructuredPageContainer>(
                 .map(|(_, line)| line.clone())
                 .collect(),
         };
+        // ページの端の狭い帯に縦に並んだ短い行は、横に倒して組んだ 1 行（横長のページの柱）。
+        if let Some(paragraph) = sideways_margin_line(
+            &band_page.lines,
+            x1.min(page_width) - x0.max(0.0),
+            page_width,
+        ) {
+            cells.push(
+                TableCell::new()
+                    .width(width, WidthType::Dxa)
+                    .vertical_align(VAlignType::Bottom)
+                    .text_direction(docx_rs::TextDirectionType::BtLr)
+                    .clear_all_border()
+                    .add_paragraph(paragraph),
+            );
+            grid.push(width);
+            continue;
+        }
         let BandCell(cell) = add_structured_page_blocks(
             BandCell(
                 TableCell::new()
