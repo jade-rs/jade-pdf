@@ -1,6 +1,42 @@
 //! 推定表のセル文字列に完全一致する原本runだけへ書式を対応させる。
 use super::*;
 
+/// 原文と完全一致したrunと、同じ行内での原本上端の差。
+#[derive(Debug, Clone, PartialEq)]
+pub(super) struct Cell {
+    /// セル本文に対応する原本run。
+    runs: Vec<StructuredTextRun>,
+    /// 行上端より下へ置く余白。元の座標差だけをtwipsに丸める。
+    before_twips: u32,
+}
+
+/// セルの文字・書式を照合し、行全体ではなくそのセルの元の上端を保持する。
+pub(super) fn cell(
+    parsed: &ParsedDocument,
+    texts: &[&ParsedTextElement],
+    expected: &str,
+    row_top: f32,
+) -> Option<Cell> {
+    let runs = runs(parsed, texts, expected)?;
+    let top = texts.iter().try_fold(f32::NEG_INFINITY, |top, text| {
+        text.bounds
+            .y1
+            .is_finite()
+            .then_some(top.max(text.bounds.y1))
+    })?;
+    let before_twips = if texts.is_empty() {
+        0
+    } else {
+        u32::try_from(pdf_points_to_twips((row_top - top).max(0.0))?).ok()?
+    };
+    Some(Cell { runs, before_twips })
+}
+
+/// 行内の原本上端までの空きを付けて照合済みセルを出力する。
+pub(super) fn cell_paragraph(cell: &Cell) -> Option<Paragraph> {
+    paragraph(&cell.runs, cell.before_twips)
+}
+
 /// 元セルと区切り空白まで一致する場合だけ、色・font・サイズを持つrunを返す。
 pub(super) fn runs(
     parsed: &ParsedDocument,
@@ -27,7 +63,7 @@ pub(super) fn runs(
 }
 
 /// 位置を推測せず、照合済みのセル本文を原本の各書式と最大em高で出力する。
-pub(super) fn paragraph(runs: &[StructuredTextRun]) -> Option<Paragraph> {
+fn paragraph(runs: &[StructuredTextRun], before_twips: u32) -> Option<Paragraph> {
     if runs.is_empty() {
         return None;
     }
@@ -40,7 +76,7 @@ pub(super) fn paragraph(runs: &[StructuredTextRun]) -> Option<Paragraph> {
             .fold(Paragraph::new(), |paragraph, run| {
                 paragraph.add_run(docx_run_from_structured_run(run))
             })
-            .line_spacing(native_line_pitch::spacing(height, 0, 0)?),
+            .line_spacing(native_line_pitch::spacing(height, before_twips, 0)?),
     )
 }
 
@@ -100,7 +136,7 @@ mod tests {
     /// 空・未確認のem高をWordの既定値に置き換えず、書式段落への変換を拒否する。
     #[test]
     fn empty_and_nonfinite_styles_do_not_get_a_default_paragraph() {
-        assert!(paragraph(&[]).is_none());
+        assert!(paragraph(&[], 0).is_none());
         for size in [0., -1., f32::NAN, f32::INFINITY] {
             let run = StructuredTextRun {
                 text: "Owned".into(),
@@ -109,12 +145,12 @@ mod tests {
                     ..Default::default()
                 },
             };
-            assert!(paragraph(&[run]).is_none());
+            assert!(paragraph(&[run], 0).is_none());
         }
         let run = StructuredTextRun {
             text: "Owned".into(),
             style: Default::default(),
         };
-        assert!(paragraph(&[run]).is_some());
+        assert!(paragraph(&[run], 0).is_some());
     }
 }

@@ -2912,7 +2912,7 @@ struct PositionedTable {
     /// 原本と文字照合できたセルの位置・行・run style。
     native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 混在文書の新規反復列セルと文字列が完全一致した原本run。
-    source_cell_runs: Vec<Vec<Vec<StructuredTextRun>>>,
+    source_cell_runs: Vec<Vec<text_grid_cell_styles::Cell>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
 }
@@ -3512,7 +3512,7 @@ fn docx_table_from_model_with_row_height_and_nested(
                         .and_then(native_table_text::single_line_paragraph)
                         .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph))
                         .or_else(|| {
-                            text_grid_cell_styles::paragraph(
+                            text_grid_cell_styles::cell_paragraph(
                                 parent?.source_cell_runs.get(row_index)?.get(cell_index)?,
                             )
                         });
@@ -5321,7 +5321,9 @@ fn infer_positioned_table_from_text_grid_page(
                     source_texts
                         .iter()
                         .zip(&row)
-                        .map(|(texts, value)| text_grid_cell_styles::runs(parsed, texts, value))
+                        .map(|(texts, value)| {
+                            text_grid_cell_styles::cell(parsed, texts, value, top)
+                        })
                         .collect::<Option<Vec<_>>>()?,
                 );
                 source_row_bounds.push((top, bottom));
