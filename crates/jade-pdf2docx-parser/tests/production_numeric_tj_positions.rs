@@ -8,7 +8,10 @@ use page_attribute_pdf::{pages, pdf, stream};
 
 /// 所有するCourier原本に、明示的な30pointの列間隔を持つ二つの値を置く。
 fn source_with(content: &str) -> Vec<u8> {
-    source_with_font(content, "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>")
+    source_with_font(
+        content,
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>",
+    )
 }
 
 /// 未確認幅の対照も、同じ所有object配置とxrefで作る。
@@ -89,6 +92,20 @@ proptest! {
         failure_persistence: Some(Box::new(FileFailurePersistence::Direct("tests/production_numeric_tj_positions.proptest-regressions"))),
         ..ProptestConfig::default()
     })]
+    /// 未確認の幅には、fontsize・水平倍率・明示間隔によらず新しい独立frameを与えない。
+    #[test]
+    fn estimated_numeric_positions_never_become_new_columns(
+        size in 5u16..25,
+        adjustment in 1500u16..6000,
+        scale in 50u16..200,
+    ) {
+        let content = format!("BT /F {size} Tf {scale} Tz 20 100 Td [(376) -{adjustment} (-2.4)] TJ ET");
+        let input = source_with_font(&content, "<< /Type /Font /Subtype /TrueType /BaseFont /OwnedUnknown >>");
+        let parsed = parse_pdf_bytes("owned-estimated-advance.pdf", &input).unwrap();
+        prop_assert_eq!(parsed.text_elements.len(), 1);
+        prop_assert_eq!(parsed.text_elements[0].text.as_str(), "376 -2.4");
+    }
+
     /// fontsize・水平倍率・明示gapを変えても、元Courier幅と次の原点を同じ式で保つ。
     #[test]
     fn independent_numeric_frames_keep_font_size_scale_and_tj_advance(
