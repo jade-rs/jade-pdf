@@ -167,9 +167,12 @@ impl Index {
                 metadata_workspace::ensure_active(budget)?;
             }
             let b = glyph.bounds;
-            if bounds[0].max(b[0]) < bounds[2].min(b[2])
-                && bounds[1].max(b[1]) < bounds[3].min(b[3])
-            {
+            let positive = bounds[0].max(b[0]) < bounds[2].min(b[2])
+                && bounds[1].max(b[1]) < bounds[3].min(b[3]);
+            let degenerate = (b[0] == b[2] || b[1] == b[3])
+                && bounds[0].max(b[0]) <= bounds[2].min(b[2])
+                && bounds[1].max(b[1]) <= bounds[3].min(b[3]);
+            if positive || degenerate {
                 let Some(value) = glyph.weight else {
                     return Ok(None);
                 };
