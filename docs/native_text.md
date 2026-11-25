@@ -7,7 +7,9 @@ nativeのファイル変換は、SDKのページ全文と、矩形ごとに抽�
 所有PDFの `AAA` など、本物の反復は保持する。
 
 文字番号経路を採用した後も、pure/nativeのページ単位の照合、生成fontのcmapとの照合、
-Formの抽出順の検証は維持する。Unicodeを推測して一致条件を緩める処理は加えていない。
+Formの抽出順の検証は維持する。通常のUnicode不一致を推測で一致と見なさない。
+sourceのvariation selectorをSDKが省いた場合の条件付き照合と、span内のSDK語間保持は、
+[source境界のガイド](native_source_word_boundaries.md)に別途記録する。
 API・CLI・設定・依存の追加はない。文字番号による回復自体はnativeが対象で、bytes/WASMの文字抽出規則は変更しない。
 同じ水平text objectの連続文字は、元の矩形抽出と本文・font・色・基線・object外接矩形が
 完全に一致する場合だけ、元の幾何を持つspanへ戻す。一致しない箇所は文字単位を維持する。

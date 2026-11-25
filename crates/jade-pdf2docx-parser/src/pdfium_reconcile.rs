@@ -5,12 +5,33 @@ use crate::{ParsedTextElement, QualityReport, decode::DecodeBudget, metadata_map
 #[path = "pdfium_reconcile_source_tests.rs"]
 mod source_tests;
 
+#[path = "pdfium_reconcile_mapping.rs"]
+mod mapping;
+#[path = "pdfium_reconcile_spaces.rs"]
+mod spaces;
+
 /// 一つのページでnative文字とpure文字数・対応位置を共有する。
 struct Page {
     /// 非空白native文字の必要件数。
     native_count: usize,
     /// pure要素に含まれる非空白文字数。
     pure_count: usize,
+    /// source selectorを除いた非空白scalar数。
+    pure_base_count: usize,
+    /// selectorが同じspan内のbase文字へ一対一で続いているか。
+    valid_variations: bool,
+    /// 生成fontがあるページでは、未検証のselector省略対応を採用しない。
+    generated_font: bool,
+    /// nativeが省いたselectorだけをsourceから保持するか。
+    preserve_variations: bool,
+    /// sourceのbase文字とnativeがページ全体で同順に一致したか。
+    unicode_agrees: bool,
+    /// 予約前に数えたSDKの語間件数。
+    space_count: usize,
+    /// SDKの語間を二回の走査で検出する状態。
+    space_state: spaces::State,
+    /// nativeの非空白位置で整列した語間境界。
+    spaces: Vec<usize>,
     /// 空白だけのpureページも存在を区別する。
     pure_seen: bool,
     /// 件数検証後に確保するnative文字配列。
@@ -29,7 +50,8 @@ struct Page {
     form_page: bool,
 }
 
-/// 対応するページだけpureの幾何/style/空白を保持し、他はnative要素を使う。
+/// 対応するページのsource属性・明示空白を保持し、一致を確認したSDK語間もspan内へ戻す。
+/// selectorの省略はbase文字の完全一致で検証し、他の不一致ページはnative要素を使う。
 /// 不一致はNone、容量不足もNoneで返し、共有予算へ保存した失敗を呼び出し元が検査する。
 pub(super) fn reconcile(
     budget: &DecodeBudget,
@@ -54,6 +76,14 @@ pub(super) fn reconcile(
             crate::metadata_workspace::try_push(budget, &mut pages, Page {
                 native_count: 0,
                 pure_count: 0,
+                pure_base_count: 0,
+                valid_variations: true,
+                generated_font: false,
+                preserve_variations: false,
+                unicode_agrees: true,
+                space_count: 0,
+                space_state: Default::default(),
+                spaces: Vec::new(),
                 pure_seen: false,
                 characters: Vec::new(),
                 offset: 0,
@@ -83,9 +113,20 @@ pub(super) fn reconcile(
         pages[slot].pure_count = pages[slot]
             .pure_count
             .checked_add(nonspace_count(&element.text))?;
+        pages[slot].pure_base_count = pages[slot]
+            .pure_base_count
+            .checked_add(aligned_count(&element.text, true))?;
+        pages[slot].valid_variations &= valid_variations(&element.text);
+        pages[slot].generated_font |= generated_font(element);
     }
     for page in &mut pages {
-        page.compatible = page.pure_seen && page.native_count == page.pure_count;
+        page.preserve_variations = page.pure_seen
+            && page.pure_count > page.pure_base_count
+            && page.native_count == page.pure_base_count
+            && page.valid_variations
+            && !page.generated_font;
+        page.compatible =
+            page.pure_seen && (page.native_count == page.pure_count || page.preserve_variations);
         if page.compatible {
             page.characters = budget.metadata_vector(page.native_count)?;
         }
@@ -110,20 +151,18 @@ pub(super) fn reconcile(
         if !page.compatible {
             continue;
         }
-        let length = nonspace_count(&element.text);
+        let length = aligned_count(&element.text, page.preserve_variations);
         let end = page.offset.checked_add(length)?;
         let mapped = page.characters.get(page.offset..end)?;
-        if (page.form_page
-            || element
-                .font_name
-                .as_deref()
-                .is_some_and(|name| name.starts_with("JadeT1-")))
-            && !element
-                .text
-                .chars()
-                .filter(|ch| !ch.is_whitespace())
-                .eq(mapped.iter().copied())
-        {
+        let agrees = element
+            .text
+            .chars()
+            .filter(|ch| {
+                !ch.is_whitespace() && !(page.preserve_variations && variation_selector(*ch))
+            })
+            .eq(mapped.iter().copied());
+        page.unicode_agrees &= agrees;
+        if (page.preserve_variations || page.form_page || generated_font(element)) && !agrees {
             page.compatible = false;
         }
         page.offset = end;
@@ -131,6 +170,7 @@ pub(super) fn reconcile(
     if !pages.iter().any(|page| page.compatible) {
         return None;
     }
+    spaces::gather(budget, native_elements, &index, &mut pages)?;
     let mut capacity = pure_elements
         .iter()
         .filter(|element| {
@@ -163,11 +203,21 @@ pub(super) fn reconcile(
             continue;
         }
         let remaining = &page.characters[page.offset..];
-        let text = replacement(budget, &element.text, remaining, false)?;
+        let text = mapping::Mapping {
+            native: remaining,
+            preserve_variations: page.preserve_variations,
+            spaces: if generated_font(element) {
+                &[]
+            } else {
+                &page.spaces
+            },
+            offset: page.offset,
+        }
+        .replacement(budget, &element.text)?;
         let mut copied = copy_element(budget, element, false)?;
         copied.text = text;
         output.push(copied);
-        page.offset += nonspace_count(&element.text);
+        page.offset += aligned_count(&element.text, page.preserve_variations);
     }
     // pure側にないnativeページも落とさず、nativeの出現順で追加する。
     for element in native_elements {
@@ -223,38 +273,40 @@ fn nonspace_count(text: &str) -> usize {
     text.chars().filter(|ch| !ch.is_whitespace()).count()
 }
 
-/// Unicode置換後の正確なUTF-8容量を先に予約し、動的拡張を避ける。
-fn replacement(
-    budget: &DecodeBudget,
-    pure: &str,
-    native: &[char],
-    form_page: bool,
-) -> Option<String> {
-    let mut characters = native.iter().copied();
-    let mut capacity = 0usize;
-    for ch in pure.chars() {
-        let mapped = if ch.is_whitespace() {
-            ch
-        } else {
-            characters.next()?
-        };
-        if form_page && ch != mapped {
-            return None;
+/// source fontが個別の符号化glyphを所有し、Unicodeの追加を許さないか返す。
+fn generated_font(element: &ParsedTextElement) -> bool {
+    element
+        .font_name
+        .as_deref()
+        .is_some_and(|name| name.starts_with("JadeT1-"))
+}
+
+/// Unicodeの標準・補助variation selectorを識別する。
+fn variation_selector(scalar: char) -> bool {
+    matches!(scalar, '\u{fe00}'..='\u{fe0f}' | '\u{e0100}'..='\u{e01ef}')
+}
+
+/// nativeが省いたselectorを除き、一対一で対応する文字数を返す。
+fn aligned_count(text: &str, omit_selectors: bool) -> usize {
+    text.chars()
+        .filter(|ch| !ch.is_whitespace() && !(omit_selectors && variation_selector(*ch)))
+        .count()
+}
+
+/// leading・連続・空白直後のselectorを、同じglyphのvariationと推測しない。
+fn valid_variations(text: &str) -> bool {
+    let mut previous = None;
+    for scalar in text.chars() {
+        if variation_selector(scalar)
+            && !previous.is_some_and(|ch: char| {
+                !ch.is_whitespace() && !ch.is_control() && !variation_selector(ch)
+            })
+        {
+            return false;
         }
-        capacity = capacity.checked_add(mapped.len_utf8())?;
+        previous = Some(scalar);
     }
-    let mut output = budget.metadata_vector(capacity)?;
-    let mut characters = native.iter().copied();
-    for ch in pure.chars() {
-        let mapped = if ch.is_whitespace() {
-            ch
-        } else {
-            characters.next()?
-        };
-        let mut utf8 = [0; 4];
-        output.extend_from_slice(mapped.encode_utf8(&mut utf8).as_bytes());
-    }
-    String::from_utf8(output).ok()
+    true
 }
 
 #[cfg(test)]

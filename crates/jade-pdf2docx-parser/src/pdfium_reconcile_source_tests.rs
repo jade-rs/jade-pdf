@@ -103,6 +103,51 @@ fn variation_sequence_never_hides_base_order_or_glyph_owner_mismatch() {
     }
 }
 
+/// 改行・tab・別spanの先頭を、同一span内の通常語間に読み替えない。
+#[test]
+fn line_boundaries_and_span_origins_do_not_gain_leading_spaces() {
+    for sdk in ["1\n12", "1\n 12", "1\t12"] {
+        let pure = vec![element("112", 0)];
+        assert_eq!(
+            reconcile(
+                &DecodeBudget::default(),
+                &pure,
+                &[element(sdk, 0)],
+                &Default::default()
+            ),
+            Some(pure)
+        );
+    }
+    let pure = vec![element("1", 0), element("12", 0)];
+    assert_eq!(
+        reconcile(
+            &DecodeBudget::default(),
+            &pure,
+            &[element("1 12", 0)],
+            &Default::default()
+        ),
+        Some(pure)
+    );
+}
+
+/// 同じspanに語間とIVSが共存しても、selectorはnative側の文字位置を進めない。
+#[test]
+fn word_boundaries_and_variation_sequences_share_the_same_alignment() {
+    let pure = vec![element("112芒\u{e0100}種720", 0)];
+    let native = vec![element("1 12芒種7 20", 0)];
+    let mut expected = pure.clone();
+    expected[0].text = "1 12芒\u{e0100}種7 20".into();
+    assert_eq!(
+        reconcile(
+            &DecodeBudget::default(),
+            &pure,
+            &native,
+            &Default::default()
+        ),
+        Some(expected)
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     /// sourceの数字順・style・幾何を変えず、SDKで確認したspan内の全語間を一度だけ保持する。
