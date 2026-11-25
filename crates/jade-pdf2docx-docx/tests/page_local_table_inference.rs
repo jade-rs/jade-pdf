@@ -4,6 +4,9 @@ use proptest::prelude::*;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
+#[path = "support/page_local_source_style_cases.rs"]
+mod source_style_cases;
+
 /// ページごとの表を独立した内容streamへ置き、正確なxrefを持つ所有PDFを作る。
 fn source(pages: &[bool], left: u16, width: u16) -> Vec<u8> {
     source_with_column_page(pages, left, width, None)
@@ -26,6 +29,18 @@ fn source_with_note(
     width: u16,
     column_page: Option<usize>,
     note: Option<(usize, &str)>,
+) -> Vec<u8> {
+    source_with_palette(pages, left, width, column_page, note, false)
+}
+
+/// 既存の原本byteを保ち、新しい対照だけで一セル内の書式を切り替える。
+fn source_with_palette(
+    pages: &[bool],
+    left: u16,
+    width: u16,
+    column_page: Option<usize>,
+    note: Option<(usize, &str)>,
+    palette: bool,
 ) -> Vec<u8> {
     let font = 3 + pages.len() * 2;
     let kids = (0..pages.len())
@@ -61,7 +76,15 @@ fn source_with_note(
                 } else {
                     format!("{}-R{row}C{col}", if ruled { "RULED" } else { "GRID" })
                 };
-                content.push_str(&format!("BT /F1 10 Tf {x} {y} Td ({text}) Tj ET\n"));
+                if palette && !ruled {
+                    if col == 1 {
+                        content.push_str(&format!("0 g BT /F1 10 Tf {x} {y} Td (GRID-) Tj /F2 12 Tf 1 0 0 rg (R{row}C{col}) Tj ET\n"));
+                    } else {
+                        content.push_str(&format!("0 g BT /F1 10 Tf {x} {y} Td ({text}) Tj ET\n"));
+                    }
+                } else {
+                    content.push_str(&format!("BT /F1 10 Tf {x} {y} Td ({text}) Tj ET\n"));
+                }
             }
         }
         if let Some((note_page, text)) = note
@@ -72,7 +95,12 @@ fn source_with_note(
                 left + 10
             ));
         }
-        objects.push(format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 {font} 0 R >> >> /Contents {} 0 R >>",4+page*2));
+        let fonts = if palette {
+            format!("/F1 {font} 0 R /F2 {} 0 R", font + 1)
+        } else {
+            format!("/F1 {font} 0 R")
+        };
+        objects.push(format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << {fonts} >> >> /Contents {} 0 R >>",4+page*2));
         objects.push(format!(
             "<< /Length {} >>\nstream\n{content}\nendstream",
             content.len()
@@ -81,6 +109,9 @@ fn source_with_note(
     objects.push(
         "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".into(),
     );
+    if palette {
+        objects.push("<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>".into());
+    }
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
     for (i, object) in objects.iter().enumerate() {
