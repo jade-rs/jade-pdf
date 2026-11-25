@@ -11,14 +11,75 @@ fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertEr
     let PreparedDocx {
         docx,
         column_frames,
+        vertical_tiers,
+        header_media,
     } = prepared;
     let mut package = crate::section_chrome_package::build(docx)?;
+    add_header_media(&mut package, header_media);
     crate::column_frame::apply(&mut package.document, &column_frames)?;
+    crate::vertical_pages::apply_columns(&mut package.document, &vertical_tiers);
     crate::layout_space::preserve_advance(&mut package)?;
     crate::inline_baseline::apply(&mut package)?;
     crate::normal_weight_package::apply(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
+    crate::ruby::apply_to_document_xml(&mut package.document);
+    disable_asian_latin_autospace(&mut package.styles);
     Ok(package)
+}
+
+/// 和文と欧文・数字の間に Word が自動で足す空き（`autoSpaceDE`・`autoSpaceDN`、和文の Word の
+/// 既定で有効）を、文書の既定の段落書式で止める。原本の PDF の字の位置にこの空きは無く、
+/// 原本の行の幅で組んだ行（表のセルの行など）が、空きの分だけ長くなって折り返してしまう。
+fn disable_asian_latin_autospace(styles: &mut Vec<u8>) {
+    const DEFAULT: &str = "<w:pPrDefault><w:pPr>";
+    let Ok(text) = std::str::from_utf8(styles) else {
+        return;
+    };
+    if text.contains("w:autoSpaceDE") || !text.contains(DEFAULT) {
+        return;
+    }
+    *styles = text
+        .replacen(
+            DEFAULT,
+            "<w:pPrDefault><w:pPr><w:autoSpaceDE w:val=\"0\" /><w:autoSpaceDN w:val=\"0\" />",
+            1,
+        )
+        .into_bytes();
+}
+
+/// 途中の section の header に置いた図の中身を media に足し、その図を参照する header の
+/// 関係の部品を作る（header の部品と関係の部品は同じ順に並ぶ）。
+fn add_header_media(package: &mut docx_rs::XMLDocx, header_media: Vec<(String, Vec<u8>)>) {
+    use docx_rs::BuildXML;
+    if header_media.is_empty() {
+        return;
+    }
+    let ids = header_media
+        .iter()
+        .map(|(id, _)| id.clone())
+        .collect::<Vec<_>>();
+    for (index, header) in package.headers.iter().enumerate() {
+        let xml = String::from_utf8_lossy(header);
+        let used = ids
+            .iter()
+            .filter(|id| xml.contains(&format!("r:embed=\"{id}\"")))
+            .collect::<Vec<_>>();
+        if used.is_empty() {
+            continue;
+        }
+        if package.header_rels.len() <= index {
+            package
+                .header_rels
+                .resize(index + 1, docx_rs::HeaderRels::new().build());
+        }
+        package.header_rels[index] = used
+            .into_iter()
+            .fold(docx_rs::HeaderRels::new(), |rels, id| {
+                rels.add_image(id.clone(), format!("media/{id}.png"))
+            })
+            .build();
+    }
+    package.media.extend(header_media);
 }
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
@@ -26,7 +87,7 @@ pub(super) fn pack_docx_to_bytes(
     docx: impl Into<PreparedDocx>,
     embedded_fonts: &[ParsedEmbeddedFont],
 ) -> Result<Vec<u8>, ConvertError> {
-    let mut package = prepare_package(docx.into())?;
+    let package = prepare_package(docx.into())?;
     // Stored ZIPの主要payloadを先に予約し、巨大画像でのVec倍増時の同時保持を避ける。
     // その他のXMLやZIP header用に余裕を持たせ、必要なら通常どおり拡張する。
     let capacity = package
@@ -294,7 +355,7 @@ pub(super) fn pack_docx_to_file(
 ) -> Result<std::fs::File, ConvertError> {
     use std::io::{BufReader, BufWriter};
     let mut output = BufWriter::new(tempfile::tempfile()?);
-    let mut package = prepare_package(docx.into())?;
+    let package = prepare_package(docx.into())?;
     package
         .pack(&mut output)
         .map_err(|err| ConvertError::Pack(err.to_string()))?;
@@ -317,4 +378,53 @@ pub(super) fn pack_docx_to_file(
     };
     file.rewind()?;
     Ok(file)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use docx_rs::{Docx, Header, Paragraph, Pic, Run, Section};
+
+    /// 和文と欧文の間の自動の空きを、文書の既定の段落書式で止める。
+    #[test]
+    fn asian_latin_autospace_is_disabled_by_default() {
+        let mut styles = Docx::new().build().styles;
+        disable_asian_latin_autospace(&mut styles);
+        let text = String::from_utf8(styles).unwrap();
+        assert!(text.contains(
+            "<w:pPrDefault><w:pPr><w:autoSpaceDE w:val=\"0\" /><w:autoSpaceDN w:val=\"0\" />"
+        ));
+    }
+
+    /// 途中の section の header の図は、その header の関係の部品と media に登録する。
+    #[test]
+    fn intermediate_section_header_pictures_get_relationships_and_media() {
+        let mut picture = Pic::new_with_dimensions(vec![1, 2, 3], 1, 1);
+        picture.id = "rIdSectionHeaderImage1".into();
+        picture.image.clear();
+        let header =
+            Header::new().add_paragraph(Paragraph::new().add_run(Run::new().add_image(picture)));
+        let docx = Docx::new()
+            .add_section(
+                Section::new()
+                    .header(header)
+                    .add_paragraph(Paragraph::new()),
+            )
+            .add_paragraph(Paragraph::new());
+        let mut package = docx.build();
+        add_header_media(
+            &mut package,
+            vec![("rIdSectionHeaderImage1".into(), vec![1, 2, 3])],
+        );
+        let rels = String::from_utf8(package.header_rels[0].clone()).unwrap();
+        assert!(rels.contains(
+            r#"Id="rIdSectionHeaderImage1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/rIdSectionHeaderImage1.png""#
+        ));
+        assert!(
+            package
+                .media
+                .iter()
+                .any(|(id, bytes)| id == "rIdSectionHeaderImage1" && bytes == &[1, 2, 3])
+        );
+    }
 }

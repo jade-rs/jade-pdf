@@ -17,6 +17,7 @@ fn grid_graphics(
                 out.push(ParsedGraphicElement {
                     page: 0,
                     stroke_width: 0.5,
+                    dashed: false,
                     bounds: ParsedBounds {
                         x0: xs[col] as f32,
                         x1: xs[col] as f32,
@@ -34,6 +35,7 @@ fn grid_graphics(
                 out.push(ParsedGraphicElement {
                     page: 0,
                     stroke_width: 0.5,
+                    dashed: false,
                     bounds: ParsedBounds {
                         x0: xs[col] as f32,
                         x1: xs[col + 1] as f32,
@@ -135,7 +137,15 @@ fn t_junction_does_not_create_an_orphan_vertical_continuation() {
         vec!["top".into(), String::new()],
         vec!["lower".into(), "side".into()],
     ];
-    let model = docx_table_model_from_grid(&g, &xs, &ys, &cells, &vec![vec![false; 2]; 2]).unwrap();
+    let model = docx_table_model_from_grid(
+        &g,
+        &xs,
+        &ys,
+        &cells,
+        &vec![vec![false; 2]; 2],
+        &vec![vec![None; 2]; 2],
+    )
+    .unwrap();
     assert_rectangular_continuations(&model, 2);
 }
 
@@ -154,7 +164,15 @@ fn vertical_cell_text_belongs_to_the_restart_owner() {
         vec!["top".into(), "rightA".into()],
         vec!["lower".into(), "rightB".into()],
     ];
-    let model = docx_table_model_from_grid(&g, &xs, &ys, &cells, &vec![vec![false; 2]; 2]).unwrap();
+    let model = docx_table_model_from_grid(
+        &g,
+        &xs,
+        &ys,
+        &cells,
+        &vec![vec![false; 2]; 2],
+        &vec![vec![None; 2]; 2],
+    )
+    .unwrap();
     assert_rectangular_continuations(&model, 2);
     let root = &model.rows[0][0];
     assert_eq!(root.vertical_merge, Some(DocxVerticalMerge::Restart));
@@ -176,7 +194,7 @@ proptest! {
         for row in 1..3 {for col in 0..3 {horizontal[row][col]=bits&(1<<(6+(row-1)*3+col))!=0;}}
         let g=grid_graphics(&xs,&ys,&vertical,&horizontal);
         let cells=(0..3).map(|r|(0..3).map(|c|if bits&(1<<(12+r*3+c))==0 {String::new()}else{format!("R{r}C{c}")}).collect::<Vec<_>>()).collect::<Vec<_>>();
-        if let Some(model)=docx_table_model_from_grid(&g,&xs,&ys,&cells,&vec![vec![false;3];3]) {
+        if let Some(model)=docx_table_model_from_grid(&g,&xs,&ys,&cells,&vec![vec![false;3];3],&vec![vec![None;3];3]) {
             assert_rectangular_continuations(&model,3);
             assert_original_edges(&model,&vertical,&horizontal);
             prop_assert!(model_preserves_grid_cell_texts(&model,&cells));
@@ -194,6 +212,7 @@ fn source_text_validation_counts_repeated_cells_separately() {
         text: "same".into(),
         underlined: false,
         alignment: ParagraphAlignment::Left,
+        vertical_alignment: None,
         grid_span: 2,
         vertical_merge: None,
         width_twips: None,
@@ -215,6 +234,7 @@ fn source_text_validation_checks_each_physical_owner() {
         text: text.into(),
         underlined: false,
         alignment: ParagraphAlignment::Left,
+        vertical_alignment: None,
         grid_span: 1,
         vertical_merge: None,
         width_twips: None,

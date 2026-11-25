@@ -38,6 +38,18 @@ pub(crate) fn extract(
 ) -> Result<Vec<ParsedTextElement>, ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
     let mut elements = Vec::new();
+    // segment を分ける際に使う、ページの全文字の矩形の中心（文字の index 順）。
+    let centers = characters
+        .iter()
+        .map(|character| {
+            character.loose_bounds().ok().map(|bounds| {
+                (
+                    (bounds.left().value + bounds.right().value) / 2.0,
+                    (bounds.bottom().value + bounds.top().value) / 2.0,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
     for segment in page_text.segments().iter() {
         crate::metadata_workspace::ensure_active(budget)?;
         // API内部の一時Stringは現APIで確保前の正確な容量取得ができない。
@@ -54,13 +66,41 @@ pub(crate) fn extract(
         if content.is_empty() {
             continue;
         }
+        // 表の列のように大きく離れた文字は、同じ行の segment でも別の要素へ分ける。
+        if let Some(pieces) = split_at_wide_gaps(&segment, characters, &centers) {
+            for piece in pieces {
+                let text = copy(budget, Some(piece.text.trim()))?.unwrap_or_default();
+                if text.is_empty() {
+                    continue;
+                }
+                let font_name = copy(budget, piece.font_name.as_deref())?;
+                let fill_color = copy(budget, piece.fill_color.as_deref())?;
+                crate::metadata_workspace::push(
+                    budget,
+                    &mut elements,
+                    ParsedTextElement {
+                        baseline_y: piece.baseline_y,
+                        page: page_number,
+                        bounds: piece.bounds,
+                        font_size: piece.font_size,
+                        font_name,
+                        fill_color,
+                        text,
+                    },
+                )?;
+            }
+            continue;
+        }
         let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
-        let mut font_size = bounds.y1 - bounds.y0;
+        // 文字を引けない場合は行の太さ（回転した行でも短い辺）を文字サイズとみなす。
+        let mut font_size = (bounds.y1 - bounds.y0)
+            .abs()
+            .min((bounds.x1 - bounds.x0).abs());
         let mut font_name = None;
         let mut fill_color = None;
         let mut baseline_y = None;
         if let Some(first) = first_in_rect(characters, segment.bounds()) {
-            font_size = first.scaled_font_size().value;
+            font_size = effective_font_size(&first);
             baseline_y = horizontal_baseline(&first);
             let name = first.font_name();
             font_name = copy(budget, (!name.is_empty()).then_some(name.as_str()))?;
@@ -83,6 +123,446 @@ pub(crate) fn extract(
         )?;
     }
     Ok(elements)
+}
+
+/// segment を分ける判定に使う 1 文字分の情報。
+#[derive(Debug, Clone, PartialEq)]
+struct CharInfo {
+    /// 文字列（空白を含む）。
+    text: String,
+    /// 文字の外接矩形。
+    bounds: ParsedBounds,
+    /// 実効 font size。
+    font_size: f32,
+    /// font 名。
+    font_name: Option<String>,
+    /// 塗り色。
+    fill_color: Option<String>,
+    /// 回転のない水平な文字のベースライン y。
+    baseline_y: Option<f32>,
+}
+
+/// 大きな字間で分けた segment の一部。
+#[derive(Debug, Clone, PartialEq)]
+struct SegmentPiece {
+    /// 空白以外の文字矩形の和。
+    bounds: ParsedBounds,
+    /// 文字列。
+    text: String,
+    /// 先頭文字の実効 font size。
+    font_size: f32,
+    /// 先頭文字の font 名。
+    font_name: Option<String>,
+    /// 先頭文字の塗り色。
+    fill_color: Option<String>,
+    /// 先頭文字のベースライン y。
+    baseline_y: Option<f32>,
+}
+
+/// 字送り方向の隙間がこの em 数を超えたら別の要素に分ける。
+const SEGMENT_SPLIT_GAP_EM: f32 = 1.0;
+
+/// segment の文字を取り出し、1 em を超えて離れた位置で分ける。
+///
+/// 分ける必要がない場合や文字を取得できない場合は `None` を返し、segment 全体を 1 要素にする。
+fn split_at_wide_gaps(
+    segment: &PdfPageTextSegment<'_>,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
+    split_rect_at_wide_gaps(
+        parsed_bounds_from_pdf_rect(segment.bounds()),
+        &segment.text(),
+        characters,
+        centers,
+    )
+}
+
+/// 矩形と本文が分かっている文字列を、矩形の中の文字の位置で 1 em を超える字間で分ける。
+fn split_rect_at_wide_gaps(
+    rect: ParsedBounds,
+    text: &str,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
+    // まず矩形の中の字だけで照合し、約物が矩形から外れて照合できない場合だけ、短い辺の
+    // 6 割まで広げて拾い直す（広げると隣の文字列の字を拾うことがある）。
+    split_rect_with_slack(rect, text, characters, centers, 0.5).or_else(|| {
+        let wide = ((rect.x1 - rect.x0).abs().min((rect.y1 - rect.y0).abs()) * 0.6).max(0.5);
+        split_rect_with_slack(rect, text, characters, centers, wide)
+    })
+}
+
+/// 矩形を `slack` だけ広げた範囲の字で、本文を 1 em を超える字間で分ける。
+fn split_rect_with_slack(
+    rect: ParsedBounds,
+    text: &str,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+    slack: f32,
+) -> Option<Vec<SegmentPiece>> {
+    let horizontal = (rect.x1 - rect.x0).abs() >= (rect.y1 - rect.y0).abs();
+    let infos = chars_in_rect(rect, characters, centers, slack)?;
+    // 矩形で拾う文字は隣の文字列の字（小数点の字など）を含むことがあるため、本文の字を順に
+    // たどれる字だけを残し、本文のすべての字が見つかった場合だけ分ける。
+    let expected = text
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<Vec<_>>();
+    let keep = matched_chars(&infos, &expected)?;
+    let infos = infos
+        .into_iter()
+        .zip(keep)
+        .filter_map(|(info, keep)| keep.then_some(info))
+        .collect::<Vec<_>>();
+    let pieces = group_chars_at_wide_gaps(&infos, horizontal);
+    (pieces.len() > 1).then_some(pieces)
+}
+
+/// 矩形の中の字（テキスト順）のうち、本文の字に当たるものを選ぶ。
+///
+/// 本文が字の並びにそのまま続けて現れる場合はその部分を選ぶ（2 行にまたがる矩形では、
+/// 隣の行の同じ字を本文の字と取り違えない）。続けて現れない場合だけ、本文の字を順に
+/// たどれる字を飛び飛びに選ぶ。本文のすべての字が見つからなければ `None`。
+fn matched_chars(infos: &[CharInfo], expected: &[char]) -> Option<Vec<bool>> {
+    if expected.is_empty() {
+        return None;
+    }
+    let bodies = infos
+        .iter()
+        .map(|info| {
+            info.text
+                .chars()
+                .filter(|ch| !ch.is_whitespace())
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    // 続けて現れる部分（字のない文字は途中に挟まってよい）。
+    for start in 0..bodies.len() {
+        if bodies[start].is_empty() {
+            continue;
+        }
+        let mut next = 0usize;
+        let mut keep = vec![false; bodies.len()];
+        for (index, body) in bodies.iter().enumerate().skip(start) {
+            if next == expected.len() {
+                break;
+            }
+            if body.is_empty() {
+                keep[index] = next > 0;
+                continue;
+            }
+            if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+                next += body.len();
+                keep[index] = true;
+            } else {
+                break;
+            }
+        }
+        if next == expected.len() {
+            return Some(keep);
+        }
+    }
+    let mut next = 0usize;
+    let keep = bodies
+        .iter()
+        .map(|body| {
+            if body.is_empty() {
+                return next > 0 && next < expected.len();
+            }
+            if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+                next += body.len();
+                true
+            } else {
+                false
+            }
+        })
+        .collect::<Vec<_>>();
+    (next == expected.len()).then_some(keep)
+}
+
+/// 文字 index から回復した文字片（PDF の文字列 object ごと）を、1 em を超える字間で分ける。
+///
+/// 文字列 object は表の隣り合う列の見出しを 1 つの `TJ` で組むことがあり、そのままでは
+/// 列をまたぐ 1 つの文字片になる。分けた部分の文字サイズは字ごとの実効サイズにする。
+pub(crate) fn split_recovered_at_wide_gaps(
+    elements: Vec<ParsedTextElement>,
+    characters: &PdfPageTextChars<'_>,
+) -> Vec<ParsedTextElement> {
+    let centers = characters
+        .iter()
+        .map(|character| {
+            character.loose_bounds().ok().map(|bounds| {
+                (
+                    (bounds.left().value + bounds.right().value) / 2.0,
+                    (bounds.bottom().value + bounds.top().value) / 2.0,
+                )
+            })
+        })
+        .collect::<Vec<_>>();
+    let mut out = Vec::with_capacity(elements.len());
+    for (index, element) in elements.iter().enumerate() {
+        // 文字列 object の矩形に本文以外の字が入っている（本文と矩形の対応が崩れた）場合は、
+        // 矩形の中のすべての字から組み直し、ほかの要素と同じ位置・本文の部分は除く。
+        if let Some(pieces) = rebuild_from_box(element, characters, &centers) {
+            // ほかの要素と重なる部分はその要素の字なので、重ならない部分（どの要素にも
+            // 入っていない字）だけを補う。
+            let duplicate = |piece: &SegmentPiece| {
+                elements.iter().enumerate().any(|(other, existing)| {
+                    other != index
+                        && existing.bounds.x0 < piece.bounds.x1
+                        && piece.bounds.x0 < existing.bounds.x1
+                        && existing.bounds.y0 < piece.bounds.y1
+                        && piece.bounds.y0 < existing.bounds.y1
+                })
+            };
+            out.extend(
+                pieces
+                    .into_iter()
+                    .filter(|piece| !duplicate(piece))
+                    .filter_map(|piece| {
+                        let text = piece.text.trim().to_string();
+                        (!text.is_empty()).then(|| ParsedTextElement {
+                            baseline_y: piece.baseline_y,
+                            page: element.page,
+                            bounds: piece.bounds,
+                            font_size: piece.font_size,
+                            font_name: piece.font_name.or_else(|| element.font_name.clone()),
+                            fill_color: piece.fill_color.or_else(|| element.fill_color.clone()),
+                            text,
+                        })
+                    }),
+            );
+            continue;
+        }
+        let element = element.clone();
+        match split_rect_at_wide_gaps(element.bounds, &element.text, characters, &centers) {
+            Some(pieces) => out.extend(pieces.into_iter().filter_map(|piece| {
+                let text = piece.text.trim().to_string();
+                (!text.is_empty()).then(|| ParsedTextElement {
+                    baseline_y: piece.baseline_y,
+                    page: element.page,
+                    bounds: piece.bounds,
+                    font_size: piece.font_size,
+                    font_name: piece.font_name.or_else(|| element.font_name.clone()),
+                    fill_color: piece.fill_color.or_else(|| element.fill_color.clone()),
+                    text,
+                })
+            })),
+            None => out.push(element),
+        }
+    }
+    out
+}
+
+/// 中心が矩形（`slack` だけ広げた範囲）に入るページの文字を、テキスト順に取り出す。
+///
+/// `segment.chars()` は回転したページで別の文字を返すことがあるため、ページの文字から拾う。
+fn chars_in_rect(
+    rect: ParsedBounds,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+    slack: f32,
+) -> Option<Vec<CharInfo>> {
+    let (left, bottom, right, top) = (
+        rect.x0.min(rect.x1) - slack,
+        rect.y0.min(rect.y1) - slack,
+        rect.x0.max(rect.x1) + slack,
+        rect.y0.max(rect.y1) + slack,
+    );
+    let mut infos = Vec::new();
+    for (index, center) in centers.iter().enumerate() {
+        let Some((center_x, center_y)) = *center else {
+            continue;
+        };
+        if center_x < left || center_x > right || center_y < bottom || center_y > top {
+            continue;
+        }
+        let character = characters.get(index).ok()?;
+        let bounds = character.loose_bounds().ok()?;
+        let name = character.font_name();
+        infos.push(CharInfo {
+            text: character.unicode_string().unwrap_or_default(),
+            bounds: parsed_bounds_from_pdf_rect(bounds),
+            font_size: effective_font_size(&character),
+            font_name: (!name.is_empty()).then_some(name),
+            fill_color: character.fill_color().ok().map(|color| color.to_hex()),
+            baseline_y: horizontal_baseline(&character),
+        });
+    }
+    Some(infos)
+}
+
+/// 文字列 object の本文の字は矩形の中にあるが、矩形にほかの字も入っている場合に、矩形の中の
+/// すべての字を字間で分けた部分を返す（本文と矩形の対応が崩れていない場合は `None`）。
+fn rebuild_from_box(
+    element: &ParsedTextElement,
+    characters: &PdfPageTextChars<'_>,
+    centers: &[Option<(f32, f32)>],
+) -> Option<Vec<SegmentPiece>> {
+    let infos = chars_in_rect(element.bounds, characters, centers, 0.5)?;
+    let expected = element
+        .text
+        .chars()
+        .filter(|ch| !ch.is_whitespace())
+        .collect::<Vec<_>>();
+    let mut next = 0usize;
+    let mut unmatched = 0usize;
+    for info in &infos {
+        let body = info
+            .text
+            .chars()
+            .filter(|ch| !ch.is_whitespace())
+            .collect::<Vec<_>>();
+        if body.is_empty() {
+            continue;
+        }
+        if expected.get(next..next + body.len()) == Some(body.as_slice()) {
+            next += body.len();
+        } else {
+            unmatched += body.len();
+        }
+    }
+    if expected.is_empty() || next != expected.len() || unmatched == 0 {
+        return None;
+    }
+    // 本文の字が矩形の半分以上を占める場合は、矩形と本文の対応は崩れていない。
+    let (horizontal_box, along) = {
+        let (width, height) = (
+            (element.bounds.x1 - element.bounds.x0).abs(),
+            (element.bounds.y1 - element.bounds.y0).abs(),
+        );
+        (width >= height, width.max(height))
+    };
+    let matched_extent = {
+        let mut next = 0usize;
+        let mut low = f32::INFINITY;
+        let mut high = f32::NEG_INFINITY;
+        for info in &infos {
+            let body = info
+                .text
+                .chars()
+                .filter(|ch| !ch.is_whitespace())
+                .collect::<Vec<_>>();
+            if body.is_empty() || expected.get(next..next + body.len()) != Some(body.as_slice()) {
+                continue;
+            }
+            next += body.len();
+            let (a, b) = if horizontal_box {
+                (info.bounds.x0, info.bounds.x1)
+            } else {
+                (info.bounds.y0, info.bounds.y1)
+            };
+            low = low.min(a.min(b));
+            high = high.max(a.max(b));
+        }
+        high - low
+    };
+    if !(matched_extent.is_finite() && matched_extent < 0.5 * along) {
+        return None;
+    }
+    let horizontal = (element.bounds.x1 - element.bounds.x0).abs()
+        >= (element.bounds.y1 - element.bounds.y0).abs();
+    Some(group_chars_at_wide_gaps(&infos, horizontal))
+}
+
+/// 字送り方向に 1 em を超えて離れた文字の間で、文字列を複数の要素へ分ける。
+///
+/// 空白文字は直前の要素へ含め、要素の矩形には加えない。
+fn group_chars_at_wide_gaps(chars: &[CharInfo], horizontal: bool) -> Vec<SegmentPiece> {
+    // 字送りの向き（正なら座標が増える向き）を、空白以外の最初と最後の文字から決める。
+    let ink = chars
+        .iter()
+        .filter(|info| !info.text.trim().is_empty())
+        .collect::<Vec<_>>();
+    let center = |bounds: &ParsedBounds| {
+        if horizontal {
+            (bounds.x0 + bounds.x1) / 2.0
+        } else {
+            (bounds.y0 + bounds.y1) / 2.0
+        }
+    };
+    let forward = match (ink.first(), ink.last()) {
+        (Some(first), Some(last)) => center(&last.bounds) >= center(&first.bounds),
+        _ => true,
+    };
+    let mut pieces: Vec<SegmentPiece> = Vec::new();
+    let mut previous: Option<ParsedBounds> = None;
+    for info in chars {
+        let blank = info.text.trim().is_empty();
+        // 字送りの向きに進んだ空きだけを数える（重ね打ちや戻りは分けない）。
+        let gap = previous.map(|previous| match (horizontal, forward) {
+            (true, true) => info.bounds.x0 - previous.x1,
+            (true, false) => previous.x0 - info.bounds.x1,
+            (false, true) => info.bounds.y0 - previous.y1,
+            (false, false) => previous.y0 - info.bounds.y1,
+        });
+        let wide = gap
+            .is_some_and(|gap| info.font_size > 0.0 && gap > SEGMENT_SPLIT_GAP_EM * info.font_size);
+        if !blank && (pieces.is_empty() || wide) {
+            pieces.push(SegmentPiece {
+                bounds: info.bounds,
+                text: info.text.clone(),
+                font_size: info.font_size,
+                font_name: info.font_name.clone(),
+                fill_color: info.fill_color.clone(),
+                baseline_y: info.baseline_y,
+            });
+        } else if let Some(piece) = pieces.last_mut() {
+            piece.text.push_str(&info.text);
+            if !blank {
+                piece.bounds = ParsedBounds {
+                    x0: piece.bounds.x0.min(info.bounds.x0),
+                    y0: piece.bounds.y0.min(info.bounds.y0),
+                    x1: piece.bounds.x1.max(info.bounds.x1),
+                    y1: piece.bounds.y1.max(info.bounds.y1),
+                };
+            }
+        }
+        if !blank {
+            previous = Some(info.bounds);
+        }
+    }
+    pieces
+}
+
+/// 字ごとに取り出した縦書きの文字片を、縦に続く字の並びへまとめ直す。
+///
+/// 文字 index から本文を回復すると縦書きの字も 1 字ずつの要素になり、横書きとして行を
+/// 組むと段をまたいで字が混ざる。同じ font・大きさで、x がそろい、上から下へ字間をほとんど
+/// 空けずに続く字だけをまとめる（横書きの字はそのまま残す）。
+pub(crate) fn join_vertical_characters(elements: Vec<ParsedTextElement>) -> Vec<ParsedTextElement> {
+    let mut out: Vec<ParsedTextElement> = Vec::with_capacity(elements.len());
+    for element in elements {
+        if let Some(previous) = out.last_mut() {
+            let size = previous.font_size.max(1.0);
+            let (a, b) = (previous.bounds, element.bounds);
+            let vertical = (a.x0 - b.x0).abs() <= 0.3 * size
+                && (a.x1 - b.x1).abs() <= 0.3 * size
+                && b.y1 <= a.y0 + 0.3 * size
+                && a.y0 - b.y1 <= 0.6 * size
+                && a.x1 - a.x0 <= 1.3 * size;
+            if vertical
+                && previous.page == element.page
+                && previous.font_name == element.font_name
+                && (previous.font_size - element.font_size).abs() <= 0.1
+                && !element.text.trim().is_empty()
+                && !previous.text.trim().is_empty()
+            {
+                previous.text.push_str(&element.text);
+                previous.bounds = ParsedBounds {
+                    x0: a.x0.min(b.x0),
+                    y0: a.y0.min(b.y0),
+                    x1: a.x1.max(b.x1),
+                    y1: a.y1.max(b.y1),
+                };
+                previous.baseline_y = None;
+                continue;
+            }
+        }
+        out.push(element);
+    }
+    out
 }
 
 /// 全ページSDK本文と非空白文字の順序・件数を照合し、矩形の重複読取りを検出する。
@@ -155,6 +635,36 @@ fn first_in_rect<'a>(
     }
 }
 
+/// 文字行列の縦方向の長さで font size を拡大縮小する。
+///
+/// Pdfium の `scaled_font_size` は行列の `d` 成分だけを掛けるため、90 度回転した文字では 0 になる。
+/// 回転に依らない縦ベクトル `(c, d)` の長さを使い、取得できない場合は未拡大の値を返す。
+pub(crate) fn effective_font_size(character: &PdfPageTextChar<'_>) -> f32 {
+    let unscaled = character.unscaled_font_size().value;
+    let scale = character
+        .matrix()
+        .ok()
+        .map(|matrix| matrix.c().hypot(matrix.d()))
+        .filter(|scale| scale.is_finite() && *scale > 0.0)
+        .unwrap_or(1.0);
+    let size = unscaled * scale;
+    // 文字行列に入らない座標変換（cm）で拡大した字は、字の矩形より極端に小さい大きさになる。
+    // その場合は字の矩形の大きさ（縦横の長い方）を使う。
+    let extent = character
+        .loose_bounds()
+        .ok()
+        .map(|bounds| {
+            (bounds.top().value - bounds.bottom().value)
+                .abs()
+                .max((bounds.right().value - bounds.left().value).abs())
+        })
+        .filter(|extent| extent.is_finite());
+    match extent {
+        Some(extent) if size < 0.5 * extent => extent,
+        _ => size,
+    }
+}
+
 /// 本文・属性の保存コピーを予約し、容量不足を公開エラーへ伝播する。
 fn copy(budget: &DecodeBudget, source: Option<&str>) -> Result<Option<String>, ParseError> {
     crate::metadata_workspace::ensure_active(budget)?;
@@ -181,4 +691,81 @@ pub(crate) fn horizontal_baseline(character: &PdfPageTextChar<'_>) -> Option<f32
     }
     let y = character.origin_y().ok()?.value;
     y.is_finite().then_some(y)
+}
+
+#[cfg(test)]
+mod split_tests {
+    use super::*;
+
+    /// 1 文字分の情報を作る。
+    fn info(text: &str, x0: f32, x1: f32) -> CharInfo {
+        CharInfo {
+            text: text.to_string(),
+            bounds: ParsedBounds {
+                x0,
+                y0: 0.0,
+                x1,
+                y1: 8.0,
+            },
+            font_size: 8.0,
+            font_name: Some("F".into()),
+            fill_color: None,
+            baseline_y: None,
+        }
+    }
+
+    /// 2 行にまたがる矩形では、前の行の同じ字ではなく本文が続けて現れる字を選ぶ。
+    #[test]
+    fn matching_prefers_a_contiguous_run_over_the_previous_line() {
+        let infos = [
+            "北", "緯", "3", "4", "度", "1", "4", "分", "4", "8", "\n", "度", "1", "4", "分", "5",
+            "7", "秒",
+        ]
+        .iter()
+        .enumerate()
+        .map(|(index, text)| info(text, index as f32 * 8.0, index as f32 * 8.0 + 8.0))
+        .collect::<Vec<_>>();
+        let expected = "度14分57秒".chars().collect::<Vec<_>>();
+        let keep = matched_chars(&infos, &expected).unwrap();
+        let picked = (0..infos.len())
+            .filter(|&index| keep[index])
+            .collect::<Vec<_>>();
+        assert_eq!(picked, (11..18).collect::<Vec<_>>());
+    }
+
+    /// 続けて現れない場合は、本文の字を順にたどれる字を飛び飛びに選ぶ。
+    #[test]
+    fn matching_falls_back_to_an_ordered_subsequence() {
+        let infos = ["1", ".", "2", "3"]
+            .iter()
+            .enumerate()
+            .map(|(index, text)| info(text, index as f32 * 8.0, index as f32 * 8.0 + 8.0))
+            .collect::<Vec<_>>();
+        let expected = "123".chars().collect::<Vec<_>>();
+        let keep = matched_chars(&infos, &expected).unwrap();
+        assert_eq!(keep, vec![true, false, true, true]);
+        assert!(matched_chars(&infos, &"124".chars().collect::<Vec<_>>()).is_none());
+    }
+
+    /// 隣の表の列ほど離れた文字は別の要素に分け、語間の空白では分けない。
+    #[test]
+    fn splits_only_at_gaps_wider_than_one_em() {
+        let chars = [
+            info("2", 405.0, 409.0),
+            info("4", 409.0, 413.0),
+            info("0", 413.0, 417.0),
+            info(" ", 417.0, 417.0),
+            info("４", 567.0, 575.0),
+            info(" ", 575.0, 575.0),
+            info("級", 578.0, 586.0),
+        ];
+        let pieces = group_chars_at_wide_gaps(&chars, true);
+        let texts = pieces
+            .iter()
+            .map(|piece| piece.text.trim())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["240", "４ 級"]);
+        assert_eq!(pieces[0].bounds.x1, 417.0);
+        assert_eq!(pieces[1].bounds.x0, 567.0);
+    }
 }

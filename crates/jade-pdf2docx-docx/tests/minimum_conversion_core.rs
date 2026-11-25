@@ -2516,6 +2516,7 @@ fn inferred_table_assigns_text_elements_to_cells() {
             vertical(80.0),
             vertical(160.0),
         ],
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "A1"),
             text_element(90.0, 70.0, "B1"),
@@ -2567,9 +2568,11 @@ fn inferred_table_exposes_spans_from_missing_graphic_rules() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "A"),
             text_element(10.0, 20.0, "C"),
@@ -2619,9 +2622,11 @@ fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "Left body"),
             text_element(90.0, 70.0, "Right body"),
@@ -2672,6 +2677,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                     y1: 48.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -2682,9 +2688,11 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                     y1: 100.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             vertical(160.0),
         ],
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "A1"),
             text_element(90.0, 70.0, "B1"),
@@ -2782,6 +2790,7 @@ fn dense_article_with_a_decorative_line_is_not_a_text_grid_table() {
             rotation: 0,
         }],
         graphics: vec![horizontal(650.0)],
+        fills: Vec::new(),
         text_elements: texts,
         image_elements: Vec::new(),
         embedded_fonts: Vec::new(),
@@ -2816,12 +2825,14 @@ fn inferred_table_exposes_rowspans_from_missing_horizontal_rules() {
                     y1: 50.0,
                 },
                 stroke_width: 0.5,
+                dashed: false,
             },
             horizontal(100.0),
             vertical(0.0),
             vertical(80.0),
             vertical(160.0),
         ],
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "A"),
             text_element(90.0, 70.0, "B"),
@@ -2878,6 +2889,7 @@ fn inferred_table_uses_one_page_grid_without_mixing_other_pages() {
             },
         ],
         graphics: page_1_graphics,
+        fills: Vec::new(),
         text_elements: vec![
             text_element(10.0, 70.0, "wrong-page"),
             text_element_on_page(1, 10.0, 70.0, "A1"),
@@ -2918,6 +2930,7 @@ fn inferred_table_falls_back_to_repeated_text_columns_when_grid_lines_are_missin
             rotation: 0,
         }],
         graphics: Vec::new(),
+        fills: Vec::new(),
         text_elements: vec![
             text_element(20.0, 150.0, "A"),
             text_element(34.0, 150.0, "1"),
@@ -3713,6 +3726,7 @@ fn horizontal(y: f32) -> ParsedGraphicElement {
             y1: y,
         },
         stroke_width: 0.5,
+        dashed: false,
     }
 }
 
@@ -3726,6 +3740,7 @@ fn vertical(x: f32) -> ParsedGraphicElement {
             y1: 100.0,
         },
         stroke_width: 0.5,
+        dashed: false,
     }
 }
 
@@ -3789,6 +3804,7 @@ fn parsed_document_for_auto_ocr(
             })
             .collect(),
         graphics: Vec::new(),
+        fills: Vec::new(),
         text_elements,
         image_elements,
         embedded_fonts: Vec::new(),

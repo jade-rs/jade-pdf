@@ -46,13 +46,17 @@ fn graphics_rectangles_require_capacity() {
     }
 }
 
-/// q保存は行列と線幅の全容量を確保前に数える。
+/// q保存で 1 回に保存する描画状態の大きさ（行列 24・線幅 4・塗り色 3 と境界調整 1 byte）。
+const SAVED_STATE_BYTES: usize = 8 * size_of::<f32>();
+
+/// q保存は行列・線幅・塗り色の全容量を確保前に数える。
 #[test]
 fn graphics_saved_state_requires_capacity() {
-    for limit in [111, 112] {
+    let total = (4 * SAVED_STATE_BYTES) as u64;
+    for limit in [total - 1, total] {
         let (budget, result) = extract(limit, b"q Q");
         assert!(result.is_empty());
-        assert_eq!(budget.check().is_ok(), limit == 112);
+        assert_eq!(budget.check().is_ok(), limit == total);
     }
 }
 
@@ -99,6 +103,7 @@ fn graphics_merge_handles_extreme_endpoints() {
             y1: 0.0,
         },
         stroke_width: 1.0,
+        dashed: false,
     };
     assert_eq!(
         merge_axis_aligned_segments(vec![line.clone(), line]).len(),
@@ -173,7 +178,7 @@ proptest! {
         let mut slots = 4usize;
         let mut capacity = 4usize;
         while capacity < count { capacity *= 2; slots += capacity; }
-        let total = (slots * if saved { 7 * size_of::<f32>() } else { size_of::<ParsedBounds>() }) as u64;
+        let total = (slots * if saved { SAVED_STATE_BYTES } else { size_of::<ParsedBounds>() }) as u64;
         for limit in [total - 1, total] {
             let (budget, result) = extract(limit, source.as_bytes());
             prop_assert!(result.is_empty());
@@ -192,6 +197,7 @@ proptest! {
             page: 2,
             bounds: ParsedBounds { x0: start as f32, y0: 3.0, x1: (start + length) as f32, y1: 3.0 },
             stroke_width: f32::from(width),
+            dashed: false,
         }).collect();
         let mut reversed = lines.clone(); reversed.reverse();
         let merged = merge_axis_aligned_segments(lines);

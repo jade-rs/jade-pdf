@@ -184,6 +184,7 @@ fn emit(
                     page,
                     bounds,
                     stroke_width: width,
+                    dashed: false,
                 },
             )?;
         }

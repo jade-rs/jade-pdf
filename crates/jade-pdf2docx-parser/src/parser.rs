@@ -20,8 +20,8 @@ use crate::{
     image_filter::ImageFilter,
     limits::{ParseLimits, check_limit},
     model::{
-        ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
-        ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
+        ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedFillElement,
+        ParsedGraphicElement, ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
     },
     object_bytes::ObjectBytes,
     text::{
@@ -371,7 +371,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     decode_budget.check()?;
     let mut quality = QualityReport::default();
     crate::page_geometry_diagnostics::collect(decode_budget, page_count, &pages, &mut quality)?;
-    let mut graphics = extract_graphics_from_pdf_bytes(decode_budget, &bytes);
+    let (mut graphics, mut fills) =
+        extract_graphics_and_fills_from_pdf_bytes(decode_budget, &bytes);
     decode_budget.check()?;
     let mut text_elements = extract_text_elements_from_pdf_bytes(decode_budget, &bytes);
     decode_budget.check()?;
@@ -384,6 +385,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     let mut image_elements =
         extract_image_elements_from_pdf_bytes(decode_budget, &bytes, &streams, &mut quality);
     decode_budget.check()?;
+    fills
+        .retain_mut(|fill| normalize_bounds_for_page(fill.page, &mut fill.bounds, &page_viewports));
     normalize_elements_to_page_viewports(
         &page_viewports,
         &mut graphics,
@@ -418,6 +421,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         page_count,
         pages,
         graphics,
+        fills,
         text_elements,
         image_elements,
         embedded_fonts,
@@ -587,6 +591,10 @@ fn parse_page_viewports(decode_budget: &DecodeBudget, bytes: &[u8]) -> Vec<Parse
 }
 
 #[cfg(test)]
+#[path = "blank_png_tests.rs"]
+mod blank_png_tests;
+
+#[cfg(test)]
 #[path = "legacy_page_geometry_tests.rs"]
 mod legacy_page_geometry_tests;
 
@@ -630,6 +638,34 @@ fn normalize_elements_to_page_viewports(
         .retain_mut(|text| normalize_bounds_for_page(text.page, &mut text.bounds, viewports));
     image_elements
         .retain_mut(|image| normalize_bounds_for_page(image.page, &mut image.bounds, viewports));
+}
+
+/// 外部抽出したテキストboundsを、pure Rust抽出と同じページ表示座標へ変換する。
+///
+/// 表示範囲外へ外れる要素は他の要素と同じ規則で除く。
+#[cfg(not(target_arch = "wasm32"))]
+pub(crate) fn normalize_text_elements_to_display(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    text_elements: &mut Vec<ParsedTextElement>,
+) {
+    let viewports = parse_page_viewports(decode_budget, bytes);
+    text_elements.retain_mut(|text| {
+        let before = text.bounds.y0.min(text.bounds.y1);
+        let kept = normalize_bounds_for_page(text.page, &mut text.bounds, &viewports);
+        // ベースラインは回転のないページでだけ、bounds と同じだけ表示原点へ移す。
+        let unrotated = viewports
+            .iter()
+            .find(|viewport| viewport.page.page_number == text.page)
+            .is_none_or(|viewport| viewport.page.rotation.rem_euclid(360) == 0);
+        text.baseline_y = if unrotated {
+            text.baseline_y
+                .map(|baseline| baseline + text.bounds.y0.min(text.bounds.y1) - before)
+        } else {
+            None
+        };
+        kept
+    });
 }
 
 /// 1要素のboundsを表示原点へ移し、page内に残る場合だけ`true`を返す。
@@ -770,32 +806,50 @@ fn append_compressed_objects_as_indirect_objects(
 }
 
 /// PDF のページ本文を filter に応じて展開し、線分 graphics を抽出する。
+#[cfg(test)]
 fn extract_graphics_from_pdf_bytes(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
 ) -> Vec<ParsedGraphicElement> {
+    extract_graphics_and_fills_from_pdf_bytes(decode_budget, bytes).0
+}
+
+/// 罫線と、白以外で塗りつぶした矩形をページ順に抽出する。
+fn extract_graphics_and_fills_from_pdf_bytes(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+) -> (Vec<ParsedGraphicElement>, Vec<ParsedFillElement>) {
     let mut segments = Vec::new();
+    let mut fills = Vec::new();
     let streams = extract_page_content_streams_with_page(decode_budget, bytes);
     let streams = if streams.is_empty() && !decode_budget.has_page_tree() {
         if has_more_than_image_xobject_streams(decode_budget, bytes, 20) {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
         extract_flate_streams(decode_budget, bytes)
     } else {
         streams
     };
     if stroked_rectangles::append(decode_budget, bytes, &streams, &mut segments).is_none() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
     for (page, stream) in streams {
-        if graphics_draws::append(decode_budget, page, &stream, &mut segments).is_none() {
-            return Vec::new();
+        if graphics_draws::append_with_fills(
+            decode_budget,
+            page,
+            &stream,
+            &mut segments,
+            &mut fills,
+        )
+        .is_none()
+        {
+            return (Vec::new(), Vec::new());
         }
     }
     if decode_budget.is_stopped() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
-    merge_axis_aligned_segments(segments)
+    (merge_axis_aligned_segments(segments), fills)
 }
 
 /// PDFの座標付き本文を抽出し、空のページFont対応も全体fallbackより優先する。
@@ -1493,6 +1547,22 @@ fn pdf_points_to_display_px(points: f32) -> Option<u32> {
         return None;
     }
     Some((points * 96.0 / 72.0).round() as u32)
+}
+
+/// parser が出力した PNG が、白（または完全透明）だけで塗られた画像か判定する。
+///
+/// 解読できない PNG や上限を超える画像は `false`（内容あり）として扱う。
+pub fn png_is_blank_white(png: &[u8]) -> bool {
+    let budget = DecodeBudget::new(&ParseLimits::default());
+    let Some(image) = decode_filter0_png_to_rgba(&budget, png) else {
+        return false;
+    };
+    image.width > 0
+        && image.height > 0
+        && image
+            .rgba
+            .chunks_exact(4)
+            .all(|pixel| pixel[3] == 0 || pixel[..3].iter().all(|channel| *channel >= 250))
 }
 
 /// RGBA8 の PNG pixel buffer。
@@ -2644,8 +2714,19 @@ fn extract_text_elements_with_matrices<'clip>(
             && page_matrix
                 .and_then(crate::text_baseline::upright)
                 .is_some();
+        // 同じ文字列配列の中でも、字送りで 1.5 em を超えて離した部分（表の隣の列の見出しなど）は
+        // 別の文字片にする。
+        let wide_gap = page_matrix
+            .and_then(|current| {
+                let (last_begin, matrix, width) = last_draw?;
+                (last_begin == begin)
+                    .then(|| crate::text_draws::gap(matrix, width, current))
+                    .flatten()
+            })
+            .is_some_and(|gap| state.size > 0. && gap > 1.5 * state.size);
         let merge = !positioned
             && !last_positioned
+            && !wide_gap
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
@@ -4206,6 +4287,7 @@ startxref\n\
                     y1: 80.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -4216,6 +4298,7 @@ startxref\n\
                     y1: 150.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
             ParsedGraphicElement {
                 page: 0,
@@ -4226,6 +4309,7 @@ startxref\n\
                     y1: 100.0,
                 },
                 stroke_width: 1.0,
+                dashed: false,
             },
         ]);
 

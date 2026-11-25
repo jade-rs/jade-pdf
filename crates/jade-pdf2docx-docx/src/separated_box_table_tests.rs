@@ -49,6 +49,7 @@ fn boxed_source(
                         y1: d,
                     },
                     stroke_width: 0.5,
+                    dashed: false,
                 });
             }
         }

@@ -147,6 +147,7 @@ pub(super) fn infer(
                             text: text.clone(),
                             underlined: false,
                             alignment: ParagraphAlignment::Left,
+                            vertical_alignment: None,
                             grid_span: 1,
                             vertical_merge: None,
                             width_twips: pdf_points_to_twips(b.x1 - b.x0),
@@ -185,6 +186,14 @@ pub(super) fn infer(
         docx_table: Some(model),
         native_cells,
         nested_tables: Vec::new(),
+        cell_vertical_alignments: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+        cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     })
 }
 
@@ -289,5 +298,6 @@ fn borders(cell: ParsedBounds, graphics: &[ParsedGraphicElement], stroke: f32) -
         bottom: horizontal(cell.y0),
         right: vertical(cell.x1),
         size_eighths_pt: table_border_size_for_pdf_rule(stroke),
+        dashed: [false; 4],
     }
 }

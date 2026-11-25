@@ -253,7 +253,12 @@ fn legacy_runs<'a>(
         }
         runs.push(run);
     }
-    if text == expected { runs } else { Vec::new() }
+    // セル本文の区切り（改行・タブ・空白）は組み方によって違うので、字の並びで照合する。
+    if characters(&text) == characters(expected) {
+        runs
+    } else {
+        Vec::new()
+    }
 }
 
 /// 単一行の文字列と配置を保ち、各runのstyleと原本emの行boxを使う。
@@ -274,6 +279,64 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
             })
             .line_spacing(spacing),
     )
+}
+
+/// 原本の表示行が上下に重なっているか（行間が字の大きさより狭い）。
+///
+/// 行が重なるセルは原本の行の配置を写せないので、一段落の写し（fallback）にする。
+/// 重ならない複数行のセルは、行ごとの段落のまま残す。
+pub(super) fn has_overlapping_lines(cell: &Cell) -> bool {
+    // 同じ行が左右に分かれただけの行（左右に重ならない）は重なりとしない。
+    cell.lines.iter().enumerate().any(|(index, line)| {
+        cell.lines.iter().skip(index + 1).any(|other| {
+            let size = line
+                .runs
+                .iter()
+                .chain(other.runs.iter())
+                .map(|run| run.style.font_size)
+                .fold(0.0f32, f32::max);
+            (line.top_y - other.top_y).abs() < 0.9 * size
+                && line.left_x < other.right_x
+                && other.left_x < line.right_x
+        })
+    })
+}
+
+/// 原本の字をそのまま写したセルの本文が、組み直したセル本文と同じ語の並びか。
+///
+/// 字ごとに置いた文字片を写すと語の中に空白が入る（「I t e m」）ので、組み直した本文に
+/// 無い 1 字ずつの語の並びがある場合は、原本の写しを使わない。
+pub(super) fn agrees_with(cell: &Cell, text: &str) -> bool {
+    let native = if !cell.single_line_runs.is_empty() {
+        cell.single_line_runs
+            .iter()
+            .map(|run| run.text.as_str())
+            .collect::<String>()
+    } else if !cell.fallback_runs.is_empty() {
+        cell.fallback_runs
+            .iter()
+            .map(|run| run.text.as_str())
+            .collect::<String>()
+    } else {
+        cell.lines
+            .iter()
+            .map(|line| line.text.as_str())
+            .collect::<Vec<_>>()
+            .join(" ")
+    };
+    // 1 字ずつの語が 3 つ以上続く（字ごとの文字片に空白を補った）写しは使わない。
+    let spaced_glyphs = |value: &str| {
+        let mut run = 0;
+        value.split_whitespace().any(|word| {
+            run = if word.chars().count() == 1 {
+                run + 1
+            } else {
+                0
+            };
+            run >= 3
+        })
+    };
+    !(spaced_glyphs(&native) && !spaced_glyphs(text))
 }
 
 /// 複数行boxの配置が失敗しても、照合済みの旧本文を原本runと最大em高の一段落へ保つ。

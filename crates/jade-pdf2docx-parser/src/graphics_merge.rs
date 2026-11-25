@@ -45,6 +45,8 @@ pub(super) fn merge(mut lines: Vec<ParsedGraphicElement>) -> Vec<ParsedGraphicEl
                     previous.bounds.x1 = old_end.max(end) as f32;
                 }
                 previous.stroke_width = previous.stroke_width.max(current.stroke_width);
+                // 実線と重なる破線は実線として扱う。
+                previous.dashed = previous.dashed && current.dashed;
                 continue;
             }
         }

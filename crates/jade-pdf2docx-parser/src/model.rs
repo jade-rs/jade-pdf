@@ -22,6 +22,8 @@ pub struct ParsedDocument {
     pub pages: Vec<ParsedPage>,
     /// PDF content stream から抽出した線分 graphics。
     pub graphics: Vec<ParsedGraphicElement>,
+    /// PDF content stream から抽出した、白以外で塗りつぶした矩形（表セルの網掛けなど）。
+    pub fills: Vec<ParsedFillElement>,
     /// PDF content stream から抽出した座標付きテキスト。
     pub text_elements: Vec<ParsedTextElement>,
     /// PDF 内で検出した画像要素。
@@ -54,6 +56,17 @@ pub struct ParsedPage {
     pub rotation: i32,
 }
 
+/// PDF content stream から抽出した塗りつぶし矩形を表す。
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParsedFillElement {
+    /// 対象ページ番号。
+    pub page: usize,
+    /// 塗りつぶした矩形。
+    pub bounds: ParsedBounds,
+    /// 塗り色の RGB hex（例: `D9D9D9`）。
+    pub color: String,
+}
+
 /// PDF content stream から抽出した線分 graphics を表す。
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedGraphicElement {
@@ -63,6 +76,8 @@ pub struct ParsedGraphicElement {
     pub bounds: ParsedBounds,
     /// stroke 幅。filled rectangle 由来の場合は推定幅。
     pub stroke_width: f32,
+    /// 破線（`d` 演算子の dash array が空でない）で描いた線か。
+    pub dashed: bool,
 }
 
 /// PDF content stream から抽出したテキスト要素を表す。

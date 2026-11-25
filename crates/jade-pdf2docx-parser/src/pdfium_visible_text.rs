@@ -237,7 +237,7 @@ fn extract_mode(
                 x1: rect.right().value,
                 y1: rect.top().value,
             },
-            font_size: character.scaled_font_size().value,
+            font_size: crate::pdfium_text::effective_font_size(&character),
             font_name,
             fill_color,
             text,

@@ -157,6 +157,8 @@ pub(crate) fn parse_pdf(
                 &page_text,
                 &characters,
             )?;
+            // 回転したページなどで segment の本文と矩形の対応が崩れたものを、矩形の中の字から組み直す。
+            elements = crate::pdfium_text::split_recovered_at_wide_gaps(elements, &characters);
             if !crate::pdfium_text::matches_preview(decode_budget, &elements, &preview)?
                 && crate::pdfium_text::index_preserves_controls(decode_budget, path, &characters)?
             {
@@ -169,7 +171,9 @@ pub(crate) fn parse_pdf(
                     &elements,
                 )?;
                 if crate::pdfium_text::matches_preview(decode_budget, &indexed, &preview)? {
-                    elements = indexed;
+                    elements = crate::pdfium_text::join_vertical_characters(
+                        crate::pdfium_text::split_recovered_at_wide_gaps(indexed, &characters),
+                    );
                 }
             }
             crate::text_result_storage::append(decode_budget, &mut text_elements, elements);
@@ -178,6 +182,19 @@ pub(crate) fn parse_pdf(
         decode_budget.check()?;
     }
 
+    // Unicode の対応が無く Pdfium が文字コードをそのまま返した字は、文字矩形と同じユーザー空間の
+    // うちに私用面へ移す。
+    crate::pdfium_raw_cid::tag(
+        decode_budget,
+        pdfium.bindings(),
+        native_bytes,
+        &mut text_elements,
+    )?;
+    decode_budget.check()?;
+    // Pdfiumの文字矩形は回転前のユーザー空間なので、pure Rust抽出の罫線・画像と同じ
+    // CropBox原点・表示回転の座標へ揃えてから合成する。
+    crate::parser::normalize_text_elements_to_display(decode_budget, bytes, &mut text_elements);
+    decode_budget.check()?;
     parsed.page_count = document.pages().len() as usize;
     parsed.pages = pages::merge(decode_budget, &parsed.pages, pdfium_pages)?;
     let normalized = normalize_pdfium_text_preview(decode_budget, &text_preview);
@@ -355,6 +372,7 @@ mod tests {
                 rotation: 0,
             }],
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![text_element("表と容")],
             image_elements: Vec::new(),
             embedded_fonts: Vec::new(),
@@ -526,6 +544,7 @@ mod tests {
                 rotation: 0,
             }],
             graphics: Vec::new(),
+            fills: Vec::new(),
             text_elements: vec![ParsedTextElement {
                 baseline_y: None,
                 page: 3,

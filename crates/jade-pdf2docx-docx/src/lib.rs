@@ -9,9 +9,10 @@ use std::{
 use docx_rs::{
     AlignmentType, BorderType, BreakType, Docx, Footer, Header, HeightRule, LineSpacing,
     PageMargin, PageOrientationType, PageSize, Paragraph, ParagraphChild, Pic, Run, RunFonts,
-    Section, SectionProperty, SectionType, Table, TableAlignmentType, TableCell, TableCellBorder,
-    TableCellBorderPosition, TableCellBorders, TableCellMargins, TableLayoutType, TableRow,
-    VAlignType, VMergeType, WidthType,
+    Section, SectionProperty, SectionType, Shading, ShdType, Tab, TabValueType, Table,
+    TableAlignmentType, TableCell, TableCellBorder, TableCellBorderPosition, TableCellBorders,
+    TableCellContent, TableCellMargins, TableLayoutType, TableRow, VAlignType, VMergeType,
+    WidthType,
 };
 use jade_pdf2docx_parser::{
     ParseLimits, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
@@ -35,7 +36,6 @@ mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
 mod glyph_metrics;
-mod graphic_table_cells;
 #[cfg(test)]
 mod graphic_table_merge_tests;
 mod graphic_table_outer_edges;
@@ -99,8 +99,20 @@ pub use word_page_fit::docx_quality_report;
 mod output_path;
 #[cfg(not(target_arch = "wasm32"))]
 pub use output_path::resolve_output_parent;
+mod column_bands;
+mod fractions;
+mod raw_cid_glyphs;
+mod ruby;
+mod rule_glyphs;
+mod ruleless_table;
+mod stacked_rules;
 #[cfg(not(target_arch = "wasm32"))]
 mod staged_output;
+mod table_cell_text;
+mod table_grid;
+mod text_line_rows;
+mod vertical_forms;
+mod vertical_pages;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
 
@@ -368,6 +380,20 @@ fn convert_pdf_file_with_check(
     let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
+    drop_blank_page_backgrounds(&mut parsed);
+    drop_overprinted_duplicates(&mut parsed);
+    repair_tiny_font_sizes(&mut parsed);
+    rule_glyphs::convert_to_graphics(&mut parsed);
+    vertical_pages::keep_separator_glyphs(&mut parsed);
+    vertical_pages::close_hatched_frames(&mut parsed);
+    map_known_private_use_glyphs(&mut parsed);
+    drop_rule_glyphs(&mut parsed);
+    recover_decimal_points(&mut parsed);
+    recover_angle_marks(&mut parsed);
+    vertical_pages::rotate(&mut parsed);
+    ruby::attach(&mut parsed);
+    fractions::join(&mut parsed);
+    split_text_at_vertical_rules(&mut parsed);
 
     let version = format!("{}.{}", parsed.version.major, parsed.version.minor);
     let normalized_text_preview =
@@ -482,6 +508,20 @@ fn convert_pdf_bytes_with_check(
     let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
+    drop_blank_page_backgrounds(&mut parsed);
+    drop_overprinted_duplicates(&mut parsed);
+    repair_tiny_font_sizes(&mut parsed);
+    rule_glyphs::convert_to_graphics(&mut parsed);
+    vertical_pages::keep_separator_glyphs(&mut parsed);
+    vertical_pages::close_hatched_frames(&mut parsed);
+    map_known_private_use_glyphs(&mut parsed);
+    drop_rule_glyphs(&mut parsed);
+    recover_decimal_points(&mut parsed);
+    recover_angle_marks(&mut parsed);
+    vertical_pages::rotate(&mut parsed);
+    ruby::attach(&mut parsed);
+    fractions::join(&mut parsed);
+    split_text_at_vertical_rules(&mut parsed);
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     let inferred_table = positioned_tables.first().map(|table| table.table.clone());
     let mut request = MinimumPdfToDocxBytesRequest {
@@ -754,6 +794,479 @@ fn build_structured_docx_from_owned_images(
     )
 }
 
+/// 罫線用フォントで描いた細長い、または同じ字をつないだ私用領域の字（傍線・罫）を本文から除く。
+///
+/// 官報などは傍線を罫線用フォントの字で組み、私用領域の文字として抽出される。
+/// 文字のまま残すと代替フォントで豆腐になり、セル内の行の判定も乱す。線として
+/// graphics へ移すと表の行境界と取り違えるため、細長い字だけを取り除く。
+/// 点のような小さい字（小数点など）は文字のまま残す。
+fn drop_rule_glyphs(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    parsed.text_elements.retain(|text| {
+        let body = text.text.trim();
+        if body.is_empty() || !body.chars().all(is_private_use) {
+            return true;
+        }
+        let bounds = normalized_bounds(text.bounds);
+        let (width, height) = (bounds.x1 - bounds.x0, bounds.y1 - bounds.y0);
+        let line_like = (height <= 1.5 && width >= 3.0) || (width <= 1.5 && height >= 3.0);
+        // 同じ字を 3 つ以上つないだだけの文字片も、罫線を字で組んだものとみなす。
+        let mut chars = body.chars();
+        let first = chars.next();
+        let repeated = body.chars().count() >= 3 && chars.all(|ch| Some(ch) == first);
+        !(line_like || repeated)
+    });
+}
+
+/// 官報で使われる DynaFont（フォント名に `DFHS` を含む）の、ToUnicode のない字形が
+/// Pdfium で割り当てられる私用領域の符号位置と、その字。
+///
+/// 縦書きの見出しの数字・財務表の負の印・座標の度分秒・小数点・項目記号など。
+/// 字形を目視で確認したものだけを載せる。
+const DYNAFONT_PRIVATE_USE_GLYPHS: &[(char, &str)] = &[
+    ('\u{E741}', "（注）"),
+    ('\u{E888}', "△"),
+    ('\u{E88A}', "0"),
+    ('\u{E88B}', "1"),
+    ('\u{E88C}', "2"),
+    ('\u{E88D}', "3"),
+    ('\u{E88E}', "4"),
+    ('\u{E88F}', "5"),
+    ('\u{E890}', "6"),
+    ('\u{E891}', "7"),
+    ('\u{E892}', "8"),
+    ('\u{E893}', "9"),
+    ('\u{EA6D}', "′"),
+    ('\u{EA6E}', "″"),
+    ('\u{EA6F}', "°"),
+    ('\u{EA74}', "."),
+    ('\u{EA75}', ","),
+    ('\u{E9E5}', "（ア）"),
+    ('\u{E9E6}', "（イ）"),
+    ('\u{E9E7}', "（ウ）"),
+    ('\u{E9E8}', "（エ）"),
+    ('\u{E9E9}', "（オ）"),
+    ('\u{E9EA}', "（カ）"),
+    ('\u{E9EB}', "（キ）"),
+    ('\u{E9F5}', "（チ）"),
+    ('\u{E712}', "□"),
+    ('\u{E61C}', "－"),
+    ('\u{E68C}', "㎠"),
+    ('\u{E467}', "辻"),
+    ('\u{E469}', "鄭"),
+];
+
+/// 連番で並ぶ DynaFont の項目記号（先頭の私用領域の符号位置, 対応する Unicode の先頭, 個数）。
+///
+/// ⑴⑵⑶⑷ と ①② を目視で確認し、Unicode の連番と同じ順に並ぶことから範囲で対応させる。
+const DYNAFONT_PRIVATE_USE_RUNS: &[(u32, u32, u32)] = &[(0xE7B2, 0x2474, 20), (0xE7D1, 0x2460, 20)];
+
+/// 括弧付きのローマ数字（先頭の私用領域の符号位置, ローマ数字の先頭, 個数）。kanpo-parser が
+/// 原本の字形で確かめた（Ⅰ）〜（Ⅸ）・（ⅰ）〜（ⅹ）の範囲。
+const DYNAFONT_PARENTHESIZED_ROMAN_RUNS: &[(u32, u32, u32)] =
+    &[(0xE82F, 0x2160, 9), (0xE839, 0x2170, 10)];
+
+/// DynaFont の私用領域の字に対応する文字列を返す。
+fn dynafont_private_use_glyph(ch: char) -> Option<String> {
+    if let Some((_, value)) = DYNAFONT_PRIVATE_USE_GLYPHS
+        .iter()
+        .find(|(glyph, _)| *glyph == ch)
+    {
+        return Some((*value).to_string());
+    }
+    let code = ch as u32;
+    if let Some((start, roman, _)) = DYNAFONT_PARENTHESIZED_ROMAN_RUNS
+        .iter()
+        .find(|(start, _, count)| (*start..*start + *count).contains(&code))
+    {
+        return char::from_u32(roman + code - start).map(|numeral| format!("（{numeral}）"));
+    }
+    DYNAFONT_PRIVATE_USE_RUNS
+        .iter()
+        .find(|(start, _, count)| (*start..*start + *count).contains(&code))
+        .and_then(|(start, unicode, _)| char::from_u32(unicode + code - start))
+        .map(String::from)
+}
+
+/// 縦書き用の約物を横組みの字へ戻し、既知のフォントの私用領域の字・Unicode の対応が無い字を
+/// Unicode の字へ置き換え、罫線用フォントの字は除く。
+fn map_known_private_use_glyphs(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    parsed.text_elements.retain_mut(|text| {
+        if let Some(normalized) = vertical_forms::normalize(&text.text) {
+            text.text = normalized;
+        }
+        if text
+            .text
+            .chars()
+            .any(|ch| raw_cid_glyphs::raw_cid(ch).is_some())
+        {
+            let rule_font = text
+                .font_name
+                .as_deref()
+                .is_some_and(|font| font.contains("Line"));
+            text.text = raw_cid_glyphs::restore(&text.text, rule_font);
+            if text.text.trim().is_empty() {
+                return false;
+            }
+        }
+        let Some(font) = text.font_name.as_deref() else {
+            return true;
+        };
+        if !text.text.chars().any(is_private_use) {
+            return true;
+        }
+        // 罫線用フォント（MFHSLine など）の私用領域の字は、線を字で組んだもの。
+        if font.contains("Line") {
+            text.text = text
+                .text
+                .chars()
+                .filter(|ch| !is_private_use(*ch))
+                .collect();
+            return !text.text.trim().is_empty();
+        }
+        if font.contains("DFHS") {
+            let mut mapped = String::with_capacity(text.text.len());
+            for ch in text.text.chars() {
+                match dynafont_private_use_glyph(ch) {
+                    Some(value) => mapped.push_str(&value),
+                    None => mapped.push(ch),
+                }
+            }
+            text.text = mapped;
+        }
+        true
+    });
+}
+
+/// 数字に挟まれた、Unicode の分からない小さな点の字を小数点（`.`）に戻す。
+///
+/// 官報の数値は小数点だけを ToUnicode のない別フォントで組むことがあり、私用領域の
+/// 文字として抽出される。同じ行で左右にすき間なく数字が続き、字の大きさが文字サイズの
+/// 3 割以下でベースライン付近にある 1 文字だけを小数点とみなす。
+fn recover_decimal_points(parsed: &mut ParsedDocument) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    let candidates = parsed
+        .text_elements
+        .iter()
+        .enumerate()
+        .filter(|(_, text)| {
+            let mut chars = text.text.trim().chars();
+            matches!((chars.next(), chars.next()), (Some(ch), None) if is_private_use(ch))
+        })
+        .map(|(index, _)| index)
+        .collect::<Vec<_>>();
+    for index in candidates {
+        let dot = normalized_bounds(parsed.text_elements[index].bounds);
+        let page = parsed.text_elements[index].page;
+        let size = (dot.x1 - dot.x0).max(dot.y1 - dot.y0);
+        let neighbour = |want_left: bool| {
+            parsed.text_elements.iter().find(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                let em = text.font_size.max(bounds.y1 - bounds.y0).max(1.0);
+                let digit = if want_left {
+                    text.text.trim_end().chars().last()
+                } else {
+                    text.text.trim_start().chars().next()
+                }
+                .is_some_and(|ch| ch.is_ascii_digit() || ('０'..='９').contains(&ch));
+                let touching = if want_left {
+                    (dot.x0 - bounds.x1).abs() <= 0.25 * em
+                } else {
+                    (bounds.x0 - dot.x1).abs() <= 0.25 * em
+                };
+                // 点がその数字の行の下側（ベースライン付近）にあること。
+                let low = dot.y0 >= bounds.y0 - 0.2 * em && dot.y1 <= bounds.y0 + 0.4 * em;
+                text.page == page && digit && touching && low && size <= 0.3 * em
+            })
+        };
+        if neighbour(true).is_some() && neighbour(false).is_some() {
+            parsed.text_elements[index].text = ".".to_string();
+        }
+    }
+}
+
+/// 度分秒の記号を Unicode の分からない私用領域の字で組んだ座標から、記号を復元する。
+///
+/// 同じ行で続く文字片をつないだ文字列に「数字 P 数字 Q 数字（小数可）R」（P・Q・R は互いに
+/// 異なる私用領域の字）が現れたら、P を `°`、Q を `′`、R を `″` と学習し、矛盾がなければ
+/// 文書中の同じ字を置き換える。
+fn recover_angle_marks(parsed: &mut ParsedDocument) {
+    let mut votes = BTreeMap::<char, BTreeMap<char, usize>>::new();
+    let pages = parsed
+        .text_elements
+        .iter()
+        .map(|text| text.page)
+        .collect::<BTreeSet<_>>();
+    for page in pages {
+        let mut texts = parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .collect::<Vec<_>>();
+        texts.sort_by(|a, b| {
+            let (a, b) = (normalized_bounds(a.bounds), normalized_bounds(b.bounds));
+            b.y1.total_cmp(&a.y1).then(a.x0.total_cmp(&b.x0))
+        });
+        // 行ごとに x 順へ並べ、1.5 em 以内で続く文字片をつなぐ。
+        let mut lines: Vec<Vec<&ParsedTextElement>> = Vec::new();
+        for text in texts {
+            let bounds = normalized_bounds(text.bounds);
+            // 上付きの小さな記号も同じ行に入るよう、高さ方向に重なれば同じ行とみなす。
+            match lines.iter_mut().find(|line| {
+                let first = normalized_bounds(line[0].bounds);
+                bounds.y0 < first.y1 && bounds.y1 > first.y0
+            }) {
+                Some(line) => line.push(text),
+                None => lines.push(vec![text]),
+            }
+        }
+        for mut line in lines {
+            line.sort_by(|a, b| {
+                a.bounds
+                    .x0
+                    .min(a.bounds.x1)
+                    .total_cmp(&b.bounds.x0.min(b.bounds.x1))
+            });
+            let mut chain = String::new();
+            let mut previous: Option<ParsedBounds> = None;
+            for text in line {
+                let bounds = normalized_bounds(text.bounds);
+                let em = text.font_size.max(bounds.y1 - bounds.y0).max(1.0);
+                if previous.is_some_and(|previous| bounds.x0 - previous.x1 > 1.5 * em) {
+                    collect_angle_mark_votes(&chain, &mut votes);
+                    chain.clear();
+                }
+                chain.extend(text.text.chars().filter(|ch| !ch.is_whitespace()));
+                previous = Some(bounds);
+            }
+            collect_angle_mark_votes(&chain, &mut votes);
+        }
+    }
+    // 1 つの字の 8 割以上が同じ記号に学習され、記号どうしも重ならない場合だけ置き換える。
+    let mut mapping = BTreeMap::new();
+    for (glyph, marks) in &votes {
+        let total = marks.values().sum::<usize>();
+        if let Some((&mark, &count)) = marks.iter().max_by_key(|(_, count)| **count)
+            && count * 5 >= total * 4
+        {
+            mapping.insert(*glyph, mark);
+        }
+    }
+    let marks = mapping.values().collect::<Vec<_>>();
+    if marks.iter().collect::<BTreeSet<_>>().len() != marks.len() {
+        return;
+    }
+    if mapping.is_empty() {
+        return;
+    }
+    for text in &mut parsed.text_elements {
+        if text.text.chars().any(|ch| mapping.contains_key(&ch)) {
+            text.text = text
+                .text
+                .chars()
+                .map(|ch| mapping.get(&ch).copied().unwrap_or(ch))
+                .collect();
+        }
+    }
+}
+
+/// つないだ文字列から「数字 P 数字 Q 数字 R」を探し、P・Q・R の記号を投票する。
+fn collect_angle_mark_votes(chain: &str, votes: &mut BTreeMap<char, BTreeMap<char, usize>>) {
+    let is_private_use = |ch: char| ('\u{E000}'..='\u{F8FF}').contains(&ch);
+    let is_digit = |ch: char| ch.is_ascii_digit() || ('０'..='９').contains(&ch);
+    let chars = chain.chars().collect::<Vec<_>>();
+    let digits_from = |mut index: usize, decimal: bool| {
+        let start = index;
+        while index < chars.len() && is_digit(chars[index]) {
+            index += 1;
+        }
+        if decimal
+            && index > start
+            && index + 1 < chars.len()
+            && chars[index] == '.'
+            && is_digit(chars[index + 1])
+        {
+            index += 1;
+            while index < chars.len() && is_digit(chars[index]) {
+                index += 1;
+            }
+        }
+        (index > start).then_some(index)
+    };
+    for start in 0..chars.len() {
+        if !is_digit(chars[start]) || (start > 0 && is_digit(chars[start - 1])) {
+            continue;
+        }
+        let Some(p) = digits_from(start, false) else {
+            continue;
+        };
+        let Some(&degree) = chars.get(p).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        let Some(q) = digits_from(p + 1, false) else {
+            continue;
+        };
+        let Some(&minute) = chars.get(q).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        let Some(r) = digits_from(q + 1, true) else {
+            continue;
+        };
+        let Some(&second) = chars.get(r).filter(|ch| is_private_use(**ch)) else {
+            continue;
+        };
+        if degree == minute || minute == second || degree == second {
+            continue;
+        }
+        for (glyph, mark) in [(degree, '°'), (minute, '′'), (second, '″')] {
+            *votes.entry(glyph).or_default().entry(mark).or_default() += 1;
+        }
+    }
+}
+
+/// 縦罫線をまたいで 1 つにまとめられた文字片を、罫線の位置で分ける。
+///
+/// Pdfium は同じ高さに並ぶ文字を、間に罫線があっても 1 つの文字片にまとめることがある
+/// （横に並んだ 2 つの表の行など）。表ごとの割り当てより前にページ全体で分けておく。
+fn split_text_at_vertical_rules(parsed: &mut ParsedDocument) {
+    let mut rules_by_page = BTreeMap::<usize, Vec<table_grid::Rule>>::new();
+    for graphic in &parsed.graphics {
+        let bounds = normalized_bounds(graphic.bounds);
+        if is_vertical_line(&bounds) {
+            rules_by_page
+                .entry(graphic.page)
+                .or_default()
+                .push(table_grid::Rule {
+                    at: bounds.x0,
+                    start: bounds.y0,
+                    end: bounds.y1,
+                });
+        }
+    }
+    if rules_by_page.is_empty() {
+        return;
+    }
+    let mut output = Vec::with_capacity(parsed.text_elements.len());
+    for text in parsed.text_elements.drain(..) {
+        let Some(rules) = rules_by_page.get(&text.page) else {
+            output.push(text);
+            continue;
+        };
+        let bounds = normalized_bounds(text.bounds);
+        let mut crossing = rules
+            .iter()
+            .map(|rule| rule.at)
+            .filter(|x| *x > bounds.x0 + 1.0 && *x < bounds.x1 - 1.0)
+            .filter(|x| table_grid::is_ruled(rules, *x, bounds.y0, bounds.y1))
+            .collect::<Vec<_>>();
+        if crossing.is_empty() {
+            output.push(text);
+            continue;
+        }
+        crossing.sort_by(f32::total_cmp);
+        crossing.dedup_by(|a, b| (*a - *b).abs() < 0.5);
+        let fragment = table_cell_text::CellFragment {
+            bounds,
+            text: text.text.clone(),
+            font_size: text.font_size,
+        };
+        for piece in table_cell_text::split_across_boundaries(&fragment, &crossing) {
+            output.push(ParsedTextElement {
+                bounds: piece.bounds,
+                text: piece.text,
+                ..text.clone()
+            });
+        }
+    }
+    parsed.text_elements = output;
+}
+
+/// 同じ文字列をほぼ同じ位置に重ねた文字片（重ね打ちの太字や、抽出の重複）を 1 つにする。
+///
+/// lawrenceanum の kanpo-pdf と同じく、同じ字を 0.1 em ほどの範囲に重ねたものは 1 字とみなす。
+/// ここでは矩形の 8 割以上が重なる同じ本文の文字片を重複とする。
+fn drop_overprinted_duplicates(parsed: &mut ParsedDocument) {
+    let mut keep = vec![true; parsed.text_elements.len()];
+    for index in 0..parsed.text_elements.len() {
+        if !keep[index] {
+            continue;
+        }
+        let text = &parsed.text_elements[index];
+        let body = text.text.trim();
+        if body.is_empty() {
+            continue;
+        }
+        let a = normalized_bounds(text.bounds);
+        let area_a = (a.x1 - a.x0).max(0.0) * (a.y1 - a.y0).max(0.0);
+        for other in index + 1..parsed.text_elements.len() {
+            let candidate = &parsed.text_elements[other];
+            if !keep[other] || candidate.page != text.page || candidate.text.trim() != body {
+                continue;
+            }
+            let b = normalized_bounds(candidate.bounds);
+            let area_b = (b.x1 - b.x0).max(0.0) * (b.y1 - b.y0).max(0.0);
+            let overlap = (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0)
+                * (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
+            if area_a > 0.0 && area_b > 0.0 && overlap >= 0.8 * area_a.max(area_b) {
+                keep[other] = false;
+            }
+        }
+    }
+    let mut index = 0;
+    parsed.text_elements.retain(|_| {
+        let kept = keep[index];
+        index += 1;
+        kept
+    });
+}
+
+/// 字の矩形より極端に小さい文字サイズ（座標変換で拡大した `1 Tf` の字など）を、矩形の高さに直す。
+///
+/// 文字サイズは字間・語間・列の切れ目の判定の基準になるため、1pt のままでは字間がすべて
+/// 広い語間に見え、セルの本文を罫線の位置で誤って分けてしまう。
+fn repair_tiny_font_sizes(parsed: &mut ParsedDocument) {
+    for text in &mut parsed.text_elements {
+        // 横書きの行は高さ、縦書きの行は幅が字の大きさに当たるので、短い辺と比べる。
+        let bounds = normalized_bounds(text.bounds);
+        let extent = (bounds.y1 - bounds.y0).min(bounds.x1 - bounds.x0);
+        if extent.is_finite() && extent > 0.0 && text.font_size < 0.5 * extent {
+            text.font_size = extent;
+        }
+    }
+}
+
+/// 本文のあるページで、ページの半分以上を覆う白一色の背景画像を取り除く。
+///
+/// 白い全面画像を inline 画像として出すと、見た目を変えずに本文を次ページへ押し出してしまう。
+/// 本文のないページ（スキャン・OCR 対象）や小さな画像は対象にしない。
+fn drop_blank_page_backgrounds(parsed: &mut ParsedDocument) {
+    let pages_with_text = parsed
+        .text_elements
+        .iter()
+        .filter(|text| !text.text.trim().is_empty())
+        .map(|text| text.page)
+        .collect::<BTreeSet<_>>();
+    let page_areas = parsed
+        .pages
+        .iter()
+        .map(|page| {
+            let (width, height) = parsed_page_display_size_points(page);
+            (page.page_number, width * height)
+        })
+        .collect::<BTreeMap<_, _>>();
+    parsed.image_elements.retain(|image| {
+        let Some(page_area) = page_areas.get(&image.page) else {
+            return true;
+        };
+        let bounds = normalized_bounds(image.bounds);
+        let area = (bounds.x1 - bounds.x0) * (bounds.y1 - bounds.y0);
+        !(pages_with_text.contains(&image.page)
+            && area >= page_area * 0.5
+            && jade_pdf2docx_parser::png_is_blank_white(&image.png_bytes))
+    });
+}
+
 /// OCRで補ったページとnativeのページを同じページ順に構築する。
 fn build_structured_docx_with_page_ocr(
     parsed: &ParsedDocument,
@@ -825,8 +1338,13 @@ fn build_structured_docx_with_image_payloads(
         );
     }
 
-    let has_mixed_page_sizes =
-        structured_pages_have_mixed_sizes(parsed, &pages) || !page_chrome.is_uniform();
+    // 縦書きのページは段組み・柱がページごとに違うので、ページごとの section にする。
+    let has_mixed_page_sizes = structured_pages_have_mixed_sizes(parsed, &pages)
+        || !page_chrome.is_uniform()
+        || (pages.len() > 1
+            && pages
+                .iter()
+                .any(|page| vertical_page(parsed, page.page).is_some()));
     let document_layout_page = if has_mixed_page_sizes {
         pages.last()
     } else {
@@ -879,6 +1397,7 @@ fn build_structured_docx_with_image_payloads(
         docx = add_repeated_page_chrome_to_docx(docx, page_chrome.page(page.page));
     }
 
+    let mut header_media = Vec::new();
     for (page_index, page) in pages.iter().enumerate() {
         if page_index > 0 && !has_mixed_page_sizes {
             docx =
@@ -891,18 +1410,28 @@ fn build_structured_docx_with_image_payloads(
                 page,
                 page_chrome.page(page.page),
             );
-            let section = if let Some(lines) = recognized.get(&page.page) {
-                page_ocr::add_lines(section, lines)
+            let (section, pictures) = if let Some(lines) = recognized.get(&page.page) {
+                (
+                    page_ocr::add_lines(section, lines),
+                    HeaderPictures::default(),
+                )
             } else {
-                add_structured_page_blocks(
-                    section,
+                let held = add_structured_page_blocks(
+                    SectionWithHeaderPictures {
+                        section,
+                        pictures: HeaderPictures::default(),
+                    },
                     parsed,
                     page,
                     positioned_tables,
                     None,
-                    StructuredPageSectionRefs::default(),
+                    StructuredPageSectionRefs {
+                        header_pictures: true,
+                        ..Default::default()
+                    },
                     image_payloads,
-                )?
+                )?;
+                (held.section, held.pictures)
             };
             let layout = structured_docx_with_page_layout(
                 parsed,
@@ -917,6 +1446,8 @@ fn build_structured_docx_with_image_payloads(
                 section,
                 page_chrome.page(page.page),
                 &layout,
+                pictures,
+                &mut header_media,
             )?;
         } else {
             let text_column_layout = (pages.len() == 1)
@@ -935,6 +1466,9 @@ fn build_structured_docx_with_image_payloads(
                         leading_single_column: leading_single_column_section.as_ref(),
                         column_before_trailing: column_section_before_trailing.as_ref(),
                         page_end: None,
+                        band: None,
+                        header_pictures: page_index + 1 == pages.len()
+                            && (pages.len() == 1 || has_mixed_page_sizes),
                     },
                     image_payloads,
                 )?
@@ -953,7 +1487,551 @@ fn build_structured_docx_with_image_payloads(
             .into_iter()
             .map(|layout| layout.frame)
             .collect(),
-    ))
+    )
+    .with_vertical_tiers(vertical_section_tiers(parsed, &pages))
+    .with_header_media(header_media))
+}
+
+/// header の図の中身を外し、部品の中で一意の関係 ID を付ける（梱包のときに media へ戻す）。
+fn take_header_media(header: &mut Header, header_media: &mut Vec<(String, Vec<u8>)>) {
+    for child in &mut header.children {
+        let docx_rs::HeaderChild::Paragraph(paragraph) = child else {
+            continue;
+        };
+        for child in &mut paragraph.children {
+            let ParagraphChild::Run(run) = child else {
+                continue;
+            };
+            for child in &mut run.children {
+                let docx_rs::RunChild::Drawing(drawing) = child else {
+                    continue;
+                };
+                let Some(docx_rs::DrawingData::Pic(picture)) = drawing.data.as_mut() else {
+                    continue;
+                };
+                if picture.image.is_empty() {
+                    continue;
+                }
+                let id = format!("rIdSectionHeaderImage{}", header_media.len() + 1);
+                picture.id.clone_from(&id);
+                header_media.push((id, std::mem::take(&mut picture.image)));
+            }
+        }
+    }
+}
+
+/// 縦書きのページの header に置く図の run と、位置を決めた枠の段落。
+#[derive(Default)]
+struct HeaderPictures {
+    runs: Vec<Run>,
+    frames: Vec<Paragraph>,
+}
+
+impl HeaderPictures {
+    fn is_empty(&self) -> bool {
+        self.runs.is_empty() && self.frames.is_empty()
+    }
+
+    /// 図の run を header の先頭の段落の頭に、枠の段落を末尾に加える。
+    fn merge(self, header: Option<Header>) -> Header {
+        let Self { runs, frames } = self;
+        let mut header = header.unwrap_or_default();
+        let anchor = !frames.is_empty();
+        let first = header.children.iter_mut().find_map(|child| match child {
+            docx_rs::HeaderChild::Paragraph(paragraph) => Some(paragraph),
+            _ => None,
+        });
+        if let Some(paragraph) = first {
+            for run in runs.into_iter().rev() {
+                paragraph
+                    .children
+                    .insert(0, ParagraphChild::Run(Box::new(run)));
+            }
+        } else {
+            header =
+                header.add_paragraph(runs.into_iter().fold(Paragraph::new(), Paragraph::add_run));
+        }
+        header = frames.into_iter().fold(header, Header::add_paragraph);
+        // LibreOffice は枠の段落を後ろの段落に結びつけるので、枠の後ろに空の段落を置く。
+        if anchor {
+            header = header.add_paragraph(column_break_paragraph_without_break());
+        }
+        header
+    }
+}
+
+/// 途中の section と、その header に置く図（section の header は追加時に決まるので、別に持つ）。
+struct SectionWithHeaderPictures {
+    section: Section,
+    pictures: HeaderPictures,
+}
+
+impl StructuredPageContainer for SectionWithHeaderPictures {
+    fn add_structured_paragraph(mut self, paragraph: Paragraph) -> Self {
+        self.section = self.section.add_paragraph(paragraph);
+        self
+    }
+
+    fn add_structured_table(mut self, table: Table) -> Self {
+        self.section = self.section.add_table(table);
+        self
+    }
+
+    fn add_header_runs(mut self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        self.pictures.runs.extend(runs);
+        self.pictures.frames.extend(frames);
+        self
+    }
+}
+
+/// 段のセルの中身を組む container。
+struct BandCell(TableCell);
+
+impl StructuredPageContainer for BandCell {
+    fn add_structured_paragraph(self, paragraph: Paragraph) -> Self {
+        Self(self.0.add_paragraph(paragraph))
+    }
+
+    fn add_structured_table(self, table: Table) -> Self {
+        Self(self.0.add_table(table))
+    }
+}
+
+/// 科目の行と同じ高さの右の金額だけの行を、科目の行の flow 番号ごとに外す。
+///
+/// 金額の行は、科目の行のすぐ後の段落で、上端の差が [`ROW_AMOUNT_ALIGNMENT_PT`] 以内、
+/// 科目の右端から字の大きさの 2 倍以上右にあるもの。科目は金額だけの行でなく、
+/// [`MAX_ROW_LABEL_CHARS`] 字以下とする（2 段組みの本文の左右の行はつながない）。
+fn attach_row_amounts(
+    blocks: &mut Vec<StructuredBlock>,
+) -> BTreeMap<usize, Vec<StructuredTextLine>> {
+    let mut attached = BTreeMap::<usize, Vec<StructuredTextLine>>::new();
+    let mut index = 0;
+    while index < blocks.len() {
+        let StructuredBlock::Paragraph {
+            flow_index, line, ..
+        } = &blocks[index]
+        else {
+            index += 1;
+            continue;
+        };
+        let (flow_index, label) = (*flow_index, line.clone());
+        let size = structured_line_max_font_size(&label).max(1.0);
+        if is_amount_text(&label.text)
+            || label.text.trim().chars().count() > MAX_ROW_LABEL_CHARS
+            || label.text.contains('\t')
+        {
+            index += 1;
+            continue;
+        }
+        let mut right = label.right_x;
+        while let Some(StructuredBlock::Paragraph { line: amount, .. }) = blocks.get(index + 1) {
+            if (amount.top_y - label.top_y).abs() > ROW_AMOUNT_ALIGNMENT_PT
+                || amount.left_x < right + 2.0 * size
+                || !is_amount_text(&amount.text)
+            {
+                break;
+            }
+            right = amount.right_x;
+            attached.entry(flow_index).or_default().push(amount.clone());
+            blocks.remove(index + 1);
+        }
+        index += 1;
+    }
+    attached
+}
+
+/// 科目の行と金額の行を同じ高さとみなす上端の差（pt）と、科目とみなす行の字数の上限。
+const ROW_AMOUNT_ALIGNMENT_PT: f32 = 1.5;
+const MAX_ROW_LABEL_CHARS: usize = 30;
+
+/// 金額だけの文字列（数字と桁区切り・負の印・空白）か。
+fn is_amount_text(text: &str) -> bool {
+    let text = text.trim();
+    text.chars().any(|ch| ch.is_ascii_digit())
+        && text.chars().all(|ch| {
+            ch.is_ascii_digit()
+                || matches!(
+                    ch,
+                    ',' | '.' | '△' | '▲' | '-' | ' ' | '　' | '，' | '(' | ')' | '（' | '）'
+                )
+        })
+}
+
+/// 段のセルの中身を組む範囲（左右の x、原点）。`flat` の範囲はその中を段に分けない。
+#[derive(Clone, Copy)]
+struct BandRange {
+    x0: f32,
+    x1: f32,
+    left: f32,
+    flat: bool,
+}
+
+impl BandRange {
+    /// 表がこの範囲の段にあるか（表の中央で決める）。
+    fn holds_table(&self, bounds: &ParsedBounds) -> bool {
+        let x = (bounds.x0 + bounds.x1) / 2.0;
+        x > self.x0 && x < self.x1
+    }
+}
+
+/// 段を並べるページの、中身のある段（左右の範囲と左端、pt）と、段の上・下に全幅で組む行の番号。
+struct BandLayout {
+    bands: Vec<(f32, f32, f32)>,
+    above: Vec<usize>,
+    below: Vec<usize>,
+}
+
+/// ページの段の区切りとみなす帯の幅の下限の割合と、ページの端の余白の帯とみなす幅の割合。
+const MIN_BAND_COLUMN_RATIO: f32 = 0.15;
+const MARGIN_BAND_RATIO: f32 = 0.1;
+/// 段の中で表の横に置いてよい行の数の上限（それより多いと、表の前に積むと高くなりすぎる）。
+const MAX_LINES_BESIDE_TABLE: usize = 3;
+/// 段の区切り線（ページの高さの大半にわたる縦罫線）で分けたページで、行・表を段ごとに
+/// 分けられるとき、その分け方を返す。
+///
+/// 段組みの section は Word の段の幅を明示できないので、段ごとのセルを横に並べた罫線の無い表に
+/// して、原本の段を横に並べる（官報の横長のページの、区切り線で分けた座標の表など）。段を
+/// またぐ行は、段の中身の上か下にあれば段の外に全幅で組み、段の中身と高さが重なるなら、その
+/// 行がまたぐ区切り線を外して段をまとめる（まとめた段は、セルの中で残りの区切り線で分ける）。
+fn band_columns(
+    parsed: &ParsedDocument,
+    page: &StructuredTextPage,
+    positioned_tables: &[PositionedTable],
+    edges: &[f32],
+    range: Option<BandRange>,
+) -> Option<BandLayout> {
+    if edges.is_empty()
+        || parsed
+            .image_elements
+            .iter()
+            .any(|image| image.page == page.page)
+    {
+        return None;
+    }
+    let page_width = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)?;
+    let (outer_x0, outer_x1) = range.map_or((f32::NEG_INFINITY, f32::INFINITY), |range| {
+        (range.x0, range.x1)
+    });
+    let tables = positioned_tables
+        .iter()
+        .filter(|table| {
+            table.page == page.page && range.is_none_or(|range| range.holds_table(&table.bounds))
+        })
+        .map(|table| normalized_bounds(table.bounds))
+        .collect::<Vec<_>>();
+    let mut edges = edges.to_vec();
+    loop {
+        if edges.is_empty() {
+            return None;
+        }
+        let band_of = |x: f32| column_bands::band_of(x, &edges);
+        let one_band = |x0: f32, x1: f32| {
+            let band = band_of(x0 + 1.0);
+            (band_of((x1 - 1.0).max(x0 + 1.0)) == band).then_some(band)
+        };
+        let mut lefts = BTreeMap::<usize, f32>::new();
+        let mut spanning = Vec::new();
+        let (mut banded_top, mut banded_bottom) = (f32::NEG_INFINITY, f32::INFINITY);
+        for (index, line) in page.lines.iter().enumerate() {
+            if !(line.left_x.is_finite() && line.right_x >= line.left_x) {
+                return None;
+            }
+            let Some(band) = one_band(line.left_x, line.right_x) else {
+                spanning.push(index);
+                continue;
+            };
+            let left = lefts.entry(band).or_insert(line.left_x);
+            *left = left.min(line.left_x);
+            banded_top = banded_top.max(line.top_y);
+            banded_bottom = banded_bottom.min(line.top_y - structured_line_max_font_size(line));
+        }
+        let mut crossing_tables = Vec::new();
+        for bounds in &tables {
+            let Some(band) = one_band(bounds.x0, bounds.x1) else {
+                crossing_tables.push(*bounds);
+                continue;
+            };
+            let left = lefts.entry(band).or_insert(bounds.x0);
+            *left = left.min(bounds.x0);
+            banded_top = banded_top.max(bounds.y1);
+            banded_bottom = banded_bottom.min(bounds.y0);
+        }
+        // 段の中身と高さが重なる、段をまたぐ行・表がまたぐ区切り線を外して、やり直す。
+        let (mut above, mut below, mut merge) = (Vec::new(), Vec::new(), Vec::new());
+        for index in spanning {
+            let line = &page.lines[index];
+            if line.top_y - structured_line_max_font_size(line) >= banded_top - 1.0 {
+                above.push(index);
+            } else if line.top_y <= banded_bottom + 1.0 {
+                below.push(index);
+            } else {
+                merge.push((line.left_x, line.right_x));
+            }
+        }
+        merge.extend(crossing_tables.iter().map(|bounds| (bounds.x0, bounds.x1)));
+        if !merge.is_empty() {
+            let before = edges.len();
+            edges.retain(|edge| {
+                !merge
+                    .iter()
+                    .any(|(x0, x1)| *edge > x0 + 1.0 && *edge < x1 - 1.0)
+            });
+            if edges.len() == before {
+                return None;
+            }
+            continue;
+        }
+        // 段は本文の段の幅のもの。財務表の金額の列を区切る縦罫線のような狭い帯は、左の段に
+        // まとめてやり直す（ページの端の狭い帯（余白の柱など）はそのまま）。
+        let bounds_of = |band: usize| {
+            let start = if band == 0 {
+                outer_x0.max(0.0)
+            } else {
+                edges[band - 1]
+            };
+            let end = edges.get(band).copied().unwrap_or(outer_x1.min(page_width));
+            (start, end)
+        };
+        let narrow = lefts.keys().copied().find(|&band| {
+            let (start, end) = bounds_of(band);
+            let margin = (band == 0 && end < MARGIN_BAND_RATIO * page_width)
+                || (band == edges.len() && start > (1.0 - MARGIN_BAND_RATIO) * page_width);
+            !margin && end - start < MIN_BAND_COLUMN_RATIO * page_width
+        });
+        if let Some(band) = narrow {
+            edges.remove(if band == 0 { 0 } else { band - 1 });
+            continue;
+        }
+        // 段の中で行と表が横に並ぶ（表の高さの範囲に表の外の行がある）ときは、セルの中で縦に
+        // 積むと原本より高くなり、行の高さがページを越えるので、段を並べない。
+        let taken = above.iter().chain(&below).copied().collect::<BTreeSet<_>>();
+        let mut beside_counts = BTreeMap::<usize, usize>::new();
+        for (index, line) in page.lines.iter().enumerate() {
+            if taken.contains(&index) {
+                continue;
+            }
+            let band = band_of(line.left_x + 1.0);
+            let y = line.top_y - 0.5 * structured_line_max_font_size(line);
+            if tables.iter().any(|table| {
+                band_of(table.x0 + 1.0) == band
+                    && y > table.y0
+                    && y < table.y1
+                    && (line.right_x <= table.x0 || line.left_x >= table.x1)
+            }) {
+                *beside_counts.entry(band).or_default() += 1;
+            }
+        }
+        // 表の横の短い見出し（縦書きの「教育費」など数行）は、表の前に積んでも高さは変わらない。
+        let beside = beside_counts
+            .values()
+            .any(|count| *count > MAX_LINES_BESIDE_TABLE);
+        if lefts.len() < 2 || beside {
+            return None;
+        }
+        return Some(BandLayout {
+            bands: lefts
+                .into_iter()
+                .map(|(band, left)| {
+                    let (start, end) = bounds_of(band);
+                    let start = if band == 0 { outer_x0 } else { start };
+                    let end = if band == edges.len() { outer_x1 } else { end };
+                    (start, end, left)
+                })
+                .collect(),
+            above,
+            below,
+        });
+    }
+}
+
+/// ページの端の狭い帯にある、字数に比べて幅のごく狭い行（横に倒して組んだ柱の字を縦に
+/// 積んだもの）を、下から上へ読む 1 つの段落にする。
+fn sideways_margin_line(
+    lines: &[StructuredTextLine],
+    band_width: f32,
+    page_width: f32,
+) -> Option<Paragraph> {
+    if lines.is_empty() || band_width > MARGIN_BAND_RATIO * page_width {
+        return None;
+    }
+    let sideways = lines.iter().all(|line| {
+        let size = structured_line_max_font_size(line).max(1.0);
+        let chars = line.text.chars().filter(|ch| !ch.is_whitespace()).count();
+        chars >= MIN_SIDEWAYS_CHARS
+            && line.right_x - line.left_x <= MAX_SIDEWAYS_WIDTH_RATIO * chars as f32 * size
+    });
+    if !sideways {
+        return None;
+    }
+    let mut lines = lines.iter().collect::<Vec<_>>();
+    lines.sort_by(|a, b| a.top_y.total_cmp(&b.top_y));
+    let paragraph = lines
+        .into_iter()
+        .flat_map(|line| &line.runs)
+        .fold(Paragraph::new(), |paragraph, run| {
+            paragraph.add_run(docx_run_from_structured_run(run))
+        });
+    Some(paragraph.line_spacing(LineSpacing::new().before(0).after(0)))
+}
+
+/// 横に倒した柱とみなす行の字数の下限と、行の幅の上限（横に組んだときの長さ比）。
+const MIN_SIDEWAYS_CHARS: usize = 4;
+const MAX_SIDEWAYS_WIDTH_RATIO: f32 = 0.3;
+
+/// 段ごとの中身をセルに組み、罫線の無い 1 行の表として横に並べる。
+#[allow(clippy::too_many_arguments)]
+fn add_band_columns<C: StructuredPageContainer>(
+    container: C,
+    parsed: &ParsedDocument,
+    page: &StructuredTextPage,
+    positioned_tables: &[PositionedTable],
+    layout: &BandLayout,
+    page_width: f32,
+    section_refs: StructuredPageSectionRefs<'_>,
+    image_payloads: &mut Option<Vec<Vec<u8>>>,
+) -> Result<C, ConvertError> {
+    let bands = layout.bands.as_slice();
+    let origin = section_refs.band.map_or_else(
+        || structured_page_left_x(parsed, positioned_tables, page),
+        |range| range.left,
+    );
+    let outer = section_refs
+        .band
+        .map_or((f32::NEG_INFINITY, f32::INFINITY), |range| {
+            (range.x0, range.x1)
+        });
+    let right_edge = section_refs
+        .band
+        .map_or(page_width, |range| range.x1.min(page_width));
+    // 段の上・下の全幅の行は、この範囲の原点で組む（その中は段に分けない）。
+    let mut container = container;
+    let full_width = |indices: &[usize]| StructuredTextPage {
+        page: page.page,
+        lines: indices
+            .iter()
+            .map(|&index| page.lines[index].clone())
+            .collect(),
+    };
+    let flat = BandRange {
+        x0: outer.0,
+        x1: outer.1,
+        left: origin,
+        flat: true,
+    };
+    let no_tables = BandRange {
+        x0: f32::INFINITY,
+        ..flat
+    };
+    if !layout.above.is_empty() {
+        container = add_structured_page_blocks(
+            container,
+            parsed,
+            &full_width(&layout.above),
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(no_tables),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+    }
+    let taken = layout
+        .above
+        .iter()
+        .chain(&layout.below)
+        .copied()
+        .collect::<BTreeSet<_>>();
+    let twips = |points: f32| (points * 20.0).round().max(0.0) as usize;
+    let mut cells = Vec::new();
+    let mut grid = Vec::new();
+    for (index, &(x0, x1, left)) in bands.iter().enumerate() {
+        let right = bands
+            .get(index + 1)
+            .map_or(right_edge, |&(_, _, next)| next);
+        let width = twips(right - left);
+        let band_page = StructuredTextPage {
+            page: page.page,
+            lines: page
+                .lines
+                .iter()
+                .enumerate()
+                .filter(|(index, line)| {
+                    let x = line.left_x + 1.0;
+                    !taken.contains(index) && x > x0 && x < x1
+                })
+                .map(|(_, line)| line.clone())
+                .collect(),
+        };
+        // ページの端の狭い帯に縦に並んだ短い行は、横に倒して組んだ 1 行（横長のページの柱）。
+        if let Some(paragraph) = sideways_margin_line(
+            &band_page.lines,
+            x1.min(page_width) - x0.max(0.0),
+            page_width,
+        ) {
+            cells.push(
+                TableCell::new()
+                    .width(width, WidthType::Dxa)
+                    .vertical_align(VAlignType::Bottom)
+                    .text_direction(docx_rs::TextDirectionType::BtLr)
+                    .clear_all_border()
+                    .add_paragraph(paragraph),
+            );
+            grid.push(width);
+            continue;
+        }
+        let BandCell(cell) = add_structured_page_blocks(
+            BandCell(
+                TableCell::new()
+                    .width(width, WidthType::Dxa)
+                    .vertical_align(VAlignType::Top)
+                    .clear_all_border(),
+            ),
+            parsed,
+            &band_page,
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(BandRange {
+                    x0,
+                    x1,
+                    left,
+                    flat: false,
+                }),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+        // セルは段落で終える（表だけのセルは Word が開けない）。
+        cells.push(cell.add_paragraph(page_end::empty_page(None)));
+        grid.push(width);
+    }
+    let table = Table::without_borders(vec![TableRow::new(cells)])
+        .set_grid(grid)
+        .layout(TableLayoutType::Fixed)
+        .indent(i32::try_from(twips((bands[0].2 - origin).max(0.0))).unwrap_or(0))
+        .margins(TableCellMargins::new().margin(0, 0, 0, 0));
+    container = container.add_structured_table(table);
+    if !layout.below.is_empty() {
+        container = add_structured_page_blocks(
+            container,
+            parsed,
+            &full_width(&layout.below),
+            positioned_tables,
+            None,
+            StructuredPageSectionRefs {
+                band: Some(no_tables),
+                ..Default::default()
+            },
+            image_payloads,
+        )?;
+    }
+    Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -962,11 +2040,34 @@ trait StructuredPageContainer: Sized {
     fn add_structured_paragraph(self, paragraph: Paragraph) -> Self;
     /// container へ表を追加する。
     fn add_structured_table(self, table: Table) -> Self;
+    /// 浮かせた図だけの run を header の先頭の段落へ、位置を決めた枠の段落を header の末尾へ
+    /// 加える（header を持たない container では本文の段落にする）。
+    fn add_header_runs(self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        let mut paragraph = column_break_paragraph();
+        paragraph.children.clear();
+        let container =
+            self.add_structured_paragraph(runs.into_iter().fold(paragraph, Paragraph::add_run));
+        frames.into_iter().fold(container, |container, mut frame| {
+            frame.property.frame_property = None;
+            container.add_structured_paragraph(frame)
+        })
+    }
 }
 
 impl StructuredPageContainer for Docx {
     fn add_structured_paragraph(self, paragraph: Paragraph) -> Self {
         self.add_paragraph(paragraph)
+    }
+
+    fn add_header_runs(mut self, runs: Vec<Run>, frames: Vec<Paragraph>) -> Self {
+        let extras = HeaderPictures { runs, frames };
+        if let Some((_, header)) = self.document.section_property.header.as_mut() {
+            let taken = std::mem::replace(header, Header::new());
+            *header = extras.merge(Some(taken));
+            self
+        } else {
+            self.header(extras.merge(None))
+        }
     }
 
     fn add_structured_table(self, table: Table) -> Self {
@@ -994,8 +2095,59 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
-    let mut blocks = column_flow::ordered_lines(&page.lines, text_column_layout)
+    let vertical = vertical_page(parsed, page.page);
+    // 縦書きのページの段（回した座標では上から下へ積んだ段。段ごとに Word の段にする）。
+    let vertical_tiers = vertical.map(|vertical| vertical_pages::tiers(parsed, vertical));
+    let band_edges = if vertical.is_some() {
+        Vec::new()
+    } else {
+        column_bands::column_band_edges(parsed, page.page, positioned_tables)
+    };
+    let band_page_width = parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page.page)
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
+        .unwrap_or(f32::MAX);
+    // 段を並べられるページは、段ごとのセルを横に並べる（段のセルの中も、その範囲の内側の
+    // 区切り線でさらに分ける）。
+    let range_edges = band_edges
+        .iter()
+        .copied()
+        .filter(|edge| {
+            section_refs
+                .band
+                .is_none_or(|range| !range.flat && *edge > range.x0 && *edge < range.x1)
+        })
+        .collect::<Vec<_>>();
+    if section_refs.band.is_none_or(|range| !range.flat)
+        && text_column_layout.is_none()
+        && let Some(layout) = band_columns(
+            parsed,
+            page,
+            positioned_tables,
+            &range_edges,
+            section_refs.band,
+        )
+    {
+        return add_band_columns(
+            container,
+            parsed,
+            page,
+            positioned_tables,
+            &layout,
+            band_page_width,
+            section_refs,
+            image_payloads,
+        );
+    }
+    // 実段組の行順に並べた行を基準に、表・画像の挿入位置も求める。
+    let ordered_lines = column_flow::ordered_lines(&page.lines, text_column_layout)
         .into_iter()
+        .cloned()
+        .collect::<Vec<_>>();
+    let mut blocks = ordered_lines
+        .iter()
         .enumerate()
         .map(|(flow_index, line)| StructuredBlock::Paragraph {
             top_y: line.top_y,
@@ -1003,47 +2155,114 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             line: line.clone(),
         })
         .collect::<Vec<_>>();
-    for table in positioned_tables
-        .iter()
-        .filter(|table| table.page == page.page)
-    {
+    for table in positioned_tables.iter().filter(|table| {
+        table.page == page.page
+            && section_refs
+                .band
+                .is_none_or(|range| range.holds_table(&table.bounds))
+    }) {
         let top_y = table.bounds.y1;
         blocks.push(StructuredBlock::Table {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            band_rank: column_bands::reading_rank(
+                (table.bounds.x0 + table.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
+            order_index: column_bands::insertion_index_in_band(
+                &ordered_lines,
+                top_y,
+                (table.bounds.x0 + table.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             top_y,
             table: table.clone(),
         });
     }
+    // 縦書きのページの画像は本文の行の送りに入れず、原本の位置に浮かせて置く。
+    let mut vertical_images = Vec::new();
     for (image_index, image) in parsed
         .image_elements
         .iter()
         .enumerate()
         .filter(|(_, image)| image.page == page.page)
     {
+        if vertical.is_some() {
+            vertical_images.push((image_index, image.clone()));
+            continue;
+        }
         let top_y = image.bounds.y1;
         blocks.push(StructuredBlock::Image {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            band_rank: column_bands::reading_rank(
+                (image.bounds.x0 + image.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
+            order_index: column_bands::insertion_index_in_band(
+                &ordered_lines,
+                top_y,
+                (image.bounds.x0 + image.bounds.x1) / 2.0,
+                &band_edges,
+                band_page_width,
+            ),
             top_y,
             image: image.clone(),
             image_index,
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    // 同じ高さの科目と金額（間を大きく空けて分けた行の断片）は、1 つの段落にして金額を右揃えの
+    // タブで置く（別の段落にすると縦に積まれ、行が倍の高さになる）。
+    let row_amounts = if vertical.is_none() && text_column_layout.is_none() {
+        attach_row_amounts(&mut blocks)
+    } else {
+        BTreeMap::new()
+    };
+    if let Some(vertical) = vertical
+        && !vertical_images.is_empty()
+    {
+        let mut runs = Vec::new();
+        for (image_index, mut image) in vertical_images {
+            if let Some(payloads) = image_payloads {
+                image.png_bytes = std::mem::take(&mut payloads[image_index]);
+            }
+            if let Some(picture) = vertical_pages::floating_picture(image, vertical) {
+                runs.push(Run::new().add_image(picture));
+            }
+        }
+        container = if section_refs.header_pictures {
+            container.add_header_runs(runs, vertical_caption_frames(parsed, page.page, vertical))
+        } else {
+            let mut paragraph = column_break_paragraph();
+            paragraph.children.clear();
+            container.add_structured_paragraph(runs.into_iter().fold(paragraph, Paragraph::add_run))
+        };
+    }
     let block_count = blocks.len();
     if block_count == 0 {
         return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
     }
-    let section_origin_x = structured_page_left_x(parsed, positioned_tables, page);
+    let section_origin_x = section_refs
+        .band
+        .map(|range| range.left)
+        .unwrap_or_else(|| structured_page_left_x(parsed, positioned_tables, page));
     let origin_x = if section_origin_x.is_finite() {
         section_origin_x
     } else {
         0.0
     };
+    // 段のセルの中では、右の字下げをセルの右端（段の右の区切り線）から測る。
     let page_width = parsed
         .pages
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)
-        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0);
+        .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)
+        .map(|width| {
+            section_refs
+                .band
+                .filter(|range| range.x1.is_finite())
+                .map_or(width, |range| range.x1.min(width))
+        });
     let gap_after_block = blocks
         .iter()
         .enumerate()
@@ -1069,7 +2288,61 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     let mut previous_line: Option<StructuredTextLine> = None;
     let mut previous_nonparagraph_bottom_y: Option<f32> = None;
     let mut previous_column_index = 0usize;
+    // 縦書きの最初の段の上端（ほかの段の上端は 1 段の高さずつ下）。
+    let vertical_top = blocks
+        .iter()
+        .map(StructuredBlock::top_y)
+        .filter(|value| value.is_finite())
+        .map(|value| {
+            vertical.map_or(value, |vertical| {
+                vertical_pages::in_first_tier(vertical, value)
+            })
+        })
+        .fold(f32::NEG_INFINITY, f32::max);
+    // 縦書きの段の左端（最初の段は section の原点）。
+    let tier_origin = |tier: usize| {
+        vertical_tiers
+            .as_ref()
+            .and_then(|tiers| tiers.get(tier))
+            .filter(|_| tier > 0)
+            .map_or(origin_x, |(x0, _)| *x0)
+    };
+    let mut leading_tier_gap = vertical.is_some();
     for (block_index, block) in blocks.into_iter().enumerate() {
+        // 縦書きの最初の段が、ほかの段より下から始まるときは（題字の図の下から始まる目次など）、
+        // その空きを空きの高さの空の段落で置く（LibreOffice は縦書きの section の最初の段落の
+        // 段落前の空きを、ほかの段の頭にも足してしまう）。
+        if let Some(vertical) = vertical
+            && std::mem::take(&mut leading_tier_gap)
+            && vertical_pages::tier_of(vertical, block.top_y()) == 0
+            && let Some(gap) = pdf_vertical_blank_gap_between_y(
+                vertical_pages::tier_top(vertical, vertical_top, 0),
+                block.top_y(),
+            )
+            .filter(|gap| *gap > 0)
+        {
+            container = container.add_structured_paragraph(
+                Paragraph::new().line_spacing(
+                    LineSpacing::new()
+                        .before(0)
+                        .after(0)
+                        .line(i32::try_from(gap).unwrap_or(i32::MAX))
+                        .line_rule(docx_rs::LineSpacingType::Exact),
+                ),
+            );
+        }
+        // 縦書きの表・画像が次の段で始まるときは、先に改段する。
+        if let Some(vertical) = vertical
+            && !matches!(block, StructuredBlock::Paragraph { .. })
+        {
+            let tier = vertical_pages::tier_of(vertical, block.top_y());
+            if tier > previous_column_index {
+                container = container.add_structured_paragraph(column_break_paragraph());
+                previous_column_index = tier;
+                previous_line = None;
+                previous_nonparagraph_bottom_y = None;
+            }
+        }
         match block {
             StructuredBlock::Paragraph {
                 flow_index,
@@ -1079,9 +2352,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 let text_columns = text_column_layout
                     .filter(|layout| layout.contains_column_line(flow_index))
                     .map(|layout| layout.columns.as_slice());
-                let column_index = text_columns
-                    .map(|columns| column_index_for_line(&line, columns))
-                    .unwrap_or(0);
+                let column_index = if let Some(vertical) = vertical {
+                    vertical_pages::tier_of(vertical, line.top_y)
+                } else {
+                    text_columns
+                        .map(|columns| column_index_for_line(&line, columns))
+                        .unwrap_or(0)
+                };
                 let starts_new_column = column_index > previous_column_index;
                 if starts_new_column {
                     previous_line = None;
@@ -1094,8 +2371,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     });
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
-                    .unwrap_or(origin_x);
-                if text_columns.is_some() {
+                    .unwrap_or_else(|| tier_origin(column_index));
+                // 段のセルの中の中央の行は、原本の位置の左の字下げで組む（ページの原点で中央を
+                // 求めると、右の字下げがセルの幅を越える）。
+                if text_columns.is_some()
+                    || (section_refs.band.is_some() && line.alignment == ParagraphAlignment::Center)
+                {
                     line.alignment = ParagraphAlignment::Left;
                 }
                 let mut paragraph = paragraph_from_structured_line(
@@ -1104,6 +2385,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     page_width,
                     Some(section_origin_x),
                 );
+                for amount in row_amounts.get(&flow_index).into_iter().flatten() {
+                    if let Some(position) =
+                        pdf_points_to_indent_twips(amount.right_x - paragraph_origin_x)
+                            .and_then(|twips| usize::try_from(twips).ok())
+                    {
+                        paragraph = paragraph
+                            .add_tab(Tab::new().val(TabValueType::Right).pos(position))
+                            .add_run(Run::new().add_tab());
+                        paragraph = amount.runs.iter().fold(paragraph, |paragraph, run| {
+                            paragraph.add_run(docx_run_from_structured_run(run))
+                        });
+                    }
+                }
                 if let Some(indent) =
                     column_origin_twips
                         .zip(page_width)
@@ -1125,6 +2419,15 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                         })
                     })
                     .unwrap_or(0);
+                // 縦書きの段の最初の行は、段の上端からの空きを置く。
+                let before = match vertical {
+                    Some(vertical) if starts_new_column => pdf_vertical_blank_gap_between_y(
+                        vertical_pages::tier_top(vertical, vertical_top, column_index),
+                        line.top_y,
+                    )
+                    .unwrap_or(0),
+                    _ => before,
+                };
                 let after = paragraph_after_spacing[block_index].unwrap_or(0);
                 if let Some(spacing) =
                     native_line_pitch::spacing(structured_line_max_font_size(&line), before, after)
@@ -1134,7 +2437,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     paragraph =
                         paragraph.line_spacing(LineSpacing::new().before(before).after(after));
                 }
-                if starts_new_column {
+                if starts_new_column && vertical.is_some() {
+                    // 縦書きの段は改段だけの段落で送り、段の頭に空の行を残さない。
+                    container = container.add_structured_paragraph(column_break_paragraph());
+                } else if starts_new_column {
                     paragraph.children.insert(
                         0,
                         ParagraphChild::Run(Box::new(Run::new().add_break(BreakType::Column))),
@@ -1168,8 +2474,14 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     .table
                     .validate()
                     .map_err(ConvertError::InvalidOcrTable)?;
+                let table_origin_x = match vertical {
+                    Some(vertical) => {
+                        tier_origin(vertical_pages::tier_of(vertical, table.bounds.y1))
+                    }
+                    None => origin_x,
+                };
                 container = container
-                    .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                    .add_structured_table(docx_table_from_structured_table(&table, table_origin_x));
                 if let Some(boundary) =
                     page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
                 {
@@ -1253,6 +2565,8 @@ fn build_multi_page_text_column_docx(
                 leading_single_column: sections.leading_single_column.as_ref(),
                 column_before_trailing: sections.column_before_trailing.as_ref(),
                 page_end: (!is_last_page).then_some(&sections.final_section),
+                band: None,
+                header_pictures: is_last_page,
             },
             image_payloads,
         )?;
@@ -1264,7 +2578,8 @@ fn build_multi_page_text_column_docx(
             .flatten()
             .map(|layout| layout.frame.clone())
             .collect(),
-    ))
+    )
+    .with_vertical_tiers(vertical_section_tiers(parsed, pages)))
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -1327,6 +2642,9 @@ fn detected_text_columns_for_page(
     page: &StructuredTextPage,
     positioned_tables: &[PositionedTable],
 ) -> Option<DetectedTextColumnLayout> {
+    if vertical_page(parsed, page.page).is_some() {
+        return None;
+    }
     if positioned_tables
         .iter()
         .any(|table| table.page == page.page)
@@ -1400,8 +2718,109 @@ fn structured_docx_with_page_layout(
     else {
         return Docx::new();
     };
+    if let Some(vertical) = vertical_page(parsed, page.page) {
+        let ((width, height), margin) =
+            vertical_pages::physical_layout(vertical, (width, height), margin);
+        let mut docx = Docx::new().page_margin(margin).page_size(width, height);
+        docx.document.section_property.text_direction = vertical_pages::TEXT_DIRECTION.into();
+        return docx;
+    }
     let docx = Docx::new().page_margin(margin).page_size(width, height);
     apply_landscape_orientation_to_docx(docx, width, height)
+}
+
+/// 改段だけの段落（次の段へ送る。段の頭に残る段落記号は最小の高さにする）。
+fn column_break_paragraph() -> Paragraph {
+    Paragraph::new()
+        .add_run(Run::new().add_break(BreakType::Column).size(2))
+        .line_spacing(
+            LineSpacing::new()
+                .before(0)
+                .after(0)
+                .line(20)
+                .line_rule(docx_rs::LineSpacingType::Exact),
+        )
+}
+
+/// 縦書きのページの図の添え書きを、原本の位置に置いた枠の段落にする（同じ枠の設定の段落は
+/// Word・LibreOffice で 1 つの枠にまとまる）。
+fn vertical_caption_frames(
+    parsed: &ParsedDocument,
+    page: usize,
+    vertical: &ParsedPage,
+) -> Vec<Paragraph> {
+    let rows = vertical_pages::captions(parsed, page);
+    let bounds = rows
+        .iter()
+        .flatten()
+        .map(|text| normalized_bounds(text.bounds));
+    let (x0, x1, y1) = bounds.fold(
+        (f32::INFINITY, f32::NEG_INFINITY, f32::NEG_INFINITY),
+        |(x0, x1, y1), bounds| (x0.min(bounds.x0), x1.max(bounds.x1), y1.max(bounds.y1)),
+    );
+    let (width, height) = vertical_pages::display_size(vertical);
+    if !(x0.is_finite() && x1 > x0 && y1.is_finite()) {
+        return Vec::new();
+    }
+    let twips = |points: f32| (points * 20.0).round() as i32;
+    let frame = docx_rs::FrameProperty {
+        w: u32::try_from(twips(x1 - x0 + 2.0)).ok(),
+        wrap: Some("none".into()),
+        h_anchor: Some("page".into()),
+        v_anchor: Some("page".into()),
+        x: Some(twips(x0)),
+        y: Some(twips(height - y1)),
+        ..Default::default()
+    };
+    rows.into_iter()
+        .filter_map(|texts| {
+            let segment = TextRowSegment {
+                texts,
+                split_from_row: false,
+            };
+            let line = structured_text_line_from_segment(&segment, &[], width)?;
+            let size = structured_line_max_font_size(&line);
+            let mut paragraph = paragraph_from_structured_line(&line, line.left_x, None, None)
+                .line_spacing(
+                    LineSpacing::new()
+                        .before(0)
+                        .after(0)
+                        .line((size * 20.0 * 1.15).round() as i32)
+                        .line_rule(docx_rs::LineSpacingType::Exact),
+                );
+            paragraph.property.indent = None;
+            paragraph.property.frame_property = Some(frame.clone());
+            Some(paragraph)
+        })
+        .collect()
+}
+
+/// 最小の高さの空の段落。
+fn column_break_paragraph_without_break() -> Paragraph {
+    let mut paragraph = column_break_paragraph();
+    paragraph.children.clear();
+    paragraph
+}
+
+/// 縦書きとして回したページ。
+fn vertical_page(parsed: &ParsedDocument, page: usize) -> Option<&ParsedPage> {
+    parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page)
+        .filter(|parsed_page| vertical_pages::is_vertical(parsed_page))
+}
+
+/// 本文 XML に現れる順の、縦書きの section の段の範囲。
+fn vertical_section_tiers(
+    parsed: &ParsedDocument,
+    pages: &[StructuredTextPage],
+) -> Vec<Vec<(f32, f32)>> {
+    pages
+        .iter()
+        .filter_map(|page| vertical_page(parsed, page.page))
+        .map(|page| vertical_pages::tiers(parsed, page))
+        .collect()
 }
 
 /// 指定 PDF ページの寸法と配置原点を中間 DOCX section へ反映する。
@@ -1416,6 +2835,14 @@ fn structured_section_with_page_layout(
     else {
         return Section::new();
     };
+    if let Some(vertical) = vertical_page(parsed, page.page) {
+        let ((width, height), margin) =
+            vertical_pages::physical_layout(vertical, (width, height), margin);
+        return Section::new()
+            .page_margin(margin)
+            .page_size(PageSize::new().size(width, height))
+            .text_direction(vertical_pages::TEXT_DIRECTION.into());
+    }
     let section = Section::new()
         .page_margin(margin)
         .page_size(PageSize::new().size(width, height));
@@ -1510,6 +2937,14 @@ fn structured_page_layout(
                     .map(|image| image.bounds.y1),
             )
             .filter(|value| value.is_finite())
+            // 縦書きのページは段ごとに上端をそろえて比べる（どの段の行も同じ上余白から始まる）。
+            .map(|value| {
+                if vertical_pages::is_vertical(parsed_page) {
+                    vertical_pages::in_first_tier(parsed_page, value)
+                } else {
+                    value
+                }
+            })
             .fold(f32::NEG_INFINITY, f32::max)
     } else {
         display_height
@@ -1713,6 +3148,7 @@ fn text_lines_by_page_from_pdf_text_elements(
         .map(|text| text.page)
         .chain(positioned_tables.iter().map(|table| table.page))
         .chain(parsed.image_elements.iter().map(|image| image.page))
+        .filter(|page| page & vertical_pages::TAKEN_PAGE == 0)
         .collect::<BTreeSet<_>>();
 
     page_numbers
@@ -1747,11 +3183,23 @@ fn text_lines_by_page_from_pdf_text_elements(
                 .filter(|graphic| graphic.page == page)
                 .cloned()
                 .collect::<Vec<_>>();
+            // 縦罫線で段を区切るページは、段をまたいで行をつながない。
+            let band_edges = column_bands::column_band_edges(parsed, page, positioned_tables);
+            let partial_rules = column_bands::partial_band_rules(parsed, page, positioned_tables);
+            let text_band = |text: &ParsedTextElement| {
+                let x = (text.bounds.x0 + text.bounds.x1) / 2.0;
+                let y = (text.bounds.y0 + text.bounds.y1) / 2.0;
+                (
+                    column_bands::band_of(x, &band_edges),
+                    column_bands::partial_band_of(x, y, &partial_rules),
+                )
+            };
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
                 if let Some(row) = rows.iter_mut().find(|row| {
                     (native_baseline::line_y(row[0]) - native_baseline::line_y(text)).abs()
                         <= TEXT_ROW_Y_TOLERANCE_PT
+                        && text_band(row[0]) == text_band(text)
                 }) {
                     row.push(text);
                 } else {
@@ -1801,9 +3249,33 @@ fn text_lines_by_page_from_pdf_text_elements(
                                 })
                         })
                 })
-                .filter(|line| !is_pdf_page_number_line(parsed, page, line))
                 .collect::<Vec<_>>();
-            let lines = if positioned_tables.iter().any(|table| table.page == page) {
+            // ページ番号は行に単独で置く。同じ高さに別の字がある数字（「未収入金 3,186」の
+            // 「3」のように字間で分かれた数の一部）はページ番号として除かない。
+            let lines = lines
+                .iter()
+                .enumerate()
+                .filter(|(index, line)| {
+                    !is_pdf_page_number_line(parsed, page, line)
+                        || lines.iter().enumerate().any(|(other, sibling)| {
+                            other != *index && (sibling.top_y - line.top_y).abs() <= 2.0
+                        })
+                })
+                .map(|(_, line)| line.clone())
+                .collect::<Vec<_>>();
+            // 縦罫線で段を区切るページは、左の段から順に読む。
+            let lines = if !band_edges.is_empty() {
+                column_bands::merge_margin_band_lines(
+                    column_bands::order_lines_by_band(lines, &band_edges, page_width),
+                    &band_edges,
+                    page_width,
+                    parsed
+                        .pages
+                        .iter()
+                        .find(|parsed_page| parsed_page.page_number == page)
+                        .is_some_and(|parsed_page| parsed_page.rotation.rem_euclid(180) == 90),
+                )
+            } else if positioned_tables.iter().any(|table| table.page == page) {
                 lines
             } else {
                 order_text_lines_for_layout(parsed, page, lines)
@@ -1844,15 +3316,19 @@ fn text_element_is_in_table(
     if text.page != table.page {
         return false;
     }
+    // 横並びの表をまとめた外側の表は、メンバーの表の範囲だけを表内とする
+    // （外接矩形にかかる表の外の本文を落とさない）。
+    if is_side_by_side_container(table) {
+        return table
+            .nested_tables
+            .iter()
+            .any(|member| text_element_is_in_table(parsed, text, member));
+    }
     let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
     let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
-    if text_center_is_in_table_bounds(center_x, center_y, table) {
-        return true;
-    }
-    table_accepts_top_origin_text_y(parsed, table)
-        && page_height(parsed, text.page)
-            .map(|height| text_center_is_in_table_bounds(center_x, height - center_y, table))
-            .unwrap_or(false)
+    // 文字片の座標はページの表示座標にそろえてあるので、上端原点の y を想定した救済はしない
+    // （上下を反転した位置が別の表に重なる本文や、表の下の数字を落としていた）。
+    text_center_is_in_table_bounds(center_x, center_y, table)
 }
 
 /// text center が推定表の矩形内に入るか判定する。
@@ -2078,7 +3554,7 @@ fn structured_text_runs_from_row(
                             && (text.bounds.y1 - text.bounds.y0 - text.font_size).abs() < 0.001
                     })
                     .map(|_| text.bounds),
-                placement: None,
+                placement: compressed_punctuation_placement(text),
                 baseline_offset: baseline_offsets[index],
             },
         });
@@ -2087,6 +3563,38 @@ fn structured_text_runs_from_row(
     }
     runs
 }
+
+/// 全角の字だけの文字片を全角の送りで組むと原本の長さを半字以上越えるとき（原本が約物を
+/// 詰めて組んでいる）、原本の長さに収まる字間を返す。越えたままだと行が折り返す。
+fn compressed_punctuation_placement(
+    text: &ParsedTextElement,
+) -> Option<positioned_type1::Placement> {
+    let body = text.text.trim();
+    let count = body.chars().count();
+    let size = text.font_size;
+    if count < MIN_COMPRESSED_CHARS
+        || !(size.is_finite() && size > 0.0)
+        || !body.chars().all(|ch| u32::from(ch) >= 0x2E80)
+    {
+        return None;
+    }
+    let bounds = normalized_bounds(text.bounds);
+    // 外接矩形は字の枠より字の両端の余白の分だけ短い。
+    let extent = bounds.x1 - bounds.x0 + 0.15 * size;
+    let set = count as f32 * size;
+    if set - extent < 0.5 * size {
+        return None;
+    }
+    let spacing = ((extent - set) / count as f32 * 20.0).floor() as i32;
+    Some(positioned_type1::Placement {
+        stretch: 100,
+        spacing,
+        logical_space: false,
+    })
+}
+
+/// 詰めて組んだとみなす文字片の字数の下限。
+const MIN_COMPRESSED_CHARS: usize = 6;
 
 /// 行の外側の空白だけを除き、断片間の空白は原文通り返す。
 fn row_fragment_text(text: &str, index: usize, len: usize) -> &str {
@@ -2541,6 +4049,13 @@ struct StructuredPageSectionRefs<'a> {
     column_before_trailing: Option<&'a SectionProperty>,
     /// 非最終 PDF ページの末尾へ付与する section property。
     page_end: Option<&'a SectionProperty>,
+    /// 段の区切り線で分けたページの 1 つの段だけを、その段の左端を原点に組む（段ごとの
+    /// セルの中身を組むとき）。
+    band: Option<BandRange>,
+    /// 縦書きのページの浮かせた図を、本文ではなく最終 section の header に置くか。
+    /// Word・LibreOffice は header を横に組むので、ページ基準の位置を原本の向きのまま使える
+    /// （LibreOffice は縦書きの本文に置いた図のページ基準の位置を回して解釈する）。
+    header_pictures: bool,
 }
 
 impl DetectedTextColumnLayout {
@@ -2682,12 +4197,22 @@ fn append_section_with_repeated_chrome(
     mut section: Section,
     chrome: &RepeatedPageChrome,
     layout: &SectionProperty,
+    pictures: HeaderPictures,
+    header_media: &mut Vec<(String, Vec<u8>)>,
 ) -> Result<Docx, ConvertError> {
     if let Some(footer) = repeated_footer(chrome, layout) {
         section = section.footer(footer);
     }
     docx = docx.add_section(section);
-    if let Some(header) = repeated_header(chrome, layout) {
+    let header = repeated_header(chrome, layout);
+    let header = if pictures.is_empty() {
+        header
+    } else {
+        let mut header = pictures.merge(header);
+        take_header_media(&mut header, header_media);
+        Some(header)
+    };
+    if let Some(header) = header {
         let Some(docx_rs::DocumentChild::Section(section)) = docx.document.children.pop() else {
             return Err(ConvertError::Pack(
                 "missing intermediate DOCX section".into(),
@@ -2789,6 +4314,8 @@ enum StructuredBlock {
     Table {
         /// flow 内の挿入順序。
         order_index: usize,
+        /// 段を読む順の順位（同じ挿入順序の表・画像を段の順に並べる）。
+        band_rank: (bool, usize),
         /// ブロック上端の PDF y 座標。
         top_y: f32,
         /// 表。
@@ -2798,6 +4325,8 @@ enum StructuredBlock {
     Image {
         /// flow 内の挿入順序。
         order_index: usize,
+        /// 段を読む順の順位（同じ挿入順序の表・画像を段の順に並べる）。
+        band_rank: (bool, usize),
         /// ブロック上端の PDF y 座標。
         top_y: f32,
         /// 画像要素。
@@ -2814,6 +4343,16 @@ impl StructuredBlock {
             StructuredBlock::Paragraph { top_y, .. }
             | StructuredBlock::Table { top_y, .. }
             | StructuredBlock::Image { top_y, .. } => *top_y,
+        }
+    }
+
+    /// 表・画像の段を読む順の順位を返す（段落は段の順に並べ済み）。
+    fn band_rank(&self) -> (bool, usize) {
+        match self {
+            StructuredBlock::Paragraph { .. } => (false, 0),
+            StructuredBlock::Table { band_rank, .. } | StructuredBlock::Image { band_rank, .. } => {
+                *band_rank
+            }
         }
     }
 
@@ -2841,6 +4380,7 @@ fn compare_structured_blocks(a: &StructuredBlock, b: &StructuredBlock) -> std::c
     a.flow_order()
         .cmp(&b.flow_order())
         .then(a.kind_order().cmp(&b.kind_order()))
+        .then(a.band_rank().cmp(&b.band_rank()))
         .then(b.top_y().total_cmp(&a.top_y()))
 }
 
@@ -2880,13 +4420,32 @@ struct PositionedTable {
     cell_underlines: Vec<Vec<bool>>,
     /// PDF座標から推定したセル内テキストの水平配置。
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
+    /// PDF座標から推定したセル内テキストの縦位置（`None` は従来どおり中央）。
+    cell_vertical_alignments: Vec<Vec<Option<CellVerticalAlignment>>>,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
     /// 原本と文字照合できたセルの位置・行・run style。
     native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
+    /// 上から順の各行の高さ（pt）。空の場合は表の高さを行数で等分する。
+    row_heights_pt: Vec<f32>,
+    /// 上から順の各行で、1 セル内に並ぶ最大の行数。
+    row_line_counts: Vec<usize>,
+    /// 左寄せ・中央揃えのセルで観測した、セル左端から文字までの最小距離（pt）。
+    cell_padding_pt: Option<f32>,
+    /// 上から順の各マスの文字サイズ（pt、マス内の中央値）。
+    cell_font_sizes: Vec<Vec<Option<f32>>>,
+    /// 上から順の各マスの段落ごとのタブ位置。
+    cell_tab_stops: Vec<Vec<CellParagraphTabs>>,
+    /// 上から順の各マスへ割り当てた文字片（子表を除いて組み直すために保持する）。
+    cell_fragments: Vec<Vec<Vec<table_cell_text::CellFragment>>>,
+    /// 上から順の各マスの背景色（RGB hex）。
+    cell_shading: Vec<Vec<Option<String>>>,
 }
+
+/// 1 マスの段落ごとのタブ位置（セル左端からの距離 pt と、右揃えか）。
+type CellParagraphTabs = Vec<Vec<(f32, bool)>>;
 
 /// DOCX 出力用の表モデル。
 #[derive(Debug, Clone, PartialEq)]
@@ -2904,6 +4463,8 @@ struct DocxTableCellModel {
     underlined: bool,
     /// セル段落の水平配置。
     alignment: ParagraphAlignment,
+    /// セル内の縦位置（`None` は中央）。
+    vertical_alignment: Option<CellVerticalAlignment>,
     /// 横方向の結合セル数。
     grid_span: usize,
     /// 縦方向の結合種別。
@@ -2927,6 +4488,8 @@ struct DocxCellBorders {
     right: bool,
     /// DOCX の border size（1/8pt 単位）。
     size_eighths_pt: usize,
+    /// 破線で描く辺（上・左・下・右の順）。
+    dashed: [bool; 4],
 }
 
 impl DocxCellBorders {
@@ -2943,8 +4506,20 @@ impl DocxCellBorders {
             bottom: true,
             right: true,
             size_eighths_pt,
+            dashed: [false; 4],
         }
     }
+}
+
+/// セル内の縦位置。
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum CellVerticalAlignment {
+    /// 上寄せ。
+    Top,
+    /// 中央。
+    Center,
+    /// 下寄せ。
+    Bottom,
 }
 
 /// DOCX 出力用の縦結合種別。
@@ -3145,6 +4720,7 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
                     text: table.rows[row][col].clone(),
                     underlined: false,
                     alignment: ParagraphAlignment::Left,
+                    vertical_alignment: None,
                     grid_span: root_span.col_span,
                     vertical_merge: (root_span.row_span > 1).then_some(DocxVerticalMerge::Restart),
                     width_twips: None,
@@ -3155,6 +4731,7 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
                     text: String::new(),
                     underlined: false,
                     alignment: ParagraphAlignment::Left,
+                    vertical_alignment: None,
                     grid_span: root_span.col_span,
                     vertical_merge: (root_span.row_span > 1).then_some(DocxVerticalMerge::Continue),
                     width_twips: None,
@@ -3170,10 +4747,10 @@ fn docx_table_model_from_ocr_table(table: &OcrTable) -> DocxTableModel {
 
 /// 位置付き表モデルから `docx-rs` の表要素を生成する。
 fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> Table {
-    let row_height_twips = if table.nested_tables.is_empty() {
-        positioned_table_row_height_twips(table)
+    let row_heights = if table.nested_tables.is_empty() {
+        positioned_table_row_heights(table)
     } else {
-        None
+        Vec::new()
     };
     let border_size = table_border_size_for_pdf_rule(table.stroke_width);
     let docx_table = table
@@ -3182,9 +4759,8 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
         .map(|model| {
             let model = docx_table_model_with_column_widths(model, &table.column_widths_twips);
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
-            let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
             let model = docx_table_model_with_border_size(&model, border_size);
-            docx_table_from_model_with_row_height_and_nested(&model, row_height_twips, Some(table))
+            docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         })
         .unwrap_or_else(|| {
             let model = docx_table_model_with_column_widths(
@@ -3193,8 +4769,12 @@ fn docx_table_from_structured_table(table: &PositionedTable, origin_x: f32) -> T
             );
             let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
             let model = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
+            let model = docx_table_model_with_cell_vertical_alignments(
+                &model,
+                &table.cell_vertical_alignments,
+            );
             let model = docx_table_model_with_border_size(&model, border_size);
-            docx_table_from_model_with_row_height_and_nested(&model, row_height_twips, Some(table))
+            docx_table_from_model_with_row_height_and_nested(&model, &row_heights, Some(table))
         });
     apply_positioned_table_layout(docx_table, table, origin_x)
 }
@@ -3303,6 +4883,37 @@ fn docx_table_model_with_cell_alignments(
     DocxTableModel { rows }
 }
 
+/// 結合のない DOCX 表モデルへ、マスごとに推定した縦位置を割り当てる。
+fn docx_table_model_with_cell_vertical_alignments(
+    model: &DocxTableModel,
+    vertical_alignments: &[Vec<Option<CellVerticalAlignment>>],
+) -> DocxTableModel {
+    if vertical_alignments.is_empty() {
+        return model.clone();
+    }
+    let rows = model
+        .rows
+        .iter()
+        .enumerate()
+        .map(|(row_index, row)| {
+            let mut column = 0usize;
+            row.iter()
+                .map(|cell| {
+                    let mut cell = cell.clone();
+                    cell.vertical_alignment = vertical_alignments
+                        .get(row_index)
+                        .and_then(|row| row.get(column))
+                        .copied()
+                        .flatten();
+                    column += cell.grid_span.max(1);
+                    cell
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    DocxTableModel { rows }
+}
+
 /// DOCX 表モデル内の罫線サイズを PDF 由来の代表線幅に合わせる。
 fn docx_table_model_with_border_size(
     model: &DocxTableModel,
@@ -3327,6 +4938,41 @@ fn docx_table_model_with_border_size(
     DocxTableModel { rows }
 }
 
+/// PDF 上の各行の高さを DOCX の行高へ変換する。
+///
+/// 1 行だけの行は PDF の高さで固定し、折り返しや改行を含む行は内容に合わせて伸ばせるようにする。
+fn positioned_table_row_heights(table: &PositionedTable) -> Vec<DocxRowHeight> {
+    let row_count = table.table.rows.len();
+    if row_count > 0 && table.row_heights_pt.len() == row_count {
+        let adjustment = thin_table_rule_height_adjustment(table.stroke_width) / row_count as f32;
+        return table
+            .row_heights_pt
+            .iter()
+            .enumerate()
+            .filter_map(|(row, height)| {
+                let twips = pdf_points_to_twips_f32(height + adjustment)?;
+                let lines = table.row_line_counts.get(row).copied().unwrap_or(1);
+                Some(DocxRowHeight {
+                    twips,
+                    exact: lines <= 1,
+                })
+            })
+            .collect();
+    }
+    positioned_table_row_height_twips(table)
+        .map(|twips| vec![DocxRowHeight { twips, exact: true }; row_count])
+        .unwrap_or_default()
+}
+
+/// DOCX の 1 行分の高さ指定。
+#[derive(Debug, Clone, Copy, PartialEq)]
+struct DocxRowHeight {
+    /// 行の高さ（twips）。
+    twips: f32,
+    /// `exact` で固定するか。`false` は `atLeast` で内容に合わせて伸ばす。
+    exact: bool,
+}
+
 /// PDF 上の表高さを DOCX の行高（twips）に変換する。
 fn positioned_table_row_height_twips(table: &PositionedTable) -> Option<f32> {
     let row_count = table.table.rows.len();
@@ -3337,6 +4983,9 @@ fn positioned_table_row_height_twips(table: &PositionedTable) -> Option<f32> {
         + thin_table_rule_height_adjustment(table.stroke_width);
     pdf_points_to_twips_f32(height / row_count as f32)
 }
+
+/// セルの左の罫線を越えても、そのセルの字とみなす字形のはみ出しの上限（pt）。
+const MAX_GLYPH_OVERHANG_PT: f32 = 2.0;
 
 /// 細い PDF 罫線が raster bbox に含まれる分を表高さへ足す。
 fn thin_table_rule_height_adjustment(stroke_width: f32) -> f32 {
@@ -3355,12 +5004,7 @@ fn apply_positioned_table_layout(
 ) -> Table {
     let width = (table.bounds.x1 - table.bounds.x0).abs();
     let top_cell_margin = positioned_table_top_cell_margin_twips(table);
-    let horizontal_cell_margin = table
-        .font_name
-        .as_deref()
-        .filter(|font_name| !table.font_embedded && pdf_font_name_is_ms_pgothic(font_name))
-        .map(|_| MS_PGOTHIC_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS)
-        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    let (horizontal_cell_margin, right_cell_margin) = table_cell_horizontal_margins(table);
     let mut docx_table = docx_table
         .align(TableAlignmentType::Left)
         .layout(TableLayoutType::Fixed)
@@ -3368,7 +5012,7 @@ fn apply_positioned_table_layout(
             top_cell_margin,
             horizontal_cell_margin,
             0,
-            horizontal_cell_margin,
+            right_cell_margin,
         ));
     if !table.column_widths_twips.is_empty() {
         docx_table = docx_table.set_grid(table.column_widths_twips.clone());
@@ -3384,6 +5028,25 @@ fn apply_positioned_table_layout(
         docx_table = docx_table.indent(indent);
     }
     docx_table
+}
+
+/// 表セルの左右の余白（twips）を返す。
+///
+/// PDF のセル内余白が既定より狭い表は同じ左余白にし、右余白は半分にして
+/// 代替フォントの字幅の差で列の中の文字が折り返さないよう余裕を残す。
+fn table_cell_horizontal_margins(table: &PositionedTable) -> (usize, usize) {
+    let horizontal_cell_margin = table
+        .font_name
+        .as_deref()
+        .filter(|font_name| !table.font_embedded && pdf_font_name_is_ms_pgothic(font_name))
+        .map(|_| MS_PGOTHIC_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    table
+        .cell_padding_pt
+        .and_then(pdf_points_to_twips)
+        .filter(|padding| *padding < horizontal_cell_margin)
+        .map(|padding| (padding, padding / 2))
+        .unwrap_or((horizontal_cell_margin, horizontal_cell_margin))
 }
 
 /// 表形状・font・セル配置から上セル余白のbaseline補正値を返す。
@@ -3422,13 +5085,16 @@ fn docx_table_from_model_with_row_height(
     model: &DocxTableModel,
     row_height_twips: Option<f32>,
 ) -> Table {
-    docx_table_from_model_with_row_height_and_nested(model, row_height_twips, None)
+    let row_heights = row_height_twips
+        .map(|twips| vec![DocxRowHeight { twips, exact: true }; model.rows.len()])
+        .unwrap_or_default();
+    docx_table_from_model_with_row_height_and_nested(model, &row_heights, None)
 }
 
 /// 結合情報つき表モデルから子表を含めて `docx-rs` の表要素を生成する。
 fn docx_table_from_model_with_row_height_and_nested(
     model: &DocxTableModel,
-    row_height_twips: Option<f32>,
+    row_heights: &[DocxRowHeight],
     parent: Option<&PositionedTable>,
 ) -> Table {
     let rows = model
@@ -3447,65 +5113,86 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
+                    // 元の字形の行を写せるセル（1 行・数値など）は、その段落をそのまま使う。
                     let native_cell = parent
                         .filter(|_| !has_nested_tables)
                         .and_then(|table| table.native_cells.get(row_index))
                         .and_then(|row| row.get(cell_index))
-                        .and_then(Option::as_ref);
-                    let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
-                    let mut run = text_run(text.as_str());
-                    if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
-                        let embedded = parent.is_some_and(|table| table.font_embedded);
-                        run = apply_pdf_font_name_to_run(
-                            run,
-                            font_name,
-                            embedded,
-                            parent.and_then(|table| table.embedded_face),
-                        );
-                        if !embedded
-                            && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name)
-                        {
-                            run = run.stretch(stretch);
-                        }
-                    }
-                    if let Some(size) = parent
-                        .and_then(|table| table.font_size)
-                        .and_then(pdf_font_size_to_half_points)
-                        .filter(|size| *size != DEFAULT_DOCX_FONT_SIZE_HALF_POINTS)
-                    {
-                        run = run.size(size);
-                    }
-                    if cell.underlined && !text.trim().is_empty() {
-                        run = run.underline("single");
-                    }
+                        .and_then(Option::as_ref)
+                        .filter(|native| native_table_text::agrees_with(native, &cell.text));
+                    // 行が収まらない原本の一段落の写し（fallback）は、組み直した本文が一行か、原本の
+                    // 行が重なっているときだけ使う（重ならない複数行のセルを一段落に潰さない）。
                     let native_paragraph = native_cell
                         .and_then(native_table_text::single_line_paragraph)
-                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph));
-                    let has_native_paragraph = native_paragraph.is_some();
+                        .or_else(|| {
+                            native_cell
+                                .filter(|native| {
+                                    !cell.text.trim().contains('\n')
+                                        || native_table_text::has_overlapping_lines(native)
+                                })
+                                .and_then(native_table_text::fallback_paragraph)
+                        });
                     let source_indent = native_cell
-                        .filter(|_| has_native_paragraph)
+                        .filter(|_| native_paragraph.is_some())
                         .and_then(native_table_text::single_line_horizontal_indent);
-                    let mut paragraph =
-                        native_paragraph.unwrap_or_else(|| Paragraph::new().add_run(run));
-                    paragraph = if let Some(indent) = source_indent {
-                        if indent > 0 {
-                            paragraph.indent(Some(indent), None, None, None)
-                        } else {
-                            paragraph
+                    // 子表を含むセルは、子表の範囲にある文字片を除いて本文を組み直す。
+                    let recomposed = parent.filter(|_| has_nested_tables).and_then(|parent| {
+                        cell_text_outside_nested_tables(
+                            parent,
+                            row_index,
+                            grid_col,
+                            cell.grid_span,
+                            &nested_tables,
+                        )
+                    });
+                    let cell_font_size = parent
+                        .and_then(|table| table.cell_font_sizes.get(row_index))
+                        .and_then(|row| row.get(grid_col))
+                        .copied()
+                        .flatten();
+                    let mut table_cell = TableCell::new();
+                    if let Some(mut paragraph) = native_paragraph {
+                        if let Some(indent) = source_indent.filter(|indent| *indent > 0) {
+                            paragraph = paragraph.indent(Some(indent), None, None, None);
                         }
+                        table_cell = table_cell.add_paragraph(paragraph);
                     } else {
-                        match cell.alignment {
-                            ParagraphAlignment::Left => paragraph,
-                            ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
-                            ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
+                        let text = recomposed
+                            .as_ref()
+                            .map(|parts| parts.above.0.clone())
+                            .unwrap_or_else(|| {
+                                cell_text_without_nested_tables(cell.text.as_str(), &nested_tables)
+                            });
+                        let cell_tabs = match recomposed.as_ref() {
+                            Some(parts) => Some(&parts.above.1),
+                            None => parent
+                                .and_then(|table| table.cell_tab_stops.get(row_index))
+                                .and_then(|row| row.get(grid_col)),
+                        };
+                        // 子表の上に本文がないセルは、空の段落を置かずに子表から始める。
+                        let skip_empty_lead = recomposed.is_some() && text.trim().is_empty();
+                        for (line_index, line) in
+                            text.split('\n').enumerate().filter(|_| !skip_empty_lead)
+                        {
+                            let stops = cell_tabs
+                                .and_then(|tabs| tabs.get(line_index))
+                                .map(Vec::as_slice)
+                                .unwrap_or(&[]);
+                            table_cell = table_cell.add_paragraph(table_cell_paragraph(
+                                line,
+                                cell,
+                                parent,
+                                cell_font_size,
+                                stops,
+                            ));
                         }
-                    };
-                    if parent.is_some() && !has_native_paragraph {
-                        paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
                     }
-                    let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
-                        table_cell = table_cell.vertical_align(VAlignType::Center);
+                        table_cell = table_cell.vertical_align(match cell.vertical_alignment {
+                            Some(CellVerticalAlignment::Top) => VAlignType::Top,
+                            Some(CellVerticalAlignment::Bottom) => VAlignType::Bottom,
+                            Some(CellVerticalAlignment::Center) | None => VAlignType::Center,
+                        });
                     }
                     if source_indent.is_some() {
                         table_cell.property = table_cell
@@ -3522,7 +5209,23 @@ fn docx_table_from_model_with_row_height_and_nested(
                             nested_table.bounds.x0,
                         ));
                     }
-                    if has_nested_tables {
+                    // 子表より下の本文は子表の後に置く（セルは段落で終わる必要もある）。
+                    let below = recomposed
+                        .as_ref()
+                        .map(|parts| &parts.below)
+                        .filter(|(text, _)| !text.trim().is_empty());
+                    if let Some((text, tabs)) = below {
+                        for (line_index, line) in text.split('\n').enumerate() {
+                            let stops = tabs.get(line_index).map(Vec::as_slice).unwrap_or(&[]);
+                            table_cell = table_cell.add_paragraph(table_cell_paragraph(
+                                line,
+                                cell,
+                                parent,
+                                cell_font_size,
+                                stops,
+                            ));
+                        }
+                    } else if has_nested_tables {
                         table_cell = table_cell.add_paragraph(Paragraph::new());
                     }
                     if cell.grid_span > 1 {
@@ -3542,30 +5245,165 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if let Some(borders) = cell.borders {
                         table_cell = table_cell.set_borders(table_cell_borders(borders));
                     }
+                    if let Some(color) = parent
+                        .and_then(|table| table.cell_shading.get(row_index))
+                        .and_then(|row| row.get(grid_col))
+                        .cloned()
+                        .flatten()
+                    {
+                        table_cell =
+                            table_cell.shading(Shading::new().shd_type(ShdType::Clear).fill(color));
+                    }
                     grid_col += cell.grid_span.max(1);
                     table_cell
                 })
                 .collect::<Vec<_>>();
+            // 見出し行がページ末に取り残されないよう、先頭行を次の行と同じページに置く。
+            let mut cells = cells;
+            if row_index == 0 && model.rows.len() > 1 {
+                keep_cells_with_next_row(&mut cells);
+            }
             let mut table_row = TableRow::new(cells);
             if parent.is_some() {
                 table_row = table_row.cant_split();
             }
-            let row_height_twips = parent
+            // 元の行の高さ（twips）が分かる行はその高さを使い、伸ばせるかは行の内容で決める。
+            let source_twips = parent
                 .filter(|table| table.nested_tables.is_empty())
                 .and_then(|table| table.row_heights_twips.get(row_index))
+                .copied();
+            if let Some(height) = row_heights
+                .get(row_index)
                 .copied()
-                .or(row_height_twips);
-            if let Some(row_height_twips) = row_height_twips
-                && row_height_twips > 0.0
+                .map(|height| DocxRowHeight {
+                    twips: source_twips.unwrap_or(height.twips),
+                    ..height
+                })
+                .or(source_twips.map(|twips| DocxRowHeight { twips, exact: true }))
+                && height.twips > 0.0
             {
                 table_row = table_row
-                    .row_height(row_height_twips)
-                    .height_rule(HeightRule::Exact);
+                    .row_height(height.twips)
+                    .height_rule(if height.exact {
+                        HeightRule::Exact
+                    } else {
+                        HeightRule::AtLeast
+                    });
             }
             table_row
         })
         .collect::<Vec<_>>();
     table_opening::keep_with_next(Table::without_borders(rows))
+}
+
+/// 各セルの最後の段落に keepNext を付け、行を次の行と同じページに置く。
+///
+/// 行そのものを分割不可にしたり繰り返し見出しにしたりはせず、長い行がページをまたげるようにする
+/// （lawrenceanum の kanpo-docx と同じ）。
+fn keep_cells_with_next_row(cells: &mut [TableCell]) {
+    for cell in cells {
+        if let Some(TableCellContent::Paragraph(paragraph)) = cell
+            .children
+            .iter_mut()
+            .rev()
+            .find(|content| matches!(content, TableCellContent::Paragraph(_)))
+        {
+            **paragraph = std::mem::take(&mut **paragraph).keep_next(true);
+        }
+    }
+}
+
+/// セル本文の 1 段落分を、表の font・下線・配置を適用して作る。
+fn table_cell_paragraph(
+    text: &str,
+    cell: &DocxTableCellModel,
+    parent: Option<&PositionedTable>,
+    cell_font_size: Option<f32>,
+    tab_stops: &[(f32, bool)],
+) -> Paragraph {
+    let mut run = Run::new();
+    for (index, segment) in text.split('\t').enumerate() {
+        if index > 0 {
+            run = run.add_tab();
+        }
+        run = run.add_text(sanitize_docx_text(segment));
+    }
+    if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
+        let embedded = parent.is_some_and(|table| table.font_embedded);
+        run = apply_pdf_font_name_to_run(
+            run,
+            font_name,
+            embedded,
+            parent.and_then(|table| table.embedded_face),
+        );
+        if !embedded && let Some(stretch) = docx_font_stretch_from_pdf_font_name(font_name) {
+            run = run.stretch(stretch);
+        }
+    }
+    // マスの文字サイズ、なければ表で共通の文字サイズを使う。
+    if let Some(size) = cell_font_size
+        .or_else(|| parent.and_then(|table| table.font_size))
+        .and_then(pdf_font_size_to_half_points)
+        .filter(|size| *size != DEFAULT_DOCX_FONT_SIZE_HALF_POINTS)
+    {
+        run = run.size(size);
+    }
+    if cell.underlined && !text.trim().is_empty() {
+        run = run.underline("single");
+    }
+    let mut paragraph = Paragraph::new().add_run(run);
+    // タブの後の語は PDF と同じ位置へ置く（数値は右端に右揃え、それ以外は左端に左揃え）。
+    let left_margin = parent
+        .map(|table| table_cell_horizontal_margins(table).0)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    let tab_count = text.matches('\t').count();
+    // タブ位置はセルの内容幅（左右の余白を除いた幅）より 1pt 内側に収める。
+    // 内容幅を超えた右揃えタブは、Word や LibreOffice で値の末尾が切れる。
+    let right_margin = parent
+        .map(|table| table_cell_horizontal_margins(table).1)
+        .unwrap_or(POSITIONED_TABLE_CELL_HORIZONTAL_MARGIN_TWIPS);
+    let content_limit = cell
+        .width_twips
+        .and_then(|width| width.checked_sub(left_margin + right_margin + 20));
+    if tab_count > 0 && tab_stops.len() == tab_count {
+        for (offset, right) in tab_stops {
+            let Some(position) = pdf_points_to_twips(*offset)
+                .and_then(|twips| twips.checked_sub(left_margin))
+                .map(|position| content_limit.map_or(position, |limit| position.min(limit)))
+                .filter(|position| *position > 0)
+            else {
+                continue;
+            };
+            paragraph = paragraph.add_tab(
+                Tab::new()
+                    .val(if *right {
+                        TabValueType::Right
+                    } else {
+                        TabValueType::Left
+                    })
+                    .pos(position),
+            );
+        }
+    } else if tab_count > 0
+        && let Some(width) = cell.width_twips
+        && width > 2 * left_margin
+    {
+        // 位置が分からないタブは、セルの内側右端の右揃えタブにする。
+        paragraph = paragraph.add_tab(
+            Tab::new()
+                .val(TabValueType::Right)
+                .pos(width - 2 * left_margin),
+        );
+    }
+    paragraph = match cell.alignment {
+        ParagraphAlignment::Left => paragraph,
+        ParagraphAlignment::Center => paragraph.align(AlignmentType::Center),
+        ParagraphAlignment::Right => paragraph.align(AlignmentType::Right),
+    };
+    if parent.is_some() {
+        paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
+    }
+    paragraph
 }
 
 /// 親表セルに含まれる子表を返す。
@@ -3584,10 +5422,33 @@ fn nested_tables_for_cell(
     }
     let width = (parent.bounds.x1 - parent.bounds.x0) / col_count as f32;
     let height = (parent.bounds.y1 - parent.bounds.y0) / row_count as f32;
-    let x0 = parent.bounds.x0 + width * col_index as f32;
-    let x1 = parent.bounds.x0 + width * (col_index + col_span.max(1)).min(col_count) as f32;
-    let y1 = parent.bounds.y1 - height * row_index as f32;
-    let y0 = parent.bounds.y1 - height * (row_index + 1).min(row_count) as f32;
+    // 列幅が分かる場合は実際の列境界、分からない場合は等分の境界を使う。
+    let column_x = |col: usize| {
+        if parent.column_widths_twips.len() == col_count {
+            parent.bounds.x0
+                + parent.column_widths_twips[..col.min(col_count)]
+                    .iter()
+                    .map(|twips| *twips as f32 / 20.0)
+                    .sum::<f32>()
+        } else {
+            parent.bounds.x0 + width * col.min(col_count) as f32
+        }
+    };
+    // 行の高さが分かる場合は実際の行境界、分からない場合は等分の境界を使う。
+    let row_y = |row: usize| {
+        if parent.row_heights_pt.len() == row_count {
+            parent.bounds.y1
+                - parent.row_heights_pt[..row.min(row_count)]
+                    .iter()
+                    .sum::<f32>()
+        } else {
+            parent.bounds.y1 - height * row.min(row_count) as f32
+        }
+    };
+    let x0 = column_x(col_index);
+    let x1 = column_x(col_index + col_span.max(1));
+    let y1 = row_y(row_index);
+    let y0 = row_y(row_index + 1);
     parent
         .nested_tables
         .iter()
@@ -3602,6 +5463,84 @@ fn nested_tables_for_cell(
         .collect()
 }
 
+/// 親表のマスの文字片から、子表の範囲にある文字片を除いて本文を組み直す。
+///
+/// 文字片を保持していない表は `None` を返し、文字列の除去に任せる。
+fn cell_text_outside_nested_tables(
+    parent: &PositionedTable,
+    row_index: usize,
+    grid_col: usize,
+    grid_span: usize,
+    nested_tables: &[&PositionedTable],
+) -> Option<NestedCellText> {
+    let row = parent.cell_fragments.get(row_index)?;
+    let cols = parent.column_widths_twips.len();
+    if cols == 0 || row.len() != cols {
+        return None;
+    }
+    let column_x = |col: usize| {
+        parent.bounds.x0
+            + parent.column_widths_twips[..col.min(cols)]
+                .iter()
+                .map(|twips| *twips as f32 / 20.0)
+                .sum::<f32>()
+    };
+    let inside_child = |fragment: &table_cell_text::CellFragment| {
+        let x = (fragment.bounds.x0 + fragment.bounds.x1) / 2.0;
+        let y = (fragment.bounds.y0 + fragment.bounds.y1) / 2.0;
+        nested_tables.iter().any(|child| {
+            let bounds = normalized_bounds(child.bounds);
+            x >= bounds.x0 - 1.0
+                && x <= bounds.x1 + 1.0
+                && y >= bounds.y0 - 1.0
+                && y <= bounds.y1 + 1.0
+        })
+    };
+    let fragments = row
+        .get(grid_col..(grid_col + grid_span.max(1)).min(cols))?
+        .iter()
+        .flatten()
+        .filter(|fragment| !inside_child(fragment))
+        .cloned()
+        .collect::<Vec<_>>();
+    // 最初の子表の上端より上の文字片は子表の前、それ以外は子表の後に置く。
+    let child_top = nested_tables
+        .iter()
+        .map(|child| normalized_bounds(child.bounds).y1)
+        .fold(f32::NEG_INFINITY, f32::max);
+    let (above, below): (Vec<_>, Vec<_>) = fragments
+        .into_iter()
+        .partition(|fragment| (fragment.bounds.y0 + fragment.bounds.y1) / 2.0 > child_top);
+    let left = column_x(grid_col);
+    let right = column_x(grid_col + grid_span.max(1));
+    let compose = |fragments: &[table_cell_text::CellFragment]| {
+        let composed = table_cell_text::compose_cell(fragments, left, right);
+        let tabs = composed
+            .tab_stops
+            .iter()
+            .map(|stops| {
+                stops
+                    .iter()
+                    .map(|stop| (stop.x - left, stop.right))
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>();
+        (composed.text, tabs)
+    };
+    Some(NestedCellText {
+        above: compose(&above),
+        below: compose(&below),
+    })
+}
+
+/// 子表を含むセルの、子表より上と下の本文（段落ごとのタブ位置つき）。
+struct NestedCellText {
+    /// 子表より上の本文。
+    above: (String, CellParagraphTabs),
+    /// 子表より下の本文。
+    below: (String, CellParagraphTabs),
+}
+
 /// 親セル文字列から子表に割り当て済みの文字を除く。
 fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable]) -> String {
     let mut out = text.to_string();
@@ -3613,32 +5552,46 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
             }
         }
     }
-    out.split_whitespace().collect::<Vec<_>>().join(" ")
+    out.split('\n')
+        .map(|line| {
+            line.split('\t')
+                .map(|segment| segment.split_whitespace().collect::<Vec<_>>().join(" "))
+                .collect::<Vec<_>>()
+                .join("\t")
+        })
+        .filter(|line| !line.is_empty())
+        .collect::<Vec<_>>()
+        .join("\n")
 }
 
 /// セル罫線フラグを DOCX の `w:tcBorders` へ変換する。
 fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
     let mut out = TableCellBorders::with_empty();
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Top,
-        borders.top,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Left,
-        borders.left,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Bottom,
-        borders.bottom,
-        borders.size_eighths_pt,
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Right,
-        borders.right,
-        borders.size_eighths_pt,
-    ));
+    for (position, present, dashed) in [
+        (TableCellBorderPosition::Top, borders.top, borders.dashed[0]),
+        (
+            TableCellBorderPosition::Left,
+            borders.left,
+            borders.dashed[1],
+        ),
+        (
+            TableCellBorderPosition::Bottom,
+            borders.bottom,
+            borders.dashed[2],
+        ),
+        (
+            TableCellBorderPosition::Right,
+            borders.right,
+            borders.dashed[3],
+        ),
+    ] {
+        let border = table_cell_border_with_size(position, present, borders.size_eighths_pt);
+        out = out.set(if present && dashed {
+            border.border_type(BorderType::Dashed)
+        } else {
+            border
+        });
+    }
     out
 }
 
@@ -3669,6 +5622,52 @@ fn table_border_size_for_pdf_rule(stroke_width: f32) -> usize {
 
 /// PDF から抽出した要素を位置付き `OcrTable` 群へ変換する。
 fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<PositionedTable> {
+    let mut tables = infer_ruled_positioned_tables(parsed);
+    // 罫線から作った表にかからない範囲で、罫線のない表を文字の並びから補う。
+    let ruleless = ruleless_table::infer_ruleless_tables(parsed, &tables);
+    if !ruleless.is_empty() {
+        tables.extend(ruleless);
+        tables.sort_by(|a, b| {
+            a.page
+                .cmp(&b.page)
+                .then(b.bounds.y1.total_cmp(&a.bounds.y1))
+        });
+    }
+    drop_tables_inside_larger_tables(tables)
+}
+
+/// 別の推定で同じ範囲に重ねて作った表（大きい表の範囲の 8 割以上に入る小さい表）を除く。
+///
+/// 大きい表のセルはその範囲の文字片を本文に持つので、重ねて出すと本文が二重になる。
+fn drop_tables_inside_larger_tables(tables: Vec<PositionedTable>) -> Vec<PositionedTable> {
+    let area = |bounds: ParsedBounds| {
+        let bounds = normalized_bounds(bounds);
+        (bounds.x1 - bounds.x0).max(0.0) * (bounds.y1 - bounds.y0).max(0.0)
+    };
+    let inside = |small: &PositionedTable, large: &PositionedTable| {
+        let (a, b) = (
+            normalized_bounds(small.bounds),
+            normalized_bounds(large.bounds),
+        );
+        let overlap =
+            (a.x1.min(b.x1) - a.x0.max(b.x0)).max(0.0) * (a.y1.min(b.y1) - a.y0.max(b.y0)).max(0.0);
+        small.page == large.page
+            && area(large.bounds) > area(small.bounds)
+            && overlap >= 0.8 * area(small.bounds)
+    };
+    let keep = tables
+        .iter()
+        .map(|table| !tables.iter().any(|other| inside(table, other)))
+        .collect::<Vec<_>>();
+    tables
+        .into_iter()
+        .zip(keep)
+        .filter_map(|(table, keep)| keep.then_some(table))
+        .collect()
+}
+
+/// 罫線（と罫線のない頁の文字格子）から表を推定する。
+fn infer_ruled_positioned_tables(parsed: &ParsedDocument) -> Vec<PositionedTable> {
     let mut graphic_tables = parsed
         .graphics
         .iter()
@@ -3710,9 +5709,169 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 .cmp(&b.page)
                 .then(b.bounds.y1.total_cmp(&a.bounds.y1))
         });
-        return attach_nested_positioned_tables(graphic_tables);
+        return group_side_by_side_tables(parsed, attach_nested_positioned_tables(graphic_tables));
     }
+    // 罫線のないページの文字格子の表は、罫線を付けずに出す。
     infer_positioned_tables_from_text_grid(parsed)
+        .into_iter()
+        .map(borderless_text_table)
+        .collect()
+}
+
+/// 同じ高さに横へ並ぶ表を、枠なし 1 行の外側表の各セルへ入れ子にしてまとめる。
+///
+/// DOCX の本文は上から下へ流れるため、横に並んだ表を別々に出すと縦に積まれてしまう。
+/// 縦方向の範囲が互いに半分以上重なり、横方向には重ならない表どうしを 1 つにまとめる。
+fn group_side_by_side_tables(
+    parsed: &ParsedDocument,
+    tables: Vec<PositionedTable>,
+) -> Vec<PositionedTable> {
+    // 段を区切る縦罫線の左右にある表は、別の段の表なのでまとめない（段の順に読む）。
+    let mut dividers: BTreeMap<usize, Vec<ParsedBounds>> = BTreeMap::new();
+    for page in tables
+        .iter()
+        .map(|table| table.page)
+        .collect::<BTreeSet<_>>()
+    {
+        let mut rules = column_bands::partial_band_rules(parsed, page, &[]);
+        rules.extend(
+            column_bands::column_band_edges(parsed, page, &[])
+                .into_iter()
+                .map(|x| ParsedBounds {
+                    x0: x,
+                    y0: f32::NEG_INFINITY,
+                    x1: x,
+                    y1: f32::INFINITY,
+                }),
+        );
+        dividers.insert(page, rules);
+    }
+    let divided = |a: ParsedBounds, b: ParsedBounds, page: usize| {
+        let (left, right) = if a.x0 <= b.x0 { (a, b) } else { (b, a) };
+        dividers.get(&page).is_some_and(|rules| {
+            // 表の外枠の縦罫線は区切りにしない（両方の表の間の空きにある罫線だけ）。
+            rules.iter().any(|rule| {
+                rule.x0 > left.x1 + 2.0
+                    && rule.x0 < right.x0 - 2.0
+                    && rule.y0 < left.y1.max(right.y1)
+                    && rule.y1 > left.y0.min(right.y0)
+            })
+        })
+    };
+    let overlaps = |a: &PositionedTable, b: &PositionedTable| {
+        let (a_bounds, b_bounds) = (normalized_bounds(a.bounds), normalized_bounds(b.bounds));
+        let vertical = a_bounds.y1.min(b_bounds.y1) - a_bounds.y0.max(b_bounds.y0);
+        let smaller = (a_bounds.y1 - a_bounds.y0).min(b_bounds.y1 - b_bounds.y0);
+        let horizontal = a_bounds.x1.min(b_bounds.x1) - a_bounds.x0.max(b_bounds.x0);
+        a.page == b.page
+            && smaller > 0.0
+            && vertical >= smaller * 0.5
+            && horizontal < 0.0
+            && !divided(a_bounds, b_bounds, a.page)
+    };
+    let mut groups: Vec<Vec<PositionedTable>> = Vec::new();
+    for table in tables {
+        match groups
+            .iter_mut()
+            .find(|group| group.iter().any(|member| overlaps(member, &table)))
+        {
+            Some(group) => group.push(table),
+            None => groups.push(vec![table]),
+        }
+    }
+    groups
+        .into_iter()
+        .map(|mut group| {
+            if group.len() < 2 {
+                return group.pop().expect("group is not empty");
+            }
+            group.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+            side_by_side_container(group)
+        })
+        .collect()
+}
+
+/// 横並びの表をまとめた外側の表（本文を持たず子表だけを持つ 1 行の表）か判定する。
+fn is_side_by_side_container(table: &PositionedTable) -> bool {
+    !table.nested_tables.is_empty()
+        && table.table.row_count() == 1
+        && table
+            .table
+            .rows
+            .iter()
+            .flatten()
+            .all(|cell| cell.is_empty())
+}
+
+/// 横並びの表を子表として持つ、枠なし 1 行の外側表を作る。
+fn side_by_side_container(members: Vec<PositionedTable>) -> PositionedTable {
+    let bounds = members
+        .iter()
+        .map(|table| normalized_bounds(table.bounds))
+        .reduce(|a, b| ParsedBounds {
+            x0: a.x0.min(b.x0),
+            y0: a.y0.min(b.y0),
+            x1: a.x1.max(b.x1),
+            y1: a.y1.max(b.y1),
+        })
+        .expect("members are not empty");
+    let mut column_widths_twips = Vec::new();
+    let mut right = bounds.x0;
+    for table in &members {
+        let table_bounds = normalized_bounds(table.bounds);
+        if table_bounds.x0 > right + 0.5 {
+            column_widths_twips.extend(pdf_points_to_twips(table_bounds.x0 - right));
+        }
+        column_widths_twips.extend(pdf_points_to_twips(table_bounds.x1 - table_bounds.x0));
+        right = table_bounds.x1;
+    }
+    let cols = column_widths_twips.len();
+    let no_borders = DocxCellBorders {
+        top: false,
+        left: false,
+        bottom: false,
+        right: false,
+        size_eighths_pt: 0,
+        dashed: [false; 4],
+    };
+    let row = (0..cols)
+        .map(|_| DocxTableCellModel {
+            text: String::new(),
+            underlined: false,
+            alignment: ParagraphAlignment::Left,
+            vertical_alignment: None,
+            grid_span: 1,
+            vertical_merge: None,
+            width_twips: None,
+            borders: Some(no_borders),
+        })
+        .collect::<Vec<_>>();
+    PositionedTable {
+        page: members[0].page,
+        bounds,
+        stroke_width: 0.0,
+        font_name: None,
+        font_embedded: false,
+        embedded_face: None,
+        native_cells: Vec::new(),
+        row_heights_twips: Vec::new(),
+        font_size: None,
+        column_widths_twips,
+        table: OcrTable::new(vec![vec![String::new(); cols]]),
+        cell_underlines: vec![vec![false; cols]],
+        cell_alignments: vec![vec![ParagraphAlignment::Left; cols]],
+        cell_vertical_alignments: vec![vec![Some(CellVerticalAlignment::Top); cols]],
+        docx_table: Some(DocxTableModel { rows: vec![row] }),
+        nested_tables: members,
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+        // 外側の表のセル余白で子表の幅が縮まないよう、余白は 0 にする。
+        cell_padding_pt: Some(0.0),
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
+    }
 }
 
 /// 包含された表を親表の子表として組み直す。
@@ -3855,12 +6014,16 @@ fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
 ) -> Vec<PositionedTable> {
-    let page_graphics = parsed
-        .graphics
-        .iter()
-        .filter(|graphic| graphic.page == page)
-        .cloned()
-        .collect::<Vec<_>>();
+    // 上下の枠・表が共有する外側の縦罫線は、表ごとに切り分けてから連結成分を求める。
+    let page_graphics = stacked_rules::split_shared_vertical_rules(
+        &parsed
+            .graphics
+            .iter()
+            .filter(|graphic| graphic.page == page)
+            .cloned()
+            .collect::<Vec<_>>(),
+    );
+    let page_graphics = bridge_lone_frame_rules(page_graphics);
     if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
         return vec![table];
     }
@@ -4073,6 +6236,7 @@ fn add_clipped_component_edges(
                     y1: child_bounds.y1,
                 },
                 stroke_width,
+                dashed: false,
             });
         }
     }
@@ -4090,6 +6254,7 @@ fn add_clipped_component_edges(
                     y1: y,
                 },
                 stroke_width,
+                dashed: false,
             });
         }
     }
@@ -4115,9 +6280,17 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
+        cell_vertical_alignments: Vec::new(),
         docx_table: None,
         native_cells: Vec::new(),
         nested_tables: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+        cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     }
 }
 
@@ -4145,22 +6318,50 @@ fn positioned_table_with_cell_underlines(
         vec![vec![false; col_count]; row_count]
     };
     let bounds = normalized_bounds(table.bounds);
-    let xs = (0..=col_count)
-        .map(|col| bounds.x0 + (bounds.x1 - bounds.x0) * col as f32 / col_count as f32)
-        .collect::<Vec<_>>();
-    let ys = (0..=row_count)
-        .map(|row| bounds.y0 + (bounds.y1 - bounds.y0) * row as f32 / row_count as f32)
-        .collect::<Vec<_>>();
+    // 列幅・行高が分かる場合は実際の境界、分からない場合は等分の境界を使う。
+    let xs = if table.column_widths_twips.len() == col_count {
+        std::iter::once(bounds.x0)
+            .chain(
+                table
+                    .column_widths_twips
+                    .iter()
+                    .scan(bounds.x0, |x, twips| {
+                        *x += *twips as f32 / 20.0;
+                        Some(*x)
+                    }),
+            )
+            .collect::<Vec<_>>()
+    } else {
+        (0..=col_count)
+            .map(|col| bounds.x0 + (bounds.x1 - bounds.x0) * col as f32 / col_count as f32)
+            .collect::<Vec<_>>()
+    };
+    let ys = if table.row_heights_pt.len() == row_count {
+        let mut ys = std::iter::once(bounds.y1)
+            .chain(table.row_heights_pt.iter().scan(bounds.y1, |y, height| {
+                *y -= height;
+                Some(*y)
+            }))
+            .collect::<Vec<_>>();
+        ys.reverse();
+        ys
+    } else {
+        (0..=row_count)
+            .map(|row| bounds.y0 + (bounds.y1 - bounds.y0) * row as f32 / row_count as f32)
+            .collect::<Vec<_>>()
+    };
     let x_edges = float_edges_to_i32(&xs);
     let y_edges = float_edges_to_i32(&ys);
+    let underline_graphics = graphics_without_row_rules(graphics, &ys);
+    // セルの字の幅のうち下線の付いた字の幅（下線付き, 全体）。セルの一部の字（ラベルの右の
+    // 数値など）だけに引いた下線で、セル全体に下線を付けない。
+    let mut widths = vec![vec![(0.0f32, 0.0f32); col_count]; row_count];
     for text in parsed
         .text_elements
         .iter()
         .filter(|text| text.page == table.page && !text.text.trim().is_empty())
     {
-        if !parsed_text_has_underline(text, graphics) {
-            continue;
-        }
+        let underlined = parsed_text_has_underline(text, &underline_graphics);
         let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
         let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
         let Some(col) = column_index_for_x(center_x, &x_edges) else {
@@ -4170,11 +6371,24 @@ fn positioned_table_with_cell_underlines(
             continue;
         };
         let row = row_count.saturating_sub(1 + row_from_bottom);
-        if let Some(cell) = cell_underlines
-            .get_mut(row)
-            .and_then(|row| row.get_mut(col))
-        {
-            *cell = true;
+        if let Some(width) = widths.get_mut(row).and_then(|row| row.get_mut(col)) {
+            let text_width = (text.bounds.x1 - text.bounds.x0).abs();
+            width.1 += text_width;
+            if underlined {
+                width.0 += text_width;
+            }
+        }
+    }
+    for (row, row_widths) in widths.iter().enumerate() {
+        for (col, (underlined, total)) in row_widths.iter().enumerate() {
+            if *total > 0.0
+                && *underlined >= 0.8 * total
+                && let Some(cell) = cell_underlines
+                    .get_mut(row)
+                    .and_then(|row| row.get_mut(col))
+            {
+                *cell = true;
+            }
         }
     }
     table.cell_underlines = cell_underlines;
@@ -4363,7 +6577,9 @@ fn infer_positioned_table_from_graphics(
         .map(|graphic| normalized_bounds(graphic.bounds))
         .filter(is_vertical_line)
         .collect::<Vec<_>>();
-    if horizontal.is_empty() || vertical.is_empty() {
+    // 縦罫線のない表は、同じ幅で揃った 3 本以上の横罫線がある場合だけ扱う（列は文字から求める）。
+    let horizontal_only = vertical.is_empty() && aligned_full_width_rules(&horizontal) >= 3;
+    if horizontal.is_empty() || (vertical.is_empty() && !horizontal_only) {
         return None;
     }
 
@@ -4388,6 +6604,17 @@ fn infer_positioned_table_from_graphics(
         .iter()
         .map(|bounds| bounds.x0.round() as i32)
         .collect::<Vec<_>>();
+    if horizontal_only {
+        let left = full_horizontal
+            .iter()
+            .map(|bounds| bounds.x0)
+            .fold(f32::INFINITY, f32::min);
+        let right = full_horizontal
+            .iter()
+            .map(|bounds| bounds.x1)
+            .fold(f32::NEG_INFINITY, f32::max);
+        xs = vec![left.round() as i32, right.round() as i32];
+    }
     let mut ys = full_horizontal
         .iter()
         .map(|bounds| bounds.y0.round() as i32)
@@ -4397,6 +6624,16 @@ fn infer_positioned_table_from_graphics(
     xs.dedup();
     ys.sort();
     ys.dedup();
+    // セルごとに枠を描く表や二重線は、間隔の狭い平行線を 1 本の境界にまとめる。
+    xs = merge_close_edges(&xs);
+    ys = merge_close_edges(&ys);
+    // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
+    let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
+    let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
+    let open_ys = clip_open_edges_at_page_edges(parsed, page, &xs, &ys, open_ys);
+    let has_open_edges = horizontal_only || open_ys.len() > ys.len() || open_xs.len() > xs.len();
+    ys = open_ys;
+    xs = open_xs;
     if xs.len() < 2
         && let Some(augmented_xs) =
             synthesize_xs_from_text_columns_and_graphics(parsed, page, &page_graphics)
@@ -4410,10 +6647,17 @@ fn infer_positioned_table_from_graphics(
         ys = augmented_ys;
     }
     xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
-    xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
-    ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    xs = merge_close_edges(&augment_xs_from_partial_verticals(&xs, &ys, &vertical));
+    ys = merge_close_edges(&augment_ys_from_partial_horizontals(&xs, &ys, &horizontal));
     let mut text_augmented_columns = false;
-    if xs.len() >= 2
+    // 内側の縦罫線で列が確定している表は、文字の隙間から列を増やさない。
+    if horizontal_only
+        && ys.len() >= 2
+        && let Some(projected_xs) = text_projection_columns(parsed, page, &xs, &ys)
+    {
+        text_augmented_columns = true;
+        xs = projected_xs;
+    } else if xs.len() == 2
         && ys.len() >= 2
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
     {
@@ -4429,72 +6673,247 @@ fn infer_positioned_table_from_graphics(
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
+            && !(has_open_edges && has_open_grid_lines(&page_graphics, &xs, &ys))
+            && !has_covered_grid_lines(&page_graphics, &xs, &ys)
     {
         return None;
+    }
+    // 横罫線のない背の高い行に並んだ項目の行は、文字の行ごとの行に分ける。
+    // 分けた境界には罫線を引かず、セルの結合だけを止める（線幅 0 の見えない境界として渡す）。
+    let mut model_graphics = page_graphics.to_vec();
+    if !text_augmented_columns {
+        let split_ys = text_line_rows::split_rows_at_text_lines(parsed, page, &xs, &ys);
+        if let (Some(left), Some(right)) = (xs.first(), xs.last()) {
+            for y in split_ys.iter().filter(|y| !ys.contains(y)) {
+                model_graphics.push(ParsedGraphicElement {
+                    page,
+                    bounds: ParsedBounds {
+                        x0: *left as f32,
+                        y0: *y as f32,
+                        x1: *right as f32,
+                        y1: *y as f32,
+                    },
+                    stroke_width: 0.0,
+                    dashed: false,
+                });
+            }
+        }
+        ys = split_ys;
     }
 
     let rows = ys.len() - 1;
     let cols = xs.len() - 1;
     let mut cells = vec![vec![String::new(); cols]; rows];
     let mut cell_source_texts = vec![vec![Vec::new(); cols]; rows];
+    // 罫線で分けた文字片を含むマス（元の文字片をそのまま写せない）。
+    let mut split_cells = vec![vec![false; cols]; rows];
     let mut cell_underlines = vec![vec![false; cols]; rows];
     let mut cell_text_bounds = vec![vec![None::<ParsedBounds>; cols]; rows];
     let mut assigned_font_names = Vec::new();
     let mut assigned_font_sizes = Vec::new();
+    let mut cell_fragments = vec![vec![Vec::<table_cell_text::CellFragment>::new(); cols]; rows];
+    // マスごとの（下線のある文字片の数, 文字片の数）。
+    let mut underline_counts = vec![vec![(0usize, 0usize); cols]; rows];
+    let interior_xs = xs[1..xs.len() - 1]
+        .iter()
+        .map(|x| *x as f32)
+        .collect::<Vec<_>>();
+    let (_, vertical_rules) = grid_rules_from_graphics(page_graphics);
+    let underline_graphics = graphics_without_row_rules(
+        page_graphics,
+        &ys.iter().map(|y| *y as f32).collect::<Vec<_>>(),
+    );
     for text in parsed
         .text_elements
         .iter()
         .filter(|text| text.page == page && !text.text.trim().is_empty())
     {
-        let center_x = (text.bounds.x0 + text.bounds.x1) / 2.0;
         let center_y = (text.bounds.y0 + text.bounds.y1) / 2.0;
-        let Some(col) = column_index_for_x(center_x, &xs) else {
-            continue;
-        };
         let Some((row, _)) =
             row_index_for_text_y(parsed, page, center_y, &ys, allow_top_origin_text_y)
         else {
             continue;
         };
-        append_cell_fragment(&mut cells[row][col], text.text.trim());
-        // 上原点の互換補正が必要な本文は原本座標の復元に混ぜず、従来出力へ戻す。
-        if row_index_for_y(center_y, &ys) == Some(row) {
-            cell_source_texts[row][col].push(text.clone());
+        let fragment = table_cell_text::CellFragment {
+            bounds: normalized_bounds(text.bounds),
+            text: text.text.clone(),
+            font_size: text.font_size,
+        };
+        // 列の罫線をまたいで 1 要素にまとまった文字列は、その高さで実際に縦罫線が引かれた
+        // 境界ごとに分けてから割り当てる（罫線のない境界は結合セルの本文として残す）。
+        let ruled_xs = interior_xs
+            .iter()
+            .copied()
+            .filter(|x| {
+                table_grid::is_ruled(&vertical_rules, *x, fragment.bounds.y0, fragment.bounds.y1)
+            })
+            .collect::<Vec<_>>();
+        let mut assigned = false;
+        let pieces = table_cell_text::split_across_boundaries(&fragment, &ruled_xs);
+        let whole = pieces.len() == 1;
+        for piece in pieces {
+            let center_x = (piece.bounds.x0 + piece.bounds.x1) / 2.0;
+            let Some(col) = column_index_for_x(center_x, &xs) else {
+                continue;
+            };
+            let bounds = piece.bounds;
+            // 元の文字片をそのまま写すセル（native）は、分けていない文字片だけで組む。
+            if whole && row_index_for_y(center_y, &ys) == Some(row) {
+                cell_source_texts[row][col].push(text.clone());
+            } else {
+                split_cells[row][col] = true;
+            }
+            cell_fragments[row][col].push(piece);
+            underline_counts[row][col].1 += 1;
+            if parsed_text_has_underline(text, &underline_graphics) {
+                underline_counts[row][col].0 += 1;
+            }
+            cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
+                Some(existing) => ParsedBounds {
+                    x0: existing.x0.min(bounds.x0),
+                    y0: existing.y0.min(bounds.y0),
+                    x1: existing.x1.max(bounds.x1),
+                    y1: existing.y1.max(bounds.y1),
+                },
+                None => bounds,
+            });
+            assigned = true;
         }
-        cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
-        let bounds = normalized_bounds(text.bounds);
-        cell_text_bounds[row][col] = Some(match cell_text_bounds[row][col] {
-            Some(existing) => ParsedBounds {
-                x0: existing.x0.min(bounds.x0),
-                y0: existing.y0.min(bounds.y0),
-                x1: existing.x1.max(bounds.x1),
-                y1: existing.y1.max(bounds.y1),
-            },
-            None => bounds,
-        });
+        if !assigned {
+            continue;
+        }
         if let Some(font_name) = text.font_name.as_deref() {
             assigned_font_names.push(font_name.to_string());
         }
         assigned_font_sizes.push(text.font_size);
     }
-    let cell_alignments = cell_text_bounds
+    // 一部の値だけに引かれた傍線でセル全体を下線にしないよう、ほぼ全ての文字片に
+    // 下線がある場合だけセルの下線とする。
+    for (row, counts) in underline_counts.iter().enumerate() {
+        for (col, (underlined, total)) in counts.iter().enumerate() {
+            cell_underlines[row][col] = *total > 0 && underlined * 5 >= total * 4;
+        }
+    }
+    let cell_font_sizes = cell_fragments
         .iter()
         .map(|row| {
             row.iter()
+                .map(|fragments| {
+                    let mut sizes = fragments
+                        .iter()
+                        .map(|fragment| fragment.font_size)
+                        .filter(|size| size.is_finite() && (4.0..=96.0).contains(size))
+                        .collect::<Vec<_>>();
+                    sizes.sort_by(f32::total_cmp);
+                    sizes.get(sizes.len() / 2).copied()
+                })
+                .collect::<Vec<_>>()
+        })
+        .collect::<Vec<_>>();
+    let mut row_line_counts = vec![0usize; rows];
+    // 字の高さに対して余白の少ない行（行の高さが字の高さの 1.6 倍未満）は、代替フォントの
+    // 行の高さで字の上下が切れるため、固定せず内容に合わせて伸ばせるようにする。
+    for (row_index, row) in cell_text_bounds.iter().enumerate() {
+        let glyph_height = row
+            .iter()
+            .flatten()
+            .map(|bounds| bounds.y1 - bounds.y0)
+            .fold(0.0f32, f32::max);
+        let row_height = (ys[rows - row_index] - ys[rows - row_index - 1]) as f32;
+        if glyph_height > 0.0 && row_height < 1.6 * glyph_height {
+            row_line_counts[row_index] = row_line_counts[row_index].max(2);
+        }
+    }
+    // 文字の行ごとに分けた行は、PDF の行間が詰まっているので高さを固定しない。
+    if model_graphics.len() > page_graphics.len() {
+        for count in &mut row_line_counts {
+            *count = (*count).max(2);
+        }
+    }
+    // 文字がセル幅の 85% を超える行は、代替フォントの字幅で折り返すと固定の行高では
+    // 2 行目が隠れるため、行数を 2 として扱い内容に合わせて伸ばせるようにする。
+    for (row_index, row) in cell_text_bounds.iter().enumerate() {
+        for (col, bounds) in row.iter().enumerate() {
+            let Some(bounds) = bounds else {
+                continue;
+            };
+            let width = (xs[col + 1] - xs[col]) as f32;
+            if width > 0.0 && bounds.x1 - bounds.x0 > 0.85 * width {
+                row_line_counts[row_index] = row_line_counts[row_index].max(2);
+            }
+        }
+    }
+    let mut cell_tab_stops = vec![vec![Vec::new(); cols]; rows];
+    for (row_index, row) in cell_fragments.iter().enumerate() {
+        for (col, fragments) in row.iter().enumerate() {
+            let composed =
+                table_cell_text::compose_cell(fragments, xs[col] as f32, xs[col + 1] as f32);
+            cell_tab_stops[row_index][col] = composed
+                .tab_stops
+                .iter()
+                .map(|stops| {
+                    stops
+                        .iter()
+                        .map(|stop| (stop.x - xs[col] as f32, stop.right))
+                        .collect::<Vec<_>>()
+                })
+                .collect::<Vec<_>>();
+            cells[row_index][col] = composed.text;
+            row_line_counts[row_index] =
+                row_line_counts[row_index].max(table_cell_text::cell_line_count(fragments));
+        }
+    }
+    let row_heights_pt = ys
+        .windows(2)
+        .rev()
+        .map(|pair| (pair[1] - pair[0]) as f32)
+        .collect::<Vec<_>>();
+    // 各マスの文字範囲とマスの位置から、セル内の横配置と縦位置を推定する。
+    let (cell_alignments, cell_vertical_alignments): (Vec<Vec<_>>, Vec<Vec<_>>) = cell_text_bounds
+        .iter()
+        .enumerate()
+        .map(|(row, row_bounds)| {
+            row_bounds
+                .iter()
                 .enumerate()
                 .map(|(col, bounds)| {
-                    if rows != 1 || cols != 1 {
-                        return ParagraphAlignment::Left;
-                    }
-                    let Some(bounds) = bounds else {
-                        return ParagraphAlignment::Left;
+                    let cell = ParsedBounds {
+                        x0: xs[col] as f32,
+                        y0: ys[rows - row - 1] as f32,
+                        x1: xs[col + 1] as f32,
+                        y1: ys[rows - row] as f32,
                     };
-                    let cell_left = xs[col] as f32;
-                    let cell_width = (xs[col + 1] - xs[col]) as f32;
-                    infer_paragraph_alignment(
-                        bounds.x0 - cell_left,
-                        bounds.x1 - cell_left,
-                        cell_width,
+                    bounds
+                        .map(|bounds| table_cell_text::infer_cell_alignment(bounds, cell))
+                        .unwrap_or((ParagraphAlignment::Left, None))
+                })
+                .unzip()
+        })
+        .unzip();
+    let cell_padding_pt = cell_text_bounds
+        .iter()
+        .zip(cell_alignments.iter())
+        .flat_map(|(bounds, alignments)| bounds.iter().zip(alignments.iter()).enumerate())
+        .filter(|(_, (_, alignment))| **alignment != ParagraphAlignment::Right)
+        .filter_map(|(col, (bounds, _))| bounds.map(|bounds| bounds.x0 - xs[col] as f32))
+        // 字形の外接矩形が罫線をわずかに越える（縦組みの括弧など）セルは、余白の無いセルとする。
+        .filter(|gap| gap.is_finite() && *gap >= -MAX_GLYPH_OVERHANG_PT)
+        .map(|gap| gap.max(0.0))
+        .reduce(f32::min);
+    // マスの面積の大半を覆う塗りつぶし矩形を、そのマスの背景色にする。
+    let cell_shading = (0..rows)
+        .map(|row| {
+            (0..cols)
+                .map(|col| {
+                    cell_fill_color(
+                        parsed,
+                        page,
+                        ParsedBounds {
+                            x0: xs[col] as f32,
+                            y0: ys[rows - row - 1] as f32,
+                            x1: xs[col + 1] as f32,
+                            y1: ys[rows - row] as f32,
+                        },
                     )
                 })
                 .collect::<Vec<_>>()
@@ -4504,14 +6923,28 @@ fn infer_positioned_table_from_graphics(
     let docx_table = if text_augmented_columns {
         None
     } else {
-        docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines)
-            .filter(|model| model_preserves_grid_cell_texts(model, &cells))
+        docx_table_model_from_grid(
+            &model_graphics,
+            &xs,
+            &ys,
+            &cells,
+            &cell_underlines,
+            &cell_text_bounds,
+        )
+        .filter(|model| model_preserves_grid_cell_texts(model, &cells))
     };
     let table = if let Some(model) = docx_table.as_ref() {
         OcrTable::with_spans(cells, ocr_spans_from_docx_table_model(model, rows, cols))
     } else {
         OcrTable::new(cells)
     };
+    for (row, flags) in split_cells.iter().enumerate() {
+        for (col, split) in flags.iter().enumerate() {
+            if *split {
+                cell_source_texts[row][col].clear();
+            }
+        }
+    }
     let native_cells = native_table_text::cells(
         parsed,
         &xs,
@@ -4551,9 +6984,17 @@ fn infer_positioned_table_from_graphics(
         table,
         cell_underlines,
         cell_alignments,
+        cell_vertical_alignments,
         docx_table,
         native_cells,
         nested_tables: Vec::new(),
+        row_heights_pt,
+        row_line_counts,
+        cell_padding_pt,
+        cell_font_sizes,
+        cell_tab_stops,
+        cell_fragments,
+        cell_shading,
     })
 }
 
@@ -4602,13 +7043,6 @@ fn grid_accepts_top_origin_text_y(parsed: &ParsedDocument, page: usize, ys: &[i3
     };
     ys.first()
         .map(|min_y| *min_y as f32 > height * 0.5)
-        .unwrap_or(false)
-}
-
-/// 位置付き表が top-origin text y の補正対象か判定する。
-fn table_accepts_top_origin_text_y(parsed: &ParsedDocument, table: &PositionedTable) -> bool {
-    page_height(parsed, table.page)
-        .map(|height| table.bounds.y0 > height * 0.5)
         .unwrap_or(false)
 }
 
@@ -4683,6 +7117,47 @@ fn parsed_text_has_underline(text: &ParsedTextElement, graphics: &[ParsedGraphic
             && bounds.x0 <= text_bounds.x1 + x_tolerance
             && bounds.x1 >= text_bounds.x0 - x_tolerance
     })
+}
+
+/// マスの面積の 8 割以上を覆う塗りつぶし矩形の色を返す（複数あれば最も小さい矩形）。
+fn cell_fill_color(parsed: &ParsedDocument, page: usize, cell: ParsedBounds) -> Option<String> {
+    let area = (cell.x1 - cell.x0) * (cell.y1 - cell.y0);
+    if area <= 0.0 {
+        return None;
+    }
+    parsed
+        .fills
+        .iter()
+        .filter(|fill| fill.page == page)
+        .filter_map(|fill| {
+            let bounds = normalized_bounds(fill.bounds);
+            let width = bounds.x1.min(cell.x1) - bounds.x0.max(cell.x0);
+            let height = bounds.y1.min(cell.y1) - bounds.y0.max(cell.y0);
+            (width > 0.0 && height > 0.0 && width * height >= 0.8 * area).then(|| {
+                (
+                    (bounds.x1 - bounds.x0) * (bounds.y1 - bounds.y0),
+                    &fill.color,
+                )
+            })
+        })
+        .min_by(|a, b| a.0.total_cmp(&b.0))
+        .map(|(_, color)| color.clone())
+}
+
+/// 表の行境界に重なる横罫線を除いた graphics を返す（セル罫線を文字の下線と取り違えない）。
+fn graphics_without_row_rules(
+    graphics: &[ParsedGraphicElement],
+    row_edges: &[f32],
+) -> Vec<ParsedGraphicElement> {
+    graphics
+        .iter()
+        .filter(|graphic| {
+            let bounds = normalized_bounds(graphic.bounds);
+            !(is_horizontal_line(&bounds)
+                && row_edges.iter().any(|edge| (bounds.y0 - edge).abs() <= 1.5))
+        })
+        .cloned()
+        .collect()
 }
 
 /// 2 つの text fragment の間に空白を補うべきか判定する。
@@ -4937,26 +7412,281 @@ fn augment_xs_from_partial_verticals(
     augmented
 }
 
-/// 罫線の欠損から横結合を反映した DOCX 表モデルを作る。
+/// 罫線の欠損から縦横の結合とセルごとの罫線を反映した DOCX 表モデルを作る。
+///
+/// 結合も欠けた罫線もない場合は `None` を返し、呼び出し側の全罫線の表モデルに任せる。
 fn docx_table_model_from_grid(
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
     ys: &[i32],
     cells: &[Vec<String>],
     cell_underlines: &[Vec<bool>],
+    cell_text_bounds: &[Vec<Option<ParsedBounds>>],
 ) -> Option<DocxTableModel> {
-    graphic_table_cells::model(graphics, xs, ys, cells, cell_underlines)
+    if cells.is_empty() || cells.iter().any(|row| row.len() + 1 != xs.len()) {
+        return None;
+    }
+    // 結合は線幅 0 の見えない境界も区切りとして求め、罫線は実際に描かれた線だけから求める。
+    let (merge_horizontal, merge_vertical) = grid_rules_from_graphics(graphics);
+    let drawn = graphics
+        .iter()
+        .filter(|graphic| graphic.stroke_width > 0.0)
+        .cloned()
+        .collect::<Vec<_>>();
+    let (horizontal, vertical) = grid_rules_from_graphics(&drawn);
+    let (dashed_graphics, solid_graphics): (Vec<_>, Vec<_>) =
+        drawn.iter().cloned().partition(|graphic| graphic.dashed);
+    let (dashed_horizontal, dashed_vertical) = grid_rules_from_graphics(&dashed_graphics);
+    let (solid_horizontal, solid_vertical) = grid_rules_from_graphics(&solid_graphics);
+    let xs = xs.iter().map(|x| *x as f32).collect::<Vec<_>>();
+    let ys = ys.iter().map(|y| *y as f32).collect::<Vec<_>>();
+    let has_text = cells
+        .iter()
+        .map(|row| row.iter().map(|cell| !cell.trim().is_empty()).collect())
+        .collect::<Vec<Vec<bool>>>();
+    let rects = table_grid::merged_cells(&merge_horizontal, &merge_vertical, &xs, &ys, &has_text);
+    // 外周の一部だけに罫線がある結合は、DOCX の 1 セルでは罫線を正しく描けないので、
+    // 結合せずにマスごとのセルにする（元の罫線を区間ごとに欠かさず、増やさない）。
+    let rects = {
+        let rows = cells.len();
+        let top = |row: usize| ys[rows - row];
+        let bottom = |row: usize| ys[rows - row - 1];
+        let uniform = |values: Vec<bool>| values.windows(2).all(|pair| pair[0] == pair[1]);
+        rects
+            .into_iter()
+            .flat_map(|rect| {
+                let columns = rect.col0..=rect.col1;
+                let span_rows = rect.row0..=rect.row1;
+                let ok = uniform(
+                    columns
+                        .clone()
+                        .map(|c| {
+                            table_grid::is_ruled(&horizontal, top(rect.row0), xs[c], xs[c + 1])
+                        })
+                        .collect(),
+                ) && uniform(
+                    columns
+                        .clone()
+                        .map(|c| {
+                            table_grid::is_ruled(&horizontal, bottom(rect.row1), xs[c], xs[c + 1])
+                        })
+                        .collect(),
+                ) && uniform(
+                    span_rows
+                        .clone()
+                        .map(|r| table_grid::is_ruled(&vertical, xs[rect.col0], bottom(r), top(r)))
+                        .collect(),
+                ) && uniform(
+                    span_rows
+                        .clone()
+                        .map(|r| {
+                            table_grid::is_ruled(&vertical, xs[rect.col1 + 1], bottom(r), top(r))
+                        })
+                        .collect(),
+                );
+                // 結合の内側に罫線が引かれた辺があれば結合しない。
+                let inner_ruled = (rect.col0 + 1..=rect.col1).any(|c| {
+                    span_rows
+                        .clone()
+                        .any(|r| table_grid::is_ruled(&vertical, xs[c], bottom(r), top(r)))
+                }) || (rect.row0..rect.row1).any(|r| {
+                    columns
+                        .clone()
+                        .any(|c| table_grid::is_ruled(&horizontal, bottom(r), xs[c], xs[c + 1]))
+                });
+                if ok && !inner_ruled {
+                    vec![rect]
+                } else {
+                    span_rows
+                        .flat_map(|row| {
+                            columns.clone().map(move |col| table_grid::CellRect {
+                                row0: row,
+                                col0: col,
+                                row1: row,
+                                col1: col,
+                            })
+                        })
+                        .collect()
+                }
+            })
+            .collect::<Vec<_>>()
+    };
+    let has_span = rects
+        .iter()
+        .any(|rect| rect.row0 != rect.row1 || rect.col0 != rect.col1);
+    let row_count = cells.len();
+    let col_count = xs.len() - 1;
+    let mut owner = vec![vec![None::<usize>; col_count]; row_count];
+    for (index, rect) in rects.iter().enumerate() {
+        for row in owner.iter_mut().take(rect.row1 + 1).skip(rect.row0) {
+            for cell in row.iter_mut().take(rect.col1 + 1).skip(rect.col0) {
+                *cell = Some(index);
+            }
+        }
+    }
+    let border_size = table_border_size_for_pdf_rule(table_rule_stroke_width(
+        graphics,
+        &xs.iter().map(|x| *x as i32).collect::<Vec<_>>(),
+        &ys.iter().map(|y| *y as i32).collect::<Vec<_>>(),
+    ));
+    let top_of = |row: usize| ys[row_count - row];
+    let bottom_of = |row: usize| ys[row_count - row - 1];
+    let mut rows = Vec::with_capacity(row_count);
+    for row in 0..row_count {
+        let mut modeled_row = Vec::new();
+        let mut col = 0usize;
+        while col < col_count {
+            let rect = rects[owner[row][col]?];
+            let span = rect.col1 - rect.col0 + 1;
+            let vertical_merge = (rect.row1 > rect.row0).then_some(if row == rect.row0 {
+                DocxVerticalMerge::Restart
+            } else {
+                DocxVerticalMerge::Continue
+            });
+            let text = if row == rect.row0 {
+                (rect.row0..=rect.row1)
+                    .flat_map(|r| (rect.col0..=rect.col1).map(move |c| (r, c)))
+                    .map(|(r, c)| cells[r][c].trim())
+                    .filter(|text| !text.is_empty())
+                    .collect::<Vec<_>>()
+                    .join("\n")
+            } else {
+                String::new()
+            };
+            let underlined = (rect.col0..=rect.col1).any(|c| {
+                cell_underlines
+                    .get(row)
+                    .and_then(|row| row.get(c))
+                    .copied()
+                    .unwrap_or(false)
+            });
+            let (left, right) = (xs[rect.col0], xs[rect.col1 + 1]);
+            // 結合セルは、結合した範囲全体に対する文字の位置で配置を決める。
+            let rect_text = (rect.row0..=rect.row1)
+                .flat_map(|r| (rect.col0..=rect.col1).map(move |c| (r, c)))
+                .filter_map(|(r, c)| {
+                    cell_text_bounds
+                        .get(r)
+                        .and_then(|row| row.get(c))
+                        .copied()
+                        .flatten()
+                })
+                .reduce(|a, b| ParsedBounds {
+                    x0: a.x0.min(b.x0),
+                    y0: a.y0.min(b.y0),
+                    x1: a.x1.max(b.x1),
+                    y1: a.y1.max(b.y1),
+                });
+            let rect_bounds = ParsedBounds {
+                x0: left,
+                y0: bottom_of(rect.row1),
+                x1: right,
+                y1: top_of(rect.row0),
+            };
+            let (alignment, vertical_alignment) = rect_text
+                .map(|text| table_cell_text::infer_cell_alignment(text, rect_bounds))
+                .unwrap_or((ParagraphAlignment::Left, Some(CellVerticalAlignment::Top)));
+            modeled_row.push(DocxTableCellModel {
+                text,
+                underlined,
+                alignment,
+                vertical_alignment,
+                grid_span: span,
+                vertical_merge,
+                width_twips: None,
+                // 結合セルの罫線は結合した矩形の外周で決める（開始セルが矩形全体の罫線を持つ）。
+                borders: Some({
+                    let (rect_top, rect_bottom) = (top_of(rect.row0), bottom_of(rect.row1));
+                    let ruled = |rules: &[table_grid::Rule], at: f32, from: f32, to: f32| {
+                        table_grid::is_ruled(rules, at, from, to)
+                    };
+                    let dashed_only = |dashed: &[table_grid::Rule],
+                                       solid: &[table_grid::Rule],
+                                       at: f32,
+                                       from: f32,
+                                       to: f32| {
+                        ruled(dashed, at, from, to) && !ruled(solid, at, from, to)
+                    };
+                    let first = row == rect.row0;
+                    DocxCellBorders {
+                        top: first && ruled(&horizontal, rect_top, left, right),
+                        left: ruled(&vertical, left, rect_bottom, rect_top),
+                        bottom: (first || row == rect.row1)
+                            && ruled(&horizontal, rect_bottom, left, right),
+                        right: ruled(&vertical, right, rect_bottom, rect_top),
+                        size_eighths_pt: border_size,
+                        dashed: [
+                            dashed_only(
+                                &dashed_horizontal,
+                                &solid_horizontal,
+                                rect_top,
+                                left,
+                                right,
+                            ),
+                            dashed_only(
+                                &dashed_vertical,
+                                &solid_vertical,
+                                left,
+                                rect_bottom,
+                                rect_top,
+                            ),
+                            dashed_only(
+                                &dashed_horizontal,
+                                &solid_horizontal,
+                                rect_bottom,
+                                left,
+                                right,
+                            ),
+                            dashed_only(
+                                &dashed_vertical,
+                                &solid_vertical,
+                                right,
+                                rect_bottom,
+                                rect_top,
+                            ),
+                        ],
+                    }
+                }),
+            });
+            col += span;
+        }
+        rows.push(modeled_row);
+    }
+    let has_missing_rule = rows.iter().flatten().any(|cell| {
+        cell.borders.is_some_and(|borders| {
+            !(borders.top && borders.left && borders.bottom && borders.right)
+        })
+    });
+    let has_dashed_rule = rows.iter().flatten().any(|cell| {
+        cell.borders
+            .is_some_and(|borders| borders.dashed.iter().any(|dashed| *dashed))
+    });
+    (has_span || has_missing_rule || has_dashed_rule).then_some(DocxTableModel { rows })
 }
 
-/// 欠けた縦罫線を結合として扱ってよいか判定する。
-fn should_merge_across_missing_vertical_boundary(row: &[String], col: usize, span: usize) -> bool {
-    let current_has_text = row[col..col + span]
-        .iter()
-        .any(|cell| !cell.trim().is_empty());
-    let next_has_text = row
-        .get(col + span)
-        .is_some_and(|cell| !cell.trim().is_empty());
-    !(current_has_text && next_has_text)
+/// ページ graphics を水平・垂直の罫線区間へ分ける。
+fn grid_rules_from_graphics(
+    graphics: &[ParsedGraphicElement],
+) -> (Vec<table_grid::Rule>, Vec<table_grid::Rule>) {
+    let mut horizontal = Vec::new();
+    let mut vertical = Vec::new();
+    for graphic in graphics {
+        let bounds = normalized_bounds(graphic.bounds);
+        if is_horizontal_line(&bounds) {
+            horizontal.push(table_grid::Rule {
+                at: bounds.y0,
+                start: bounds.x0,
+                end: bounds.x1,
+            });
+        } else if is_vertical_line(&bounds) {
+            vertical.push(table_grid::Rule {
+                at: bounds.x0,
+                start: bounds.y0,
+                end: bounds.y1,
+            });
+        }
+    }
+    (horizontal, vertical)
 }
 
 /// 指定 row band を縦罫線が分割しているか判定する。
@@ -5120,6 +7850,38 @@ fn infer_positioned_tables_from_text_grid(parsed: &ParsedDocument) -> Vec<Positi
         .collect()
 }
 
+/// 文字の並びだけから作った表を、罫線なし・数値は右揃えの表モデルにする。
+fn borderless_text_table(mut table: PositionedTable) -> PositionedTable {
+    if table.docx_table.is_some() {
+        return table;
+    }
+    let mut model = docx_table_model_from_ocr_table(&table.table);
+    for cell in model.rows.iter_mut().flatten() {
+        cell.borders = Some(DocxCellBorders {
+            top: false,
+            left: false,
+            bottom: false,
+            right: false,
+            size_eighths_pt: 0,
+            dashed: [false; 4],
+        });
+        let body = cell.text.trim();
+        let digits = body.chars().filter(|ch| ch.is_ascii_digit()).count();
+        if !body.is_empty() && digits * 2 >= body.chars().filter(|ch| !ch.is_whitespace()).count() {
+            cell.alignment = ParagraphAlignment::Right;
+        }
+    }
+    table.docx_table = Some(model);
+    // 文字の並びから作った行は、代替フォントの行の高さで文字が切れないよう伸ばせるようにする。
+    let rows = table.table.row_count();
+    if rows > 0 && table.row_heights_pt.len() != rows {
+        let height = (table.bounds.y1 - table.bounds.y0).abs() / rows as f32;
+        table.row_heights_pt = vec![height; rows];
+    }
+    table.row_line_counts = vec![2; rows];
+    table
+}
+
 /// 指定 page の座標付き text element を反復列の表へ変換する。
 fn infer_positioned_table_from_text_grid_page(
     parsed: &ParsedDocument,
@@ -5188,12 +7950,32 @@ fn infer_positioned_table_from_text_grid_page(
         return None;
     }
     let bounds = text_grid_cells_bounds(&row_cells)?;
+    // 段を区切る縦罫線をまたぐ字の並びは、左右の段の行が同じ高さに並んだだけなので表にしない。
+    let area = normalized_bounds(bounds);
+    let crosses_column_rule = column_bands::partial_band_rules(parsed, page, &[])
+        .iter()
+        .any(|rule| {
+            rule.x0 > area.x0 + 2.0
+                && rule.x0 < area.x1 - 2.0
+                && rule.y0 < area.y1
+                && rule.y1 > area.y0
+        })
+        || column_bands::column_band_edges(parsed, page, &[])
+            .iter()
+            .any(|edge| *edge > area.x0 + 2.0 && *edge < area.x1 - 2.0);
+    if crosses_column_rule {
+        return None;
+    }
 
     let mut table_rows = Vec::new();
     for cells in row_cells {
         let mut row = vec![String::new(); anchors.len()];
         for cell in cells {
-            if let Some(index) = nearest_column_anchor(cell.x0, &anchors) {
+            // どの列の近くにもない字（金額の前の印「－」「△」など、使う行の少ない列の字）も
+            // 落とさず、いちばん近い列に入れる。
+            if let Some(index) = nearest_column_anchor(cell.x0, &anchors)
+                .or_else(|| closest_column_anchor(cell.x0, &anchors))
+            {
                 if !row[index].is_empty() {
                     row[index].push(' ');
                 }
@@ -5221,9 +8003,17 @@ fn infer_positioned_table_from_text_grid_page(
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
+        cell_vertical_alignments: Vec::new(),
         docx_table: None,
         native_cells: Vec::new(),
         nested_tables: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+        cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
     })
 }
 
@@ -5334,6 +8124,15 @@ fn nearest_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
         .map(|(index, _)| index)
 }
 
+/// cell の x 座標に、距離を問わず最も近い列 index を返す。
+fn closest_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
+    anchors
+        .iter()
+        .enumerate()
+        .min_by(|(_, a), (_, b)| (x - **a).abs().total_cmp(&(x - **b).abs()))
+        .map(|(index, _)| index)
+}
+
 /// text grid から推定したセル候補。
 #[derive(Debug, Clone)]
 struct TextGridCell {
@@ -5360,6 +8159,416 @@ fn row_index_for_y(y: f32, ys: &[i32]) -> Option<usize> {
     ys.windows(2)
         .position(|pair| y >= pair[0] as f32 - 1.0 && y <= pair[1] as f32 + 1.0)
         .map(|bottom_interval| ys.len().saturating_sub(2).saturating_sub(bottom_interval))
+}
+
+/// 縦罫線の端で補った上下の外枠のうち、用紙の端にあるもの（原本はクリップで表の外を隠して
+/// いる）は、外側の横罫線から行の間隔 1 つ分までにする。その間に字が無ければ外枠を補わない。
+fn clip_open_edges_at_page_edges(
+    parsed: &ParsedDocument,
+    page: usize,
+    xs: &[i32],
+    ruled: &[i32],
+    open: Vec<i32>,
+) -> Vec<i32> {
+    let (Some(height), Some(&low), Some(&high)) =
+        (page_height(parsed, page), ruled.first(), ruled.last())
+    else {
+        return open;
+    };
+    if ruled.len() < 2 || open.len() <= ruled.len() {
+        return open;
+    }
+    // 行の間隔は横罫線の間隔の中央値。横罫線が外枠だけなら、字の高さの 1.5 倍とする。
+    let pitch = if ruled.len() >= 3 {
+        let mut pitches = ruled
+            .windows(2)
+            .map(|pair| pair[1] - pair[0])
+            .collect::<Vec<_>>();
+        pitches.sort_unstable();
+        pitches[pitches.len() / 2]
+    } else {
+        let mut heights = parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .map(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                bounds.y1 - bounds.y0
+            })
+            .filter(|height| *height > 0.0)
+            .collect::<Vec<_>>();
+        if heights.is_empty() {
+            return open;
+        }
+        heights.sort_by(f32::total_cmp);
+        (1.5 * heights[heights.len() / 2]).ceil() as i32
+    };
+    let (left, right) = (
+        xs.first().copied().unwrap_or(i32::MIN) as f32,
+        xs.last().copied().unwrap_or(i32::MAX) as f32,
+    );
+    // 表の左右の範囲で、外側の横罫線と用紙の端の間にある字の上端・下端。
+    let text_extent = |from: i32, to: i32| {
+        parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .map(|text| normalized_bounds(text.bounds))
+            .filter(|bounds| {
+                let (x, y) = ((bounds.x0 + bounds.x1) / 2.0, (bounds.y0 + bounds.y1) / 2.0);
+                x > left && x < right && y > from as f32 && y < to as f32
+            })
+            .fold(None, |extent: Option<(f32, f32)>, bounds| {
+                Some(extent.map_or((bounds.y0, bounds.y1), |(low, high)| {
+                    (low.min(bounds.y0), high.max(bounds.y1))
+                }))
+            })
+    };
+    let at_edge = |edge: i32| edge <= 1 || edge as f32 >= height - 1.0;
+    // 外枠は字のある行まで（少なくとも行の間隔 1 つ分）。字が無ければ外枠を補わない。
+    open.into_iter()
+        .filter_map(|edge| {
+            if edge > high && at_edge(edge) && edge - high > pitch + pitch / 2 {
+                text_extent(high, edge).map(|(_, top)| {
+                    (high + pitch)
+                        .max((top + EDGE_TEXT_PAD_PT).ceil() as i32)
+                        .min(edge)
+                })
+            } else if edge < low && at_edge(edge) && low - edge > pitch + pitch / 2 {
+                text_extent(edge, low).map(|(bottom, _)| {
+                    (low - pitch)
+                        .min((bottom - EDGE_TEXT_PAD_PT).floor() as i32)
+                        .max(edge)
+                })
+            } else {
+                Some(edge)
+            }
+        })
+        .collect()
+}
+
+/// どの横罫線にも接しない縦罫線（表の外枠）を、同じ高さの範囲の縦罫線を持つ隣の表の罫線と、
+/// 上下の線でつなぐ。
+///
+/// 財務表には、横罫線を金額の列にだけ引き、科目の列の外枠は縦罫線 1 本だけのものがある。
+/// そのままでは外枠が表の罫線の連結から外れ、科目の列が表にならない（原本は外枠と金額の列の
+/// 上下の線で囲んで見える）。
+fn bridge_lone_frame_rules(mut graphics: Vec<ParsedGraphicElement>) -> Vec<ParsedGraphicElement> {
+    let bounds = graphics
+        .iter()
+        .map(|graphic| normalized_bounds(graphic.bounds))
+        .collect::<Vec<_>>();
+    let horizontals = bounds
+        .iter()
+        .copied()
+        .filter(is_horizontal_line)
+        .collect::<Vec<_>>();
+    let touches = |vertical: &ParsedBounds| {
+        horizontals
+            .iter()
+            .filter(|horizontal| {
+                horizontal.x0 <= vertical.x0 + 2.0
+                    && horizontal.x1 >= vertical.x0 - 2.0
+                    && horizontal.y0 >= vertical.y0 - 2.0
+                    && horizontal.y0 <= vertical.y1 + 2.0
+            })
+            .count()
+    };
+    let verticals = bounds
+        .iter()
+        .zip(&graphics)
+        .filter(|(bounds, graphic)| {
+            is_vertical_line(bounds)
+                && graphic.stroke_width > 0.0
+                && bounds.y1 - bounds.y0 >= MIN_BRIDGED_RULE_PT
+        })
+        .map(|(bounds, graphic)| (*bounds, graphic.page, graphic.stroke_width))
+        .collect::<Vec<_>>();
+    let mut bridges = Vec::new();
+    for &(lone, page, stroke) in &verticals {
+        if touches(&lone) > 0 {
+            continue;
+        }
+        let same_extent = |other: &ParsedBounds| {
+            (other.y0 - lone.y0).abs() <= 2.0 && (other.y1 - lone.y1).abs() <= 2.0
+        };
+        // 同じ高さの範囲で、横罫線の表に属する最も近い縦罫線。間に同じ高さの縦罫線は無いこと。
+        // 相手は右にあり、その横罫線は相手から右へ引いたもの（金額の列の横罫線）。
+        let starts_at = |other: &ParsedBounds| {
+            horizontals
+                .iter()
+                .filter(|horizontal| {
+                    (horizontal.x0 - other.x0).abs() <= 2.0
+                        && horizontal.y0 >= other.y0 - 2.0
+                        && horizontal.y0 <= other.y1 + 2.0
+                })
+                .count()
+        };
+        let Some(&(partner, ..)) = verticals
+            .iter()
+            .filter(|(other, ..)| {
+                other.x0 > lone.x0 + 2.0
+                    && same_extent(other)
+                    && starts_at(other) >= MIN_BRIDGED_ROWS
+            })
+            .min_by(|a, b| {
+                (a.0.x0 - lone.x0)
+                    .abs()
+                    .total_cmp(&(b.0.x0 - lone.x0).abs())
+            })
+        else {
+            continue;
+        };
+        let (left, right) = if lone.x0 < partner.x0 {
+            (lone.x0, partner.x0)
+        } else {
+            (partner.x0, lone.x0)
+        };
+        // 外枠と相手の間（科目の列）には、ほかの罫線が無いこと。
+        let between = bounds.iter().any(|other| {
+            other.x1 > left + 2.0
+                && other.x0 < right - 2.0
+                && other.y1 > lone.y0.max(partner.y0) + 2.0
+                && other.y0 < lone.y1.min(partner.y1) - 2.0
+        });
+        if between {
+            continue;
+        }
+        // 相手の表の一番上・一番下の横罫線の高さで外枠を閉じる（縦罫線の端は用紙の端まで
+        // 伸びていることがあり、そこで閉じると表の外まで行ができる）。
+        let partner_rows = horizontals
+            .iter()
+            .filter(|horizontal| {
+                horizontal.x0 <= partner.x0 + 2.0
+                    && horizontal.x1 >= partner.x0 - 2.0
+                    && horizontal.y0 >= partner.y0 - 2.0
+                    && horizontal.y0 <= partner.y1 + 2.0
+            })
+            .map(|horizontal| horizontal.y0)
+            .collect::<Vec<_>>();
+        let (Some(bottom), Some(top)) = (
+            partner_rows.iter().copied().reduce(f32::min),
+            partner_rows.iter().copied().reduce(f32::max),
+        ) else {
+            continue;
+        };
+        for y in [bottom, top] {
+            bridges.push(ParsedGraphicElement {
+                page,
+                bounds: ParsedBounds {
+                    x0: left,
+                    y0: y,
+                    x1: right,
+                    y1: y,
+                },
+                stroke_width: stroke,
+                dashed: false,
+            });
+        }
+    }
+    graphics.extend(bridges);
+    graphics
+}
+
+/// 外枠とみなしてつなぐ縦罫線の長さの下限（pt）と、相手の表の縦罫線が接する横罫線の数の下限。
+const MIN_BRIDGED_RULE_PT: f32 = 100.0;
+const MIN_BRIDGED_ROWS: usize = 3;
+
+/// 用紙の端まで伸びる罫線の端の代わりに補う外枠と、字の間の余白（pt）。
+const EDGE_TEXT_PAD_PT: f32 = 2.0;
+
+/// 外枠を欠く表の辺を、揃った罫線の端から補った座標列を返す。
+///
+/// `lines` は辺に直交する罫線（上下辺なら縦罫線）。2 本以上の罫線の端が同じ位置で揃い、
+/// その間を `cross` の罫線が実際に結んでいる場合（罫線が 1 本だけなら `cross` と交わる場合）だけ、
+/// 既存の座標列より外側の端を追加する。
+fn open_table_edges(
+    lines: &[&ParsedBounds],
+    cross: &[&ParsedBounds],
+    existing: &[i32],
+    vertical: bool,
+) -> Vec<i32> {
+    let mut edges = existing.to_vec();
+    if lines.is_empty() || cross.is_empty() {
+        return edges;
+    }
+    let (starts, ends): (Vec<f32>, Vec<f32>) = lines
+        .iter()
+        .map(|bounds| {
+            if vertical {
+                (bounds.y0, bounds.y1)
+            } else {
+                (bounds.x0, bounds.x1)
+            }
+        })
+        .unzip();
+    let positions = lines
+        .iter()
+        .map(|bounds| if vertical { bounds.x0 } else { bounds.y0 })
+        .collect::<Vec<_>>();
+    // 交差する罫線が、端の揃った罫線どうしを少なくとも 1 か所で結んでいること。
+    // 罫線が 1 本だけの場合は、交差する罫線と少なくとも 1 か所で交わっていること。
+    let required = lines.len().min(2);
+    let joined = cross.iter().any(|bounds| {
+        let (from, to, at) = if vertical {
+            (bounds.x0, bounds.x1, bounds.y0)
+        } else {
+            (bounds.y0, bounds.y1, bounds.x0)
+        };
+        positions
+            .iter()
+            .zip(starts.iter().zip(ends.iter()))
+            .filter(|(position, (start, end))| {
+                **position >= from - 2.0
+                    && **position <= to + 2.0
+                    && at >= **start - 2.0
+                    && at <= **end + 2.0
+            })
+            .count()
+            >= required
+    });
+    if !joined {
+        return edges;
+    }
+    for candidates in [starts, ends] {
+        let mut sorted = candidates.clone();
+        sorted.sort_by(f32::total_cmp);
+        let median = sorted[sorted.len() / 2];
+        let aligned = candidates
+            .iter()
+            .filter(|value| (**value - median).abs() <= 2.0)
+            .count();
+        let edge = median.round() as i32;
+        if aligned >= required && !edges.iter().any(|existing| (existing - edge).abs() <= 2) {
+            edges.push(edge);
+        }
+    }
+    edges.sort();
+    edges.dedup();
+    edges
+}
+
+/// 表の範囲にある文字の水平方向の占有区間から、全行で空いている隙間を列境界にする。
+///
+/// 文字単位の要素でも語単位の要素でも同じ結果になる。隙間が語間（約 0.25 em）より広い
+/// 文字サイズの 0.5 倍以上あるところだけを列の切れ目とし、2 列以上に分かれる場合に外枠を含む列境界を返す。
+fn text_projection_columns(
+    parsed: &ParsedDocument,
+    page: usize,
+    xs: &[i32],
+    ys: &[i32],
+) -> Option<Vec<i32>> {
+    let (left, right) = (*xs.first()? as f32, *xs.last()? as f32);
+    let (bottom, top) = (*ys.first()? as f32, *ys.last()? as f32);
+    let mut intervals = Vec::new();
+    let mut sizes = Vec::new();
+    for text in parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page && !text.text.trim().is_empty())
+    {
+        let bounds = normalized_bounds(text.bounds);
+        let center_y = (bounds.y0 + bounds.y1) / 2.0;
+        if bounds.x0 < left - 1.0 || bounds.x1 > right + 1.0 || center_y < bottom || center_y > top
+        {
+            continue;
+        }
+        intervals.push((bounds.x0, bounds.x1));
+        sizes.push(text.font_size.max(bounds.y1 - bounds.y0));
+    }
+    if intervals.len() < 2 {
+        return None;
+    }
+    sizes.sort_by(f32::total_cmp);
+    let min_gap = (sizes[sizes.len() / 2] * 0.5).max(3.0);
+    intervals.sort_by(|a, b| a.0.total_cmp(&b.0));
+    let mut boundaries = vec![xs[0]];
+    let mut reach = intervals[0].1;
+    for &(start, end) in &intervals[1..] {
+        if start - reach >= min_gap {
+            boundaries.push(((start + reach) / 2.0).round() as i32);
+        }
+        reach = reach.max(end);
+    }
+    boundaries.push(*xs.last()?);
+    (boundaries.len() >= 3).then_some(boundaries)
+}
+
+/// 左右の端が揃った（2pt 以内）最長の横罫線の本数を返す。
+fn aligned_full_width_rules(horizontal: &[ParsedBounds]) -> usize {
+    let Some(longest) = horizontal
+        .iter()
+        .max_by(|a, b| (a.x1 - a.x0).total_cmp(&(b.x1 - b.x0)))
+    else {
+        return 0;
+    };
+    horizontal
+        .iter()
+        .filter(|bounds| {
+            (bounds.x0 - longest.x0).abs() <= 2.0 && (bounds.x1 - longest.x1).abs() <= 2.0
+        })
+        .count()
+}
+
+/// 間隔が狭い（二重線・セルごとの枠）境界座標を、その平均の 1 本へまとめる。
+fn merge_close_edges(edges: &[i32]) -> Vec<i32> {
+    const DOUBLE_RULE_GAP_PT: i32 = 3;
+    let mut groups: Vec<Vec<i32>> = Vec::new();
+    for &edge in edges {
+        match groups.last_mut() {
+            Some(group)
+                if edge - *group.last().expect("group is not empty") <= DOUBLE_RULE_GAP_PT =>
+            {
+                group.push(edge)
+            }
+            _ => groups.push(vec![edge]),
+        }
+    }
+    groups
+        .into_iter()
+        .map(|group| {
+            let sum = group.iter().map(|edge| *edge as f32).sum::<f32>();
+            (sum / group.len() as f32).round() as i32
+        })
+        .collect()
+}
+
+/// 全ての格子線が、分割描画も含めた罫線区間でほぼ覆われているか判定する。
+fn has_covered_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (Some(&min_y), Some(&max_y)) = (ys.first(), ys.last()) else {
+        return false;
+    };
+    let (Some(&min_x), Some(&max_x)) = (xs.first(), xs.last()) else {
+        return false;
+    };
+    xs.len() >= 2
+        && ys.len() >= 2
+        && (xs.len() >= 3 || ys.len() >= 3)
+        && xs
+            .iter()
+            .all(|x| table_grid::coverage(&vertical, *x as f32, min_y as f32, max_y as f32) >= 0.9)
+        && ys.iter().all(|y| {
+            table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9
+        })
+}
+
+/// 外枠を補った表で、全ての列境界が縦罫線で区切られているか判定する。
+fn has_open_grid_lines(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> bool {
+    let (horizontal, vertical) = grid_rules_from_graphics(graphics);
+    let (Some(&min_y), Some(&max_y)) = (ys.first(), ys.last()) else {
+        return false;
+    };
+    let (Some(&min_x), Some(&max_x)) = (xs.first(), xs.last()) else {
+        return false;
+    };
+    let columns_ruled = xs
+        .iter()
+        .all(|x| table_grid::coverage(&vertical, *x as f32, min_y as f32, max_y as f32) >= 0.9);
+    let rows_ruled = ys
+        .iter()
+        .all(|y| table_grid::coverage(&horizontal, *y as f32, min_x as f32, max_x as f32) >= 0.9);
+    xs.len() >= 3 && (columns_ruled || rows_ruled)
 }
 
 /// 抽出座標が表格子として使えるだけの水平/垂直線を持つか判定する。
@@ -5555,6 +8764,238 @@ fn is_vertical_line(bounds: &ParsedBounds) -> bool {
 mod tests {
     use super::*;
 
+    /// 数字に挟まれた小さな私用領域の点は小数点に戻し、離れた字はそのまま残す。
+    #[test]
+    fn private_use_dot_between_digits_becomes_decimal_point() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "decimal.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(400.0, 526.9, 402.5, 532.8, "1"),
+                text(403.8, 526.5, 404.8, 527.5, "\u{EA74}"),
+                text(405.6, 526.8, 416.5, 532.8, "061"),
+                text(100.0, 526.5, 101.0, 527.5, "\u{EA74}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_decimal_points(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["1", ".", "061", "\u{EA74}"]);
+    }
+
+    /// 座標の並びから度分秒の記号を学習し、文書中の同じ私用領域の字を置き換える。
+    #[test]
+    fn private_use_angle_marks_become_degree_minute_second() {
+        let text = |x0: f32, x1: f32, y0: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds {
+                x0,
+                y0,
+                x1,
+                y1: y0 + 8.0,
+            },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dms.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(
+                    100.0,
+                    140.0,
+                    300.0,
+                    "36 \u{EA6F} 47\u{EA6D} 11.6908\u{EA6E}",
+                ),
+                text(100.0, 112.0, 200.0, "138"),
+                text(112.0, 120.0, 200.0, "\u{EA6F}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_angle_marks(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["36 ° 47′ 11.6908″", "138", "°"]);
+    }
+
+    /// 上付きの記号を別の文字片で置いた座標（官報の実配置）からも学習する。
+    #[test]
+    fn raised_angle_mark_fragments_are_learned() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dms-real.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(263.6, 87.5, 290.7, 93.5, "１ 31"),
+                text(291.9, 91.8, 293.9, 93.8, "\u{EA6F}"),
+                text(295.8, 87.5, 303.2, 93.5, "53"),
+                text(303.7, 91.8, 305.3, 93.9, "\u{EA6D}"),
+                text(307.8, 87.5, 315.2, 93.5, "30"),
+                text(316.0, 87.2, 317.0, 88.2, "\u{EA74}"),
+                text(317.8, 87.5, 333.2, 93.5, "6145"),
+                text(333.9, 91.8, 337.1, 93.9, "\u{EA6E}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        recover_decimal_points(&mut parsed);
+        recover_angle_marks(&mut parsed);
+        let joined = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<String>();
+        assert_eq!(joined, "１ 31°53′30.6145″");
+    }
+
+    /// 官報の DynaFont の既知の私用領域の字は置き換え、罫線用フォントの字は除く。
+    #[test]
+    fn known_dynafont_private_use_glyphs_are_mapped() {
+        let text = |font: &str, body: &str| ParsedTextElement {
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 0.0,
+                y0: 0.0,
+                x1: 10.0,
+                y1: 8.0,
+            },
+            font_size: 8.0,
+            font_name: Some(font.to_string()),
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "dynafont.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(
+                    "ABCDEF+DFHSMinchoRPro6N-W3",
+                    "号外第\u{E88B}\u{E890}\u{E88F}号",
+                ),
+                text("ABCDEF+DFHSMinchoRPro6N-W3", "\u{E888}12"),
+                text("ABCDEF+DFHSMinchoRPro6N-W3", "\u{E7B4}\u{E7D2}"),
+                text("ABCDEF+MFHSLine-W3", "\u{E007}\u{E007}"),
+                text("Other", "\u{E88B}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        map_known_private_use_glyphs(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["号外第165号", "△12", "⑶②", "\u{E88B}"]);
+    }
+
+    /// 罫線用フォントの細長い私用領域の字は除き、点のような字は文字のまま残す。
+    #[test]
+    fn rule_glyphs_are_dropped() {
+        let text = |x0: f32, y0: f32, x1: f32, y1: f32, body: &str| ParsedTextElement {
+            baseline_y: None,
+            page: 0,
+            bounds: ParsedBounds { x0, y0, x1, y1 },
+            font_size: 8.0,
+            font_name: None,
+            fill_color: None,
+            text: body.to_string(),
+        };
+        let mut parsed = ParsedDocument {
+            quality: Default::default(),
+            path: "rule-glyphs.pdf".into(),
+            byte_len: 0,
+            header: "%PDF-1.7".to_string(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: Vec::new(),
+            graphics: Vec::new(),
+            fills: Vec::new(),
+            text_elements: vec![
+                text(10.0, 99.5, 40.0, 100.0, "\u{E005}\u{E005}"),
+                text(20.0, 100.0, 21.0, 101.0, "\u{EA74}"),
+                text(10.0, 102.0, 40.0, 110.0, "1.061"),
+                text(50.0, 96.0, 90.0, 104.0, "\u{E02D}\u{E02D}\u{E02D}\u{E02D}"),
+            ],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+        };
+        drop_rule_glyphs(&mut parsed);
+        let texts = parsed
+            .text_elements
+            .iter()
+            .map(|text| text.text.as_str())
+            .collect::<Vec<_>>();
+        assert_eq!(texts, vec!["\u{EA74}", "1.061"]);
+        assert!(
+            parsed.graphics.is_empty(),
+            "rule glyphs must not become table rules"
+        );
+    }
+
     #[test]
     fn ocr_spans_from_docx_model_drops_span_that_crosses_existing_vertical_merge() {
         let model = DocxTableModel {
@@ -5564,6 +9005,7 @@ mod tests {
                         text: "merged".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 2,
                         vertical_merge: Some(DocxVerticalMerge::Restart),
                         width_twips: None,
@@ -5573,6 +9015,7 @@ mod tests {
                         text: "right".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 1,
                         vertical_merge: None,
                         width_twips: None,
@@ -5584,6 +9027,7 @@ mod tests {
                         text: String::new(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 1,
                         vertical_merge: Some(DocxVerticalMerge::Continue),
                         width_twips: None,
@@ -5593,6 +9037,7 @@ mod tests {
                         text: "wide".to_string(),
                         underlined: false,
                         alignment: ParagraphAlignment::Left,
+                        vertical_alignment: None,
                         grid_span: 2,
                         vertical_merge: None,
                         width_twips: None,

@@ -85,9 +85,10 @@ fn parameters<'a>(
         return None;
     }
     let keys = [
-        "Type", "OPM", "AIS", "BM", "CA", "OP", "SA", "SMask", "ca", "op", "TK",
+        "Type", "OPM", "AIS", "BM", "CA", "OP", "SA", "SMask", "ca", "op", "TK", "SM", "FL", "LW",
+        "LC", "LJ", "ML",
     ];
-    let mut seen = 0u16;
+    let mut seen = 0u32;
     let mut opacity = None;
     for (key, value) in metadata::entries(state)? {
         if budget.is_stopped() {
@@ -117,7 +118,12 @@ fn parameters<'a>(
                 opacity = Some(alpha(keyword(value)?)?);
                 true
             }
-            6 => keyword(value)? == b"true",
+            // 線の調整・曲線の平滑度・線の属性は線の描き方だけを決め、画像へは影響しない。
+            6 => matches!(keyword(value)?, b"true" | b"false"),
+            11..=16 => std::str::from_utf8(keyword(value)?)
+                .ok()?
+                .parse::<f64>()
+                .is_ok_and(|number| number.is_finite() && number >= 0.0),
             7 => metadata::is_name(value, b"None"),
             // TKはtext object内のglyph重なりだけを制御し、画像へは影響しない。
             10 => matches!(keyword(value)?, b"true" | b"false"),
@@ -221,6 +227,22 @@ mod tests {
                 (1, Some([0, 255, 0]), Some(0.5))
             ]
         );
+        budget.check().unwrap();
+    }
+
+    /// 線の調整・平滑度・線の属性だけのgsは画像の描き方を変えないので、不透明のまま扱う。
+    #[test]
+    fn stroke_only_state_keeps_images_opaque() {
+        let source = b"%PDF-1.7\n1 0 obj << /Type /Page /Resources << /ExtGState << /S << /Type /ExtGState /SA false /SM 0.02 /FL 1 /LW 0.5 >> >> >> >> endobj\n%%EOF";
+        let contents = [(0, b"/S gs /Im Do".to_vec())];
+        let budget = DecodeBudget::default();
+        let mut values = Vec::new();
+        visit(&budget, source, &contents, |_, _, _, paint| {
+            values.push(paint.opacity);
+            Some(())
+        })
+        .unwrap();
+        assert_eq!(values, [Some(1.0)]);
         budget.check().unwrap();
     }
 

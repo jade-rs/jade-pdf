@@ -94,6 +94,32 @@ fn occurrence(
     })
 }
 
+/// 縦書きのページの柱を、原本の向きの横組みの header の行にする（Word・LibreOffice は
+/// 縦書きの section でも header を横に組む）。
+fn vertical_running_head(parsed: &ParsedDocument, page: usize) -> Option<RepeatedPageChromeLine> {
+    let parsed_page = parsed
+        .pages
+        .iter()
+        .find(|p| p.page_number == page)
+        .filter(|p| vertical_pages::is_vertical(p))?;
+    let texts = vertical_pages::running_head(parsed, page);
+    if texts.is_empty() {
+        return None;
+    }
+    let (width, height) = vertical_pages::display_size(parsed_page);
+    let segment = TextRowSegment {
+        texts,
+        split_from_row: false,
+    };
+    let line = structured_text_line_from_segment(&segment, &[], width)?;
+    Some(RepeatedPageChromeLine {
+        edge_distance_twips: pdf_points_to_floor_twips((height - line.top_y).max(0.))?,
+        right_indent_twips: pdf_points_to_indent_twips((width - line.right_x).max(0.))?,
+        page_width_twips: pdf_points_to_indent_twips(width).and_then(|w| u32::try_from(w).ok()),
+        line,
+    })
+}
+
 /// 全ページで見つかる文字列のうち、同じ書式が複数ページにある行だけを移す。
 pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> Plan {
     let mut plan = Plan {
@@ -103,6 +129,14 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
             .collect(),
         empty: RepeatedPageChrome::default(),
     };
+    for page in pages {
+        if let Some(header) = vertical_running_head(parsed, page.page) {
+            plan.pages
+                .get_mut(&page.page)
+                .expect("source page exists")
+                .header = Some(header);
+        }
+    }
     if pages.len() < 2 {
         return plan;
     }
@@ -156,6 +190,9 @@ pub(super) fn extract(parsed: &ParsedDocument, pages: &[StructuredTextPage]) -> 
                 continue;
             };
             let target = plan.pages.get_mut(&page.page).expect("source page exists");
+            if header && target.header.is_some() {
+                continue;
+            }
             if header {
                 target.header = Some(chrome);
             } else {

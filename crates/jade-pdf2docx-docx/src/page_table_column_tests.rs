@@ -3,6 +3,9 @@ use super::*;
 
 #[path = "page_section_evidence.rs"]
 mod evidence;
+
+#[path = "band_columns_tests.rs"]
+mod band_columns;
 use evidence::sections;
 
 /// 自作の2行2列の表を、原本ページ末尾に配置する。
@@ -35,6 +38,14 @@ fn positioned_table(page: usize) -> PositionedTable {
         cell_alignments: vec![vec![ParagraphAlignment::Left; 2]; 2],
         docx_table: None,
         native_cells: vec![vec![None; 2]; 2],
+        cell_vertical_alignments: Vec::new(),
+        row_heights_pt: Vec::new(),
+        row_line_counts: Vec::new(),
+        cell_padding_pt: None,
+        cell_font_sizes: Vec::new(),
+        cell_tab_stops: Vec::new(),
+        cell_fragments: Vec::new(),
+        cell_shading: Vec::new(),
         nested_tables: Vec::new(),
     }
 }
@@ -288,4 +299,44 @@ proptest! {
             }
         }
     }
+}
+
+/// 大きい表の範囲に重ねて推定した小さい表は除き、離れた表は残す。
+#[test]
+fn table_inside_a_larger_table_is_dropped() {
+    let large = positioned_table(0);
+    let mut small = positioned_table(0);
+    small.bounds = ParsedBounds {
+        x0: 60.,
+        y0: 510.,
+        x1: 200.,
+        y1: 550.,
+    };
+    let mut apart = positioned_table(1);
+    apart.bounds = small.bounds;
+    let kept = drop_tables_inside_larger_tables(vec![large, small, apart]);
+    assert_eq!(
+        kept.iter()
+            .map(|table| (table.page, table.bounds.x0))
+            .collect::<Vec<_>>(),
+        vec![(0, 48.), (1, 60.)]
+    );
+}
+
+/// 子表は、実際の行の高さで分けた親表の行の 1 つにだけ入る（等分の行境界で二つの行に入らない）。
+#[test]
+fn nested_table_goes_to_the_row_of_its_center_by_real_row_heights() {
+    let mut parent = positioned_table(0);
+    // 上の行は 10pt、下の行は 50pt（範囲は y 500〜560）。
+    parent.row_heights_pt = vec![10., 50.];
+    let mut child = positioned_table(0);
+    child.bounds = ParsedBounds {
+        x0: 50.,
+        y0: 505.,
+        x1: 140.,
+        y1: 545.,
+    };
+    parent.nested_tables = vec![child];
+    assert!(nested_tables_for_cell(&parent, 0, 0, 1).is_empty());
+    assert_eq!(nested_tables_for_cell(&parent, 1, 0, 1).len(), 1);
 }
