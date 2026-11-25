@@ -35,6 +35,7 @@ fn positioned_table(page: usize) -> PositionedTable {
         cell_alignments: vec![vec![ParagraphAlignment::Left; 2]; 2],
         docx_table: None,
         native_cells: vec![vec![None; 2]; 2],
+        source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
     }
 }

@@ -52,6 +52,7 @@ mod source_table_pagination_tests;
 #[cfg(test)]
 mod source_typography_tests;
 mod table_opening;
+mod text_grid_cell_styles;
 
 mod cell_line_rounding;
 mod html_table;
@@ -2904,6 +2905,8 @@ struct PositionedTable {
     docx_table: Option<DocxTableModel>,
     /// 原本と文字照合できたセルの位置・行・run style。
     native_cells: Vec<Vec<Option<native_table_text::Cell>>>,
+    /// 混在文書の新規反復列セルと文字列が完全一致した原本run。
+    source_cell_runs: Vec<Vec<Vec<StructuredTextRun>>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
 }
@@ -3501,7 +3504,12 @@ fn docx_table_from_model_with_row_height_and_nested(
                     }
                     let native_paragraph = native_cell
                         .and_then(native_table_text::single_line_paragraph)
-                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph));
+                        .or_else(|| native_cell.and_then(native_table_text::fallback_paragraph))
+                        .or_else(|| {
+                            text_grid_cell_styles::paragraph(
+                                parent?.source_cell_runs.get(row_index)?.get(cell_index)?,
+                            )
+                        });
                     let has_native_paragraph = native_paragraph.is_some();
                     let source_indent = native_cell
                         .filter(|_| has_native_paragraph)
@@ -3526,9 +3534,17 @@ fn docx_table_from_model_with_row_height_and_nested(
                     }
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
-                        table_cell = table_cell.vertical_align(VAlignType::Center);
+                        table_cell = table_cell.vertical_align(
+                            if parent.is_some_and(|table| !table.source_cell_runs.is_empty()) {
+                                VAlignType::Top
+                            } else {
+                                VAlignType::Center
+                            },
+                        );
                     }
-                    if source_indent.is_some() {
+                    if source_indent.is_some()
+                        || parent.is_some_and(|table| !table.source_cell_runs.is_empty())
+                    {
                         table_cell.property = table_cell
                             .property
                             .margin_left(0, WidthType::Dxa)
@@ -3560,7 +3576,9 @@ fn docx_table_from_model_with_row_height_and_nested(
                             DocxVerticalMerge::Continue => VMergeType::Continue,
                         });
                     }
-                    if let Some(borders) = cell.borders {
+                    if let Some(borders) = cell.borders
+                        && !parent.is_some_and(|table| !table.source_cell_runs.is_empty())
+                    {
                         table_cell = table_cell.set_borders(table_cell_borders(borders));
                     }
                     grid_col += cell.grid_span.max(1);
@@ -3747,7 +3765,8 @@ fn infer_positioned_tables_for_page(
 ) -> Vec<PositionedTable> {
     if !graphic_tables.is_empty() {
         if graphic_tables.len() == 1
-            && let Some(best_text_table) = infer_positioned_table_from_text_grid_page(parsed, page)
+            && let Some(best_text_table) =
+                infer_positioned_table_from_text_grid_page(parsed, page, false)
         {
             let has_graphic_span_model = graphic_tables
                 .iter()
@@ -3779,7 +3798,7 @@ fn infer_positioned_tables_for_page(
     if dense_body_columns {
         return Vec::new();
     }
-    infer_positioned_table_from_text_grid_page(parsed, page)
+    infer_positioned_table_from_text_grid_page(parsed, page, preserve_source_text)
         .into_iter()
         .filter(|table| !preserve_source_text || text_grid_ownership::preserves(parsed, table))
         .collect()
@@ -4204,6 +4223,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
         docx_table: None,
         native_cells: Vec::new(),
+        source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
     }
 }
@@ -4640,6 +4660,7 @@ fn infer_positioned_table_from_graphics(
         cell_alignments,
         docx_table,
         native_cells,
+        source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
     })
 }
@@ -5199,6 +5220,7 @@ fn nearest_text_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
 fn infer_positioned_table_from_text_grid_page(
     parsed: &ParsedDocument,
     page: usize,
+    preserve_source_layout: bool,
 ) -> Option<PositionedTable> {
     let mut page_texts = parsed
         .text_elements
@@ -5265,17 +5287,39 @@ fn infer_positioned_table_from_text_grid_page(
     let bounds = text_grid_cells_bounds(&row_cells)?;
 
     let mut table_rows = Vec::new();
+    let mut source_cell_runs = Vec::new();
+    let mut source_row_bounds = Vec::new();
     for cells in row_cells {
         let mut row = vec![String::new(); anchors.len()];
+        let mut source_texts = vec![Vec::new(); anchors.len()];
+        let top = cells
+            .iter()
+            .map(|cell| cell.y1)
+            .fold(f32::NEG_INFINITY, f32::max);
+        let bottom = cells
+            .iter()
+            .map(|cell| cell.y0)
+            .fold(f32::INFINITY, f32::min);
         for cell in cells {
             if let Some(index) = nearest_column_anchor(cell.x0, &anchors) {
                 if !row[index].is_empty() {
                     row[index].push(' ');
                 }
                 row[index].push_str(&cell.text);
+                source_texts[index].extend(cell.texts);
             }
         }
         if row.iter().filter(|value| !value.trim().is_empty()).count() >= 2 {
+            if preserve_source_layout {
+                source_cell_runs.push(
+                    source_texts
+                        .iter()
+                        .zip(&row)
+                        .map(|(texts, value)| text_grid_cell_styles::runs(parsed, texts, value))
+                        .collect::<Option<Vec<_>>>()?,
+                );
+                source_row_bounds.push((top, bottom));
+            }
             table_rows.push(row);
         }
     }
@@ -5283,6 +5327,30 @@ fn infer_positioned_table_from_text_grid_page(
     if table_rows.len() < min_rows {
         return None;
     }
+    let column_widths_twips = if preserve_source_layout {
+        anchors
+            .iter()
+            .enumerate()
+            .map(|(index, x)| {
+                pdf_points_to_twips(anchors.get(index + 1).copied().unwrap_or(bounds.x1) - x)
+                    .filter(|width| *width > 0)
+            })
+            .collect::<Option<Vec<_>>>()?
+    } else {
+        Vec::new()
+    };
+    let row_heights_twips = source_row_bounds
+        .iter()
+        .enumerate()
+        .map(|(index, (top, bottom))| {
+            pdf_points_to_twips_f32(
+                source_row_bounds
+                    .get(index + 1)
+                    .map_or(top - bottom, |(next_top, _)| (top - next_top).abs()),
+            )
+            .filter(|height| *height > 0.)
+        })
+        .collect::<Option<Vec<_>>>()?;
     Some(PositionedTable {
         page,
         bounds,
@@ -5291,13 +5359,14 @@ fn infer_positioned_table_from_text_grid_page(
         font_embedded: false,
         embedded_face: None,
         font_size: None,
-        column_widths_twips: Vec::new(),
-        row_heights_twips: Vec::new(),
+        column_widths_twips,
+        row_heights_twips,
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
         docx_table: None,
         native_cells: Vec::new(),
+        source_cell_runs,
         nested_tables: Vec::new(),
     })
 }
@@ -5308,10 +5377,11 @@ fn text_grid_page_is_dense_article_like(text_count: usize, row_count: usize) -> 
 }
 
 /// 1 行分の text element を大きな x gap でセル候補にまとめる。
-fn merge_text_row_into_cells(row: &[&ParsedTextElement]) -> Option<Vec<TextGridCell>> {
+fn merge_text_row_into_cells<'a>(row: &[&'a ParsedTextElement]) -> Option<Vec<TextGridCell<'a>>> {
     let first = row.first()?;
     let mut cells = Vec::new();
     let mut current_text = first.text.trim().to_string();
+    let mut current_sources = vec![*first];
     let mut current_x0 = first.bounds.x0;
     let mut current_x1 = first.bounds.x1;
 
@@ -5330,12 +5400,15 @@ fn merge_text_row_into_cells(row: &[&ParsedTextElement]) -> Option<Vec<TextGridC
                     .map(|text| text.bounds.y1)
                     .fold(f32::NEG_INFINITY, f32::max),
                 text: current_text,
+                texts: current_sources,
             });
             current_text = text.text.trim().to_string();
+            current_sources = vec![*text];
             current_x0 = text.bounds.x0;
             current_x1 = text.bounds.x1;
         } else {
             append_cell_fragment(&mut current_text, text.text.trim());
+            current_sources.push(*text);
             current_x1 = current_x1.max(text.bounds.x1);
         }
     }
@@ -5351,13 +5424,14 @@ fn merge_text_row_into_cells(row: &[&ParsedTextElement]) -> Option<Vec<TextGridC
             .map(|text| text.bounds.y1)
             .fold(f32::NEG_INFINITY, f32::max),
         text: current_text,
+        texts: current_sources,
     });
 
     (cells.len() >= 2).then_some(cells)
 }
 
 /// text grid cell 群の外接 bounds を返す。
-fn text_grid_cells_bounds(rows: &[Vec<TextGridCell>]) -> Option<ParsedBounds> {
+fn text_grid_cells_bounds(rows: &[Vec<TextGridCell<'_>>]) -> Option<ParsedBounds> {
     let mut cells = rows.iter().flatten();
     let first = cells.next()?;
     let mut bounds = ParsedBounds {
@@ -5376,7 +5450,7 @@ fn text_grid_cells_bounds(rows: &[Vec<TextGridCell>]) -> Option<ParsedBounds> {
 }
 
 /// 複数行に繰り返し現れる列 x 座標を抽出する。
-fn repeated_column_anchors(rows: &[Vec<TextGridCell>]) -> Vec<f32> {
+fn repeated_column_anchors(rows: &[Vec<TextGridCell<'_>>]) -> Vec<f32> {
     let mut anchors: Vec<(f32, usize)> = Vec::new();
     for cell in rows.iter().flatten() {
         if let Some((anchor, count)) = anchors
@@ -5411,7 +5485,9 @@ fn nearest_column_anchor(x: f32, anchors: &[f32]) -> Option<usize> {
 
 /// text grid から推定したセル候補。
 #[derive(Debug, Clone)]
-struct TextGridCell {
+struct TextGridCell<'a> {
+    /// セル文字列を構成した原本断片。
+    texts: Vec<&'a ParsedTextElement>,
     /// セル左端の PDF x 座標。
     x0: f32,
     /// セル下端の PDF y 座標。
