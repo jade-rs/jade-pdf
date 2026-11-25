@@ -8094,15 +8094,34 @@ fn clip_open_edges_at_page_edges(
     else {
         return open;
     };
-    if ruled.len() < 3 || open.len() <= ruled.len() {
+    if ruled.len() < 2 || open.len() <= ruled.len() {
         return open;
     }
-    let mut pitches = ruled
-        .windows(2)
-        .map(|pair| pair[1] - pair[0])
-        .collect::<Vec<_>>();
-    pitches.sort_unstable();
-    let pitch = pitches[pitches.len() / 2];
+    // 行の間隔は横罫線の間隔の中央値。横罫線が外枠だけなら、字の高さの 1.5 倍とする。
+    let pitch = if ruled.len() >= 3 {
+        let mut pitches = ruled
+            .windows(2)
+            .map(|pair| pair[1] - pair[0])
+            .collect::<Vec<_>>();
+        pitches.sort_unstable();
+        pitches[pitches.len() / 2]
+    } else {
+        let mut heights = parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .map(|text| {
+                let bounds = normalized_bounds(text.bounds);
+                bounds.y1 - bounds.y0
+            })
+            .filter(|height| *height > 0.0)
+            .collect::<Vec<_>>();
+        if heights.is_empty() {
+            return open;
+        }
+        heights.sort_by(f32::total_cmp);
+        (1.5 * heights[heights.len() / 2]).ceil() as i32
+    };
     let (left, right) = (
         xs.first().copied().unwrap_or(i32::MIN) as f32,
         xs.last().copied().unwrap_or(i32::MAX) as f32,
