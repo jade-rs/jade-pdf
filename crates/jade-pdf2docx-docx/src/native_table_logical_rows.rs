@@ -179,8 +179,10 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 cell.fallback_runs.clear();
                 let source_index = index.checked_sub(count.checked_sub(original.lines.len())?)?;
                 cell.logical_row_right_anchor = Some(*anchors.as_ref()?.get(source_index)?);
-                // fit検証も本番と同じbuilderを通し、行boxの欠落を許さない。
-                table_cell(&cell)?;
+                // 本番と同じ容量・丸め規則を使い、検査で段落IDを生成しない。
+                if !line_spacings(&cell)?.all(|spacing| spacing.is_some()) {
+                    return None;
+                }
                 model.text = line.text.clone();
                 Some(cell)
             } else {

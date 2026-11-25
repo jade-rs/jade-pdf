@@ -340,8 +340,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
     if cell.lines.is_empty() || (cell.lines.len() < 2 && cell.logical_row_right_anchor.is_none()) {
         return None;
     }
-    let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
-    let mut rounding = cell_line_rounding::Accumulator::default();
+    let spacings = line_spacings(cell)?;
     let mut out = TableCell::new().vertical_align(VAlignType::Top);
     out.property = out
         .property
@@ -349,22 +348,16 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_bottom(0, WidthType::Dxa)
         .margin_left(0, WidthType::Dxa)
         .margin_right(0, WidthType::Dxa);
-    let mut previous_bottom = cell.top;
     let right_anchors = cell
         .logical_row_right_anchor
         .map(|right| vec![right])
         .unwrap_or_else(|| {
             native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right)
         });
-    for (index, line) in cell.lines.iter().enumerate() {
-        let before = (previous_bottom - line.top_y).max(0.0);
-        let height = structured_line_max_font_size(line);
-        let (before, line_twips, used) = rounding.line(before, height)?;
-        if used > capacity {
-            return None;
-        }
-        let mut paragraph = paragraph_from_structured_line(line, cell.left, None, None)
-            .line_spacing(native_line_pitch::spacing_twips(line_twips, before, 0)?);
+    for (index, (line, spacing)) in cell.lines.iter().zip(spacings).enumerate() {
+        let spacing = spacing?;
+        let mut paragraph =
+            paragraph_from_structured_line(line, cell.left, None, None).line_spacing(spacing);
         if right_anchors[index] {
             let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
             paragraph =
@@ -373,9 +366,25 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
                     .indent(Some(0), None, Some(right), None);
         }
         out = out.add_paragraph(paragraph);
-        previous_bottom = line.top_y - height;
     }
     Some(out)
+}
+
+/// 容量検査と累積丸めを、段落IDを生成しない遅延iteratorとして実際のbuilderと共有する。
+fn line_spacings(cell: &Cell) -> Option<impl Iterator<Item = Option<LineSpacing>> + '_> {
+    let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
+    let mut rounding = cell_line_rounding::Accumulator::default();
+    let mut previous_bottom = cell.top;
+    Some(cell.lines.iter().map(move |line| {
+        let before = (previous_bottom - line.top_y).max(0.0);
+        let height = structured_line_max_font_size(line);
+        let (before, line_twips, used) = rounding.line(before, height)?;
+        if used > capacity {
+            return None;
+        }
+        previous_bottom = line.top_y - height;
+        native_line_pitch::spacing_twips(line_twips, before, 0)
+    }))
 }
 
 /// style対応を確認済みの一行だけ、既存段落を作り直さず水平原点の相対量を返す。
