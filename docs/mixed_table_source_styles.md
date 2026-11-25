@@ -19,3 +19,9 @@
 原本HelveticaからArialへの置換によるbaseline差、罫線表の文字位置などは残る。所有対照は既知の入力であり、未見文書の精度率を示さない。全体のruntime検証と変更出力の確認が終わるまで本番品質の合格とは扱わない。
 
 依頼されたkanpoの設計から参考にした、文字と物理gridの所有対応・通常体と太字の区別・元の辺の根拠を保つ考え方は[参照記録](source_typography_and_table_opening.md#参照)に記載した。独自ライセンスのコードは転記せず、既存のIRとbuilderへ独立に実装している。
+
+## 固定した検証記録
+
+最終source `a4e76da`の754 Rustファイルで、default全体検査は2,507成功・0失敗・37ignore（142群）。CLIは144条件で123成功・21拒否、Chromium/WebKitは各152条件で126成功・26拒否。従来の128 native＋272 browserのDOCX・拒否内容はbyte単位で一致し、混在表2件の変更だけを別途確認した。
+
+8件の所有対照の文字・表構造は3 runtime×2 modeの48出力で照合し、新規2件の太字・サイズ・色は12出力で照合した。変更または追加された4種類のDOCXを全8ページ描画して確認し、他runtime/modeの対応出力もbyte単位で一致した。16,065件の親・原本・goldファイルを再照合した。これらは既知の対照のcomponent検証であり、未見文書の精度率や文書全体の本番品質の合格ではない。詳細は[検証台帳](../corpus/validation-mixed-table-source-styles.json)を参照。
