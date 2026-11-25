@@ -11,9 +11,11 @@ fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertEr
     let PreparedDocx {
         docx,
         column_frames,
+        vertical_tiers,
     } = prepared;
     let mut package = crate::section_chrome_package::build(docx)?;
     crate::column_frame::apply(&mut package.document, &column_frames)?;
+    crate::vertical_pages::apply_columns(&mut package.document, &vertical_tiers);
     crate::layout_space::preserve_advance(&mut package)?;
     crate::inline_baseline::apply(&mut package)?;
     crate::normal_weight_package::apply(&mut package)?;

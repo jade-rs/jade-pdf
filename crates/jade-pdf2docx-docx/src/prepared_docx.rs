@@ -7,6 +7,8 @@ pub(super) struct PreparedDocx {
     pub(super) docx: Docx,
     /// 本文XMLに出現する二段section順の実段領域。
     pub(super) column_frames: Vec<crate::column_frame::Frame>,
+    /// 本文XMLに出現する縦書きsection順の段の範囲（回した座標、pt）。
+    pub(super) vertical_tiers: Vec<Vec<(f32, f32)>>,
 }
 
 impl PreparedDocx {
@@ -15,7 +17,14 @@ impl PreparedDocx {
         Self {
             docx,
             column_frames,
+            vertical_tiers: Vec::new(),
         }
+    }
+
+    /// 縦書きのsectionの段の範囲を添える。
+    pub(super) fn with_vertical_tiers(mut self, vertical_tiers: Vec<Vec<(f32, f32)>>) -> Self {
+        self.vertical_tiers = vertical_tiers;
+        self
     }
 }
 

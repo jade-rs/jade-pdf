@@ -112,6 +112,7 @@ mod table_cell_text;
 mod table_grid;
 mod text_line_rows;
 mod vertical_forms;
+mod vertical_pages;
 #[cfg(not(target_arch = "wasm32"))]
 pub use staged_output::StagedDocxOutput;
 
@@ -387,6 +388,7 @@ fn convert_pdf_file_with_check(
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
     recover_angle_marks(&mut parsed);
+    vertical_pages::rotate(&mut parsed);
     ruby::attach(&mut parsed);
     fractions::join(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
@@ -512,6 +514,7 @@ fn convert_pdf_bytes_with_check(
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
     recover_angle_marks(&mut parsed);
+    vertical_pages::rotate(&mut parsed);
     ruby::attach(&mut parsed);
     fractions::join(&mut parsed);
     split_text_at_vertical_rules(&mut parsed);
@@ -1459,7 +1462,8 @@ fn build_structured_docx_with_image_payloads(
             .into_iter()
             .map(|layout| layout.frame)
             .collect(),
-    ))
+    )
+    .with_vertical_tiers(vertical_section_tiers(parsed, &pages)))
 }
 
 /// structured page block を追加できる DOCX container を表す。
@@ -1500,7 +1504,14 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
-    let band_edges = column_bands::column_band_edges(parsed, page.page, positioned_tables);
+    let vertical = vertical_page(parsed, page.page);
+    // 縦書きのページの段（回した座標では上から下へ積んだ段。段ごとに Word の段にする）。
+    let vertical_tiers = vertical.map(|vertical| vertical_pages::tiers(parsed, vertical));
+    let band_edges = if vertical.is_some() {
+        Vec::new()
+    } else {
+        column_bands::column_band_edges(parsed, page.page, positioned_tables)
+    };
     let band_page_width = parsed
         .pages
         .iter()
@@ -1543,12 +1554,18 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             table: table.clone(),
         });
     }
+    // 縦書きのページの画像は本文の行の送りに入れず、原本の位置に浮かせて置く。
+    let mut vertical_images = Vec::new();
     for (image_index, image) in parsed
         .image_elements
         .iter()
         .enumerate()
         .filter(|(_, image)| image.page == page.page)
     {
+        if vertical.is_some() {
+            vertical_images.push((image_index, image.clone()));
+            continue;
+        }
         let top_y = image.bounds.y1;
         blocks.push(StructuredBlock::Image {
             band_rank: column_bands::reading_rank(
@@ -1569,6 +1586,21 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    if let Some(vertical) = vertical
+        && !vertical_images.is_empty()
+    {
+        let mut paragraph = column_break_paragraph();
+        paragraph.children.clear();
+        for (image_index, mut image) in vertical_images {
+            if let Some(payloads) = image_payloads {
+                image.png_bytes = std::mem::take(&mut payloads[image_index]);
+            }
+            if let Some(picture) = vertical_pages::floating_picture(image, vertical) {
+                paragraph = paragraph.add_run(Run::new().add_image(picture));
+            }
+        }
+        container = container.add_structured_paragraph(paragraph);
+    }
     let block_count = blocks.len();
     if block_count == 0 {
         return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
@@ -1609,7 +1641,38 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     let mut previous_line: Option<StructuredTextLine> = None;
     let mut previous_nonparagraph_bottom_y: Option<f32> = None;
     let mut previous_column_index = 0usize;
+    // 縦書きの最初の段の上端（ほかの段の上端は 1 段の高さずつ下）。
+    let vertical_top = blocks
+        .iter()
+        .map(StructuredBlock::top_y)
+        .filter(|value| value.is_finite())
+        .map(|value| {
+            vertical.map_or(value, |vertical| {
+                vertical_pages::in_first_tier(vertical, value)
+            })
+        })
+        .fold(f32::NEG_INFINITY, f32::max);
+    // 縦書きの段の左端（最初の段は section の原点）。
+    let tier_origin = |tier: usize| {
+        vertical_tiers
+            .as_ref()
+            .and_then(|tiers| tiers.get(tier))
+            .filter(|_| tier > 0)
+            .map_or(origin_x, |(x0, _)| *x0)
+    };
     for (block_index, block) in blocks.into_iter().enumerate() {
+        // 縦書きの表・画像が次の段で始まるときは、先に改段する。
+        if let Some(vertical) = vertical
+            && !matches!(block, StructuredBlock::Paragraph { .. })
+        {
+            let tier = vertical_pages::tier_of(vertical, block.top_y());
+            if tier > previous_column_index {
+                container = container.add_structured_paragraph(column_break_paragraph());
+                previous_column_index = tier;
+                previous_line = None;
+                previous_nonparagraph_bottom_y = None;
+            }
+        }
         match block {
             StructuredBlock::Paragraph {
                 flow_index,
@@ -1619,9 +1682,13 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 let text_columns = text_column_layout
                     .filter(|layout| layout.contains_column_line(flow_index))
                     .map(|layout| layout.columns.as_slice());
-                let column_index = text_columns
-                    .map(|columns| column_index_for_line(&line, columns))
-                    .unwrap_or(0);
+                let column_index = if let Some(vertical) = vertical {
+                    vertical_pages::tier_of(vertical, line.top_y)
+                } else {
+                    text_columns
+                        .map(|columns| column_index_for_line(&line, columns))
+                        .unwrap_or(0)
+                };
                 let starts_new_column = column_index > previous_column_index;
                 if starts_new_column {
                     previous_line = None;
@@ -1634,7 +1701,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     });
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
-                    .unwrap_or(origin_x);
+                    .unwrap_or_else(|| tier_origin(column_index));
                 if text_columns.is_some() {
                     line.alignment = ParagraphAlignment::Left;
                 }
@@ -1665,6 +1732,15 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                         })
                     })
                     .unwrap_or(0);
+                // 縦書きの段の最初の行は、段の上端からの空きを置く。
+                let before = match vertical {
+                    Some(vertical) if starts_new_column => pdf_vertical_blank_gap_between_y(
+                        vertical_pages::tier_top(vertical, vertical_top, column_index),
+                        line.top_y,
+                    )
+                    .unwrap_or(0),
+                    _ => before,
+                };
                 let after = paragraph_after_spacing[block_index].unwrap_or(0);
                 if let Some(spacing) =
                     native_line_pitch::spacing(structured_line_max_font_size(&line), before, after)
@@ -1674,7 +1750,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     paragraph =
                         paragraph.line_spacing(LineSpacing::new().before(before).after(after));
                 }
-                if starts_new_column {
+                if starts_new_column && vertical.is_some() {
+                    // 縦書きの段は改段だけの段落で送り、段の頭に空の行を残さない。
+                    container = container.add_structured_paragraph(column_break_paragraph());
+                } else if starts_new_column {
                     paragraph.children.insert(
                         0,
                         ParagraphChild::Run(Box::new(Run::new().add_break(BreakType::Column))),
@@ -1708,8 +1787,14 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     .table
                     .validate()
                     .map_err(ConvertError::InvalidOcrTable)?;
+                let table_origin_x = match vertical {
+                    Some(vertical) => {
+                        tier_origin(vertical_pages::tier_of(vertical, table.bounds.y1))
+                    }
+                    None => origin_x,
+                };
                 container = container
-                    .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                    .add_structured_table(docx_table_from_structured_table(&table, table_origin_x));
                 if let Some(boundary) =
                     page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
                 {
@@ -1804,7 +1889,8 @@ fn build_multi_page_text_column_docx(
             .flatten()
             .map(|layout| layout.frame.clone())
             .collect(),
-    ))
+    )
+    .with_vertical_tiers(vertical_section_tiers(parsed, pages)))
 }
 
 /// 1ページ内の段組み区間とページ境界に対応する DOCX section property 群を作る。
@@ -1867,6 +1953,9 @@ fn detected_text_columns_for_page(
     page: &StructuredTextPage,
     positioned_tables: &[PositionedTable],
 ) -> Option<DetectedTextColumnLayout> {
+    if vertical_page(parsed, page.page).is_some() {
+        return None;
+    }
     if positioned_tables
         .iter()
         .any(|table| table.page == page.page)
@@ -1940,8 +2029,49 @@ fn structured_docx_with_page_layout(
     else {
         return Docx::new();
     };
+    if let Some(vertical) = vertical_page(parsed, page.page) {
+        let ((width, height), margin) =
+            vertical_pages::physical_layout(vertical, (width, height), margin);
+        let mut docx = Docx::new().page_margin(margin).page_size(width, height);
+        docx.document.section_property.text_direction = vertical_pages::TEXT_DIRECTION.into();
+        return docx;
+    }
     let docx = Docx::new().page_margin(margin).page_size(width, height);
     apply_landscape_orientation_to_docx(docx, width, height)
+}
+
+/// 改段だけの段落（次の段へ送る。段の頭に残る段落記号は最小の高さにする）。
+fn column_break_paragraph() -> Paragraph {
+    Paragraph::new()
+        .add_run(Run::new().add_break(BreakType::Column).size(2))
+        .line_spacing(
+            LineSpacing::new()
+                .before(0)
+                .after(0)
+                .line(20)
+                .line_rule(docx_rs::LineSpacingType::Exact),
+        )
+}
+
+/// 縦書きとして回したページ。
+fn vertical_page(parsed: &ParsedDocument, page: usize) -> Option<&ParsedPage> {
+    parsed
+        .pages
+        .iter()
+        .find(|parsed_page| parsed_page.page_number == page)
+        .filter(|parsed_page| vertical_pages::is_vertical(parsed_page))
+}
+
+/// 本文 XML に現れる順の、縦書きの section の段の範囲。
+fn vertical_section_tiers(
+    parsed: &ParsedDocument,
+    pages: &[StructuredTextPage],
+) -> Vec<Vec<(f32, f32)>> {
+    pages
+        .iter()
+        .filter_map(|page| vertical_page(parsed, page.page))
+        .map(|page| vertical_pages::tiers(parsed, page))
+        .collect()
 }
 
 /// 指定 PDF ページの寸法と配置原点を中間 DOCX section へ反映する。
@@ -1956,6 +2086,14 @@ fn structured_section_with_page_layout(
     else {
         return Section::new();
     };
+    if let Some(vertical) = vertical_page(parsed, page.page) {
+        let ((width, height), margin) =
+            vertical_pages::physical_layout(vertical, (width, height), margin);
+        return Section::new()
+            .page_margin(margin)
+            .page_size(PageSize::new().size(width, height))
+            .text_direction(vertical_pages::TEXT_DIRECTION.into());
+    }
     let section = Section::new()
         .page_margin(margin)
         .page_size(PageSize::new().size(width, height));
@@ -2050,6 +2188,14 @@ fn structured_page_layout(
                     .map(|image| image.bounds.y1),
             )
             .filter(|value| value.is_finite())
+            // 縦書きのページは段ごとに上端をそろえて比べる（どの段の行も同じ上余白から始まる）。
+            .map(|value| {
+                if vertical_pages::is_vertical(parsed_page) {
+                    vertical_pages::in_first_tier(parsed_page, value)
+                } else {
+                    value
+                }
+            })
             .fold(f32::NEG_INFINITY, f32::max)
     } else {
         display_height
@@ -4039,6 +4185,9 @@ fn positioned_table_row_height_twips(table: &PositionedTable) -> Option<f32> {
     pdf_points_to_twips_f32(height / row_count as f32)
 }
 
+/// セルの左の罫線を越えても、そのセルの字とみなす字形のはみ出しの上限（pt）。
+const MAX_GLYPH_OVERHANG_PT: f32 = 2.0;
+
 /// 細い PDF 罫線が raster bbox に含まれる分を表高さへ足す。
 fn thin_table_rule_height_adjustment(stroke_width: f32) -> f32 {
     if stroke_width.is_finite() && stroke_width > 0.0 && stroke_width < 0.75 {
@@ -5945,7 +6094,9 @@ fn infer_positioned_table_from_graphics(
         .flat_map(|(bounds, alignments)| bounds.iter().zip(alignments.iter()).enumerate())
         .filter(|(_, (_, alignment))| **alignment != ParagraphAlignment::Right)
         .filter_map(|(col, (bounds, _))| bounds.map(|bounds| bounds.x0 - xs[col] as f32))
-        .filter(|gap| gap.is_finite() && *gap >= 0.0)
+        // 字形の外接矩形が罫線をわずかに越える（縦組みの括弧など）セルは、余白の無いセルとする。
+        .filter(|gap| gap.is_finite() && *gap >= -MAX_GLYPH_OVERHANG_PT)
+        .map(|gap| gap.max(0.0))
         .reduce(f32::min);
     // マスの面積の大半を覆う塗りつぶし矩形を、そのマスの背景色にする。
     let cell_shading = (0..rows)
