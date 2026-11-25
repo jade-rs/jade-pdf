@@ -16,6 +16,30 @@ fn numeric_tj_values_keep_separate_editable_source_cells() {
     assert_eq!(table_rows(&source()), [["376", "-2.4"], ["89", "0.2"]]);
 }
 
+/// 横幅を半分にした原本でも、別の数値欄3と768を一つの整数3768へ連結しない。
+#[test]
+fn horizontally_scaled_numeric_fields_keep_their_body_word_separator() {
+    let input = owned_pdf_content("BT /F1 10 Tf 50 Tz 20 600 Td [(3) -1000 (768)] TJ ET");
+    assert_eq!(body_text(&input), "3 768");
+}
+
+/// Word本文のrun境界を除いて、編集時に見える文字列を公開byte APIから読む。
+fn body_text(source: &[u8]) -> String {
+    let xml = document_xml(source);
+    let mut reader = Reader::from_str(&xml);
+    let mut out = String::new();
+    let mut text = false;
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Start(tag) if tag.name().as_ref() == b"w:t" => text = true,
+            Event::End(tag) if tag.name().as_ref() == b"w:t" => text = false,
+            Event::Text(value) if text => out.push_str(&value.decode().unwrap()),
+            Event::Eof => return out,
+            _ => {}
+        }
+    }
+}
+
 /// 半emの桁差を持つ所有数値表でも、公開変換から狭いセルの元の右端anchorを保持する。
 #[test]
 fn rounded_half_em_numbers_keep_source_right_anchors_in_public_docx() {
