@@ -3695,9 +3695,37 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         .map(|graphic| graphic.page)
         .chain(parsed.text_elements.iter().map(|text| text.page))
         .collect::<BTreeSet<_>>();
-    let mut tables = pages
+    let graphic_tables = pages
         .into_iter()
-        .flat_map(|page| infer_positioned_tables_for_page(parsed, page))
+        .map(|page| {
+            (
+                page,
+                infer_positioned_tables_from_pdf_graphics_page(parsed, page),
+            )
+        })
+        .collect::<Vec<_>>();
+    // 以前は別ページの罫線表で抑止されていた候補だけに、既存の段組モデルも照合する。
+    let body_column_pages = if graphic_tables.iter().any(|(_, tables)| !tables.is_empty())
+        && graphic_tables.iter().any(|(_, tables)| tables.is_empty())
+    {
+        text_lines_by_page_from_pdf_text_elements(parsed, &[])
+            .into_iter()
+            .filter(|page| has_dense_body_columns(parsed, page))
+            .map(|page| page.page)
+            .collect::<BTreeSet<_>>()
+    } else {
+        BTreeSet::new()
+    };
+    let mut tables = graphic_tables
+        .into_iter()
+        .flat_map(|(page, tables)| {
+            infer_positioned_tables_for_page(
+                parsed,
+                page,
+                tables,
+                body_column_pages.contains(&page),
+            )
+        })
         .collect::<Vec<_>>();
     tables.sort_by(|a, b| {
         a.page
@@ -3708,8 +3736,12 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
 }
 
 /// 罫線・反復列の選択を同じページ内だけで比較し、別ページの表を上書きしない。
-fn infer_positioned_tables_for_page(parsed: &ParsedDocument, page: usize) -> Vec<PositionedTable> {
-    let graphic_tables = infer_positioned_tables_from_pdf_graphics_page(parsed, page);
+fn infer_positioned_tables_for_page(
+    parsed: &ParsedDocument,
+    page: usize,
+    graphic_tables: Vec<PositionedTable>,
+    dense_body_columns: bool,
+) -> Vec<PositionedTable> {
     if !graphic_tables.is_empty() {
         if graphic_tables.len() == 1
             && let Some(best_text_table) = infer_positioned_table_from_text_grid_page(parsed, page)
@@ -3736,9 +3768,29 @@ fn infer_positioned_tables_for_page(parsed: &ParsedDocument, page: usize) -> Vec
         }
         return attach_nested_positioned_tables(graphic_tables);
     }
+    if dense_body_columns {
+        return Vec::new();
+    }
     infer_positioned_table_from_text_grid_page(parsed, page)
         .into_iter()
         .collect()
+}
+
+/// 十分な長さの本文が左右各8行以上ある既存段組は、新しい反復列の表へ昇格しない。
+fn has_dense_body_columns(parsed: &ParsedDocument, page: &StructuredTextPage) -> bool {
+    let Some(layout) = detected_text_columns_for_page(parsed, page, &[]) else {
+        return false;
+    };
+    let lines = &page.lines[layout.column_start_index()..layout.column_end_index()];
+    let mut count = [0; 2];
+    for line in lines {
+        let size = structured_line_max_font_size(line);
+        if !size.is_finite() || size <= 0.0 || line.right_x - line.left_x < size * 8.0 {
+            return false;
+        }
+        count[column_index_for_line(line, &layout.columns)] += 1;
+    }
+    count.into_iter().all(|count| count >= 8)
 }
 
 /// 包含された表を親表の子表として組み直す。
