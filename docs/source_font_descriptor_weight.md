@@ -10,6 +10,14 @@ Rustで`ParsedTextElement`を直接構築する呼び出し側は、未確認な
 
 この変更は、罫線のない表の粗いfallbackにセルごとのstyleを追加するものではない。PDFの全太字、回転した見出し、段組み、改ページを含む文書全体の再現性は別途確認が必要である。
 
-最初のRedでは解析3件、DOCX2件、native用コピー1件が失敗した。期待する`Weight`を変えずに、一行のCID CMapにある独立した復号不具合を修正した。font名がない場合の太字欠落もRedで確認してから修正した。固定した元bytes、seed、ログを保持し、全体テストとnative/WASMのファイル比較を続けている。本番品質の達成はまだ主張しない。
+最初のRedでは解析3件、DOCX2件、native用コピー1件が失敗した。期待する`Weight`を変えずに、一行のCID CMapにある独立した復号不具合を修正した。font名がない場合の太字欠落もRedで確認してから修正した。固定した元bytes、seed、ログを保持している。
+
+共有build領域では、新しい属性を持たない既存成果物が参照されて全体チェックがコンパイルで失敗した。失敗ログと、新しいmoduleを含まないdepfile・rlib・rmetaを保存した。同じ739個のRust sourceを空の専用build領域で再検証し、default全体2,457件が成功した（失敗0、明示ignore32、141 test groups）。既存のClippy警告は残る。
+
+native110出力は95成功・15拒否、Chromium/WebKitそれぞれ130出力は104成功・26拒否だった。browser260出力はengine間で一致し、検査結果と拒否理由は親と同じである。新しい所有PDF9件の54出力は、Unicodeと太字の期待値をすべて満たした。変化したnative20出力・browser各20出力は、document.xmlの`w:b`・`w:bCs`だけが異なる。本文の文字順、位置、font名・サイズ・色、画像と他のZIP内容は変わらない。
+
+14件の比較用DOCXを28ページへ描画し、異なる16ページの画像を2枚の一覧で確認した。新しい太字3ページは個別にも確認し、通常体3ページは先に確認したToUnicode検証の画像と一致した。変化した実資料3件の全ページは、親とRGB単位で一致した。ただしBIPMは原本1ページからWord2ページ、NASAのbrowser出力は原本2ページからWord6ページのままであり、本文欠落・段組み・改ページを含む文書全体は未合格である。
+
+所有PDFの原本は変換前に全9ページを確認した。font programを含まないsimple Type1の7件は独立描画で空白になるため、属性とUnicodeの検証に限定し、見た目やglyph形状の合格には数えない。描画できるCIDの400・700の対照も保ち、通常体・太字を確認した。検証件数は精度率ではなく、今回確認した範囲の記録である。本番品質の達成はまだ主張しない。
 
 数値範囲は[PDF 2.0のFontDescriptor正誤表](https://pdf-issues.pdfa.org/32000-2-2020/clause09.html)を参照した。PDFiumの推定経路は[固定7961のCPDF_Font](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/core/fpdfapi/font/cpdf_font.cpp)と[FPDFText_GetFontWeight](https://pdfium.googlesource.com/pdfium/+/refs/heads/chromium/7961/fpdfsdk/fpdf_text.cpp)で確認した。
