@@ -5188,7 +5188,10 @@ fn docx_table_from_model_with_row_height_and_nested(
                         }
                     }
                     if parent.is_some() {
+                        // 子表を持つセルは上から組む（中央にすると、左右の段のセルで子表の
+                        // 上端がずれる）。
                         table_cell = table_cell.vertical_align(match cell.vertical_alignment {
+                            _ if has_nested_tables => VAlignType::Top,
                             Some(CellVerticalAlignment::Top) => VAlignType::Top,
                             Some(CellVerticalAlignment::Bottom) => VAlignType::Bottom,
                             Some(CellVerticalAlignment::Center) | None => VAlignType::Center,
