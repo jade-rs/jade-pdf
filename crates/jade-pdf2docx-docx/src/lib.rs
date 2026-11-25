@@ -5942,6 +5942,7 @@ fn infer_positioned_tables_from_pdf_graphics_page(
             .cloned()
             .collect::<Vec<_>>(),
     );
+    let page_graphics = bridge_lone_frame_rules(page_graphics);
     if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
         return vec![table];
     }
@@ -6548,7 +6549,7 @@ fn infer_positioned_table_from_graphics(
     // 上下（左右）の外枠を描かない表は、揃った縦（横）罫線の端を外枠の位置として補う。
     let open_ys = open_table_edges(&full_vertical, &full_horizontal, &ys, true);
     let open_xs = open_table_edges(&full_horizontal, &full_vertical, &xs, false);
-    let open_ys = clip_open_edges_at_page_edges(parsed, page, &ys, open_ys);
+    let open_ys = clip_open_edges_at_page_edges(parsed, page, &xs, &ys, open_ys);
     let has_open_edges = horizontal_only || open_ys.len() > ys.len() || open_xs.len() > xs.len();
     ys = open_ys;
     xs = open_xs;
@@ -8084,6 +8085,7 @@ fn row_index_for_y(y: f32, ys: &[i32]) -> Option<usize> {
 fn clip_open_edges_at_page_edges(
     parsed: &ParsedDocument,
     page: usize,
+    xs: &[i32],
     ruled: &[i32],
     open: Vec<i32>,
 ) -> Vec<i32> {
@@ -8101,26 +8103,179 @@ fn clip_open_edges_at_page_edges(
         .collect::<Vec<_>>();
     pitches.sort_unstable();
     let pitch = pitches[pitches.len() / 2];
-    let texts_between = |from: i32, to: i32| {
-        parsed.text_elements.iter().any(|text| {
-            let bounds = normalized_bounds(text.bounds);
-            let y = (bounds.y0 + bounds.y1) / 2.0;
-            text.page == page && !text.text.trim().is_empty() && y > from as f32 && y < to as f32
-        })
+    let (left, right) = (
+        xs.first().copied().unwrap_or(i32::MIN) as f32,
+        xs.last().copied().unwrap_or(i32::MAX) as f32,
+    );
+    // 表の左右の範囲で、外側の横罫線と用紙の端の間にある字の上端・下端。
+    let text_extent = |from: i32, to: i32| {
+        parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty())
+            .map(|text| normalized_bounds(text.bounds))
+            .filter(|bounds| {
+                let (x, y) = ((bounds.x0 + bounds.x1) / 2.0, (bounds.y0 + bounds.y1) / 2.0);
+                x > left && x < right && y > from as f32 && y < to as f32
+            })
+            .fold(None, |extent: Option<(f32, f32)>, bounds| {
+                Some(extent.map_or((bounds.y0, bounds.y1), |(low, high)| {
+                    (low.min(bounds.y0), high.max(bounds.y1))
+                }))
+            })
     };
     let at_edge = |edge: i32| edge <= 1 || edge as f32 >= height - 1.0;
+    // 外枠は字のある行まで（少なくとも行の間隔 1 つ分）。字が無ければ外枠を補わない。
     open.into_iter()
         .filter_map(|edge| {
             if edge > high && at_edge(edge) && edge - high > pitch + pitch / 2 {
-                texts_between(high, high + pitch).then_some(high + pitch)
+                text_extent(high, edge).map(|(_, top)| {
+                    (high + pitch)
+                        .max((top + EDGE_TEXT_PAD_PT).ceil() as i32)
+                        .min(edge)
+                })
             } else if edge < low && at_edge(edge) && low - edge > pitch + pitch / 2 {
-                texts_between(low - pitch, low).then_some(low - pitch)
+                text_extent(edge, low).map(|(bottom, _)| {
+                    (low - pitch)
+                        .min((bottom - EDGE_TEXT_PAD_PT).floor() as i32)
+                        .max(edge)
+                })
             } else {
                 Some(edge)
             }
         })
         .collect()
 }
+
+/// どの横罫線にも接しない縦罫線（表の外枠）を、同じ高さの範囲の縦罫線を持つ隣の表の罫線と、
+/// 上下の線でつなぐ。
+///
+/// 財務表には、横罫線を金額の列にだけ引き、科目の列の外枠は縦罫線 1 本だけのものがある。
+/// そのままでは外枠が表の罫線の連結から外れ、科目の列が表にならない（原本は外枠と金額の列の
+/// 上下の線で囲んで見える）。
+fn bridge_lone_frame_rules(mut graphics: Vec<ParsedGraphicElement>) -> Vec<ParsedGraphicElement> {
+    let bounds = graphics
+        .iter()
+        .map(|graphic| normalized_bounds(graphic.bounds))
+        .collect::<Vec<_>>();
+    let horizontals = bounds
+        .iter()
+        .copied()
+        .filter(is_horizontal_line)
+        .collect::<Vec<_>>();
+    let touches = |vertical: &ParsedBounds| {
+        horizontals
+            .iter()
+            .filter(|horizontal| {
+                horizontal.x0 <= vertical.x0 + 2.0
+                    && horizontal.x1 >= vertical.x0 - 2.0
+                    && horizontal.y0 >= vertical.y0 - 2.0
+                    && horizontal.y0 <= vertical.y1 + 2.0
+            })
+            .count()
+    };
+    let verticals = bounds
+        .iter()
+        .zip(&graphics)
+        .filter(|(bounds, graphic)| {
+            is_vertical_line(bounds)
+                && graphic.stroke_width > 0.0
+                && bounds.y1 - bounds.y0 >= MIN_BRIDGED_RULE_PT
+        })
+        .map(|(bounds, graphic)| (*bounds, graphic.page, graphic.stroke_width))
+        .collect::<Vec<_>>();
+    let mut bridges = Vec::new();
+    for &(lone, page, stroke) in &verticals {
+        if touches(&lone) > 0 {
+            continue;
+        }
+        let same_extent = |other: &ParsedBounds| {
+            (other.y0 - lone.y0).abs() <= 2.0 && (other.y1 - lone.y1).abs() <= 2.0
+        };
+        // 同じ高さの範囲で、横罫線の表に属する最も近い縦罫線。間に同じ高さの縦罫線は無いこと。
+        // 相手は右にあり、その横罫線は相手から右へ引いたもの（金額の列の横罫線）。
+        let starts_at = |other: &ParsedBounds| {
+            horizontals
+                .iter()
+                .filter(|horizontal| {
+                    (horizontal.x0 - other.x0).abs() <= 2.0
+                        && horizontal.y0 >= other.y0 - 2.0
+                        && horizontal.y0 <= other.y1 + 2.0
+                })
+                .count()
+        };
+        let Some(&(partner, ..)) = verticals
+            .iter()
+            .filter(|(other, ..)| {
+                other.x0 > lone.x0 + 2.0
+                    && same_extent(other)
+                    && starts_at(other) >= MIN_BRIDGED_ROWS
+            })
+            .min_by(|a, b| {
+                (a.0.x0 - lone.x0)
+                    .abs()
+                    .total_cmp(&(b.0.x0 - lone.x0).abs())
+            })
+        else {
+            continue;
+        };
+        let (left, right) = if lone.x0 < partner.x0 {
+            (lone.x0, partner.x0)
+        } else {
+            (partner.x0, lone.x0)
+        };
+        // 外枠と相手の間（科目の列）には、ほかの罫線が無いこと。
+        let between = bounds.iter().any(|other| {
+            other.x1 > left + 2.0
+                && other.x0 < right - 2.0
+                && other.y1 > lone.y0.max(partner.y0) + 2.0
+                && other.y0 < lone.y1.min(partner.y1) - 2.0
+        });
+        if between {
+            continue;
+        }
+        // 相手の表の一番上・一番下の横罫線の高さで外枠を閉じる（縦罫線の端は用紙の端まで
+        // 伸びていることがあり、そこで閉じると表の外まで行ができる）。
+        let partner_rows = horizontals
+            .iter()
+            .filter(|horizontal| {
+                horizontal.x0 <= partner.x0 + 2.0
+                    && horizontal.x1 >= partner.x0 - 2.0
+                    && horizontal.y0 >= partner.y0 - 2.0
+                    && horizontal.y0 <= partner.y1 + 2.0
+            })
+            .map(|horizontal| horizontal.y0)
+            .collect::<Vec<_>>();
+        let (Some(bottom), Some(top)) = (
+            partner_rows.iter().copied().reduce(f32::min),
+            partner_rows.iter().copied().reduce(f32::max),
+        ) else {
+            continue;
+        };
+        for y in [bottom, top] {
+            bridges.push(ParsedGraphicElement {
+                page,
+                bounds: ParsedBounds {
+                    x0: left,
+                    y0: y,
+                    x1: right,
+                    y1: y,
+                },
+                stroke_width: stroke,
+                dashed: false,
+            });
+        }
+    }
+    graphics.extend(bridges);
+    graphics
+}
+
+/// 外枠とみなしてつなぐ縦罫線の長さの下限（pt）と、相手の表の縦罫線が接する横罫線の数の下限。
+const MIN_BRIDGED_RULE_PT: f32 = 100.0;
+const MIN_BRIDGED_ROWS: usize = 3;
+
+/// 用紙の端まで伸びる罫線の端の代わりに補う外枠と、字の間の余白（pt）。
+const EDGE_TEXT_PAD_PT: f32 = 2.0;
 
 /// 外枠を欠く表の辺を、揃った罫線の端から補った座標列を返す。
 ///

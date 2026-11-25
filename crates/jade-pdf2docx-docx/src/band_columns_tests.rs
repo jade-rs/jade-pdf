@@ -113,3 +113,36 @@ fn a_narrow_margin_line_is_set_sideways() {
         sideways_margin_line(&[line("令和八年八月十三日官報", 41., 54.)], 200., 842.).is_none()
     );
 }
+
+/// 横罫線に接しない科目の列の外枠は、右の金額の列の一番上・一番下の横罫線の高さで、金額の列の
+/// 縦罫線とつなぐ。間にほかの罫線がある外枠はつながない。
+#[test]
+fn a_lone_frame_rule_is_bridged_to_the_amount_column() {
+    let rule = |x0: f32, y0: f32, x1: f32, y1: f32| ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds { x0, y0, x1, y1 },
+        stroke_width: 0.36,
+        dashed: false,
+    };
+    let mut graphics = vec![
+        rule(437., 46., 437., 595.),
+        rule(668., 46., 668., 595.),
+        rule(780., 46., 780., 595.),
+    ];
+    for y in [46., 63., 81., 171., 459.] {
+        graphics.push(rule(668., y, 780., y));
+    }
+    let bridged = bridge_lone_frame_rules(graphics.clone());
+    let added = bridged[graphics.len()..]
+        .iter()
+        .map(|graphic| (graphic.bounds.x0, graphic.bounds.x1, graphic.bounds.y0))
+        .collect::<Vec<_>>();
+    assert_eq!(added, vec![(437., 668., 46.), (437., 668., 459.)]);
+
+    let mut divided = graphics.clone();
+    divided.push(rule(500., 200., 600., 200.));
+    assert_eq!(
+        bridge_lone_frame_rules(divided.clone()).len(),
+        divided.len()
+    );
+}
