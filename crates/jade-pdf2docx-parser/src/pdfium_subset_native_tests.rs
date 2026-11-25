@@ -21,7 +21,7 @@ fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
     let mut objects = vec![
         b"<< /Type /Catalog /Pages 2 0 R >>".to_vec(),
         b"<< /Type /Pages /Count 1 /Kids [3 0 R] >>".to_vec(),
-        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /Font << {resources} >> >> /Contents {content_number} 0 R >>").into_bytes(),
+        format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Resources << /XObject << /OwnedForm {content_number} 0 R >> >> /Contents {} 0 R >>",content_number+1).into_bytes(),
         stream(&program, "/Subtype /Type1C"),
     ];
     for (i, weight) in weights.iter().enumerate() {
@@ -29,7 +29,8 @@ fn source(weights: &[u16], broken: bool, unused_last: bool) -> Vec<u8> {
         objects.push(format!("<< /Type /Font /Subtype /Type1 /BaseFont /{prefix}+OwnedSubset /FirstChar 65 /LastChar 65 /Widths [600] /Encoding /WinAnsiEncoding /FontDescriptor {} 0 R >>",6+i*2).into_bytes());
         objects.push(format!("<< /Type /FontDescriptor /FontName /{prefix}+OwnedSubset /Flags 32 /FontBBox [0 0 500 700] /ItalicAngle 0 /Ascent 700 /Descent 0 /CapHeight 700 /StemV 80 /FontWeight {weight} /FontFile3 4 0 R >>").into_bytes());
     }
-    objects.push(stream(content.as_bytes(), ""));
+    objects.push(stream(content.as_bytes(), &format!("/Type /XObject /Subtype /Form /BBox [0 0 200 200] /Resources << /Font << {resources} >> >>")));
+    objects.push(stream(b"/OwnedForm Do", ""));
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
     for (index, body) in objects.iter().enumerate() {
