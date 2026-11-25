@@ -120,7 +120,9 @@ pub(crate) fn verified_single_byte_cmap<'a>(
 
 #[path = "type1_mapping.rs"]
 mod type1;
-pub(crate) use type1::{Mapping as Type1Mapping, build as type1_mapping};
+pub(crate) use type1::{
+    Mapping as Type1Mapping, build as type1_mapping, from_predefined as predefined_type1_mapping,
+};
 
 #[path = "positioned_preview.rs"]
 mod positioned_preview;

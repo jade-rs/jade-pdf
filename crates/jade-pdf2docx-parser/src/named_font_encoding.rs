@@ -8,6 +8,7 @@ pub(crate) fn read<'bytes>(
     budget: &DecodeBudget,
     font: &'bytes [u8],
     resolver: &mut ResourceResolver<'_, 'bytes>,
+    number: Option<u32>,
 ) -> Option<Type1Mapping> {
     // 空または未対応のToUnicodeを「原本に存在しない」と取り違えて補完しない。
     if metadata::value(font, b"ToUnicode").is_some()
@@ -43,8 +44,17 @@ pub(crate) fn read<'bytes>(
     if !metadata::is_name(encoding, b"WinAnsiEncoding") {
         return None;
     }
-    let names = crate::pdf_font_encodings::WIN_ANSI.map(Some);
-    crate::text::type1_mapping(budget, None, &names, &Default::default())
+    // 原本の宣言を確認してから、この経路の共有表を再利用する。
+    let generation = number.and_then(|n| resolver.generation(n)).unwrap_or(0);
+    if let Some(cached) = number.and_then(|n| budget.cached_type1(n, generation)) {
+        return Some(cached);
+    }
+    let mapping =
+        crate::text::predefined_type1_mapping(budget, &crate::pdf_font_encodings::WIN_ANSI)?;
+    if let Some(number) = number {
+        budget.save_type1(number, generation, mapping.clone())?;
+    }
+    Some(mapping)
 }
 
 #[cfg(test)]
@@ -56,21 +66,23 @@ mod tests {
     fn mapping(budget: &DecodeBudget, dictionary: &[u8]) -> Option<Type1Mapping> {
         let objects = Objects::default();
         let mut resolver = ResourceResolver::new(&objects, budget);
-        read(budget, dictionary, &mut resolver)
+        read(budget, dictionary, &mut resolver, None)
     }
 
-    /// 256slotの容量不足時は部分表を返さず、完成表でも未定義codeを既知文字と区別する。
+    /// 固定表の件数は原本ToUnicodeへ課さず、保存メモリ不足時は部分表を返さない。
     #[test]
-    fn named_winansi_mapping_respects_total_entry_budget() {
+    fn named_winansi_static_mapping_reserves_memory_without_author_cmap_charges() {
         let font = b"<< /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>";
         let short = DecodeBudget::new(&ParseLimits {
-            max_total_tounicode_entries: 255,
+            max_total_metadata_workspace_bytes: 1,
             ..Default::default()
         });
         assert!(mapping(&short, font).is_none());
         assert!(short.is_stopped());
         let enough = DecodeBudget::new(&ParseLimits {
-            max_total_tounicode_entries: 256,
+            max_total_tounicode_entries: 0,
+            max_total_tounicode_bytes: 0,
+            max_total_tounicode_input_bytes: 0,
             ..Default::default()
         });
         let result = mapping(&enough, font).unwrap();

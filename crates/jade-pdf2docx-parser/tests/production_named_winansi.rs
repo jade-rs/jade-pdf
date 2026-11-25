@@ -1,6 +1,7 @@
 //! 所有Standard14 PDFで、明示WinAnsiのglyph名をUTF-8やShift_JISと混同しない。
 use jade_pdf2docx_parser::parse_pdf_bytes;
 use proptest::prelude::*;
+use proptest::test_runner::FileFailurePersistence;
 
 /// Font programなしの標準Helveticaと任意の文字描画operandだけを持つ所有PDFを作る。
 fn pdf(show: &str, encoding: bool, unicode: bool) -> Vec<u8> {
@@ -102,8 +103,48 @@ fn authored_unicode_and_unspecified_encoding_are_not_overridden() {
     assert_eq!(extracted(&show("é".as_bytes(), 0), true, false), "Ã©");
 }
 
+/// 未定義codeを有効なASCIIに見せず、byte経路は置換文字と診断を保持してstrictで拒否する。
+#[test]
+fn undefined_standard_slot_stays_explicitly_unverified() {
+    use jade_pdf2docx_parser::{
+        ParseError, ParseOptions, QualityIssue, UnsupportedFontReason, parse_pdf_bytes_with_options,
+    };
+    let bytes = pdf(&show(&[b'A', 1, b'Z'], 0), true, false);
+    let parsed =
+        parse_pdf_bytes_with_options("undefined-winansi.pdf", &bytes, &ParseOptions::default())
+            .unwrap();
+    assert_eq!(
+        parsed
+            .text_elements
+            .iter()
+            .map(|t| t.text.as_str())
+            .collect::<String>(),
+        "A�Z"
+    );
+    assert!(parsed.quality.issues.iter().any(|issue| matches!(
+        issue,
+        QualityIssue::UnsupportedFont {
+            page: 0,
+            object_number: Some(5),
+            reason: UnsupportedFontReason::Encoding,
+            ..
+        }
+    )));
+    assert!(matches!(
+        parse_pdf_bytes_with_options(
+            "undefined-winansi.pdf",
+            &bytes,
+            &ParseOptions {
+                strict: true,
+                ..Default::default()
+            }
+        ),
+        Err(ParseError::QualityRejected { .. })
+    ));
+}
+
 proptest! {
-    #![proptest_config(ProptestConfig {cases:24,..ProptestConfig::default()})]
+    #![proptest_config(ProptestConfig {cases:24,failure_persistence:Some(Box::new(FileFailurePersistence::Direct("tests/production_named_winansi.proptest-regressions"))),..ProptestConfig::default()})]
     /// 独立した既知値を連結し、raw byteの並びやoperandの表現でUnicodeが変わらない。
     #[test]
     fn named_winansi_sequences_keep_their_literal_unicode(indices in prop::collection::vec(0usize..12,0..24),route in 0usize..6) {

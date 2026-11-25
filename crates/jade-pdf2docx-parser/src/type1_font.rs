@@ -22,14 +22,7 @@ pub(crate) fn read<'bytes>(
     if !metadata::is_name(subtype, b"Type1") && !metadata::is_name(subtype, b"MMType1") {
         return None;
     }
-    let generation = number.and_then(|n| resolver.generation(n)).unwrap_or(0);
-    if let Some(cached) = number.and_then(|n| budget.cached_type1(n, generation)) {
-        return Some(cached);
-    }
-    if let Some(mapping) = crate::named_font_encoding::read(budget, font, resolver) {
-        if let Some(number) = number {
-            budget.save_type1(number, generation, mapping.clone())?;
-        }
+    if let Some(mapping) = crate::named_font_encoding::read(budget, font, resolver, number) {
         return Some(mapping);
     }
     let raw_encoding = metadata::value(font, b"Encoding");
@@ -37,7 +30,7 @@ pub(crate) fn read<'bytes>(
         .and_then(|v| resolver.resolve(v))
         .map(|v| v.0)
         .filter(|value| value.trim_ascii() != b"null");
-    // 既存の明示BaseEncoding経路はここで組み込み表に置き換えない。
+    // 上記以外の明示BaseEncoding経路はここで組み込み表に置き換えない。
     if pdf_encoding.is_some_and(|value| {
         matches!(
             Lexer {
@@ -60,6 +53,10 @@ pub(crate) fn read<'bytes>(
         return None;
     }
     let stream = raw_program.and_then(|v| resolver.resolve(v));
+    let generation = number.and_then(|n| resolver.generation(n)).unwrap_or(0);
+    if let Some(cached) = number.and_then(|n| budget.cached_type1(n, generation)) {
+        return Some(cached);
+    }
     let program = stream
         .and_then(|(_, number)| number)
         .and_then(|number| parser::form_stream_payload(budget, bytes, number, offsets));
