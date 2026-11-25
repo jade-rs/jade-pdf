@@ -1,0 +1,62 @@
+{
+  "time_utc": "2026-11-25T07:55:36.809680+00:00",
+  "source_head": "960623e01d03a481cfc35b07ef254923d6f6bd3b",
+  "native_success": 77,
+  "native_reject": 15,
+  "all_existing84_outcomes_DOCX_errors_exact_parent": true,
+  "all8_owned_native_unicode_gold": true,
+  "browser_each_success": 86,
+  "browser_each_reject": 26,
+  "all224_browser_outcomes_engine_equal": true,
+  "all_existing208_browser_DOCX_inspections_errors_exact_parent": true,
+  "all16_owned_browser_unicode_gold": true,
+  "changed_owned_browser_outputs": [
+    {
+      "id": "owned-cmap-multiple-pairs",
+      "mode": "default"
+    },
+    {
+      "id": "owned-cmap-multiple-pairs",
+      "mode": "strict"
+    },
+    {
+      "id": "owned-cmap-multiline-array",
+      "mode": "default"
+    },
+    {
+      "id": "owned-cmap-multiline-array",
+      "mode": "strict"
+    },
+    {
+      "id": "owned-cmap-opaque-fake-keywords",
+      "mode": "default"
+    },
+    {
+      "id": "owned-cmap-opaque-fake-keywords",
+      "mode": "strict"
+    }
+  ],
+  "changed_owned_browser_inspections": [
+    "owned-cmap-single-line-original",
+    "owned-cmap-multiple-pairs",
+    "owned-cmap-multiline-array",
+    "owned-cmap-opaque-fake-keywords"
+  ],
+  "render_unique_DOCX": 7,
+  "visual_pending": false,
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "default_tests_passed": 2448,
+  "default_tests_failed": 0,
+  "default_tests_ignored": 32,
+  "default_test_groups": 139,
+  "rendered_pages": 7,
+  "unique_RGB_pages_individually_viewed": 7,
+  "source_pages_reviewed_before_file_product": 4,
+  "owned_candidate_Unicode_component_qualified": true,
+  "source_font_program_absent_no_glyph_outline_or_bold_acceptance": true,
+  "old_native_parent_already_visually_readable_via_SDK": true,
+  "browser_parent_multi_pair_and_array_blank": true,
+  "browser_parent_fake_keyword_wrong_X_now_W": true,
+  "all_candidate_owned_text_readable_on_one_Word_page": true
+}
