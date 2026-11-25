@@ -1,0 +1,33 @@
+{
+  "primary_source": "https://pypi.org/project/reportlab/4.4.9/",
+  "version": "4.4.9",
+  "source_archive": "https://files.pythonhosted.org/packages/1a/39/42cf24aee570a80e1903221ae3a92a2e34c324794a392eb036cbb6dc3839/reportlab-4.4.9.tar.gz",
+  "source_archive_sha256": "7cf487764294ee791a4781f5a157bebce262a666ae4bbb87786760a9676c9378",
+  "tables": [
+    {
+      "file": "_fontdata_widths_helveticabold.py",
+      "sha256": "61b30f5a8ebb923971e5160ea85fd6769b9f1ce3b6689fafe7c702354a5e9328",
+      "definition": "widths"
+    },
+    {
+      "file": "_fontdata_widths_helveticaboldoblique.py",
+      "sha256": "61b30f5a8ebb923971e5160ea85fd6769b9f1ce3b6689fafe7c702354a5e9328",
+      "definition": "widths"
+    },
+    {
+      "file": "_fontdata_enc_winansi.py",
+      "sha256": "e7b5d1be40351a19333dc1741573bd8e8014c363b4a845c8de63693ea7c629a2",
+      "definition": "WinAnsiEncoding"
+    },
+    {
+      "file": "_fontdata_enc_standard.py",
+      "sha256": "f477039ca94a38bd85c762fa4a85ad3c34dbb01e2df075715c20f5868200228e",
+      "definition": "StandardEncoding"
+    }
+  ],
+  "license": "licenses/reportlab.txt",
+  "license_sha256": "ef831761646313921375fc2cb888e8eeaf7da213d0b92852c10c42f3a0b4d138",
+  "scope": "Only 95 printable ASCII numeric advances shared by Helvetica-Bold and Helvetica-BoldOblique; StandardEncoding quote widths remain distinct. No implementation, font programs or runtime dependency copied.",
+  "generator": "python3 tools/generate_standard_bold_widths.py",
+  "adobe_AFM_crosscheck": "All95 widths independently agree with Helvetica-Bold/Helvetica-BoldOblique AFM in Apache PDFBox commit28fe61f4ad64ea2c474de775113028b4cfea981e."
+}

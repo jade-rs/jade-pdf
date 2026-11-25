@@ -6,6 +6,9 @@ use crate::{
     text,
 };
 
+#[path = "standard_bold_widths.rs"]
+mod standard_bold_widths;
+
 #[cfg(test)]
 #[path = "font_name_allocation_tests.rs"]
 mod name_allocation_tests;
@@ -13,6 +16,10 @@ mod name_allocation_tests;
 #[cfg(test)]
 #[path = "font_owned_allocation_tests.rs"]
 mod owned_allocation_tests;
+
+#[cfg(test)]
+#[path = "bold_standard_metrics_tests.rs"]
+mod bold_standard_metrics_tests;
 
 /// 現在対応する標準 Font の幅表。
 #[derive(Debug, Clone, Copy)]
@@ -22,6 +29,11 @@ enum Standard {
     /// Helvetica/Oblique の ASCII AFM 幅。
     Helvetica {
         /// StandardEncoding の左右引用符を使うか。
+        standard_encoding: bool,
+    },
+    /// Helvetica-Bold/BoldOblique固有の幅。通常体の幅表を流用しない。
+    HelveticaBold {
+        /// StandardEncodingの左右引用符を使うか。
         standard_encoding: bool,
     },
 }
@@ -121,6 +133,9 @@ impl Metrics {
                     222.
                 }
                 Standard::Helvetica { .. } => f32::from(helvetica_glyph_width(char::from(code))?),
+                Standard::HelveticaBold { standard_encoding } => {
+                    f32::from(standard_bold_widths::width(code, standard_encoding)?)
+                }
             },
         };
         let bytes = &remaining[..1];
@@ -209,6 +224,8 @@ impl Metrics {
                     }
                     "Helvetica" | "Helvetica-Oblique" => standard_encoding
                         .map(|standard_encoding| Standard::Helvetica { standard_encoding }),
+                    "Helvetica-Bold" | "Helvetica-BoldOblique" => standard_encoding
+                        .map(|standard_encoding| Standard::HelveticaBold { standard_encoding }),
                     _ => None,
                 });
         }

@@ -215,7 +215,7 @@ pub(super) fn source_rows(
 }
 
 /// 既存のセル文字列・断片間空白と完全一致する場合だけ、原本runのstyleを対応させる。
-fn legacy_runs<'a>(
+pub(super) fn legacy_runs<'a>(
     parsed: &ParsedDocument,
     selected: impl IntoIterator<Item = &'a ParsedTextElement>,
     expected: &str,
