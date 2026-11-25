@@ -3740,7 +3740,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
             !graphic_tables
                 .iter()
                 .any(|(number, tables)| *number == page.page && !tables.is_empty())
-                && (source_prose_columns::has_dense_rows(parsed, page)
+                && (source_prose_columns::has_two_dense_columns(parsed, page)
                     || (has_graphic_tables && has_dense_body_columns(parsed, page)))
         })
         .map(|page| page.page)
