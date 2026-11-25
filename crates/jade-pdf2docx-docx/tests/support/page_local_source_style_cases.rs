@@ -187,6 +187,47 @@ fn new_borderless_table_uses_source_columns_rows_and_unruled_edges() {
     assert!(!borders.iter().any(|v| v == "single"), "{borders:?}");
 }
 
+/// 各source sectionに保存された原点を表示順に読む。
+fn section_origins(xml: &str) -> Vec<(String, String)> {
+    let mut reader = Reader::from_str(xml);
+    let mut origins = Vec::new();
+    loop {
+        match reader.read_event().unwrap() {
+            Event::Empty(tag) if tag.name().as_ref() == b"w:pgMar" => origins.push((
+                attribute(&tag, b"w:left").unwrap(),
+                attribute(&tag, b"w:top").unwrap(),
+            )),
+            Event::Eof => return origins,
+            _ => (),
+        }
+    }
+}
+
+/// 同寸の混在ページでも、罫線ページの原点を別ページの表へ流用しない。
+#[test]
+fn mixed_source_tables_keep_each_pages_own_origin() {
+    for palette in [false, true] {
+        for pages in [[true, false], [false, true]] {
+            let independent = pages
+                .iter()
+                .flat_map(|ruled| {
+                    section_origins(&document_xml(&source_with_palette(
+                        &[*ruled],
+                        40,
+                        240,
+                        None,
+                        None,
+                        palette,
+                    )))
+                })
+                .collect::<Vec<_>>();
+            let xml = document_xml(&source_with_palette(&pages, 40, 240, None, None, palette));
+            assert_eq!(section_origins(&xml), independent);
+            assert!(!xml.contains("<w:br w:type=\"page\""));
+        }
+    }
+}
+
 /// 別の新規一時領域だけへ、色と太字を含む所有原本を書き出す。
 #[test]
 #[ignore = "new JADE_PAGE_LOCAL_STYLE_EXPORT_DIR required; review every source page before file conversion"]
