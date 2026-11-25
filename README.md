@@ -154,4 +154,6 @@ PDF由来の太字・通常体と表の先頭行の改ページについては�
 
 連続する原本ページの装飾付き番号を、文字と書式を保持してfooterへ移す条件と制約は、[原本ページ番号の保持](docs/source_numbered_footers.md)を参照してください。
 
+ToUnicodeのmappingはtoken単位で読み、一行内の複数entryや複数行の配列を同じ意味として扱います。コメントや文字列を命令と混同しない条件と検証範囲は、[ToUnicodeのrecord処理](docs/tounicode_token_records.md)を参照してください。
+
 ToUnicodeもFontDescriptorもない標準Latin書体の明示WinAnsi文字は、既存のglyph名表で復元します。適用範囲・処理量とメモリの扱い・nativeとの差は、[標準書体のWinAnsi文字対応](docs/named_winansi_text.md)を参照してください。

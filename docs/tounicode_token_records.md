@@ -1,0 +1,17 @@
+# ToUnicodeのtoken単位のrecord
+
+ToUnicode CMapのmappingを改行単位で扱っていたため、一行に圧縮した有効なCID CMapを読めず、`Weight`へNUL文字が混ざる例が見つかった。同じ所有bytesを独立したSDKで読むと期待する六文字になり、FontWeightの期待値を変えずに復号側を修正する回帰とした。
+
+共通のPDF Lexerで実際のkeyword・hex・配列を読み、`begincodespacerange`、`beginbfchar`、`beginbfrange`のrecordを改行や一行のentry数から分離する。コメント、literal string、PDF nameに含まれる命令風の文字列をkeywordにしない。複数行のdestination配列も、閉じた配列の直後から次のrecordへ進む。
+
+正規化した全文Stringは追加しない。元のUTF-8 CMapを借用し、UTF16 mappingの予約・格納、偶数桁化、空targetの保持などの既存規則を共有する。配列は借用したcursorを使う二回の走査で有効destination数を確認し、source範囲との小さい方だけを反復前に予約する。余剰destinationをsourceへ割り当てず、入れ子のhexも取り込まない。scalar rangeの加算overflowは既存どおり明示エラーにし、走査と展開の途中も既存の停止・時間予算を確認する。依存は追加しない。
+
+対応範囲は既存のToUnicode形式で、operand間のPDF空白を自由にする変更である。hex literal内部の空白の新規対応、range形式の新しいUTF16意味付け、未知のCMapプログラム全般の実行を追加するものではない。
+
+最初のRedは独立SDKの対照1件成功・bytes側4件失敗だった。PBT seedと元の一行CMapを保持した。新しい公開テスト5件、既存CMap・処理量・保存領域の回帰90件に加え、default全体2,448件が成功した（失敗0、明示ignore32、139 test groups）。既存のClippy警告は残る。
+
+既存native84出力・browser208出力は、成功DOCX、拒否理由、browserの検査結果がすべて親と一致した。全ページを先に確認し期待Unicodeを固定した所有PDF4件を追加し、native92出力では77成功・15拒否、Chromium/WebKitそれぞれ112出力では86成功・26拒否だった。新しい所有PDFのUnicodeは全24出力で期待値と一致し、browser224出力は両engineで一致した。件数は試験範囲の記録であり、精度率ではない。
+
+所有PDFの比較用DOCXをbyte単位で重複排除した7件・7ページを描画して個別に確認した。修正後は`Weight`、`ABC`、`ABC`、`W`が一ページで読めた。browserの親出力では複数pair・複数行arrayが空白、疑似命令の例が誤った`X`だった。nativeの親はSDKによって既に目視可能な文字を保持していた。この対照も残しており、nativeの見た目すべてが新たに直ったとは主張しない。
+
+所有PDFには描画用font programを添付していない。今回合格とするのは抽出Unicodeのcomponentで、glyph形状、太字、段組み、改ページを含む文書全体の合格や本番品質はまだ主張しない。元の実PDFと既存goldは変更していない。
