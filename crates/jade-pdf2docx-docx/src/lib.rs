@@ -1663,15 +1663,23 @@ fn is_amount_text(text: &str) -> bool {
 struct BandRange {
     x0: f32,
     x1: f32,
+    /// 表を入れる上下の範囲（表の中央の高さで決める）。
+    y0: f32,
+    y1: f32,
     left: f32,
     flat: bool,
 }
 
 impl BandRange {
-    /// 表がこの範囲の段にあるか（表の中央で決める）。
+    /// 表がこの範囲にあるか。段のセルでは、表の左右がその段に収まること（段をまたぐ全幅の表は
+    /// 段の外に組む）。
     fn holds_table(&self, bounds: &ParsedBounds) -> bool {
-        let x = (bounds.x0 + bounds.x1) / 2.0;
-        x > self.x0 && x < self.x1
+        let (x, y) = ((bounds.x0 + bounds.x1) / 2.0, (bounds.y0 + bounds.y1) / 2.0);
+        x > self.x0
+            && x < self.x1
+            && y > self.y0
+            && y < self.y1
+            && (self.flat || (bounds.x0 >= self.x0 - 2.0 && bounds.x1 <= self.x1 + 2.0))
     }
 }
 
@@ -1680,6 +1688,9 @@ struct BandLayout {
     bands: Vec<(f32, f32, f32)>,
     above: Vec<usize>,
     below: Vec<usize>,
+    /// 段の中身の上端・下端（これより上・下の全幅の表は段の外に組む）。
+    top: f32,
+    bottom: f32,
 }
 
 /// ページの段の区切りとみなす帯の幅の下限の割合と、ページの端の余白の帯とみなす幅の割合。
@@ -1687,6 +1698,10 @@ const MIN_BAND_COLUMN_RATIO: f32 = 0.15;
 const MARGIN_BAND_RATIO: f32 = 0.1;
 /// 段の中で表の横に置いてよい行の数の上限（それより多いと、表の前に積むと高くなりすぎる）。
 const MAX_LINES_BESIDE_TABLE: usize = 3;
+/// 一部の高さだけを区切る縦罫線を、同じ区切りとみなす間隔（pt）。
+const PARTIAL_EDGE_CLUSTER_PT: f32 = 25.0;
+/// 段をまたぐ行を段の外とみなす、段の中身の端との重なりの上限（行の数）。
+const SPANNING_OVERLAP_LINES: f32 = 2.0;
 /// 段の区切り線（ページの高さの大半にわたる縦罫線）で分けたページで、行・表を段ごとに
 /// 分けられるとき、その分け方を返す。
 ///
@@ -1763,17 +1778,26 @@ fn band_columns(
         }
         // 段の中身と高さが重なる、段をまたぐ行・表がまたぐ区切り線を外して、やり直す。
         let (mut above, mut below, mut merge) = (Vec::new(), Vec::new(), Vec::new());
+        // 段の中身の端と 2 行分まで重なる行（表の上の題名など）も、段の外とみなす。
         for index in spanning {
             let line = &page.lines[index];
-            if line.top_y - structured_line_max_font_size(line) >= banded_top - 1.0 {
+            let size = structured_line_max_font_size(line);
+            let centre = line.top_y - 0.5 * size;
+            if centre >= banded_top - SPANNING_OVERLAP_LINES * size {
                 above.push(index);
-            } else if line.top_y <= banded_bottom + 1.0 {
+            } else if centre <= banded_bottom + SPANNING_OVERLAP_LINES * size {
                 below.push(index);
             } else {
                 merge.push((line.left_x, line.right_x));
             }
         }
-        merge.extend(crossing_tables.iter().map(|bounds| (bounds.x0, bounds.x1)));
+        // 段の中身の上・下にある全幅の表は段の外に組み、高さが重なる表だけ段をまとめる。
+        merge.extend(
+            crossing_tables
+                .iter()
+                .filter(|bounds| bounds.y0 < banded_top - 1.0 && bounds.y1 > banded_bottom + 1.0)
+                .map(|bounds| (bounds.x0, bounds.x1)),
+        );
         if !merge.is_empty() {
             let before = edges.len();
             edges.retain(|edge| {
@@ -1845,6 +1869,8 @@ fn band_columns(
                 .collect(),
             above,
             below,
+            top: banded_top,
+            bottom: banded_bottom,
         });
     }
 }
@@ -1920,14 +1946,26 @@ fn add_band_columns<C: StructuredPageContainer>(
     let flat = BandRange {
         x0: outer.0,
         x1: outer.1,
+        y0: f32::NEG_INFINITY,
+        y1: f32::INFINITY,
         left: origin,
         flat: true,
     };
-    let no_tables = BandRange {
-        x0: f32::INFINITY,
+    let has_table_in = |range: &BandRange| {
+        positioned_tables
+            .iter()
+            .any(|table| table.page == page.page && range.holds_table(&table.bounds))
+    };
+    // 段の中身より上・下の全幅の行と表。
+    let above_range = BandRange {
+        y0: layout.top - 1.0,
         ..flat
     };
-    if !layout.above.is_empty() {
+    let below_range = BandRange {
+        y1: layout.bottom + 1.0,
+        ..flat
+    };
+    if !layout.above.is_empty() || has_table_in(&above_range) {
         container = add_structured_page_blocks(
             container,
             parsed,
@@ -1935,7 +1973,7 @@ fn add_band_columns<C: StructuredPageContainer>(
             positioned_tables,
             None,
             StructuredPageSectionRefs {
-                band: Some(no_tables),
+                band: Some(above_range),
                 ..Default::default()
             },
             image_payloads,
@@ -2000,6 +2038,8 @@ fn add_band_columns<C: StructuredPageContainer>(
                 band: Some(BandRange {
                     x0,
                     x1,
+                    y0: f32::NEG_INFINITY,
+                    y1: f32::INFINITY,
                     left,
                     flat: false,
                 }),
@@ -2017,7 +2057,7 @@ fn add_band_columns<C: StructuredPageContainer>(
         .indent(i32::try_from(twips((bands[0].2 - origin).max(0.0))).unwrap_or(0))
         .margins(TableCellMargins::new().margin(0, 0, 0, 0));
     container = container.add_structured_table(table);
-    if !layout.below.is_empty() {
+    if !layout.below.is_empty() || has_table_in(&below_range) {
         container = add_structured_page_blocks(
             container,
             parsed,
@@ -2025,7 +2065,7 @@ fn add_band_columns<C: StructuredPageContainer>(
             positioned_tables,
             None,
             StructuredPageSectionRefs {
-                band: Some(no_tables),
+                band: Some(below_range),
                 ..Default::default()
             },
             image_payloads,
@@ -2111,7 +2151,25 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .unwrap_or(f32::MAX);
     // 段を並べられるページは、段ごとのセルを横に並べる（段のセルの中も、その範囲の内側の
     // 区切り線でさらに分ける）。
-    let range_edges = band_edges
+    // ページの高さの大半にわたる区切り線に加えて、一部の高さだけを区切る縦罫線も段の区切りの
+    // 候補にする（上の段の下に全幅の表がある財務表など）。
+    let candidate_edges = if vertical.is_none() && section_refs.band.is_none() {
+        // 全高の区切り線を優先し、その近くにない一部の高さの区切り線だけを加える。
+        let mut xs = band_edges.clone();
+        for rule in column_bands::partial_band_rules(parsed, page.page, positioned_tables) {
+            if !xs
+                .iter()
+                .any(|edge| (edge - rule.x0).abs() <= PARTIAL_EDGE_CLUSTER_PT)
+            {
+                xs.push(rule.x0);
+            }
+        }
+        xs.sort_by(f32::total_cmp);
+        xs
+    } else {
+        band_edges.clone()
+    };
+    let range_edges = candidate_edges
         .iter()
         .copied()
         .filter(|edge| {

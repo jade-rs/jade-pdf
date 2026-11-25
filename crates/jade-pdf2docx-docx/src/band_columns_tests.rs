@@ -215,3 +215,55 @@ fn a_side_framed_table_with_an_open_top_is_a_grid() {
     graphics.retain(|graphic| graphic.bounds.y0 != 439.);
     assert!(!has_side_framed_grid_lines(&graphics, &xs, &ys));
 }
+
+/// ページの高さの一部だけを区切る縦罫線の左右の段と、その下の全幅の表は、段を横に並べた表の
+/// 後に全幅の表を置く。
+#[test]
+fn a_partial_rule_splits_columns_above_a_full_width_table() {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.retain(|text| text.page != 0);
+    parsed.graphics.push(ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds {
+            x0: 290.,
+            y0: 420.,
+            x1: 290.,
+            y1: 742.,
+        },
+        stroke_width: 0.5,
+        dashed: false,
+    });
+    for (x, label) in [(52., "LEFT"), (334., "RIGHT")] {
+        for row in 0..6 {
+            let y = 700. - row as f32 * 14.;
+            parsed.text_elements.push(ParsedTextElement {
+                baseline_y: Some(y),
+                page: 0,
+                bounds: ParsedBounds {
+                    x0: x,
+                    y0: y,
+                    x1: x + 90.,
+                    y1: y + 9.,
+                },
+                font_size: 9.,
+                font_name: Some("Helvetica".into()),
+                fill_color: None,
+                text: format!("{label} COLUMN {row}"),
+            });
+        }
+    }
+    let mut wide = positioned_table(0);
+    wide.bounds = ParsedBounds {
+        x0: 48.,
+        y0: 200.,
+        x1: 540.,
+        y1: 300.,
+    };
+    let xml = packaged(parsed, &[wide]);
+    let container = xml.find("LEFT COLUMN 0").unwrap();
+    let right = xml.find("RIGHT COLUMN 0").unwrap();
+    let wide_table = xml.find("TABLE PAGE0 R0C0").unwrap();
+    // 左右の段は同じ外の表の行に並び、全幅の表はその後。
+    assert!(container < right && right < wide_table, "{xml}");
+    assert!(xml[..right].matches("<w:tbl>").count() >= 1);
+}
