@@ -18,7 +18,7 @@ pub(super) fn cuts(
     let mut cuts = Vec::new();
     for text in row.iter().skip(1) {
         if text.bounds.x0 - right > avg_height * 8.0
-            || gutter.is_some_and(|g| right < g.x && g.x < text.bounds.x0)
+            || gutter.is_some_and(|g| g.contains(first) && right < g.x && g.x < text.bounds.x0)
         {
             cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
         }
@@ -73,14 +73,24 @@ mod tests {
             font_weight: None,
             fill_color: None,
             baseline_y: Some(y),
-            bounds: ParsedBounds { x0: left, x1: right, y0: y, y1: y + 10. },
+            bounds: ParsedBounds {
+                x0: left,
+                x1: right,
+                y0: y,
+                y1: y + 10.,
+            },
         }
     }
 
     /// 四行で確認した本文の段間だけを作り、上下の短い数値行は根拠へ混ぜない。
     fn body() -> Vec<Vec<ParsedTextElement>> {
         (0..4)
-            .map(|i| vec![text(90., 294., 700. - i as f32 * 20.), text(318., 522., 700. - i as f32 * 20.)])
+            .map(|i| {
+                vec![
+                    text(90., 294., 700. - i as f32 * 20.),
+                    text(318., 522., 700. - i as f32 * 20.),
+                ]
+            })
             .collect()
     }
 
@@ -88,15 +98,46 @@ mod tests {
     #[test]
     fn narrow_body_gutter_does_not_split_leading_or_trailing_numeric_rows() {
         let rows = body();
-        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let refs = rows
+            .iter()
+            .map(|row| row.iter().collect())
+            .collect::<Vec<_>>();
         let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
         for y in [740., 600.] {
             let row = [text(280., 298., y), text(314., 332., y)];
-            assert!(cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), "outside body at y={y}");
+            assert!(
+                cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(),
+                "outside body at y={y}"
+            );
         }
         let within = [text(280., 298., 680.), text(314., 332., 680.)];
         assert!(!cuts(&within.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
         let wide = [text(90., 108., 740.), text(318., 336., 740.)];
         assert!(!cuts(&wide.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
+    }
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(24))]
+        /// 一様倍率と平行移動によらず、狭い段間の適用を元の本文の垂直区間だけへ限定する。
+        #[test]
+        fn narrow_gutter_keeps_its_vertical_scope_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {
+            let transform = |text: &mut ParsedTextElement| {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.baseline_y = text.baseline_y.map(|y| (y + shift) * scale);
+                text.font_size *= scale;
+            };
+            let mut rows = body();
+            for text in rows.iter_mut().flatten() { transform(text); }
+            let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+            let gutter = text_column_gutter::infer(&refs, 612. * scale).unwrap();
+            for (y, should_split) in [(740., false), (600., false), (680., true)] {
+                let mut row = [text(280., 298., y), text(314., 332., y)];
+                for text in &mut row { transform(text); }
+                prop_assert_eq!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), should_split);
+            }
+        }
     }
 }
