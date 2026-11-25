@@ -61,6 +61,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             .fold(first.bounds.x1, f32::max);
         let mut right = first.bounds.x1;
         let mut previous_size = first.font_size;
+        let mut previous = *first;
         for text in row.iter().skip(1) {
             let next = text.bounds.x0;
             let centre = right / 2.0 + next / 2.0;
@@ -68,6 +69,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
                 && right - first.bounds.x0 >= width * 0.2
                 && end - next >= width * 0.2
                 && (width * 0.3..=width * 0.7).contains(&centre)
+                && !super::text_row_segments::numeric_pair(&previous.text, &text.text)
             {
                 gaps.push(Gap {
                     left: right,
@@ -77,6 +79,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             }
             right = right.max(text.bounds.x1);
             previous_size = text.font_size;
+            previous = text;
         }
     }
     let mut events = gaps
@@ -222,6 +225,17 @@ mod tests {
             None,
             "multiple sustained gutters must not be forced into two columns"
         );
+    }
+
+    /// 幾何だけなら段間になる反復数値表も、数値同士の隙間を散文の根拠へ数えない。
+    #[test]
+    fn repeated_numeric_fields_do_not_establish_a_prose_gutter() {
+        let mut source = rows();
+        for row in &mut source {
+            row[0].text = "224".into();
+            row[1].text = "144 7 - 6.67%".into();
+        }
+        assert_eq!(infer_owned(&source, 612.), None);
     }
 
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。

@@ -15,16 +15,36 @@ pub(super) fn cuts(
         .sum::<f32>()
         / row.len() as f32;
     let mut right = first.bounds.x1;
+    let mut previous = *first;
     let mut cuts = Vec::new();
     for text in row.iter().skip(1) {
         if text.bounds.x0 - right > avg_height * 8.0
-            || gutter.is_some_and(|g| g.contains(first) && right < g.x && g.x < text.bounds.x0)
+            || gutter.is_some_and(|g| {
+                right < g.x && g.x < text.bounds.x0 && !numeric_pair(&previous.text, &text.text)
+            })
         {
             cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
         }
         right = right.max(text.bounds.x1);
+        previous = text;
     }
     cuts
+}
+
+/// 数値・符号・単位記号だけの短い二断片を、散文の狭い段間の根拠から除く。
+pub(super) fn numeric_pair(left: &str, right: &str) -> bool {
+    numeric_fragment(left) && numeric_fragment(right)
+}
+
+/// 値の妥当性は推測せず、数字を含む短い非散文の表記だけを確認する。
+fn numeric_fragment(text: &str) -> bool {
+    text.len() <= 128
+        && text.bytes().any(|c| c.is_ascii_digit())
+        && text.chars().all(|c| {
+            c.is_ascii_digit()
+                || c.is_whitespace()
+                || matches!(c, '+' | '-' | '−' | '.' | ',' | '%' | '(' | ')')
+        })
 }
 
 /// 復元した添字で尺度を再推定せず、元の行の分割位置を使う。
@@ -125,12 +145,38 @@ mod tests {
     #[test]
     fn numeric_fields_do_not_supply_narrow_prose_column_cuts() {
         let rows = body();
-        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let refs = rows
+            .iter()
+            .map(|row| row.iter().collect())
+            .collect::<Vec<_>>();
         let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
-        for (left, right) in [("224", "144"), ("224", "7 - 6.67%"), ("21.0", "−2.4"), ("1,234", "(4.82%)")] {
+        for (left, right) in [
+            ("224", "144"),
+            ("224", "7 - 6.67%"),
+            ("21.0", "−2.4"),
+            ("1,234", "(4.82%)"),
+        ] {
             let mut row = [text(280., 298., 680.), text(314., 332., 680.)];
-            row[0].text = left.into(); row[1].text = right.into();
-            assert!(cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), "{left} | {right}");
+            row[0].text = left.into();
+            row[1].text = right.into();
+            assert!(
+                cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(),
+                "{left} | {right}"
+            );
+        }
+        for (left, right) in [
+            ("left prose", "144"),
+            ("224", "右段本文"),
+            ("1e3", "144"),
+            ("NaN", "144"),
+        ] {
+            let mut row = [text(280., 298., 680.), text(314., 332., 680.)];
+            row[0].text = left.into();
+            row[1].text = right.into();
+            assert!(
+                !cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(),
+                "{left} | {right}"
+            );
         }
     }
 
@@ -138,7 +184,7 @@ mod tests {
         #![proptest_config(ProptestConfig::with_cases(24))]
         /// 一様倍率と平行移動によらず、上下の全幅数値行を本文の段組へ混ぜない。
         #[test]
-        fn narrow_gutter_keeps_its_vertical_scope_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {
+        fn numeric_rows_do_not_become_prose_columns_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {
             let transform = |text: &mut ParsedTextElement| {
                 text.bounds.x0 = (text.bounds.x0 + shift) * scale;
                 text.bounds.x1 = (text.bounds.x1 + shift) * scale;
