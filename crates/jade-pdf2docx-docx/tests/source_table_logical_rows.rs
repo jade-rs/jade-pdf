@@ -7,10 +7,24 @@ use std::io::{Cursor, Read};
 
 /// 横結合した見出しと本文の列罫線を持ち、各列へ同じbaselineの値を描く所有原本。
 fn source(count: u16, pitch: u16, reverse: bool, synchronized: bool) -> Vec<u8> {
+    source_with_units(count, pitch, reverse, synchronized, false)
+}
+
+/// 数値列だけの小さい単位行を本文帯の先頭に追加し、名称列と本文の行数を変える。
+fn source_with_units(
+    count: u16,
+    pitch: u16,
+    reverse: bool,
+    synchronized: bool,
+    units: bool,
+) -> Vec<u8> {
     let bottom = 650 - count * pitch;
     let mut content = format!(
         "1 w 72 {bottom} m 272 {bottom} l S 72 670 m 272 670 l S 72 700 m 272 700 l S 72 {bottom} m 72 700 l S 172 {bottom} m 172 670 l S 272 {bottom} m 272 700 l S BT /F1 10 Tf 82 680 Td (Summary) Tj ET"
     );
+    if units {
+        content.push_str(" BT /F1 6 Tf 182 663 Td (units) Tj ET");
+    }
     let mut order = (0..count).collect::<Vec<_>>();
     if reverse {
         order.reverse();
@@ -89,6 +103,14 @@ fn unruled_body_lines_retain_unambiguous_row_association() {
 #[test]
 fn unmatched_multiline_cells_keep_the_original_grid_rows() {
     assert_eq!(table_rows(&source(3, 25, false, false)).len(), 2);
+}
+
+/// 数値列だけに単位があっても、三つの名称と値を再び一つのWord行へ潰さない。
+#[test]
+fn smaller_numeric_unit_prefix_does_not_hide_the_body_rows() {
+    let mut rows = expected(3);
+    rows.insert(1, vec![String::new(), "units".to_string()]);
+    assert_eq!(table_rows(&source_with_units(3, 25, false, true, true)), rows);
 }
 
 /// 所有原本を描画する前に定義した、物理的な上から下への名称・値の対応。
