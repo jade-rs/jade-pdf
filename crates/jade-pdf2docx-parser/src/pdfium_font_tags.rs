@@ -110,6 +110,12 @@ impl Tagged {
         }
     }
 
+    /// 確認済みweightの元resourceを、family名と独立した解析ローカルindexで返す。
+    pub(crate) fn source_key(&self, name: &str) -> Option<usize> {
+        self.weight(name)?;
+        self.tag_index(name)
+    }
+
     /// 識別名を公開せず、元のFont名へ戻す。
     pub(crate) fn original_name<'a>(&'a self, name: &'a str) -> Option<&'a str> {
         match self.tag(name) {
