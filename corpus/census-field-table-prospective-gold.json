@@ -1,0 +1,1562 @@
+{
+  "time_utc": "2026-11-25T18:15:02.152987+00:00",
+  "source": "/Users/bokuweb/.codex/worktrees/pdf-census-field-table-holdout/jade-pdf/corpus/wasm-runtime/census-field-table-holdout-qualification/new-Census-NST-EST2025-before-first-product/source.pdf",
+  "source_url": "https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2020-2025/NST-EST2025-ALLDATA.pdf",
+  "source_sha256": "20b35f224039faf1f0a09a281b53ece071a31d3a963943046917d6ee5a81c7f2",
+  "credit": "U.S. Census Bureau, Population Division",
+  "all4_original_pages_reviewed_before_product": true,
+  "source_nonwhite_characters": 7981,
+  "fields": [
+    {
+      "page": 1,
+      "variable": "SUMLEV",
+      "description": "Geographic summary level"
+    },
+    {
+      "page": 1,
+      "variable": "REGION",
+      "description": "Census Region code"
+    },
+    {
+      "page": 1,
+      "variable": "DIVISION",
+      "description": "Census Division code"
+    },
+    {
+      "page": 1,
+      "variable": "STATE",
+      "description": "State FIPS code"
+    },
+    {
+      "page": 1,
+      "variable": "NAME",
+      "description": "State name"
+    },
+    {
+      "page": 1,
+      "variable": "ESTIMATESBASE2020",
+      "description": "4/1/2020 resident total population estimates base"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2020",
+      "description": "7/1/2020 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2021",
+      "description": "7/1/2021 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2022",
+      "description": "7/1/2022 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2023",
+      "description": "7/1/2023 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2024",
+      "description": "7/1/2024 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "POPESTIMATE2025",
+      "description": "7/1/2025 resident total population estimate"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2020",
+      "description": "Numeric change in resident total population 4/1/2020 to 7/1/2020"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2021",
+      "description": "Numeric change in resident total population 7/1/2020 to 7/1/2021"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2022",
+      "description": "Numeric change in resident total population 7/1/2021 to 7/1/2022"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2023",
+      "description": "Numeric change in resident total population 7/1/2022 to 7/1/2023"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2024",
+      "description": "Numeric change in resident total population 7/1/2023 to 7/1/2024"
+    },
+    {
+      "page": 1,
+      "variable": "NPOPCHG_2025",
+      "description": "Numeric change in resident total population 7/1/2024 to 7/1/2025"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2020",
+      "description": "Births in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2021",
+      "description": "Births in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2022",
+      "description": "Births in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2023",
+      "description": "Births in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2024",
+      "description": "Births in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 1,
+      "variable": "BIRTHS2025",
+      "description": "Births in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2020",
+      "description": "Deaths in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2021",
+      "description": "Deaths in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2022",
+      "description": "Deaths in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2023",
+      "description": "Deaths in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2024",
+      "description": "Deaths in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 1,
+      "variable": "DEATHS2025",
+      "description": "Deaths in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 1,
+      "variable": "NATURALCHG2020",
+      "description": "Natural change in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 1,
+      "variable": "NATURALCHG2021",
+      "description": "Natural change in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "NATURALCHG2022",
+      "description": "Natural change in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "NATURALCHG2023",
+      "description": "Natural change in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "NATURALCHG2024",
+      "description": "Natural change in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "NATURALCHG2025",
+      "description": "Natural change in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2020",
+      "description": "Net international migration in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2021",
+      "description": "Net international migration in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2022",
+      "description": "Net international migration in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2023",
+      "description": "Net international migration in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2024",
+      "description": "Net international migration in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "INTERNATIONALMIG2025",
+      "description": "Net international migration in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2020",
+      "description": "Net domestic migration in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2021",
+      "description": "Net domestic migration in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2022",
+      "description": "Net domestic migration in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2023",
+      "description": "Net domestic migration in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2024",
+      "description": "Net domestic migration in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "DOMESTICMIG2025",
+      "description": "Net domestic migration in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2020",
+      "description": "Net migration in period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2021",
+      "description": "Net migration in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2022",
+      "description": "Net migration in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2023",
+      "description": "Net migration in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2024",
+      "description": "Net migration in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "NETMIG2025",
+      "description": "Net migration in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2020",
+      "description": "Residual for period 4/1/2020 to 6/30/2020"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2021",
+      "description": "Residual for period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2022",
+      "description": "Residual for period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2023",
+      "description": "Residual for period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2024",
+      "description": "Residual for period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "RESIDUAL2025",
+      "description": "Residual for period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATESBASE2020",
+      "description": "4/1/2020 Group quarters total population estimates base"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2020",
+      "description": "7/1/2020 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2021",
+      "description": "7/1/2021 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2022",
+      "description": "7/1/2022 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2023",
+      "description": "7/1/2023 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2024",
+      "description": "7/1/2024 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "GQESTIMATES2025",
+      "description": "7/1/2025 Group quarters total population estimate"
+    },
+    {
+      "page": 2,
+      "variable": "RBIRTH2021",
+      "description": "Birth rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "RBIRTH2022",
+      "description": "Birth rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "RBIRTH2023",
+      "description": "Birth rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "RBIRTH2024",
+      "description": "Birth rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "RBIRTH2025",
+      "description": "Birth rate in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "RDEATH2021",
+      "description": "Death rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 2,
+      "variable": "RDEATH2022",
+      "description": "Death rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 2,
+      "variable": "RDEATH2023",
+      "description": "Death rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 2,
+      "variable": "RDEATH2024",
+      "description": "Death rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 2,
+      "variable": "RDEATH2025",
+      "description": "Death rate in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 2,
+      "variable": "RNATURALCHG2021",
+      "description": "Natural change rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 3,
+      "variable": "RNATURALCHG2022",
+      "description": "Natural change rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 3,
+      "variable": "RNATURALCHG2023",
+      "description": "Natural change rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 3,
+      "variable": "RNATURALCHG2024",
+      "description": "Natural change rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 3,
+      "variable": "RNATURALCHG2025",
+      "description": "Natural change rate in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 3,
+      "variable": "RINTERNATIONALMIG2021",
+      "description": "Net international migration rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 3,
+      "variable": "RINTERNATIONALMIG2022",
+      "description": "Net international migration rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 3,
+      "variable": "RINTERNATIONALMIG2023",
+      "description": "Net international migration rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 3,
+      "variable": "RINTERNATIONALMIG2024",
+      "description": "Net international migration rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 3,
+      "variable": "RINTERNATIONALMIG2025",
+      "description": "Net international migration rate in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 3,
+      "variable": "RDOMESTICMIG2021",
+      "description": "Net domestic migration rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 3,
+      "variable": "RDOMESTICMIG2022",
+      "description": "Net domestic migration rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 3,
+      "variable": "RDOMESTICMIG2023",
+      "description": "Net domestic migration rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 3,
+      "variable": "RDOMESTICMIG2024",
+      "description": "Net domestic migration rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 3,
+      "variable": "RDOMESTICMIG2025",
+      "description": "Net domestic migration rate in period 7/1/2024 to 6/30/2025"
+    },
+    {
+      "page": 3,
+      "variable": "RNETMIG2021",
+      "description": "Net migration rate in period 7/1/2020 to 6/30/2021"
+    },
+    {
+      "page": 3,
+      "variable": "RNETMIG2022",
+      "description": "Net migration rate in period 7/1/2021 to 6/30/2022"
+    },
+    {
+      "page": 3,
+      "variable": "RNETMIG2023",
+      "description": "Net migration rate in period 7/1/2022 to 6/30/2023"
+    },
+    {
+      "page": 3,
+      "variable": "RNETMIG2024",
+      "description": "Net migration rate in period 7/1/2023 to 6/30/2024"
+    },
+    {
+      "page": 3,
+      "variable": "RNETMIG2025",
+      "description": "Net migration rate in period 7/1/2024 to 6/30/2025"
+    }
+  ],
+  "criteria": [
+    {
+      "id": "source-nonwhite-inventory",
+      "kind": "unicode_inventory_exact",
+      "expected": {
+        "(": 11,
+        ")": 11,
+        ",": 30,
+        "-": 18,
+        ".": 36,
+        "/": 361,
+        "0": 410,
+        "1": 156,
+        "2": 600,
+        "3": 123,
+        "4": 63,
+        "5": 43,
+        "6": 78,
+        "7": 91,
+        "8": 1,
+        "9": 2,
+        ":": 17,
+        "=": 18,
+        "A": 96,
+        "B": 32,
+        "C": 47,
+        "D": 55,
+        "E": 101,
+        "F": 6,
+        "G": 69,
+        "H": 40,
+        "I": 113,
+        "J": 6,
+        "L": 33,
+        "M": 70,
+        "N": 127,
+        "O": 41,
+        "P": 43,
+        "Q": 9,
+        "R": 96,
+        "S": 94,
+        "T": 126,
+        "U": 29,
+        "V": 5,
+        "W": 3,
+        "X": 1,
+        "Y": 1,
+        "_": 6,
+        "a": 406,
+        "b": 29,
+        "c": 97,
+        "d": 192,
+        "e": 527,
+        "f": 46,
+        "g": 99,
+        "h": 111,
+        "i": 482,
+        "k": 4,
+        "l": 150,
+        "m": 118,
+        "n": 380,
+        "o": 473,
+        "p": 184,
+        "q": 8,
+        "r": 333,
+        "s": 222,
+        "t": 595,
+        "u": 139,
+        "v": 24,
+        "w": 20,
+        "y": 24
+      }
+    },
+    {
+      "id": "physical-page-count",
+      "kind": "rendered_page_count",
+      "expected": 4
+    },
+    {
+      "id": "source-page-dimensions",
+      "kind": "rendered_page_dimensions_match",
+      "expected": [
+        [
+          612,
+          792
+        ],
+        [
+          612,
+          792
+        ],
+        [
+          612,
+          792
+        ],
+        [
+          612,
+          792
+        ]
+      ],
+      "tolerance_points": 0.1
+    },
+    {
+      "id": "field-row-SUMLEV",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "SUMLEV",
+      "expected_description": "Geographic summary level",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-REGION",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "REGION",
+      "expected_description": "Census Region code",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DIVISION",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DIVISION",
+      "expected_description": "Census Division code",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-STATE",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "STATE",
+      "expected_description": "State FIPS code",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NAME",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NAME",
+      "expected_description": "State name",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-ESTIMATESBASE2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "ESTIMATESBASE2020",
+      "expected_description": "4/1/2020 resident total population estimates base",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2020",
+      "expected_description": "7/1/2020 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2021",
+      "expected_description": "7/1/2021 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2022",
+      "expected_description": "7/1/2022 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2023",
+      "expected_description": "7/1/2023 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2024",
+      "expected_description": "7/1/2024 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-POPESTIMATE2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "POPESTIMATE2025",
+      "expected_description": "7/1/2025 resident total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2020",
+      "expected_description": "Numeric change in resident total population 4/1/2020 to 7/1/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2021",
+      "expected_description": "Numeric change in resident total population 7/1/2020 to 7/1/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2022",
+      "expected_description": "Numeric change in resident total population 7/1/2021 to 7/1/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2023",
+      "expected_description": "Numeric change in resident total population 7/1/2022 to 7/1/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2024",
+      "expected_description": "Numeric change in resident total population 7/1/2023 to 7/1/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NPOPCHG_2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NPOPCHG_2025",
+      "expected_description": "Numeric change in resident total population 7/1/2024 to 7/1/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2020",
+      "expected_description": "Births in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2021",
+      "expected_description": "Births in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2022",
+      "expected_description": "Births in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2023",
+      "expected_description": "Births in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2024",
+      "expected_description": "Births in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-BIRTHS2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "BIRTHS2025",
+      "expected_description": "Births in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2020",
+      "expected_description": "Deaths in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2021",
+      "expected_description": "Deaths in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2022",
+      "expected_description": "Deaths in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2023",
+      "expected_description": "Deaths in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2024",
+      "expected_description": "Deaths in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DEATHS2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "DEATHS2025",
+      "expected_description": "Deaths in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NATURALCHG2020",
+      "expected_description": "Natural change in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 1,
+      "expected_variable": "NATURALCHG2021",
+      "expected_description": "Natural change in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NATURALCHG2022",
+      "expected_description": "Natural change in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NATURALCHG2023",
+      "expected_description": "Natural change in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NATURALCHG2024",
+      "expected_description": "Natural change in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NATURALCHG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NATURALCHG2025",
+      "expected_description": "Natural change in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2020",
+      "expected_description": "Net international migration in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2021",
+      "expected_description": "Net international migration in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2022",
+      "expected_description": "Net international migration in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2023",
+      "expected_description": "Net international migration in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2024",
+      "expected_description": "Net international migration in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-INTERNATIONALMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "INTERNATIONALMIG2025",
+      "expected_description": "Net international migration in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2020",
+      "expected_description": "Net domestic migration in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2021",
+      "expected_description": "Net domestic migration in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2022",
+      "expected_description": "Net domestic migration in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2023",
+      "expected_description": "Net domestic migration in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2024",
+      "expected_description": "Net domestic migration in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-DOMESTICMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "DOMESTICMIG2025",
+      "expected_description": "Net domestic migration in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2020",
+      "expected_description": "Net migration in period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2021",
+      "expected_description": "Net migration in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2022",
+      "expected_description": "Net migration in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2023",
+      "expected_description": "Net migration in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2024",
+      "expected_description": "Net migration in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-NETMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "NETMIG2025",
+      "expected_description": "Net migration in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2020",
+      "expected_description": "Residual for period 4/1/2020 to 6/30/2020",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2021",
+      "expected_description": "Residual for period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2022",
+      "expected_description": "Residual for period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2023",
+      "expected_description": "Residual for period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2024",
+      "expected_description": "Residual for period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RESIDUAL2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RESIDUAL2025",
+      "expected_description": "Residual for period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATESBASE2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATESBASE2020",
+      "expected_description": "4/1/2020 Group quarters total population estimates base",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2020",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2020",
+      "expected_description": "7/1/2020 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2021",
+      "expected_description": "7/1/2021 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2022",
+      "expected_description": "7/1/2022 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2023",
+      "expected_description": "7/1/2023 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2024",
+      "expected_description": "7/1/2024 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-GQESTIMATES2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "GQESTIMATES2025",
+      "expected_description": "7/1/2025 Group quarters total population estimate",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RBIRTH2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RBIRTH2021",
+      "expected_description": "Birth rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RBIRTH2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RBIRTH2022",
+      "expected_description": "Birth rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RBIRTH2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RBIRTH2023",
+      "expected_description": "Birth rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RBIRTH2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RBIRTH2024",
+      "expected_description": "Birth rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RBIRTH2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RBIRTH2025",
+      "expected_description": "Birth rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDEATH2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RDEATH2021",
+      "expected_description": "Death rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDEATH2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RDEATH2022",
+      "expected_description": "Death rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDEATH2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RDEATH2023",
+      "expected_description": "Death rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDEATH2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RDEATH2024",
+      "expected_description": "Death rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDEATH2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RDEATH2025",
+      "expected_description": "Death rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNATURALCHG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 2,
+      "expected_variable": "RNATURALCHG2021",
+      "expected_description": "Natural change rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNATURALCHG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNATURALCHG2022",
+      "expected_description": "Natural change rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNATURALCHG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNATURALCHG2023",
+      "expected_description": "Natural change rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNATURALCHG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNATURALCHG2024",
+      "expected_description": "Natural change rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNATURALCHG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNATURALCHG2025",
+      "expected_description": "Natural change rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RINTERNATIONALMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RINTERNATIONALMIG2021",
+      "expected_description": "Net international migration rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RINTERNATIONALMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RINTERNATIONALMIG2022",
+      "expected_description": "Net international migration rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RINTERNATIONALMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RINTERNATIONALMIG2023",
+      "expected_description": "Net international migration rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RINTERNATIONALMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RINTERNATIONALMIG2024",
+      "expected_description": "Net international migration rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RINTERNATIONALMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RINTERNATIONALMIG2025",
+      "expected_description": "Net international migration rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDOMESTICMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RDOMESTICMIG2021",
+      "expected_description": "Net domestic migration rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDOMESTICMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RDOMESTICMIG2022",
+      "expected_description": "Net domestic migration rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDOMESTICMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RDOMESTICMIG2023",
+      "expected_description": "Net domestic migration rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDOMESTICMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RDOMESTICMIG2024",
+      "expected_description": "Net domestic migration rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RDOMESTICMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RDOMESTICMIG2025",
+      "expected_description": "Net domestic migration rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNETMIG2021",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNETMIG2021",
+      "expected_description": "Net migration rate in period 7/1/2020 to 6/30/2021",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNETMIG2022",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNETMIG2022",
+      "expected_description": "Net migration rate in period 7/1/2021 to 6/30/2022",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNETMIG2023",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNETMIG2023",
+      "expected_description": "Net migration rate in period 7/1/2022 to 6/30/2023",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNETMIG2024",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNETMIG2024",
+      "expected_description": "Net migration rate in period 7/1/2023 to 6/30/2024",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "field-row-RNETMIG2025",
+      "kind": "editable_Word_row_variable_description",
+      "source_page": 3,
+      "expected_variable": "RNETMIG2025",
+      "expected_description": "Net migration rate in period 7/1/2024 to 6/30/2025",
+      "must_be_single_corresponding_Word_row": true
+    },
+    {
+      "id": "page-text-100",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 1,
+      "expected": "NST-EST2025-ALLDATA:"
+    },
+    {
+      "id": "page-text-101",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 1,
+      "expected": "Source: U.S. Census Bureau, Population Division"
+    },
+    {
+      "id": "page-text-102",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 2,
+      "expected": "NATURALCHG2022"
+    },
+    {
+      "id": "page-text-103",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "RNATURALCHG2022"
+    },
+    {
+      "id": "page-text-104",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "X = Not Applicable"
+    },
+    {
+      "id": "page-text-105",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 4,
+      "expected": "Notes: The Census Bureau has reviewed this data product"
+    },
+    {
+      "id": "page-text-106",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 4,
+      "expected": "multiplying by one thousand."
+    },
+    {
+      "id": "page-text-107",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 4,
+      "expected": "United States and overseas."
+    },
+    {
+      "id": "legend-SUMLEV-010",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "010 = Nation"
+    },
+    {
+      "id": "legend-SUMLEV-020",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "020 = Region"
+    },
+    {
+      "id": "legend-SUMLEV-030",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "030 = Division"
+    },
+    {
+      "id": "legend-SUMLEV-040",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "040 = State and/or Statistical Equivalent"
+    },
+    {
+      "id": "legend-REGION-1",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "1 = Northeast"
+    },
+    {
+      "id": "legend-REGION-2",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "2 = Midwest"
+    },
+    {
+      "id": "legend-REGION-3",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "3 = South"
+    },
+    {
+      "id": "legend-REGION-4",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "4 = West"
+    },
+    {
+      "id": "legend-DIVISION-1",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "1 = New England"
+    },
+    {
+      "id": "legend-DIVISION-2",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "2 = Middle Atlantic"
+    },
+    {
+      "id": "legend-DIVISION-3",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "3 = East North Central"
+    },
+    {
+      "id": "legend-DIVISION-4",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "4 = West North Central"
+    },
+    {
+      "id": "legend-DIVISION-5",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "5 = South Atlantic"
+    },
+    {
+      "id": "legend-DIVISION-6",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "6 = East South Central"
+    },
+    {
+      "id": "legend-DIVISION-7",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "7 = West South Central"
+    },
+    {
+      "id": "legend-DIVISION-8",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "8 = Mountain"
+    },
+    {
+      "id": "legend-DIVISION-9",
+      "kind": "rendered_source_page_text_contains",
+      "source_page": 3,
+      "expected": "9 = Pacific"
+    },
+    {
+      "id": "plain-font-not-invented-bold",
+      "kind": "visual_review",
+      "expected": "Original Times New Roman content remains regular; no invented bold in header, table or notes."
+    },
+    {
+      "id": "source-header-underlines",
+      "kind": "visual_review",
+      "source_page": 1,
+      "expected": "VARIABLE and DESCRIPTION retain their source underlines without enclosing table borders."
+    },
+    {
+      "id": "source-body-no-table-borders",
+      "kind": "visual_review",
+      "source_pages": [
+        1,
+        2,
+        3
+      ],
+      "expected": "No invented outer or internal visible table borders."
+    },
+    {
+      "id": "notes-links-blue-and-underlined",
+      "kind": "visual_review",
+      "source_page": 4,
+      "expected": "All three original URLs remain blue and underlined within their notes."
+    },
+    {
+      "id": "all4-pages-glyph-visibility-and-placement",
+      "kind": "visual_review",
+      "expected": "All source content stays visible in the original four pages, table associations and notes do not overlap or clip; original columns and paragraph anchors remain legible."
+    }
+  ],
+  "criteria_count": 130,
+  "no_product_before_gold": true,
+  "whole_document_acceptance_requires_all_criteria_and_visual_review": true,
+  "initial_unseen_holdout_only_before_first_product": true,
+  "not_a_corpus_accuracy_rate": true,
+  "production_ready": false
+}
