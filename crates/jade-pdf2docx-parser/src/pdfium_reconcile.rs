@@ -252,3 +252,32 @@ fn replacement(
     }
     String::from_utf8(output).ok()
 }
+
+#[cfg(test)]
+mod source_weight_tests {
+    use super::*;
+    /// 確認済みsourceの複製では、新しい属性も文字・位置とともに失わない。
+    #[test]
+    fn budgeted_copy_preserves_source_font_weight() {
+        let source = ParsedTextElement {
+            font_weight: Some(700),
+            baseline_y: Some(700.),
+            page: 0,
+            bounds: crate::ParsedBounds {
+                x0: 72.,
+                y0: 700.,
+                x1: 100.,
+                y1: 712.,
+            },
+            font_size: 12.,
+            font_name: Some("Vendor-Regular".into()),
+            fill_color: Some("123456".into()),
+            text: "Weight".into(),
+        };
+        let budget = DecodeBudget::default();
+        assert_eq!(copy_element(&budget, &source, true), Some(source.clone()));
+        let mut without_text = source.clone();
+        without_text.text.clear();
+        assert_eq!(copy_element(&budget, &source, false), Some(without_text));
+    }
+}
