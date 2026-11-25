@@ -253,4 +253,30 @@ mod tests {
             .collect::<Vec<_>>();
         assert_eq!(table.table.rows, expected);
     }
+
+    /// 原本座標を照合した上半分の表へ、下の注記を上下反転して取り込まない。
+    #[test]
+    fn verified_bottom_origin_table_does_not_own_a_mirrored_lower_note() {
+        let mut parsed = fragmented_codes();
+        parsed.pages.push(ParsedPage {
+            page_number: 0,
+            width: 612.0,
+            height: 792.0,
+            rotation: 0,
+        });
+        let mut note = parsed.text_elements[0].clone();
+        note.text = "Independent lower note.".into();
+        note.baseline_y = Some(100.0);
+        note.bounds = ParsedBounds {
+            x0: 54.0,
+            x1: 200.0,
+            y0: 100.0,
+            y1: 110.0,
+        };
+        parsed.text_elements.push(note.clone());
+        let table = infer(&parsed, 0)
+            .expect("the unrelated lower note must not reject the verified code table");
+        assert_eq!(table.table.row_count(), 6);
+        assert!(!text_element_is_in_table(&parsed, &note, &table));
+    }
 }
