@@ -18,8 +18,8 @@ pub(super) struct Cell {
     single_line_runs: Vec<StructuredTextRun>,
     /// 複数行の配置が収まらない場合も、旧本文と完全一致するrunの書式は保持する。
     fallback_runs: Vec<StructuredTextRun>,
-    /// 原本の同期した反復行から分割し、一行でも元の上端と余白を使うセル。
-    logical_row: bool,
+    /// 原本の数値群で確認した右寄せ。分割済みなら一行でも元の上端と余白を使う。
+    logical_row_right_anchor: Option<bool>,
 }
 
 /// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
@@ -149,7 +149,7 @@ fn cells_impl(
                                 .all(|v| v.is_finite())
                         }))
                     .then(|| Cell {
-                        logical_row: false,
+                        logical_row_right_anchor: None,
                         left,
                         right,
                         top,
@@ -337,7 +337,7 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
-    if cell.lines.is_empty() || (cell.lines.len() < 2 && !cell.logical_row) {
+    if cell.lines.is_empty() || (cell.lines.len() < 2 && cell.logical_row_right_anchor.is_none()) {
         return None;
     }
     let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
@@ -350,7 +350,12 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         .margin_left(0, WidthType::Dxa)
         .margin_right(0, WidthType::Dxa);
     let mut previous_bottom = cell.top;
-    let right_anchors = native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right);
+    let right_anchors = cell
+        .logical_row_right_anchor
+        .map(|right| vec![right])
+        .unwrap_or_else(|| {
+            native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right)
+        });
     for (index, line) in cell.lines.iter().enumerate() {
         let before = (previous_bottom - line.top_y).max(0.0);
         let height = structured_line_max_font_size(line);

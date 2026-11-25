@@ -139,6 +139,14 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
     let mut cells = Vec::new();
     let mut heights = Vec::new();
     let mut used = 0.0;
+    let anchors = native
+        .iter()
+        .map(|cell| {
+            cell.as_ref().map(|cell| {
+                native_numeric_alignment::right_anchors(&cell.lines, cell.left, cell.right)
+            })
+        })
+        .collect::<Vec<_>>();
     for index in 0..count {
         let row_height = if index + 1 == count {
             height - used
@@ -152,7 +160,7 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         used += row_height;
         let mut next_row = Vec::new();
         let mut next_cells = Vec::new();
-        for (model, original) in row.iter().zip(native) {
+        for ((model, original), anchors) in row.iter().zip(native).zip(&anchors) {
             let mut model = model.clone();
             if let Some(borders) = model.borders.as_mut() {
                 borders.top &= index == 0;
@@ -169,7 +177,8 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 cell.lines = vec![line.clone()];
                 cell.single_line_runs = line.runs.clone();
                 cell.fallback_runs.clear();
-                cell.logical_row = true;
+                let source_index = index.checked_sub(count.checked_sub(original.lines.len())?)?;
+                cell.logical_row_right_anchor = Some(*anchors.as_ref()?.get(source_index)?);
                 // fit検証も本番と同じbuilderを通し、行boxの欠落を許さない。
                 table_cell(&cell)?;
                 model.text = line.text.clone();
