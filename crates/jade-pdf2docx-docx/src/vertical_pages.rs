@@ -27,6 +27,9 @@ const ASPECT: f32 = 1.5;
 const JOIN_GAP_EM: f32 = 0.75;
 /// 段と段の間とみなす、字の無い帯の幅の下限（pt）。
 const MIN_TIER_GAP: f32 = 4.0;
+/// 段を区切る罫線（ページの幅いっぱいの横の線、回した座標では縦の線）とみなす長さの割合と太さ。
+const SEPARATOR_SPAN: f32 = 0.8;
+const MAX_SEPARATOR_THICKNESS: f32 = 6.0;
 
 /// 縦書きとして回したページか。
 pub(crate) fn is_vertical(page: &ParsedPage) -> bool {
@@ -78,7 +81,11 @@ fn char_count(text: &ParsedTextElement) -> usize {
 /// ページの本文の大半が縦の行か（2 字以上の文字片の縦横比で数える）。
 fn page_is_vertical(parsed: &ParsedDocument, page: usize) -> bool {
     let (mut vertical, mut horizontal) = (0usize, 0usize);
-    for text in parsed.text_elements.iter().filter(|text| text.page == page) {
+    for text in parsed
+        .text_elements
+        .iter()
+        .filter(|text| text.page == page && !is_rule_font(text))
+    {
         let count = char_count(text);
         if count < 2 {
             continue;
@@ -92,6 +99,51 @@ fn page_is_vertical(parsed: &ParsedDocument, page: usize) -> bool {
         }
     }
     vertical >= MIN_VERTICAL_CHARS && vertical > 2 * horizontal
+}
+
+/// 罫線用フォント（MFHSLine など）の文字片か。
+fn is_rule_font(text: &ParsedTextElement) -> bool {
+    text.font_name
+        .as_deref()
+        .is_some_and(|font| font.contains("Line"))
+}
+
+/// 縦書きのページで、罫線用フォントの字で引いたページの幅いっぱいの点線（段の区切り）を、
+/// 字として除かれる前に破線の罫線にする。段の区切りを見つけるのに使う。
+pub(super) fn keep_separator_glyphs(parsed: &mut ParsedDocument) {
+    let pages = parsed
+        .pages
+        .iter()
+        .filter(|page| !is_vertical(page) && page_is_vertical(parsed, page.page_number))
+        .map(|page| (page.page_number, parsed_page_display_size_points(page).0))
+        .collect::<Vec<_>>();
+    for (page, width) in pages {
+        let rules = parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && is_rule_font(text))
+            .map(|text| normalized_bounds(text.bounds))
+            .filter(|bounds| {
+                bounds.y1 - bounds.y0 <= MAX_SEPARATOR_THICKNESS
+                    && bounds.x1 - bounds.x0 >= SEPARATOR_SPAN * width
+            })
+            .map(|bounds| {
+                let y = (bounds.y0 + bounds.y1) / 2.0;
+                ParsedGraphicElement {
+                    page,
+                    bounds: ParsedBounds {
+                        x0: bounds.x0,
+                        y0: y,
+                        x1: bounds.x1,
+                        y1: y,
+                    },
+                    stroke_width: 0.5,
+                    dashed: true,
+                }
+            })
+            .collect::<Vec<_>>();
+        parsed.graphics.extend(rules);
+    }
 }
 
 /// 表示座標（左下原点）の矩形を時計回りに 90 度回す（`display_height` は回す前の表示の高さ）。
@@ -110,7 +162,7 @@ fn rotate_bounds(bounds: ParsedBounds, display_height: f32) -> ParsedBounds {
 /// 文字・罫線・塗り・画像が覆う横の範囲を合わせ、[`MIN_TIER_GAP`] 以上空いた所で分ける。
 /// 文字の無い範囲（罫線だけなど）は段にしない。ページの幅の大半にわたる罫線・塗り（囲み）と、
 /// 段の間の罫線のような細い線は段をつなげてしまうので数えない。
-fn detect_tiers(parsed: &ParsedDocument, page: usize, width: f32) -> Vec<(f32, f32)> {
+fn detect_tiers(parsed: &ParsedDocument, page: usize, width: f32, height: f32) -> Vec<(f32, f32)> {
     let mut spans = Vec::new();
     for text in parsed
         .text_elements
@@ -147,6 +199,31 @@ fn detect_tiers(parsed: &ParsedDocument, page: usize, width: f32) -> Vec<(f32, f
         }
     }
     spans.retain(|(x0, x1, _)| x0.is_finite() && x1.is_finite());
+    let mut separators = separators(parsed, page, height);
+    if !separators.is_empty() {
+        // 段を区切る罫線があるページでは、罫線で区切られた帯ごとに 1 つの段にする
+        // （目次の段の下端のページ番号も同じ段。余白の印が罫線をまたいでも段はつながない）。
+        separators.sort_by(f32::total_cmp);
+        let mut cells: Vec<Option<(f32, f32)>> = vec![None; separators.len() + 1];
+        for (x0, x1, has_text) in spans {
+            let center = (x0 + x1) / 2.0;
+            let cell = separators.partition_point(|&rule| rule < center);
+            let low = if cell == 0 {
+                f32::MIN
+            } else {
+                separators[cell - 1]
+            };
+            let high = separators.get(cell).copied().unwrap_or(f32::MAX);
+            let (x0, x1) = (x0.max(low), x1.min(high));
+            let slot = &mut cells[cell];
+            *slot = match (*slot, has_text) {
+                (Some((a, b)), _) => Some((a.min(x0), b.max(x1))),
+                (None, true) => Some((x0, x1)),
+                (None, false) => None,
+            };
+        }
+        return cells.into_iter().flatten().collect();
+    }
     spans.sort_by(|a, b| a.0.total_cmp(&b.0));
     let mut merged: Vec<(f32, f32, bool)> = Vec::new();
     for (x0, x1, has_text) in spans {
@@ -162,6 +239,30 @@ fn detect_tiers(parsed: &ParsedDocument, page: usize, width: f32) -> Vec<(f32, f
         .into_iter()
         .filter(|(_, _, has_text)| *has_text)
         .map(|(x0, x1, _)| (x0, x1))
+        .collect()
+}
+
+/// 段を区切る罫線（ページの幅いっぱいの細い横線。罫線用フォントの字で引いた線も含む）の、
+/// 回した座標での位置。
+fn separators(parsed: &ParsedDocument, page: usize, height: f32) -> Vec<f32> {
+    let is_separator = |bounds: ParsedBounds| {
+        bounds.x1 - bounds.x0 <= MAX_SEPARATOR_THICKNESS
+            && bounds.y1 - bounds.y0 >= SEPARATOR_SPAN * height
+    };
+    parsed
+        .graphics
+        .iter()
+        .filter(|graphic| graphic.page == page)
+        .map(|graphic| graphic.bounds)
+        .chain(
+            parsed
+                .text_elements
+                .iter()
+                .filter(|text| text.page == page)
+                .map(|text| text.bounds),
+        )
+        .filter(|bounds| is_separator(*bounds))
+        .map(|bounds| (bounds.x0 + bounds.x1) / 2.0)
         .collect()
 }
 
@@ -461,23 +562,30 @@ fn pad_row_gaps(parsed: &mut ParsedDocument, page: usize, tiers: &[(f32, f32)], 
             .total_cmp(&parsed.text_elements[b].bounds.x0)
     });
     let mut pads = Vec::new();
+    // 組んだときの文字片の始まり。原本の半角の括弧・中黒も全角で組まれるので、行の前の
+    // 文字片からの送りで追い、空白の数はそこから次の文字片の位置までで決める。
+    let mut set_start = vec![None::<f32>; parsed.text_elements.len()];
     for &current in &indices {
         let base = &parsed.text_elements[current];
+        let set_end = set_start[current].unwrap_or(base.bounds.x0) + set_width(base);
         let size = base.font_size.max(1.0);
-        let height = base.bounds.y1 - base.bounds.y0;
         let tier = nearest_tier(tiers, base.bounds.x0, base.bounds.x1);
         // 同じ行で次に続く文字片（終わりが先にある文字片のうち、始まりが最も近いもの）。
+        // 中黒などの字形の外接矩形は低いので、どちらかの中心がもう一方の行に入れば同じ行。
+        let in_row = |inner: &ParsedBounds, outer: &ParsedBounds| {
+            let center = (inner.y0 + inner.y1) / 2.0;
+            (center - outer.y0).min(outer.y1 - center) >= -0.1 * size
+        };
         let next = indices
             .iter()
             .copied()
             .filter(|&other| {
                 let candidate = &parsed.text_elements[other];
-                let center = (candidate.bounds.y0 + candidate.bounds.y1) / 2.0;
                 other != current
                     && candidate.bounds.x1 > base.bounds.x1
                     && candidate.bounds.x0 >= base.bounds.x0
-                    && (center - base.bounds.y0).min(base.bounds.y1 - center) >= -0.1 * size
-                    && ((candidate.bounds.y1 - candidate.bounds.y0) - height).abs() <= 0.3 * size
+                    && (in_row(&candidate.bounds, &base.bounds)
+                        || in_row(&base.bounds, &candidate.bounds))
             })
             .min_by(|&a, &b| {
                 parsed.text_elements[a]
@@ -492,9 +600,30 @@ fn pad_row_gaps(parsed: &mut ParsedDocument, page: usize, tiers: &[(f32, f32)], 
         let gap = candidate.bounds.x0 - base.bounds.x1;
         // 中黒・句読点の外接矩形は字の枠の中央・隅にあり、空白の無い所でも半角ほど空く。
         let pitch = pitches.near(base);
-        let count = (gap / pitch).round();
+        // 空白の数は組んだ位置から原本の位置まで。行末まで届く字（目次のページ番号など）は
+        // 半角の漢数字も全角で組まれるので、段の終わりを越えない数に減らす。
+        let limit = tiers
+            .get(tier)
+            .map_or(f32::MAX, |&(_, end)| end.max(candidate.bounds.x1))
+            + 0.25 * size;
+        let mut count = ((candidate.bounds.x0 - set_end) / size).round().max(0.0);
+        while count > 0.0 && set_end + count * size + set_width(candidate) > limit {
+            count -= 1.0;
+        }
+        let next_start = if gap < JOIN_GAP_EM * pitch {
+            set_end
+        } else {
+            set_end + count.max(0.0) * size
+        };
+        // 全角で組んだ字は原本より前へは出ない（前の行の文字片を拾っても原本の位置より前に
+        // しない）。
+        let next_start = set_start[next]
+            .map_or(next_start, |start| start.max(next_start))
+            .max(candidate.bounds.x0);
+        set_start[next] = Some(next_start);
         if gap < JOIN_GAP_EM * pitch
             || count < 1.0
+            || (candidate.font_size - base.font_size).abs() > 0.3 * size
             || nearest_tier(tiers, candidate.bounds.x0, candidate.bounds.x1) != tier
             || graphics_between(
                 parsed,
@@ -512,6 +641,17 @@ fn pad_row_gaps(parsed: &mut ParsedDocument, page: usize, tiers: &[(f32, f32)], 
         text.text = format!("{}{}", text.text.trim_end(), "\u{3000}".repeat(count));
         text.bounds.x1 = end;
     }
+}
+
+/// 文字片を組んだときの長さ（全角の字は 1 字、ほかの字は半角とみなす）。
+fn set_width(text: &ParsedTextElement) -> f32 {
+    let ems = text
+        .text
+        .trim()
+        .chars()
+        .map(|ch| if u32::from(ch) >= 0x2E80 { 1.0 } else { 0.5 })
+        .sum::<f32>();
+    ems * text.font_size.max(1.0)
 }
 
 /// 全角の字の間の半角空白を除く（縦組みの約物の外接矩形の間から補われた空白）。
@@ -629,7 +769,7 @@ pub(super) fn rotate(parsed: &mut ParsedDocument) {
         }
         // 段は字形の外接矩形で分け（字の枠に戻すと段の間の空きを埋めてしまう）、
         // 行の文字片はその段の中だけでつなぐ。
-        let tiers = detect_tiers(parsed, page, display_height);
+        let tiers = detect_tiers(parsed, page, display_height, display_width);
         let pitches = Pitches::measure(parsed, page);
         collapse_horizontal_runs(parsed, page, &tiers);
         join_line_fragments(parsed, page, &tiers, &pitches);
@@ -1027,6 +1167,52 @@ mod tests {
                 "令和八年\u{3000}\u{3000}\u{3000}\u{3000}\u{3000}",
                 "大臣"
             ]
+        );
+    }
+
+    /// 段を区切る罫線があるページでは、段の下端のページ番号の帯は罫線までの段に入る。
+    #[test]
+    fn a_separator_rule_keeps_page_numbers_with_their_tier() {
+        let mut parsed = document(vec![
+            piece("目次の項目", 0.0, 180.0, 100.0, 108.0),
+            piece("一〇", 190.0, 198.0, 100.0, 108.0),
+            piece("本文の行", 206.0, 400.0, 100.0, 108.0),
+        ]);
+        assert_eq!(
+            detect_tiers(&parsed, 0, 842.0, 500.0),
+            vec![(0.0, 180.0), (190.0, 198.0), (206.0, 400.0)]
+        );
+        parsed.graphics.push(ParsedGraphicElement {
+            page: 0,
+            bounds: ParsedBounds {
+                x0: 202.0,
+                y0: 10.0,
+                x1: 202.0,
+                y1: 490.0,
+            },
+            stroke_width: 0.5,
+            dashed: true,
+        });
+        assert_eq!(
+            detect_tiers(&parsed, 0, 842.0, 500.0),
+            vec![(0.0, 198.0), (206.0, 400.0)]
+        );
+    }
+
+    /// 原本の半角の括弧・漢数字も全角で組まれるので、行末のページ番号の前の空白は、
+    /// 組んだ行が段の終わりを越えない数にする。
+    #[test]
+    fn line_end_numbers_are_padded_to_fit_the_tier() {
+        let mut parsed = document(vec![
+            piece("（中部六二）", 0.0, 44.0, 100.0, 108.0),
+            piece("一〇", 92.0, 100.0, 100.0, 108.0),
+        ]);
+        let tiers = vec![(0.0, 100.0)];
+        let pitches = Pitches::measure(&parsed, 0);
+        pad_row_gaps(&mut parsed, 0, &tiers, &pitches);
+        assert_eq!(
+            parsed.text_elements[0].text,
+            "（中部六二）\u{3000}\u{3000}\u{3000}\u{3000}"
         );
     }
 

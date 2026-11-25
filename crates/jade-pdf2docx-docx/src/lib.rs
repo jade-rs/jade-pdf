@@ -384,6 +384,7 @@ fn convert_pdf_file_with_check(
     drop_overprinted_duplicates(&mut parsed);
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
+    vertical_pages::keep_separator_glyphs(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
@@ -510,6 +511,7 @@ fn convert_pdf_bytes_with_check(
     drop_overprinted_duplicates(&mut parsed);
     repair_tiny_font_sizes(&mut parsed);
     rule_glyphs::convert_to_graphics(&mut parsed);
+    vertical_pages::keep_separator_glyphs(&mut parsed);
     map_known_private_use_glyphs(&mut parsed);
     drop_rule_glyphs(&mut parsed);
     recover_decimal_points(&mut parsed);
