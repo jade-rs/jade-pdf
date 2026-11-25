@@ -23,6 +23,7 @@ class DocxWasmDistributionTest(unittest.TestCase):
         for name in self.module.BINDINGS:
             (self.probe / name).write_bytes(b'owned distribution contract test')
         for source, target in [
+            ('adobe-japan1-ucs2.txt', 'LICENSE-adobe-japan1-ucs2.txt'),
             ('adobe-glyph-list.txt', 'LICENSE-adobe-glyph-list.txt'),
             ('fonttools.txt', 'LICENSE-fonttools.txt'),
             ('open-font-license-1.1.txt', 'LICENSE-open-font-license-1.1.txt'),
@@ -43,6 +44,24 @@ class DocxWasmDistributionTest(unittest.TestCase):
 
     def test_missing_reportlab_notice_is_rejected(self):
         with self.assertRaisesRegex(AssertionError, 'LICENSE-reportlab.txt'):
+            self.module.check(self.probe)
+
+    def test_missing_registered_cid_notice_is_rejected(self):
+        """他noticeが完全でも、登録CID表のnoticeは省略できない。"""
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes())
+        (self.probe / 'LICENSE-adobe-japan1-ucs2.txt').unlink()
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'LICENSE-adobe-japan1-ucs2.txt'):
+            self.module.check(self.probe)
+
+    def test_updated_manifest_does_not_hide_modified_registered_cid_notice(self):
+        """build.jsonのhashも更新したnotice改変を元の本文との比較で拒否する。"""
+        (self.probe / 'LICENSE-reportlab.txt').write_bytes(
+            (ROOT / 'crates/jade-pdf2docx-parser/licenses/reportlab.txt').read_bytes())
+        (self.probe / 'LICENSE-adobe-japan1-ucs2.txt').write_bytes(b'changed license')
+        self.record_hashes()
+        with self.assertRaisesRegex(AssertionError, 'License notice mismatch: LICENSE-adobe-japan1-ucs2.txt'):
             self.module.check(self.probe)
 
     def test_missing_open_font_license_is_rejected(self):
