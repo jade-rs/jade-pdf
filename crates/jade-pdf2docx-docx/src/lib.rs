@@ -76,6 +76,7 @@ mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
 mod separated_box_table;
+mod source_image_rows;
 mod source_prose_columns;
 mod text_column_gutter;
 mod text_grid_ownership;
@@ -1005,6 +1006,12 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     section_refs: StructuredPageSectionRefs<'_>,
     image_payloads: &mut Option<Vec<Vec<u8>>>,
 ) -> Result<C, ConvertError> {
+    let mut anchored_images = source_image_rows::select(
+        parsed,
+        page.page,
+        positioned_tables,
+        text_column_layout.is_some(),
+    );
     let mut blocks = column_flow::ordered_lines(&page.lines, text_column_layout)
         .into_iter()
         .enumerate()
@@ -1031,6 +1038,9 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .enumerate()
         .filter(|(_, image)| image.page == page.page)
     {
+        if anchored_images.contains(&image_index) {
+            continue;
+        }
         let top_y = image.bounds.y1;
         blocks.push(StructuredBlock::Image {
             order_index: block_insertion_order_index(&page.lines, top_y),
@@ -1128,6 +1138,19 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                         })
                 {
                     paragraph = paragraph.indent(Some(indent), None, None, None);
+                }
+                for image_index in anchored_images.drain(..) {
+                    let mut image = parsed.image_elements[image_index].clone();
+                    if let Some(payloads) = image_payloads {
+                        image.png_bytes = std::mem::take(&mut payloads[image_index]);
+                    }
+                    image.floating = true;
+                    let source_page = parsed
+                        .pages
+                        .iter()
+                        .find(|source| source.page_number == page.page);
+                    paragraph = paragraph
+                        .add_run(Run::new().add_image(image_anchor::picture(image, source_page)));
                 }
                 let before = pdf_vertical_blank_gap_twips(previous_line.as_ref(), &line)
                     .or_else(|| {

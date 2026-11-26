@@ -88,6 +88,8 @@ Dense prose with exactly two verified source columns uses Word columns without i
 
 Explicit WinAnsi in verified nonsymbolic TrueType fonts retains section signs and Latin characters without overriding authored ToUnicode. See [TrueType text decoding and remaining form-layout failures](docs/truetype_winansi.md).
 
+Verified horizontal image rows retain source page-relative coordinates and point dimensions while unresolved mixed-flow images keep their existing route. See [source image rows and remaining pagination failures](docs/source_image_rows.md).
+
 Detected two-column text retains page-specific Word sections when another page contains an image or inferred table. A final table keeps its page boundary outside the table; floating-image-only and running-header-only pages retain known source dimensions. Sustained central gutters can recover narrow two-column text. Explicit column widths keep right-column prefixes out of the preceding column frame; paragraph offsets use those same widths. Verified column bodies flow from left to right once per source page, including unmatched rows. Column candidates with unsplit body rows crossing into the next column are rejected. Pages containing images or tables, OCR content, full-height tables, and complex column layouts retain limitations; see the [text-column guide](docs/text_columns.md).
 
 PDF comparison qualification uses 90 registered public PDFs (76 regular documents with 717 pages, 10 robustness inputs, one specification reference, and three unresolved semantic gold cases). Three additional reviewed W3C files represent two independent visible contents and remain outside the registered corpus. See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
