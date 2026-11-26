@@ -4781,19 +4781,32 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
-    let geometry = (!text_augmented_columns && !allow_top_origin_text_y)
+    let mut geometry = (!text_augmented_columns && !allow_top_origin_text_y)
         .then(|| fractional_table_rules::grid(&parsed.graphics, &xs, &ys, Some(page)))
         .flatten();
-    let native_cells = native_table_text::cells_with_geometry(
+    let model = docx_table
+        .clone()
+        .unwrap_or_else(|| docx_table_model_from_ocr_table(&table));
+    let mut native_cells = native_table_text::cells_with_geometry(
         parsed,
         &xs,
         &ys,
         &cell_source_texts,
-        &docx_table
-            .clone()
-            .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+        &model,
         geometry.as_ref(),
     );
+    if geometry.is_some() && !native_table_text::fractional_geometry_is_safe(&native_cells, &model)
+    {
+        geometry = None;
+        native_cells = native_table_text::cells_with_geometry(
+            parsed,
+            &xs,
+            &ys,
+            &cell_source_texts,
+            &model,
+            None,
+        );
+    }
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
     let embedded_font = font_name.as_deref().and_then(|name| {
         parsed

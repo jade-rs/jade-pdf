@@ -48,6 +48,55 @@ pub(super) fn cells_with_geometry(
     cells_impl(parsed, xs, ys, texts, model, false, geometry)
 }
 
+/// 全非空セルの本文とfontを確認し、未確認の代替字幅を原本の狭い寸法へ押し込まない。
+pub(super) fn fractional_geometry_is_safe(
+    cells: &[Vec<Option<Cell>>],
+    model: &DocxTableModel,
+) -> bool {
+    cells.len() == model.rows.len()
+        && cells.iter().zip(&model.rows).all(|(cells, row)| {
+            cells.len() == row.len()
+                && cells.iter().zip(row).all(|(cell, source)| {
+                    if source.text.trim().is_empty()
+                        || source.vertical_merge == Some(DocxVerticalMerge::Continue)
+                    {
+                        return true;
+                    }
+                    let Some(cell) = cell else { return false };
+                    !cell.lines.is_empty()
+                        && line_spacings(cell)
+                            .is_some_and(|mut spacings| spacings.all(|s| s.is_some()))
+                        && cell.lines.iter().all(|line| {
+                            line.runs.iter().all(|run| {
+                                run.text.trim().is_empty()
+                                    || (run.style.font_embedded
+                                        && run.style.embedded_face.is_some())
+                                    || compatible_ascii_metrics(run, line, cell)
+                            })
+                        })
+                })
+        })
+}
+
+/// Standard14 Helveticaの単純ASCII・無変換の文字高だけを既知の代替経路として許す。
+fn compatible_ascii_metrics(
+    run: &StructuredTextRun,
+    line: &StructuredTextLine,
+    cell: &Cell,
+) -> bool {
+    let style = &run.style;
+    style.font_name.as_deref() == Some("Helvetica")
+        && !style.font_embedded
+        && style.fill_stroke_width.is_none()
+        && style.font_weight.is_none_or(|weight| weight <= 500)
+        && style.font_size.is_finite()
+        && style.font_size > 0.
+        && (style.font_size * 2.).fract() == 0.
+        && run.text.bytes().all(|c| (b' '..=b'~').contains(&c))
+        && line.left_x >= cell.left
+        && line.right_x <= cell.right
+}
+
 /// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
 pub(super) fn boxed_cells(
     parsed: &ParsedDocument,
