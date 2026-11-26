@@ -186,9 +186,9 @@ proptest! {
         }
     }
 
-    /// 整列結合は入力順に依存せず、再実行しても被覆と線幅を変えない。
+    /// 物理的な各線幅の連続被覆を保ち、入力順と再実行で同じ最小区間列を返す。
     #[test]
-    fn graphics_merge_matches_discrete_coverage(intervals in prop::collection::vec((0i32..32, 1i32..8, 1u8..5), 1..40)) {
+    fn graphics_merge_preserves_physical_coverage_and_widths(intervals in prop::collection::vec((0i32..32, 1i32..8, 1u8..5), 1..40)) {
         let lines: Vec<_> = intervals.iter().map(|&(start, length, width)| ParsedGraphicElement {
             page: 2,
             bounds: ParsedBounds { x0: start as f32, y0: 3.0, x1: (start + length) as f32, y1: 3.0 },
@@ -200,13 +200,16 @@ proptest! {
         prop_assert_eq!(&merged, &merge_axis_aligned_segments(merged.clone()));
         for &(start, length, width) in &intervals {
             prop_assert!(merged.iter().any(|line| line.bounds.x0 <= start as f32
-                && line.bounds.x1 >= (start + length) as f32 && line.stroke_width >= f32::from(width)));
+                && line.bounds.x1 >= (start + length) as f32 && line.stroke_width == f32::from(width)));
         }
-        for pair in merged.windows(2) { prop_assert!(pair[0].bounds.x1 + 1.0 < pair[1].bounds.x0); }
-        for line in merged {
-            for cell in line.bounds.x0 as i32..line.bounds.x1 as i32 {
-                // 1座標の間隔を連結する既存仕様を含む被覆を検査する。
-                prop_assert!(intervals.iter().any(|&(start, length, _)| start <= cell + 1 && start + length >= cell));
+        for width in 1u8..5 {
+            let parts: Vec<_> = merged.iter().filter(|line| line.stroke_width == f32::from(width)).collect();
+            for pair in parts.windows(2) { prop_assert!(pair[0].bounds.x1 < pair[1].bounds.x0); }
+            for cell in 0i32..40 {
+                // 整数端点間の全単位区間を比較し、1ptの空隙や別の太さで補わない。
+                let expected=intervals.iter().any(|&(start,length,w)| w==width && start<=cell && start+length>=cell+1);
+                let actual=parts.iter().any(|line| line.bounds.x0<=cell as f32 && line.bounds.x1>=(cell+1)as f32);
+                prop_assert_eq!(actual,expected,"physical unit interval and exact source width must agree");
             }
         }
     }

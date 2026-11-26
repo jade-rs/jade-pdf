@@ -100,6 +100,25 @@ fn collinear_gap_remains_visible_in_source_fragments() {
     assert_eq!(parsed.graphics[1].bounds.x0, 41.25);
 }
 
+/// 同じ場所の異なる黒い線幅を保持しても、入力のpaint順で公開配列が変わらない。
+#[test]
+fn overlapping_widths_do_not_depend_on_draw_order() {
+    let thin = ".5 w 20.25 30.75 m 60.75 30.75 l S";
+    let thick = "1.5 w 20.25 30.75 m 60.75 30.75 l S";
+    let a = parse_pdf_bytes(
+        "owned-rule-order-a.pdf",
+        &source(&format!("{thin} {thick}")),
+    )
+    .unwrap();
+    let b = parse_pdf_bytes(
+        "owned-rule-order-b.pdf",
+        &source(&format!("{thick} {thin}")),
+    )
+    .unwrap();
+    assert_eq!(a.graphics, b.graphics);
+    assert_eq!(a.graphics.len(), 2);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 二進表現が正確な四分ptの平行移動でも、原本四辺をそのまま公開する。
