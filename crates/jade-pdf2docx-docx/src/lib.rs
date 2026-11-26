@@ -65,6 +65,7 @@ mod text_grid_cell_styles;
 
 mod bare_page_footers;
 mod cell_line_rounding;
+mod fractional_table_rules;
 mod html_table;
 mod image_anchor;
 mod inline_baseline;
@@ -4766,7 +4767,10 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
-    let native_cells = native_table_text::cells(
+    let geometry = (!text_augmented_columns && !allow_top_origin_text_y)
+        .then(|| fractional_table_rules::grid(page_graphics, &xs, &ys))
+        .flatten();
+    let native_cells = native_table_text::cells_with_geometry(
         parsed,
         &xs,
         &ys,
@@ -4774,6 +4778,7 @@ fn infer_positioned_table_from_graphics(
         &docx_table
             .clone()
             .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+        geometry.as_ref(),
     );
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
     let embedded_font = font_name.as_deref().and_then(|name| {
@@ -4786,23 +4791,44 @@ fn infer_positioned_table_from_graphics(
     let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
     Some(PositionedTable {
         page,
-        bounds: ParsedBounds {
-            x0: *xs.first().expect("xs is not empty") as f32,
-            y0: *ys.first().expect("ys is not empty") as f32,
-            x1: *xs.last().expect("xs is not empty") as f32,
-            y1: *ys.last().expect("ys is not empty") as f32,
-        },
+        bounds: geometry
+            .as_ref()
+            .map(|g| g.bounds())
+            .unwrap_or(ParsedBounds {
+                x0: *xs.first().expect("xs is not empty") as f32,
+                y0: *ys.first().expect("ys is not empty") as f32,
+                x1: *xs.last().expect("xs is not empty") as f32,
+                y1: *ys.last().expect("ys is not empty") as f32,
+            }),
         allow_top_origin_text_y,
         stroke_width: table_rule_stroke_width(&page_graphics, &xs, &ys),
         font_name,
         font_embedded,
         embedded_face,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
-        column_widths_twips: table_column_widths_twips(&xs),
-        row_heights_twips: native_table_rows::heights(
-            &ys,
-            thin_table_rule_height_adjustment(table_rule_stroke_width(&page_graphics, &xs, &ys)),
-        ),
+        column_widths_twips: geometry
+            .as_ref()
+            .map(|g| g.widths())
+            .unwrap_or_else(|| table_column_widths_twips(&xs)),
+        row_heights_twips: geometry
+            .as_ref()
+            .and_then(|g| {
+                g.heights(thin_table_rule_height_adjustment(table_rule_stroke_width(
+                    page_graphics,
+                    &xs,
+                    &ys,
+                )))
+            })
+            .unwrap_or_else(|| {
+                native_table_rows::heights(
+                    &ys,
+                    thin_table_rule_height_adjustment(table_rule_stroke_width(
+                        page_graphics,
+                        &xs,
+                        &ys,
+                    )),
+                )
+            }),
         table,
         cell_underlines,
         cell_alignments,

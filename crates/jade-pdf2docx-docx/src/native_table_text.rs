@@ -24,15 +24,16 @@ pub(super) struct Cell {
     logical_row_right_anchor: Option<bool>,
 }
 
-/// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
-pub(super) fn cells(
+/// セル所有は既存整数gridで固定し、確認済み原本境界だけを行内配置へ渡す。
+pub(super) fn cells_with_geometry(
     parsed: &ParsedDocument,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
+    geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false)
+    cells_impl(parsed, xs, ys, texts, model, false, geometry)
 }
 
 /// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
@@ -43,7 +44,7 @@ pub(super) fn boxed_cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, true)
+    cells_impl(parsed, xs, ys, texts, model, true, None)
 }
 
 /// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
@@ -54,6 +55,7 @@ fn cells_impl(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
     closed_boxes: bool,
+    geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     // 添字復元を許す呼出元は全graphicが閉じた枠と確認済みであり、枠の下辺は文字下線ではない。
@@ -114,10 +116,11 @@ fn cells_impl(
                     let bottom_band = ys
                         .len()
                         .checked_sub(row_index.checked_add(row_span)?.checked_add(1)?)?;
-                    let top = *ys.get(band + 1)? as f32;
-                    let bottom = *ys.get(bottom_band)? as f32;
-                    let left = *xs.get(start)? as f32;
-                    let right = *xs.get(col)? as f32;
+                    let top = geometry.map_or(*ys.get(band + 1)? as f32, |g| g.ys[band + 1]);
+                    let bottom =
+                        geometry.map_or(*ys.get(bottom_band)? as f32, |g| g.ys[bottom_band]);
+                    let left = geometry.map_or(*xs.get(start)? as f32, |g| g.xs[start]);
+                    let right = geometry.map_or(*xs.get(col)? as f32, |g| g.xs[col]);
                     let selected = texts
                         .get(row_index..row_index.checked_add(row_span)?)?
                         .iter()
