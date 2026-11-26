@@ -1,4 +1,4 @@
-//! 表示枠の外と確認できた要素を、通常変換のレイアウトへ再投入しない。
+//! 表示枠の外と確認できた文字と画像を、通常変換のレイアウトへ再投入しない。
 use super::{ParsedBounds, ParsedDocument};
 use jade_pdf2docx_parser::ParsedPage;
 use std::collections::BTreeMap;
@@ -6,29 +6,23 @@ use std::collections::BTreeMap;
 /// ページ番号から、重複や未知の寸法をNoneで保持した表示寸法への索引。
 type Frames = BTreeMap<usize, Option<(f32, f32)>>;
 
+#[cfg(test)]
+#[allow(dead_code)]
+#[path = "../../jade-pdf2docx-parser/tests/support/page_attribute_pdf.rs"]
+mod fixture;
+
 /// 所有する変換用IRだけを絞り、公開parserの抽出結果や未確認の寸法は変えない。
 pub(super) fn retain(parsed: &mut ParsedDocument) -> bool {
-    let before = (
-        parsed.text_elements.len(),
-        parsed.image_elements.len(),
-        parsed.graphics.len(),
-    );
+    let before = (parsed.text_elements.len(), parsed.image_elements.len());
     let frames = frames(&parsed.pages);
     parsed
         .text_elements
-        .retain(|t| !outside(&frames, t.page, t.bounds, None));
+        .retain(|t| !outside(&frames, t.page, t.bounds));
     parsed
         .image_elements
-        .retain(|i| !outside(&frames, i.page, i.bounds, None));
-    parsed
-        .graphics
-        .retain(|g| !outside(&frames, g.page, g.bounds, Some(g.stroke_width)));
-    before
-        != (
-            parsed.text_elements.len(),
-            parsed.image_elements.len(),
-            parsed.graphics.len(),
-        )
+        .retain(|i| !outside(&frames, i.page, i.bounds));
+    // 部分的に表示された表の接続を壊さないよう、罫線は個々に除外しない。
+    before != (parsed.text_elements.len(), parsed.image_elements.len())
 }
 
 #[cfg(test)]
@@ -36,13 +30,8 @@ mod tests {
     use super::*;
 
     /// 任意のページ配置の索引を通して、公開変換と同じ判定を呼ぶ。
-    fn outside(
-        pages: &[ParsedPage],
-        page: usize,
-        bounds: ParsedBounds,
-        stroke: Option<f32>,
-    ) -> bool {
-        super::outside(&frames(pages), page, bounds, stroke)
+    fn outside(pages: &[ParsedPage], page: usize, bounds: ParsedBounds) -> bool {
+        super::outside(&frames(pages), page, bounds)
     }
 
     /// 認識済みの非正方形ページを作る。
@@ -68,8 +57,8 @@ mod tests {
     /// ページ欠落・重複・非有限寸法・未対応角度では、推測で原本要素を消さない。
     #[test]
     fn unknown_or_ambiguous_page_frames_preserve_elements() {
-        assert!(!outside(&[], 0, bounds(), None));
-        assert!(!outside(&[page(), page()], 0, bounds(), None));
+        assert!(!outside(&[], 0, bounds()));
+        assert!(!outside(&[page(), page()], 0, bounds()));
         for p in [
             ParsedPage {
                 width: f32::NAN,
@@ -84,9 +73,9 @@ mod tests {
                 ..page()
             },
         ] {
-            assert!(!outside(&[p], 0, bounds(), None));
+            assert!(!outside(&[p], 0, bounds()));
         }
-        assert!(!outside(&[page()], 1, bounds(), None));
+        assert!(!outside(&[page()], 1, bounds()));
     }
 
     /// 一部だけ交差する面積と、有限な面積を確認できないboundsは従来経路へ残す。
@@ -99,8 +88,7 @@ mod tests {
                 x0: 190.,
                 x1: 210.,
                 ..bounds()
-            },
-            None
+            }
         ));
         assert!(!outside(
             &[page()],
@@ -108,8 +96,7 @@ mod tests {
             ParsedBounds {
                 x1: 250.,
                 ..bounds()
-            },
-            None
+            }
         ));
         assert!(!outside(
             &[page()],
@@ -117,25 +104,29 @@ mod tests {
             ParsedBounds {
                 x0: f32::NAN,
                 ..bounds()
-            },
-            None
+            }
         ));
-        assert!(outside(&[page()], 0, bounds(), None));
+        assert!(outside(&[page()], 0, bounds()));
     }
 
-    /// 枠際の罫線は中心線だけで落とさず、原本の線幅と境界接触を含めて判定する。
+    /// 部分表の構造を壊さないよう、罫線はこの文字・画像の表示判定で個別に除外しない。
     #[test]
-    fn stroked_boundaries_keep_their_visible_edge() {
-        let line = ParsedBounds {
-            x0: 201.,
-            x1: 201.,
-            y0: 10.,
-            y1: 100.,
-        };
-        assert!(!outside(&[page()], 0, line, Some(2.)));
-        assert!(outside(&[page()], 0, line, Some(1.)));
-        assert!(!outside(&[page()], 0, line, Some(f32::NAN)));
-        assert!(!outside(&[page()], 0, line, Some(-1.)));
+    fn graphic_rules_remain_available_for_partial_table_structure() {
+        let source=fixture::pdf(&[
+            "<< /Type /Catalog /Pages 2 0 R >>".into(),
+            "<< /Type /Pages /Count 1 /Kids [3 0 R] /MediaBox [0 0 200 300] >>".into(),
+            "<< /Type /Page /Parent 2 0 R /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".into(),
+            fixture::stream("1 w 10 400 m 190 400 l S BT /F1 12 Tf 20 30 Td (Visible) Tj ET BT /F1 12 Tf 400 30 Td (Outside) Tj ET"),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        ]);
+        let mut parsed =
+            jade_pdf2docx_parser::parse_pdf_bytes("owned-unmodified-graphic.pdf", &source).unwrap();
+        let graphics = parsed.graphics.clone();
+        assert_eq!(graphics.len(), 1);
+        assert!(retain(&mut parsed));
+        assert_eq!(parsed.graphics, graphics);
+        assert_eq!(parsed.text_elements.len(), 1);
+        assert_eq!(parsed.text_elements[0].text, "Visible");
     }
 }
 
@@ -167,8 +158,8 @@ fn frame(page: &ParsedPage) -> Option<(f32, f32)> {
     })
 }
 
-/// 面積のある要素または線幅を含む罫線が、確認済み表示矩形と完全に離れているか判定する。
-fn outside(frames: &Frames, page: usize, bounds: ParsedBounds, stroke: Option<f32>) -> bool {
+/// 面積を確認できる文字・画像が、確認済み表示矩形と完全に離れているか判定する。
+fn outside(frames: &Frames, page: usize, bounds: ParsedBounds) -> bool {
     let Some((width, height)) = frames.get(&page).copied().flatten() else {
         return false;
     };
@@ -178,29 +169,14 @@ fn outside(frames: &Frames, page: usize, bounds: ParsedBounds, stroke: Option<f3
     {
         return false;
     }
-    let (mut x0, mut x1, mut y0, mut y1) = (
+    let (x0, x1, y0, y1) = (
         bounds.x0.min(bounds.x1),
         bounds.x0.max(bounds.x1),
         bounds.y0.min(bounds.y1),
         bounds.y0.max(bounds.y1),
     );
-    if let Some(stroke) = stroke {
-        if !stroke.is_finite() || stroke < 0. {
-            return false;
-        }
-        let padding = stroke / 2.;
-        x0 -= padding;
-        x1 += padding;
-        y0 -= padding;
-        y1 += padding;
-        if ![x0, x1, y0, y1].into_iter().all(f32::is_finite) {
-            return false;
-        }
-        x1 < 0. || y1 < 0. || x0 > width || y0 > height
-    } else {
-        if x0 >= x1 || y0 >= y1 {
-            return false;
-        }
-        x1 <= 0. || y1 <= 0. || x0 >= width || y0 >= height
+    if x0 >= x1 || y0 >= y1 {
+        return false;
     }
+    x1 <= 0. || y1 <= 0. || x0 >= width || y0 >= height
 }
