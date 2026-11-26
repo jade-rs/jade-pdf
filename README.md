@@ -49,6 +49,8 @@ Unfiltered 8-bit images with a directly declared DeviceRGB or DeviceGray color s
 
 Images drawn inside called Form XObjects retain their local resource names, composed transforms, supported inherited paint, and convex clipping. Clipped PNGs preserve at least the source pixel density and 96dpi display resolution. Positioned images on upright pages use page-relative top-origin anchors. This recovers bitmap components without implementing complete Form artwork or transparency-group compositing: Form and OCR quality diagnostics remain, and strict conversion still rejects them. See [Form image behavior and limits](docs/form_images.md). Upright images with known bounds preserve physical extents directly from PDF points without integer display-pixel rounding; see [image dimensions and renderer limits](docs/image_physical_extents.md).
 
+Supported normal print defaults (`BG2`/`UCR2 /Default`, boolean `SA`, and finite `SM` in 0..=1) preserve image samples instead of causing white replacements. Unknown functions, device color-space replacements and malformed states remain unconfirmed. See [image print defaults and remaining placement limits](docs/source_image_print_defaults.md). The fixed follow-up passes 2,657 Rust tests and preserves 586 of 598 prior runtime payloads byte for byte. Six defaults recover image pixels and six strict diagnostics remove only verified image-replacement warnings; all expected statuses remain unchanged. Labour34/57 and CPI26/107 criteria remain unchanged, with placement and whole-document readiness unaccepted. Recovering image pixels does not establish correct graph layout or whole-document fidelity.
+
 ### Compare PDFs
 
 ```sh

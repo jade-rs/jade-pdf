@@ -72,7 +72,7 @@ fn safe_state_does_not_reset_unsupported_transparency() {
         "<< /AIS true >>",
         "<< /OP true >>",
         "<< /op true >>",
-        "<< /SA false >>",
+        "<< /SA 0 >>",
         "<< /TK 1 >>",
         "<< /TK true /T#4b false >>",
         "<< /BM [/Normal] >>",

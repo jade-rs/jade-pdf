@@ -72,7 +72,82 @@ pub(crate) fn resolve_state<'a>(
         }
     }
     let (state, _) = resolver.resolve(selected?)?;
+    if newly_supported_print_settings(budget, resolver, state)?
+        && !unmodified_device_spaces(budget, resolver, resources?)?
+    {
+        return None;
+    }
     parameters(budget, resolver, state)
+}
+
+/// 新たに許可する通常印刷設定だけを選び、既存の別設定の扱いを変えない。
+fn newly_supported_print_settings<'a>(
+    budget: &DecodeBudget,
+    resolver: &mut ResourceResolver<'_, 'a>,
+    state: &'a [u8],
+) -> Option<bool> {
+    let mut found = false;
+    for (key, value) in metadata::entries(state)? {
+        if budget.is_stopped() {
+            return None;
+        }
+        if ["BG2", "UCR2", "SM"]
+            .iter()
+            .any(|name| resource_name_order(key, name).is_eq())
+        {
+            found = true;
+        } else if resource_name_order(key, "SA").is_eq() {
+            let (value, _) = resolver.resolve(value)?;
+            found |= keyword(value)? == b"false";
+        }
+    }
+    Some(found)
+}
+
+/// Device色の既定置換・重複Resourceを未確認へ戻し、通常設定から色変換を推測しない。
+fn unmodified_device_spaces<'a>(
+    budget: &DecodeBudget,
+    resolver: &mut ResourceResolver<'_, 'a>,
+    resources: &'a [u8],
+) -> Option<bool> {
+    if !metadata::dictionary_entries_complete(resources) {
+        return None;
+    }
+    let mut spaces = None;
+    let mut states = false;
+    for (key, value) in metadata::entries(resources)? {
+        if budget.is_stopped() {
+            return None;
+        }
+        if resource_name_order(key, "ColorSpace").is_eq() && spaces.replace(value).is_some() {
+            return None;
+        }
+        if resource_name_order(key, "ExtGState").is_eq() {
+            if states {
+                return None;
+            }
+            states = true;
+        }
+    }
+    let Some(raw) = spaces else {
+        return Some(true);
+    };
+    let (spaces, _) = resolver.resolve(raw)?;
+    if !metadata::dictionary_entries_complete(spaces) {
+        return None;
+    }
+    for (key, _) in metadata::entries(spaces)? {
+        if budget.is_stopped() {
+            return None;
+        }
+        if ["DefaultGray", "DefaultRGB", "DefaultCMYK"]
+            .iter()
+            .any(|name| resource_name_order(key, name).is_eq())
+        {
+            return Some(false);
+        }
+    }
+    Some(true)
 }
 
 /// 通常合成の非stroke alphaを読み、未知項目・重複・壊れた辞書を拒否する。
@@ -85,7 +160,8 @@ fn parameters<'a>(
         return None;
     }
     let keys = [
-        "Type", "OPM", "AIS", "BM", "CA", "OP", "SA", "SMask", "ca", "op", "TK",
+        "Type", "OPM", "AIS", "BM", "CA", "OP", "SA", "SMask", "ca", "op", "TK", "BG2", "UCR2",
+        "SM",
     ];
     let mut seen = 0u16;
     let mut opacity = None;
@@ -117,10 +193,15 @@ fn parameters<'a>(
                 opacity = Some(alpha(keyword(value)?)?);
                 true
             }
-            6 => keyword(value)? == b"true",
+            // SAはpathのstroke調整であり、画像sampleやstencilの塗りを変更しない。
+            6 => matches!(keyword(value)?, b"true" | b"false"),
             7 => metadata::is_name(value, b"None"),
             // TKはtext object内のglyph重なりだけを制御し、画像へは影響しない。
             10 => matches!(keyword(value)?, b"true" | b"false"),
+            // 開始時の既定関数だけを許可し、任意の黒生成・下色除去関数は推測しない。
+            11 | 12 => metadata::is_name(value, b"Default"),
+            // SMはsmooth shadingの許容誤差であり、画像のsampleには適用しない。
+            13 => alpha(keyword(value)?).is_some(),
             _ => false,
         };
         if !valid {
