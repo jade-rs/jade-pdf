@@ -31,6 +31,7 @@ mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
 use prepared_docx::PreparedDocx;
+mod adjacent_source_tables;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
@@ -1051,6 +1052,15 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         });
     }
     blocks.sort_by(compare_structured_blocks);
+    let adjacent_tables = adjacent_source_tables::select(
+        &blocks,
+        parsed
+            .pages
+            .iter()
+            .find(|source| source.page_number == page.page),
+        text_column_layout.is_some(),
+        &parsed.graphics,
+    );
     let block_count = blocks.len();
     if block_count == 0 {
         return Ok(container.add_structured_paragraph(page_end::empty_page(section_refs.page_end)));
@@ -1198,19 +1208,36 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             }
             StructuredBlock::Table { table, .. } => {
                 previous_line = None;
-                previous_nonparagraph_bottom_y = Some(table.bounds.y0.min(table.bounds.y1));
+                let placement = adjacent_tables[block_index];
+                previous_nonparagraph_bottom_y = Some(
+                    placement
+                        .map(|p| p.bottom)
+                        .unwrap_or(table.bounds.y0.min(table.bounds.y1)),
+                );
                 table
                     .table
                     .validate()
                     .map_err(ConvertError::InvalidOcrTable)?;
-                container = container
-                    .add_structured_table(docx_table_from_structured_table(&table, origin_x));
+                let origin = if placement.is_some() {
+                    table.bounds.x0
+                } else {
+                    origin_x
+                };
+                let output = docx_table_from_structured_table(&table, origin);
+                let output = match placement {
+                    Some(p) => p.table(output),
+                    None => output,
+                };
+                container = container.add_structured_table(output);
+                if let Some(reservation) = placement.and_then(|p| p.reservation()) {
+                    container = container.add_structured_paragraph(reservation);
+                }
                 if let Some(boundary) =
                     page_end::after_table(section_refs.page_end, block_index + 1 == block_count)
                 {
                     container = container.add_structured_paragraph(boundary);
                 }
-                if gap_after_block[block_index] {
+                if gap_after_block[block_index] && placement.is_none_or(|p| p.reserve.is_some()) {
                     container = container.add_structured_paragraph(table_gap_paragraph());
                 }
             }
