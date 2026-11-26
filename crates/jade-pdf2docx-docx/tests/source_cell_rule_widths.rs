@@ -33,6 +33,15 @@ fn cells(prefix: &str, font: &str) -> Vec<String> {
 
 /// 同じ製品APIで、制御した原本のWordセルを読む。
 fn cell_xml(source: &[u8]) -> Vec<String> {
+    document_xml(source)
+        .split("<w:tc>")
+        .skip(1)
+        .map(|s| s.split("</w:tc>").next().unwrap().to_owned())
+        .collect()
+}
+
+/// 行高と罫線を同じ製品本文XMLで照合する。
+fn document_xml(source: &[u8]) -> String {
     let bytes =
         convert_minimum_pdf_bytes_to_docx_bytes("owned-source-rule-widths.pdf", source).unwrap();
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
@@ -41,10 +50,19 @@ fn cell_xml(source: &[u8]) -> Vec<String> {
         .unwrap()
         .read_to_string(&mut xml)
         .unwrap();
-    xml.split("<w:tc>")
-        .skip(1)
-        .map(|s| s.split("</w:tc>").next().unwrap().to_owned())
-        .collect()
+    xml
+}
+
+/// 内辺のink中心が0.5pt動く分を累積境界へ戻し、外枠の全高を変えない。
+#[test]
+fn row_pitch_preserves_centers_when_inner_border_ink_changes() {
+    let xml = document_xml(&source("", "Helvetica"));
+    assert_eq!(
+        xml.matches("<w:trHeight w:val=\"600\" w:hRule=\"exact\"")
+            .count(),
+        2,
+        "{xml}"
+    );
 }
 
 /// 整数gridの1pt許容が繋いでも、実在する辺の途中の空隙を細い実線の根拠にしない。
