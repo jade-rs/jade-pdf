@@ -260,8 +260,13 @@ fn cells_impl(
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
                             if single_physical_line && !closed_boxes {
-                                source_tabs =
-                                    source_cell_tab_stops::positions(&row, &line, left, right);
+                                source_tabs = source_cell_tab_stops::positions(
+                                    &row,
+                                    &line,
+                                    left,
+                                    right,
+                                    &parsed.embedded_fonts,
+                                );
                             }
                             Some(line)
                         })
