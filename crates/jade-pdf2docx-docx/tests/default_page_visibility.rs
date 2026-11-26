@@ -1,6 +1,7 @@
 //! 原本の表示枠の外にある要素を、通常変換でページ内へ再配置しない。
 use jade_pdf2docx_docx::convert_minimum_pdf_bytes_to_docx_bytes;
 use jade_pdf2docx_parser::parse_pdf_bytes;
+use proptest::prelude::*;
 use std::io::{Cursor, Read};
 #[allow(dead_code)]
 #[path = "../../jade-pdf2docx-parser/tests/support/source_image_pdf.rs"]
@@ -18,6 +19,16 @@ fn source_with_visible(
     image_x: Option<i32>,
     visible: bool,
 ) -> Vec<u8> {
+    source_with_geometry(rotation, outside_text, image_x.map(|x| (x, 100)), visible)
+}
+
+/// 上下左右に配置した画像の交差を、同じ非正方形MediaBoxで検査する。
+fn source_with_geometry(
+    rotation: i32,
+    outside_text: bool,
+    image: Option<(i32, i32)>,
+    visible: bool,
+) -> Vec<u8> {
     let mut content = if visible {
         "BT /F1 12 Tf 20 30 Td (Visible) Tj ET ".to_string()
     } else {
@@ -26,8 +37,8 @@ fn source_with_visible(
     if outside_text {
         content.push_str("BT /F1 12 Tf 400 30 Td (Outside) Tj ET ");
     }
-    if let Some(x) = image_x {
-        content.push_str(&format!("q 20 0 0 10 {x} 100 cm /Im Do Q "));
+    if let Some((x, y)) = image {
+        content.push_str(&format!("q 20 0 0 10 {x} {y} cm /Im Do Q "));
     }
     fixture::rgb_with_page_geometry(200, 300, rotation, content.as_bytes())
 }
@@ -36,6 +47,11 @@ fn source_with_visible(
 fn document(input: &[u8]) -> String {
     let bytes = convert_minimum_pdf_bytes_to_docx_bytes("owned-default-page-visibility.pdf", input)
         .unwrap();
+    xml(bytes)
+}
+
+/// fileとbytesが生成したWord本文を、同じZIP読取で検査する。
+fn xml(bytes: Vec<u8>) -> String {
     let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
     let mut xml = String::new();
     zip.by_name("word/document.xml")
@@ -89,5 +105,47 @@ fn entirely_off_page_document_does_not_fall_back_to_hidden_preview() {
         let xml = document(&source_with_visible(rotation, true, Some(300), false));
         assert!(!xml.contains("Outside"), "rotation={rotation}");
         assert!(!xml.contains("<w:drawing>"), "rotation={rotation}");
+    }
+}
+
+/// native file経路でも表示外を再配置せず、入力byteと表示内の対照を維持する。
+#[cfg(not(target_arch = "wasm32"))]
+#[test]
+fn native_file_default_keeps_only_the_displayed_source_elements() {
+    use jade_pdf2docx_docx::{MinimumPdfToDocxRequest, convert_minimum_pdf_to_docx};
+    for rotation in [0, 90, 180, 270] {
+        for outside in [false, true] {
+            let dir = tempfile::tempdir().unwrap();
+            let input = source(rotation, outside, Some(if outside { 300 } else { 50 }));
+            let input_path = dir.path().join("owned-original.pdf");
+            let output_path = dir.path().join("converted.docx");
+            std::fs::write(&input_path, &input).unwrap();
+            convert_minimum_pdf_to_docx(&MinimumPdfToDocxRequest {
+                input_pdf_path: input_path.clone(),
+                output_docx_path: output_path.clone(),
+                ocr_text_lines: None,
+                ocr_table: None,
+                clean_output: true,
+            })
+            .unwrap();
+            assert_eq!(std::fs::read(input_path).unwrap(), input);
+            let xml = xml(std::fs::read(output_path).unwrap());
+            assert!(!xml.contains("Outside"));
+            assert_eq!(xml.matches("<w:drawing>").count(), usize::from(!outside));
+            assert_eq!(xml.matches("Visible").count(), 1);
+        }
+    }
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// 直角回転と上下左右の配置によらず、表示枠へ一部でも交差する画像だけを残す。
+    #[test]
+    fn default_image_retention_follows_source_intersection(turn in 0i32..4,x in -60i32..320,y in -60i32..380) {
+        let expected=x<200&&x+20>0&&y<300&&y+10>0;
+        let xml=document(&source_with_geometry(turn*90,true,Some((x,y)),true));
+        prop_assert_eq!(xml.matches("<w:drawing>").count(),usize::from(expected));
+        prop_assert_eq!(xml.matches("Visible").count(),1);
+        prop_assert!(!xml.contains("Outside"));
     }
 }

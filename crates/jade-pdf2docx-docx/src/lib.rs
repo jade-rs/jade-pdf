@@ -31,6 +31,7 @@ mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
 mod source_cell_background;
+mod visible_source_content;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;
 mod embedded_face;
@@ -376,6 +377,8 @@ fn convert_pdf_file_with_check(
     check(Stage::Start)?;
     output::validate_distinct_paths(&request.input_pdf_path, &request.output_docx_path)?;
     let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
+    let source_content_removed =
+        request.clean_output && visible_source_content::retain(&mut parsed);
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
 
@@ -401,7 +404,7 @@ fn convert_pdf_file_with_check(
     check(Stage::Layout)?;
     let docx = if request.clean_output
         && request.ocr_text_lines.is_none()
-        && has_structured_pdf_content(&parsed, &positioned_tables)
+        && (source_content_removed || has_structured_pdf_content(&parsed, &positioned_tables))
     {
         build_structured_docx_from_owned_images(&mut parsed, &inferred_table, &positioned_tables)?
     } else if request.clean_output && has_body_content(&request.ocr_text_lines, &inferred_table) {
@@ -490,6 +493,7 @@ fn convert_pdf_bytes_with_check(
     use conversion_control::Stage;
     check(Stage::Start)?;
     let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    let source_content_removed = visible_source_content::retain(&mut parsed);
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
     let positioned_tables = infer_positioned_tables_from_pdf_graphics(&parsed);
@@ -503,7 +507,9 @@ fn convert_pdf_bytes_with_check(
         clean_output: true,
     };
     check(Stage::Layout)?;
-    let docx = if has_structured_pdf_content(&request.parsed, &request.positioned_tables) {
+    let docx = if source_content_removed
+        || has_structured_pdf_content(&request.parsed, &request.positioned_tables)
+    {
         build_structured_docx_from_owned_images(
             &mut request.parsed,
             &request.ocr_table,
