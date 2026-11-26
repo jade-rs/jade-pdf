@@ -1,13 +1,32 @@
 //! 軸平行線分を追加heap確保なしで整列・結合する。
 use super::{ParsedGraphicElement, normalized_bounds};
 
+/// 比較キー内の正負ゼロだけを揃え、保存する原本座標や線幅は変更しない。
+fn zero_key(value: f32) -> f32 {
+    if value == 0. { 0. } else { value }
+}
+
 /// 向き・ページ・固定座標・線幅・区間端を返し、別の太さの線分を独立に結合する。
 fn key(line: &ParsedGraphicElement) -> (bool, usize, f32, f32, f32, f32) {
     let b = line.bounds;
     if b.y0 == b.y1 {
-        (false, line.page, b.y0, line.stroke_width, b.x0, b.x1)
+        (
+            false,
+            line.page,
+            zero_key(b.y0),
+            zero_key(line.stroke_width),
+            b.x0,
+            b.x1,
+        )
     } else {
-        (true, line.page, b.x0, line.stroke_width, b.y0, b.y1)
+        (
+            true,
+            line.page,
+            zero_key(b.x0),
+            zero_key(line.stroke_width),
+            b.y0,
+            b.y1,
+        )
     }
 }
 
