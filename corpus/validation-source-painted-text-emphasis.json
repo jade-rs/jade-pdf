@@ -1,0 +1,73 @@
+{
+  "time_utc": "2026-11-26T03:32:29.691079+00:00",
+  "head": "2ac2592d97d4a703756d17cbd06219d3d95d46d4",
+  "source_tree": "c6e238c4aa0cf33195ccb71ea4f2ee5dbddfec70",
+  "Rust_files": 786,
+  "full_default": {
+    "passed": 2639,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 156,
+    "log_sha256": "5e9dcc3908c41bbbc715c6b739532f6230aee670a105352999fcdef5be94a2c5"
+  },
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "fmt_passed": true,
+  "TDD_Reds": [
+    {
+      "label": "painted-text-emphasis-public-Red",
+      "head": "35acd6a3daca7a019770913a6392c233b39b684e",
+      "log_sha256": "65abba91609511ac5a689d2d7a61ebf98b18e1a879104617859bec5d7c4cb83f"
+    },
+    {
+      "label": "painted-emphasis-unknown-font-public-Red",
+      "head": "d66e8baa805db524818af241831c65a40d7383cb",
+      "log_sha256": "da6d7676f3dd52c619c307bc1c07b685d4311e631fb9b031a0bf49deae03bbb2"
+    }
+  ],
+  "owned_public_tests": 11,
+  "uniform_scale_PBT_cases": 24,
+  "native_outcomes": 194,
+  "native_success": 169,
+  "native_rejected": 25,
+  "browser_outcomes": 404,
+  "browser_each_success": 172,
+  "browser_each_rejected": 30,
+  "total_outcomes": 598,
+  "all598_statuses_exact_expected": true,
+  "changed_payloads": 6,
+  "all592_other_payloads_RAW_exact_parent": true,
+  "changed_only_known_labour_and_CPI_defaults": true,
+  "cross_engine202_payloads101_inspections_exact": true,
+  "all_changed_final_outputs_bound_to_reviewed_prototype_pages": true,
+  "parent_character_order_other_run_styles_nontext_and_nonrun_layout_exact_except_bold": true,
+  "native_binary_sha256": "ec94490396f8f17be0b332f6644292c268c5aee6f36d562eb88cd8a2576e20e7",
+  "raw_release_WASM_sha256": "5c4d3233b44587f4011715fb7d21a72c3b68aafb257355ce37465b9184c8de9e",
+  "browser_generated_WASM_sha256": "2b9fde80ad31310844627ac596dfec2a06cda8cd3ef340e1411f54074e5d7473",
+  "source_and_gold_manifest_bindings": "/Users/bokuweb/.codex/worktrees/pdf-source-painted-text-emphasis/jade-pdf/corpus/wasm-runtime/source-painted-text-emphasis-qualification/parent-original-gold-binding-before-qualified-runtime.json",
+  "parent_original_gold_manifest_count": 74,
+  "parent_original_gold_file_checks": 50796,
+  "all_original_golds_unchanged": true,
+  "labour_original57_initial20pass37unmet_frozen": true,
+  "labour_known_followup_each32pass25unmet_NOT_unseen": true,
+  "labour_audit": "/Users/bokuweb/.codex/worktrees/pdf-source-painted-text-emphasis/jade-pdf/corpus/wasm-runtime/source-painted-text-emphasis-qualification/known-original57-followup-asof-2ac2592/receipt.json",
+  "labour_audit_sha256": "03c5542d7be510daa605b4d3fcba9ef68b1e21776fb5c6dd349858cd6c12fadc",
+  "labour_source2_to_Word4pages_still_fails": true,
+  "CPI_original107_initial14pass93unmet_frozen": true,
+  "CPI_known_followup_each26pass81unmet_NOT_unseen": true,
+  "CPI_audit": "/Users/bokuweb/.codex/worktrees/pdf-source-painted-text-emphasis/jade-pdf/corpus/wasm-runtime/source-painted-text-emphasis-qualification/known-original107-followup-asof-2ac2592/receipt.json",
+  "CPI_audit_sha256": "9ca3f6cdfab9b07777b3c82eb6de76d231ff5b428dcc96fc30c9ae3b54c1d522",
+  "CPI_source12_to_Word16pages_still_fails": true,
+  "kanpo_design_independently_implemented_no_custom_licensed_code_or_new_dependencies": true,
+  "component_qualified": true,
+  "component_scope": "Record verified same-Device-color opaque fill-and-stroke2 width independently from declared font weight for confirmed non-Type3 top-level text under uniform orthogonal CTM. Map only 1–4 percent of em to Word bold as an approximation. Unknown font/color/effects, Forms, Type3, clipping and other modes retain legacy styling.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Labour25of57 unmet/unverified: physical pages, graph, font faces, fills, logo, spurious tables and clipping.",
+    "CPI81of107 unmet/unverified: physical pages, source tables/headers, graph, font faces and aggregate appearance.",
+    "Inherited NAOJ, Census, SF94 and three-column prose limitations remain. This is a known-document follow-up, not an unseen accuracy rate."
+  ],
+  "qualification_receipt_sha256": "379e91acb167bbddfe575278ca7874f8a1313321e3ded97596aa2067decb2f1b",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-source-painted-text-emphasis/jade-pdf/corpus/wasm-runtime/source-painted-text-emphasis-qualification"
+}
