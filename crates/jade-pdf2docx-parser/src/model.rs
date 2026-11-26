@@ -115,7 +115,7 @@ pub struct ParsedImageElement {
     pub height_px: u32,
     /// DOCX で floating picture として配置するか。
     pub floating: bool,
-    /// CTM から推定した時計回り回転角度。
+    /// CTM由来の回転角度。検証済みpageとの厳密な相殺を確認した場合は0。
     pub rotation_degrees: u16,
 }
 

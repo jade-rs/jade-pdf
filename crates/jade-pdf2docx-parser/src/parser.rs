@@ -160,6 +160,8 @@ mod image_smask_tests;
 
 #[path = "image_draws.rs"]
 pub(crate) mod image_draws;
+#[path = "image_page_rotation.rs"]
+mod image_page_rotation;
 #[path = "image_pixels.rs"]
 mod image_pixels;
 #[path = "image_png.rs"]
@@ -1569,7 +1571,7 @@ impl ImageStreamEntry {
                 .flatten()
                 .or_else(|| image_png::copy(decode_budget, source))?
         };
-        Some(ParsedImageElement {
+        let mut image = ParsedImageElement {
             page,
             bounds,
             png_bytes,
@@ -1581,7 +1583,9 @@ impl ImageStreamEntry {
             } else {
                 rotation_degrees
             },
-        })
+        };
+        image_page_rotation::cancel(decode_budget, placement, &mut image);
+        Some(image)
     }
 }
 

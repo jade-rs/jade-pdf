@@ -14,6 +14,12 @@ the existing display-pixel sizing. This change does not
 solve rotated-image transforms, clipping, or complete page fidelity. The
 separate rendered-PNG API continues to honor its caller-provided pixel sizes.
 
+The [cancelled image rotation follow-up](source_cancelled_image_rotation.md)
+recognizes a narrow exception: a verified cardinal page rotation exactly
+cancels the original image CTM, with the whole image inside the verified page.
+Its resulting upright image uses normalized display dimensions and the rotated
+page's display height. Other rotated images retain the fallback described here.
+
 In particular, existing viewport normalization can clamp an image's bounds to
 CropBox without cropping the PNG payload or changing its earlier display-pixel
 estimate. Such mismatched bounds must not resize the full payload to the
