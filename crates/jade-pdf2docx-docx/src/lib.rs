@@ -2128,6 +2128,7 @@ fn structured_text_runs_from_row(
             text: value,
             style: StructuredTextStyle {
                 font_weight: text.font_weight,
+                fill_stroke_width: text.fill_stroke_width,
                 font_size: text.font_size,
                 font_name: text.font_name.clone(),
                 font_embedded: false,
@@ -2214,6 +2215,15 @@ fn docx_run_from_structured_run(structured_run: &StructuredTextRun) -> Run {
         && is_rgb_hex_color(color)
     {
         run = run.color(color);
+    }
+    if structured_run.style.fill_stroke_width.is_some_and(|width| {
+        let size = structured_run.style.font_size;
+        width.is_finite()
+            && size.is_finite()
+            && size > 0.
+            && (0.01..=0.04).contains(&(width / size))
+    }) {
+        run = run.bold();
     }
     if structured_run.style.underlined {
         run = run.underline("single");
@@ -2807,6 +2817,8 @@ struct StructuredTextRun {
 struct StructuredTextStyle {
     /// 明示されたsource FontDescriptorのweight。未確認はNone。
     font_weight: Option<u16>,
+    /// 原本の同色fill-and-strokeを確認した実効線幅。通常weightとは独立する。
+    fill_stroke_width: Option<f32>,
     /// font size（pt）。
     font_size: f32,
     /// PDF BaseFont 名。
@@ -2831,6 +2843,7 @@ impl Default for StructuredTextStyle {
     fn default() -> Self {
         Self {
             font_weight: None,
+            fill_stroke_width: None,
             font_size: 10.0,
             font_name: None,
             font_embedded: false,

@@ -3735,6 +3735,7 @@ fn text_element(x: f32, y: f32, value: &str) -> ParsedTextElement {
 
 fn text_element_on_page(page: usize, x: f32, y: f32, value: &str) -> ParsedTextElement {
     ParsedTextElement {
+        fill_stroke_width: None,
         font_weight: None,
         baseline_y: None,
         page,

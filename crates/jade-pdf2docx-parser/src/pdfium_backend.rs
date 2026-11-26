@@ -573,6 +573,7 @@ mod tests {
             }],
             graphics: Vec::new(),
             text_elements: vec![ParsedTextElement {
+                fill_stroke_width: None,
                 font_weight: None,
                 baseline_y: None,
                 page: 3,
@@ -623,6 +624,7 @@ mod tests {
     /// テスト用の座標付き文字要素を作る。
     fn text_element(text: &str) -> ParsedTextElement {
         ParsedTextElement {
+            fill_stroke_width: None,
             font_weight: None,
             baseline_y: None,
             page: 0,

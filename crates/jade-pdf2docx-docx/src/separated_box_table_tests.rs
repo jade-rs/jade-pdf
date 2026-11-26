@@ -69,6 +69,7 @@ fn boxed_source(
                 )
             };
             parsed.text_elements.push(ParsedTextElement {
+                fill_stroke_width: None,
                 font_weight: None,
                 page: 0,
                 text,
@@ -85,6 +86,7 @@ fn boxed_source(
             });
         }
         parsed.text_elements.push(ParsedTextElement {
+            fill_stroke_width: None,
             font_weight: None,
             page: 0,
             text: (row + 3).to_string(),

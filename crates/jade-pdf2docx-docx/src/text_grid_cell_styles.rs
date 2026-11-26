@@ -151,6 +151,7 @@ mod tests {
                 .into_iter()
                 .enumerate()
                 .map(|(i, text)| ParsedTextElement {
+                    fill_stroke_width: None,
                     page: 0,
                     text: text.into(),
                     font_size: 10.,

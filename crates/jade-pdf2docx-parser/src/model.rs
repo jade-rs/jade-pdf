@@ -79,6 +79,8 @@ pub struct ParsedTextElement {
     pub font_size: f32,
     /// FontDescriptorの明示weight（1..=1000）。nativeでsourceと結び付けられない場合など未確認はNone。
     pub font_weight: Option<u16>,
+    /// 同色の不透明なfill-and-stroke描画を確認した実効線幅（font_sizeと同じ単位）。FontDescriptorのweightとは独立し、未確認ではNone。
+    pub fill_stroke_width: Option<f32>,
     /// PDF font resource から解決した BaseFont 名。
     pub font_name: Option<String>,
     /// PDF fill color から解決した RGB hex 色（例: `FF0000`）。

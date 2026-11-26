@@ -18,6 +18,7 @@ fn budget(capacity: u64) -> DecodeBudget {
 /// 文字の存在するページを文書へ追加する。
 fn add_text(parsed: &mut ParsedDocument) {
     parsed.text_elements.push(crate::ParsedTextElement {
+        fill_stroke_width: None,
         font_weight: None,
         baseline_y: None,
         page: 0,

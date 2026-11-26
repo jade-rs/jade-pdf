@@ -14,6 +14,7 @@ fn formula_source() -> ParsedDocument {
     ]
     .into_iter()
     .map(|(text, left, right, baseline, size)| ParsedTextElement {
+        fill_stroke_width: None,
         font_weight: None,
         baseline_y: Some(baseline),
         page: 0,

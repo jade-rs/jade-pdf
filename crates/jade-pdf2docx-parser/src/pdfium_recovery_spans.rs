@@ -57,6 +57,7 @@ pub(super) fn join(
         && size == next.font_size
         && previous.page == next.page
         && previous.font_weight == next.font_weight
+        && previous.fill_stroke_width == next.fill_stroke_width
         && previous.font_name == next.font_name
         && previous.fill_color == next.fill_color
         && previous.baseline_y.is_some_and(|v| v.is_finite())
@@ -85,6 +86,8 @@ struct Signature<'a> {
     style: (usize, u32, Option<&'a str>, Option<&'a str>, Option<u32>),
     /// 明示されたdescriptor値を、未確認や別の太さと区別する。
     weight: Option<u16>,
+    /// sourceの塗りと輪郭線の重ね描きも、別のstyleと区別する。
+    fill_stroke_width: Option<u32>,
     /// 文字loose boundsではなく、元矩形に対応するobject幾何。
     bounds: [u32; 4],
 }
@@ -101,6 +104,7 @@ fn signature(text: &ParsedTextElement, bounds: [f32; 4]) -> Signature<'_> {
             text.baseline_y.map(f32::to_bits),
         ),
         weight: text.font_weight,
+        fill_stroke_width: text.fill_stroke_width.map(f32::to_bits),
         bounds: bounds.map(f32::to_bits),
     }
 }
