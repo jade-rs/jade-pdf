@@ -89,3 +89,54 @@ pub(super) fn paragraph(runs: &[StructuredTextRun], positions: &[Option<usize>])
     }
     paragraph
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 名称とface属性だけを持ち、実際の字形幅が確認できないセル行を作る。
+    fn unmeasured() -> (Vec<ParsedTextElement>, StructuredTextLine) {
+        let texts = [("A", 10.), ("B", 100.)]
+            .map(|(text, x)| ParsedTextElement {
+                source_background: None,
+                fill_stroke_width: None,
+                font_weight: None,
+                baseline_y: Some(50.),
+                page: 0,
+                bounds: ParsedBounds {
+                    x0: x,
+                    x1: x + 10.,
+                    y0: 50.,
+                    y1: 60.,
+                },
+                font_size: 10.,
+                font_name: Some("Unmeasured".into()),
+                fill_color: None,
+                text: text.into(),
+            })
+            .to_vec();
+        let row = texts.iter().collect::<Vec<_>>();
+        let mut runs = structured_text_runs_from_row(&row, &[]);
+        for run in &mut runs {
+            run.style.font_embedded = true;
+            run.style.embedded_face = Some(embedded_face::Face::default());
+        }
+        let line = StructuredTextLine {
+            top_y: 60.,
+            left_x: 10.,
+            right_x: 110.,
+            alignment: ParagraphAlignment::Left,
+            text: runs.iter().map(|run| run.text.as_str()).collect(),
+            runs,
+            split_from_row: false,
+        };
+        (texts, line)
+    }
+
+    /// 埋め込みslot名だけを信用せず、実際のadvanceを読めないfontでは旧配置を残す。
+    #[test]
+    fn unmeasured_embedded_font_does_not_claim_tab_clearance() {
+        let (texts, line) = unmeasured();
+        assert!(positions(&texts.iter().collect::<Vec<_>>(), &line, 0., 200.).is_none());
+    }
+}
