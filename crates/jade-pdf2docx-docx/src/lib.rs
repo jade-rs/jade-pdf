@@ -1074,7 +1074,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             .iter()
             .find(|source| source.page_number == page.page),
         text_column_layout.is_some(),
-        &parsed.graphics,
+        &table_rule_topology::page(parsed, page.page),
     );
     let block_count = blocks.len();
     if block_count == 0 {
@@ -1536,10 +1536,8 @@ fn structured_page_left_x(
                 .map(|image| image.bounds.x0),
         )
         .chain(
-            parsed
-                .graphics
+            table_rule_topology::page(parsed, page.page)
                 .iter()
-                .filter(|graphic| graphic.page == page.page)
                 .map(|graphic| graphic.bounds.x0.min(graphic.bounds.x1)),
         )
         .filter(|value| value.is_finite() && *value >= 0.0)
@@ -1671,10 +1669,8 @@ fn parsed_page_display_size_points(page: &ParsedPage) -> (f32, f32) {
 
 /// 上端の細い罫線が raster bbox に含まれる分を DOCX 上余白から差し引く。
 fn top_margin_graphic_stroke_adjustment(parsed: &ParsedDocument, page: usize) -> f32 {
-    parsed
-        .graphics
+    table_rule_topology::page(parsed, page)
         .iter()
-        .filter(|graphic| graphic.page == page)
         .map(|graphic| graphic.stroke_width)
         .filter(|width| width.is_finite() && *width > 0.0 && *width < 0.75)
         .fold(0.0f32, f32::max)
@@ -1819,12 +1815,7 @@ fn text_lines_by_page_from_pdf_text_elements(
                     .then(a.bounds.x0.total_cmp(&b.bounds.x0))
             });
             let page_width = page_width_for_layout(parsed, page, &texts);
-            let mut page_graphics = parsed
-                .graphics
-                .iter()
-                .filter(|graphic| graphic.page == page)
-                .cloned()
-                .collect::<Vec<_>>();
+            let mut page_graphics = table_rule_topology::page(parsed, page);
             body_table_rules::remove_outer_frames(&mut page_graphics, positioned_tables);
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
@@ -5419,7 +5410,7 @@ fn infer_positioned_table_from_text_grid_page(
         .iter()
         .filter(|text| text.page == page && !text.text.trim().is_empty())
         .collect::<Vec<_>>();
-    let has_page_graphics = parsed.graphics.iter().any(|graphic| graphic.page == page);
+    let has_page_graphics = !table_rule_topology::page(parsed, page).is_empty();
     let min_texts = if has_page_graphics { 4 } else { 6 };
     let min_rows = if has_page_graphics { 2 } else { 3 };
     if page_texts.len() < min_texts {

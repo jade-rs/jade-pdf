@@ -76,7 +76,7 @@ fn recover(
                     texts: row[start..end].to_vec(),
                     split_from_row: false,
                 },
-                &parsed.graphics,
+                &table_rule_topology::page(parsed, page.page),
                 width,
             )?;
             let Some(number) = number(&line, width, height) else {
@@ -177,10 +177,8 @@ fn style(line: &StructuredTextLine) -> Vec<Vec<u8>> {
 /// 背景や画像と重なる文字を単独footerへ移し、原本の可視性を変える推測を避ける。
 fn overlaps_decoration(parsed: &ParsedDocument, page: usize, line: &StructuredTextLine) -> bool {
     let bottom = line.top_y - structured_line_max_font_size(line);
-    parsed
-        .graphics
+    table_rule_topology::page(parsed, page)
         .iter()
-        .filter(|g| g.page == page)
         .map(|g| g.bounds)
         .chain(
             parsed

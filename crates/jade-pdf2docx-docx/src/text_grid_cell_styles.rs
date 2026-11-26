@@ -59,13 +59,14 @@ pub(super) fn source_cell(
     }) {
         return None;
     }
-    let width = page_width_for_layout(parsed, texts.first()?.page, &texts);
+    let page = texts.first()?.page;
+    let width = page_width_for_layout(parsed, page, &texts);
     let line = structured_text_line_from_segment(
         &TextRowSegment {
             texts,
             split_from_row: false,
         },
-        &parsed.graphics,
+        &table_rule_topology::page(parsed, page),
         width,
     )?;
     let before_twips = u32::try_from(pdf_points_to_twips((row_top - line.top_y).max(0.0))?).ok()?;
@@ -105,7 +106,7 @@ pub(super) fn runs(
         parsed,
         texts.iter().copied(),
         expected,
-        &parsed.graphics,
+        &table_rule_topology::page(parsed, texts.first()?.page),
         &offsets,
     );
     (!runs.is_empty()).then_some(runs)

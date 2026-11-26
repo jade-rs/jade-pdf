@@ -119,11 +119,20 @@ fn cells_impl(
     geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    let page = texts
+        .iter()
+        .flatten()
+        .flatten()
+        .next()
+        .map(|text| text.page);
+    let legacy_graphics = page
+        .map(|page| table_rule_topology::page(parsed, page))
+        .unwrap_or_default();
     // 添字復元を許す呼出元は全graphicが閉じた枠と確認済みであり、枠の下辺は文字下線ではない。
     let styling_graphics = if closed_boxes {
         &[][..]
     } else {
-        parsed.graphics.as_slice()
+        legacy_graphics.as_slice()
     };
     // 一行・複数行・旧配置のいずれも、確認済みgridと同じ端点・高さの線を文字下線にしない。
     let text_graphics = styling_graphics
@@ -131,14 +140,7 @@ fn cells_impl(
         .filter(|graphic| !is_grid_border(graphic, xs, ys))
         .cloned()
         .collect::<Vec<_>>();
-    let page = texts
-        .iter()
-        .flatten()
-        .flatten()
-        .next()
-        .map(|text| text.page);
-    let edge_width = parsed
-        .graphics
+    let edge_width = legacy_graphics
         .iter()
         .filter(|g| {
             Some(g.page) == page
