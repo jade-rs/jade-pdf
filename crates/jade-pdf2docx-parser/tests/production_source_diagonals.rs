@@ -30,3 +30,21 @@ fn an_invalid_stroke_width_does_not_recover_the_previous_known_width() {
         "an unknown stroke width cannot prove a source diagonal"
     );
 }
+
+/// 不明なline cap・変換・座標や、miterが伸びる連結pathを単純な可視線と見なさない。
+#[test]
+fn unverified_caps_matrices_and_connected_paths_do_not_gain_a_diagonal() {
+    for content in [
+        "3 J 100 200 m 200 100 l S",
+        "NaN 0 0 1 0 0 cm 100 200 m 200 100 l S",
+        "100 200 m NaN 100 l 200 100 l S",
+        "100 200 m 200 100 l 210 150 l S",
+    ] {
+        assert!(
+            document(&[content], "<< >>", "")
+                .source_diagonals
+                .is_empty(),
+            "{content}"
+        );
+    }
+}
