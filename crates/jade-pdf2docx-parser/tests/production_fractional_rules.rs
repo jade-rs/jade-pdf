@@ -69,7 +69,7 @@ fn collinear_fragments_keep_source_extents_when_joined() {
         [g.bounds.x0, g.bounds.y0, g.bounds.x1, g.bounds.y1],
         [20.25, 30.75, 60.75, 30.75]
     );
-    assert_eq!(g.stroke_width,.5);
+    assert_eq!(g.stroke_width, 0.5);
 }
 
 proptest! {
