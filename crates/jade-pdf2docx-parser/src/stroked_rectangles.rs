@@ -12,7 +12,7 @@ use std::borrow::Cow;
 #[path = "rectangle_paint.rs"]
 mod paint;
 #[path = "rectangle_resources.rs"]
-mod resources;
+pub(super) mod resources;
 
 /// q/Qで復元する長方形の描画状態。path自体は退避しない。
 #[derive(Clone, Copy)]
@@ -26,7 +26,7 @@ struct State {
 }
 
 /// 描画では未完operandを文字抽出用の回復位置へ戻さず、偽命令の実行を止める。
-fn drawing_operand<'a>(
+pub(super) fn drawing_operand<'a>(
     lexer: &mut Lexer<'a>,
     token: Token<'a>,
     start: usize,
@@ -320,7 +320,7 @@ fn scan<'a>(
 }
 
 /// 一ページのContentsを、境界の字句を変えずに連続する本文へ組み立てる。
-fn joined<'a>(
+pub(super) fn joined<'a>(
     budget: &DecodeBudget,
     streams: &'a [(usize, Vec<u8>)],
     start: usize,

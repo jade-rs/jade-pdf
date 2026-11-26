@@ -13,7 +13,13 @@ struct State {
     matrix: [f32; 6],
     /// 現在の線幅。
     width: f32,
+    /// Device色で確認した非strokeの白。未知の色命令で解除する。
+    white_fill: bool,
 }
+
+/// q保存の全slotを検査するための実際の状態容量。
+#[cfg(test)]
+pub(super) const SAVED_STATE_BYTES: usize = size_of::<State>();
 
 impl Default for State {
     /// 恒等行列とPDFの既定線幅を返す。
@@ -21,6 +27,7 @@ impl Default for State {
         Self {
             matrix: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             width: 1.0,
+            white_fill: false,
         }
     }
 }
@@ -66,11 +73,23 @@ fn emit(
 }
 
 /// ページをまたぐ結果配列へ追記する。失敗時は呼び出し元が全結果を破棄する。
+#[cfg(test)]
 pub(super) fn append(
     budget: &DecodeBudget,
     page: usize,
     content: &[u8],
     output: &mut Vec<ParsedGraphicElement>,
+) -> Option<()> {
+    append_filtered(budget, page, content, output, |_| false)
+}
+
+/// 白の描画候補だけで所属ページの合成・色変換を遅延検証する。
+pub(super) fn append_filtered(
+    budget: &DecodeBudget,
+    page: usize,
+    content: &[u8],
+    output: &mut Vec<ParsedGraphicElement>,
+    mut confirmed_white: impl FnMut(usize) -> bool,
 ) -> Option<()> {
     if budget.is_stopped() {
         return None;
@@ -118,6 +137,13 @@ pub(super) fn append(
             continue;
         }
         let args = &operands[..count];
+        match word {
+            b"g" => state.white_fill = args.len() == 1 && args[0] >= 1.0,
+            b"rg" => state.white_fill = args.len() == 3 && args.iter().all(|v| *v >= 1.0),
+            b"k" => state.white_fill = args.len() == 4 && args.iter().all(|v| *v <= 0.0),
+            b"cs" | b"sc" | b"scn" => state.white_fill = false,
+            _ => {}
+        }
         match word {
             b"m" | b"l" if count >= 2 => {
                 let (x, y) = transform_point(state.matrix, args[count - 2], args[count - 1]);
@@ -184,11 +210,21 @@ pub(super) fn append(
             b"f" | b"f*" => {
                 for [x, y, w, h] in rectangles.drain(..) {
                     if !curved && let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
-                        emit(budget, output, page, bounds, width)?;
+                        if !(state.white_fill && confirmed_white(lexer.cursor)) {
+                            emit(budget, output, page, bounds, width)?;
+                        }
+                        if budget.is_stopped() {
+                            return None;
+                        }
                     }
                 }
                 if !curved && let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
-                    emit(budget, output, page, bounds, width)?;
+                    if !(state.white_fill && confirmed_white(lexer.cursor)) {
+                        emit(budget, output, page, bounds, width)?;
+                    }
+                    if budget.is_stopped() {
+                        return None;
+                    }
                 }
                 segments.clear();
                 point = None;

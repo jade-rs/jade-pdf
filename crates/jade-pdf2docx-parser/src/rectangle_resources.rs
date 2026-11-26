@@ -75,7 +75,7 @@ pub(super) fn resolve<'a>(
 }
 
 /// Device色が既定置換されていないことを確認し、未知の色変換から黒を推測しない。
-pub(super) fn native_device<'a>(
+pub(in crate::parser) fn native_device<'a>(
     resolver: &mut ResourceResolver<'_, 'a>,
     resources: Option<&'a [u8]>,
     components: Option<usize>,
@@ -101,7 +101,7 @@ pub(super) fn native_device<'a>(
 }
 
 /// 互換入力でも最寄りの非null Resourcesを親から解決し、循環と世代違いを拒否する。
-pub(super) fn inherited<'a>(
+pub(in crate::parser) fn inherited<'a>(
     budget: &DecodeBudget,
     resolver: &mut ResourceResolver<'_, 'a>,
     mut node: &'a [u8],
