@@ -8,7 +8,21 @@ mod fixture;
 
 /// CropBoxを省略した正式MediaBoxと、表示内本文・任意の表示外本文や画像を持つ所有原本。
 fn source(rotation: i32, outside_text: bool, image_x: Option<i32>) -> Vec<u8> {
-    let mut content = "BT /F1 12 Tf 20 30 Td (Visible) Tj ET ".to_string();
+    source_with_visible(rotation, outside_text, image_x, true)
+}
+
+/// 可視本文を持たない対照も同じ正式xrefで作る。
+fn source_with_visible(
+    rotation: i32,
+    outside_text: bool,
+    image_x: Option<i32>,
+    visible: bool,
+) -> Vec<u8> {
+    let mut content = if visible {
+        "BT /F1 12 Tf 20 30 Td (Visible) Tj ET ".to_string()
+    } else {
+        String::new()
+    };
     if outside_text {
         content.push_str("BT /F1 12 Tf 400 30 Td (Outside) Tj ET ");
     }
@@ -65,5 +79,15 @@ fn visible_image_and_text_remain_in_default_word() {
         let xml = document(&source(rotation, false, Some(50)));
         assert_eq!(xml.matches("<w:drawing>").count(), 1, "rotation={rotation}");
         assert_eq!(xml.matches("Visible").count(), 1);
+    }
+}
+
+/// 全要素が表示外でも、テキストプレビューの代替経路で本文へ復活させない。
+#[test]
+fn entirely_off_page_document_does_not_fall_back_to_hidden_preview() {
+    for rotation in [0, 90, 180, 270] {
+        let xml = document(&source_with_visible(rotation, true, Some(300), false));
+        assert!(!xml.contains("Outside"), "rotation={rotation}");
+        assert!(!xml.contains("<w:drawing>"), "rotation={rotation}");
     }
 }
