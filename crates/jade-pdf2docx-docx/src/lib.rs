@@ -59,6 +59,8 @@ mod roman_fallback;
 mod roman_fallback_tests;
 mod source_font_weight;
 #[cfg(test)]
+mod source_grid_selection_tests;
+#[cfg(test)]
 mod source_table_pagination_tests;
 #[cfg(test)]
 mod source_typography_tests;
