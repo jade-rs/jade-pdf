@@ -1,0 +1,19 @@
+{
+  "source_url": "https://www2.census.gov/programs-surveys/popest/technical-documentation/file-layouts/2020-2025/NST-EST2025-ALLDATA.pdf",
+  "source_sha256": "20b35f224039faf1f0a09a281b53ece071a31d3a963943046917d6ee5a81c7f2",
+  "source_bytes": 104772,
+  "credit": "U.S. Census Bureau, Population Division",
+  "rights_guidance": "https://resources.data.gov/open-licenses/",
+  "rights_status_inferred_US_government_work": true,
+  "rights_evidence_local": "/Users/bokuweb/.codex/worktrees/pdf-census-field-table-holdout/jade-pdf/corpus/wasm-runtime/census-field-table-holdout-qualification/new-Census-NST-EST2025-before-first-product/federal-open-licenses.html",
+  "all4_original_pages_reviewed_before_product": true,
+  "privacy_reviewed_before_product": true,
+  "only3_tracked_PDFs": true,
+  "gold": "/Users/bokuweb/.codex/worktrees/pdf-census-field-table-holdout/jade-pdf/corpus/census-field-table-prospective-gold.json",
+  "gold_sha256": "09fb7128297c94c246558f37ea70bc8ad18e492cf390e94280ec44528588aba0",
+  "gold_criteria_count": 130,
+  "original_manifest": "/Users/bokuweb/.codex/worktrees/pdf-census-field-table-holdout/jade-pdf/corpus/wasm-runtime/census-field-table-holdout-qualification/new-Census-NST-EST2025-before-first-product/source-evidence-and-gold-manifest-before-first-product.json",
+  "original_manifest_sha256": "13fb850e631990a2699bd2679e01ffc9593eb2ef813fcba3f87f0b9e5af39b1d",
+  "initial_unseen_before_first_product": true,
+  "production_ready": false
+}

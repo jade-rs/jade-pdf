@@ -32,6 +32,55 @@ pub(super) fn cell(
     Some(Cell { runs, before_twips })
 }
 
+/// 新しいコード説明表では原本の字間から本文を組み、同じrunと上端をセルへ渡す。
+pub(super) fn source_cell(
+    parsed: &ParsedDocument,
+    texts: Vec<&ParsedTextElement>,
+    row_top: f32,
+) -> Option<(String, Cell)> {
+    let start = texts.iter().position(|text| !text.text.trim().is_empty())?;
+    let end = texts
+        .iter()
+        .rposition(|text| !text.text.trim().is_empty())?
+        + 1;
+    let texts = texts[start..end].to_vec();
+    if texts.iter().any(|text| {
+        pdf_font_size_to_half_points(text.font_size).is_none()
+            || ![
+                text.bounds.x0,
+                text.bounds.x1,
+                text.bounds.y0,
+                text.bounds.y1,
+            ]
+            .iter()
+            .all(|value| value.is_finite())
+            || text.bounds.x1 < text.bounds.x0
+            || text.bounds.y1 < text.bounds.y0
+    }) {
+        return None;
+    }
+    let width = page_width_for_layout(parsed, texts.first()?.page, &texts);
+    let line = structured_text_line_from_segment(
+        &TextRowSegment {
+            texts,
+            split_from_row: false,
+        },
+        &parsed.graphics,
+        width,
+    )?;
+    let before_twips = u32::try_from(pdf_points_to_twips((row_top - line.top_y).max(0.0))?).ok()?;
+    let mut runs = line.runs;
+    for run in &mut runs {
+        run.style.font_embedded = run.style.font_name.as_deref().is_some_and(|name| {
+            parsed
+                .embedded_fonts
+                .iter()
+                .any(|font| font.font_name == name)
+        });
+    }
+    Some((line.text, Cell { runs, before_twips }))
+}
+
 /// 行内の原本上端までの空きを付けて照合済みセルを出力する。
 pub(super) fn cell_paragraph(cell: &Cell) -> Option<Paragraph> {
     paragraph(&cell.runs, cell.before_twips)
