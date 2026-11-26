@@ -280,10 +280,19 @@ pub(super) fn append(
     streams: &[(usize, Vec<u8>)],
     output: &mut Vec<ParsedSourceDiagonal>,
 ) -> Option<()> {
-    // lのない文書ではResource索引を追加しない。実際の字句・描画判定はscanが行う。
-    if !streams.iter().any(|(_, s)| s.contains(&b'l')) {
-        return Some(());
+    let mut index = 0;
+    let mut first = None;
+    while index < streams.len() {
+        let (page, content, end) = joined(budget, streams, index)?;
+        index = end;
+        if probe::has_candidate(budget, &content) {
+            first = Some((page, content));
+            break;
+        }
     }
+    let Some((page, content)) = first else {
+        return Some(());
+    };
     let objects = crate::object_index::build(budget, source)?;
     let mut resolver = ResourceResolver::new(&objects, budget);
     let page_resources = match budget.page_resources(source) {
@@ -297,18 +306,27 @@ pub(super) fn append(
             pages
         }
     };
-    let mut index = 0;
+    scan(
+        budget,
+        page,
+        &content,
+        page_resources.get(page).copied().flatten(),
+        &mut resolver,
+        output,
+    )?;
     while index < streams.len() {
         let (page, content, end) = joined(budget, streams, index)?;
         index = end;
-        scan(
-            budget,
-            page,
-            &content,
-            page_resources.get(page).copied().flatten(),
-            &mut resolver,
-            output,
-        )?;
+        if probe::has_candidate(budget, &content) {
+            scan(
+                budget,
+                page,
+                &content,
+                page_resources.get(page).copied().flatten(),
+                &mut resolver,
+                output,
+            )?;
+        }
     }
     Some(())
 }
@@ -317,3 +335,6 @@ pub(super) fn append(
 mod geometry;
 pub(super) use geometry::in_viewports;
 use geometry::{emit, grow, occlude, point, width};
+
+#[path = "source_diagonal_probe.rs"]
+mod probe;
