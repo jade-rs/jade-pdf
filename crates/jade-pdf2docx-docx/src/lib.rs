@@ -4621,6 +4621,8 @@ fn infer_positioned_table_from_graphics(
     let mut text_augmented_columns = false;
     if xs.len() >= 2
         && ys.len() >= 2
+        // 内側罫線が全行を分ける完成グリッドは、セル内の折返しアンカーで置き換えない。
+        && !(xs.len() > 2 && has_grid_lines(&page_graphics, &xs, &ys))
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
     {
         text_augmented_columns = augmented_xs != xs;
