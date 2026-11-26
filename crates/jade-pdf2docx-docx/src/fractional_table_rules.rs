@@ -2,6 +2,7 @@
 use super::*;
 
 /// 既存gridの各境界へ一意に対応する、上書きしていない原本罫線座標。
+#[derive(Debug, Clone, PartialEq)]
 pub(super) struct Grid {
     /// 左から右への原本縦罫線座標。
     pub(super) xs: Vec<f32>,

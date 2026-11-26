@@ -107,6 +107,12 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
 
 /// 各元行のtwip累積から順序付き境界を作り、表高との一致も確認する。
 fn row_edges(table: &PositionedTable) -> Option<Vec<f32>> {
+    if let Some(grid) = &table.source_rule_grid
+        && grid.ys.len() == table.row_heights_twips.len() + 1
+    {
+        // Wordの薄罫線補正を原本の空セルの高さへ加えない。
+        return Some(grid.ys.iter().copied().rev().collect());
+    }
     let mut ys = vec![table.bounds.y1];
     for h in &table.row_heights_twips {
         if !h.is_finite() || *h <= 0. {

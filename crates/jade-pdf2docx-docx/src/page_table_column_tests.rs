@@ -22,6 +22,7 @@ fn positioned_table(page: usize) -> PositionedTable {
         embedded_face: None,
         font_size: Some(11.),
         column_widths_twips: vec![2000; 2],
+        source_rule_grid: None,
         row_heights_twips: vec![600.; 2],
         table: OcrTable::new(
             (0..2)

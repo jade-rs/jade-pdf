@@ -3007,6 +3007,8 @@ struct PositionedTable {
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
+    /// 寸法・セル配置へ渡した原本境界。表示行へ分割した表では保持しない。
+    source_rule_grid: Option<fractional_table_rules::Grid>,
     /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
     row_heights_twips: Vec<f32>,
     /// 表セル。
@@ -4362,6 +4364,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         embedded_face: None,
         font_size: None,
         column_widths_twips: width_twips,
+        source_rule_grid: None,
         row_heights_twips: Vec::new(),
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
@@ -4829,6 +4832,7 @@ fn infer_positioned_table_from_graphics(
                     )),
                 )
             }),
+        source_rule_grid: geometry,
         table,
         cell_underlines,
         cell_alignments,
@@ -5531,6 +5535,7 @@ fn infer_positioned_table_from_text_grid_page(
         embedded_face: None,
         font_size: None,
         column_widths_twips,
+        source_rule_grid: None,
         row_heights_twips,
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
