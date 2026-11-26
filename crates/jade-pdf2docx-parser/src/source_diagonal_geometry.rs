@@ -80,6 +80,12 @@ pub(super) fn emit(
     page_clip: &crate::form_clip::Clip,
 ) -> Option<()> {
     let (start, end) = segment;
+    if !start.iter().chain(&end).all(|v| v.is_finite())
+        || !stroke_width.is_finite()
+        || stroke_width <= 0.
+    {
+        return Some(());
+    }
     if start[0] == end[0] || start[1] == end[1] {
         return Some(());
     }
@@ -162,6 +168,89 @@ mod tests {
                     output.is_empty(),
                     "raw nonfinite coordinate{i} must remain unknown"
                 );
+            }
+        }
+    }
+
+    /// 線幅の不明値・非正値は、端点が妥当でも結果へ保存しない。
+    #[test]
+    fn invalid_stroke_widths_do_not_enter_the_result() {
+        let budget = DecodeBudget::default();
+        let page = crate::form_clip::Clip::page(&budget, None, None).unwrap();
+        for w in [0., -1., f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            let mut output = Vec::new();
+            assert!(
+                emit(
+                    &budget,
+                    &mut output,
+                    0,
+                    ([100., 200.], [200., 100.]),
+                    w,
+                    None,
+                    &page
+                )
+                .is_some()
+            );
+            assert!(output.is_empty());
+        }
+    }
+
+    /// 反転・直角回転の一様変換を認め、非一様・shear・表現不能な幅を推測しない。
+    #[test]
+    fn pen_width_requires_uniform_finite_representable_geometry() {
+        let state = |matrix, width| State {
+            matrix,
+            width,
+            cap: Some(2),
+            paint: Default::default(),
+        };
+        for m in [
+            [2., 0., 0., 2., 0., 0.],
+            [-2., 0., 0., 2., 0., 0.],
+            [0., 2., -2., 0., 0., 0.],
+        ] {
+            assert_eq!(width(state(m, 0.5)), Some(1.));
+        }
+        for m in [
+            [2., 0., 0., 3., 0., 0.],
+            [1., 0.2, 0., 1., 0., 0.],
+            [0.; 6],
+            [f32::NAN; 6],
+            [f32::INFINITY; 6],
+        ] {
+            assert!(width(state(m, 0.5)).is_none());
+        }
+        assert!(width(state([1e-30, 0., 0., 1e-30, 0., 0.], f32::from_bits(1))).is_none());
+    }
+
+    /// 結果Vecの全slotを確保前に共有metadata予算へ予約する。
+    #[test]
+    fn result_capacity_is_reserved_before_allocation() {
+        let page = crate::form_clip::Clip::page(&DecodeBudget::default(), None, None).unwrap();
+        let bytes = 4 * std::mem::size_of::<ParsedSourceDiagonal>();
+        for limit in [0, bytes - 1, bytes] {
+            let budget = DecodeBudget::new(&crate::ParseLimits {
+                max_total_metadata_workspace_bytes: limit as u64,
+                ..Default::default()
+            });
+            let mut output = Vec::new();
+            let result = emit(
+                &budget,
+                &mut output,
+                0,
+                ([100., 200.], [200., 100.]),
+                0.5,
+                None,
+                &page,
+            );
+            if limit < bytes {
+                assert!(result.is_none() && budget.is_stopped());
+                assert_eq!(output.capacity(), 0);
+                assert!(output.is_empty());
+            } else {
+                assert!(result.is_some());
+                assert_eq!(output.len(), 1);
+                assert_eq!(output.capacity(), 4);
             }
         }
     }
