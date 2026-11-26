@@ -24,6 +24,18 @@ pub(super) struct Cell {
     logical_row_right_anchor: Option<bool>,
 }
 
+/// 従来の整数gridを用いるprivate結合回帰の入口を保持する。
+#[cfg(test)]
+pub(super) fn cells(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, false, None)
+}
+
 /// セル所有は既存整数gridで固定し、確認済み原本境界だけを行内配置へ渡す。
 pub(super) fn cells_with_geometry(
     parsed: &ParsedDocument,
