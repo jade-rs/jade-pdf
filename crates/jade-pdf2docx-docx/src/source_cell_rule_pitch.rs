@@ -88,3 +88,19 @@ fn heights(table: &PositionedTable, model: &DocxTableModel) -> Option<Vec<f32>> 
     }
     (previous == 0.).then_some(heights)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 表外側には隣接セルがないため、架空の太い隣辺で実際の外枠幅を隠さない。
+    #[test]
+    fn outer_boundaries_do_not_borrow_an_absent_neighbor() {
+        let mut model = docx_table_model_from_ocr_table(&OcrTable::new(vec![vec!["Owned".into()]]));
+        let borders = model.rows[0][0].borders.as_mut().unwrap();
+        borders.source_side_sizes[0] = Some(4);
+        borders.source_side_sizes[2] = Some(4);
+        assert_eq!(boundary(&model, 0, 12), Some(4));
+        assert_eq!(boundary(&model, 1, 12), Some(4));
+    }
+}
