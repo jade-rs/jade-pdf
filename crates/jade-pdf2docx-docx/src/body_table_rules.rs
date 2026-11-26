@@ -66,12 +66,15 @@ fn horizontal_edge(
 
 /// 同じページの有限な実線だけを根拠にし、未知の線幅や座標は除外する。
 fn line(graphic: &ParsedGraphicElement, page: usize) -> Option<ParsedBounds> {
-    let b = normalized_bounds(graphic.bounds);
-    (graphic.page == page
-        && graphic.stroke_width.is_finite()
-        && graphic.stroke_width > 0.
-        && [b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite()))
-    .then_some(b)
+    let b = graphic.bounds;
+    if graphic.page != page
+        || !graphic.stroke_width.is_finite()
+        || graphic.stroke_width <= 0.
+        || ![b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite())
+    {
+        return None;
+    }
+    Some(normalized_bounds(b))
 }
 
 /// 独立して量子化された原本の辺とgrid端点を、既存の1pt範囲で照合する。
@@ -172,9 +175,19 @@ mod tests {
     #[test]
     fn raw_nonfinite_coordinates_cannot_be_hidden_by_normalization() {
         let b = bounds();
-        let mut source = frame(0, b);
-        source[1].bounds.y0 = f32::NAN;
-        assert!(!closed(0, b, &source));
+        for value in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            for coord in 0..4 {
+                let mut source = frame(0, b);
+                let edge = &mut source[1].bounds;
+                *match coord {
+                    0 => &mut edge.x0,
+                    1 => &mut edge.x1,
+                    2 => &mut edge.y0,
+                    _ => &mut edge.y1,
+                } = value;
+                assert!(!closed(0, b, &source));
+            }
+        }
     }
 
     proptest! {
