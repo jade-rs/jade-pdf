@@ -2490,6 +2490,8 @@ fn extract_text_elements_with_matrices<'clip>(
     let mut last_draw = None;
     let mut last_derived = false;
     let mut last_positioned = false;
+    // 結合した要素の幅が一度でも推定なら、その要素を新しい列分離の根拠にしない。
+    let mut last_measured = false;
     let mut current_sequence = None;
     let mut current_geometry = None;
     let mut emit = |begin: usize,
@@ -2557,7 +2559,7 @@ fn extract_text_elements_with_matrices<'clip>(
             concat_matrix(matrix, [state.horizontal_scale, 0., 0., 1., 0., state.rise]);
         let geometry = current_geometry.map(|geometry| geometry.transformed(rendering_matrix));
         let page_matrix = geometry.map(|geometry| geometry.matrix);
-        let layout = state
+        let measured_layout = state
             .font
             .as_ref()
             .and_then(|font| metrics.get(font))
@@ -2569,36 +2571,37 @@ fn extract_text_elements_with_matrices<'clip>(
                     state.character_spacing,
                     state.word_spacing,
                 )
-            })
-            .unwrap_or_else(|| {
-                let width = estimate_text_width_for_matrix(
-                    &text,
-                    state.size,
-                    font_name,
-                    geometry.as_ref().map_or(matrix, |geometry| geometry.matrix),
-                );
-                state
-                    .font
-                    .as_ref()
-                    .and_then(|font| metrics.get(font))
-                    .and_then(|metrics| {
-                        metrics.estimated_layout(
-                            budget,
-                            raw,
-                            width,
-                            state.character_spacing,
-                            state.word_spacing,
-                        )
-                    })
-                    .unwrap_or_else(|| {
-                        crate::font_widths::Layout::estimated(
-                            &text,
-                            width,
-                            state.character_spacing,
-                            state.word_spacing,
-                        )
-                    })
             });
+        let measured = measured_layout.is_some();
+        let layout = measured_layout.unwrap_or_else(|| {
+            let width = estimate_text_width_for_matrix(
+                &text,
+                state.size,
+                font_name,
+                geometry.as_ref().map_or(matrix, |geometry| geometry.matrix),
+            );
+            state
+                .font
+                .as_ref()
+                .and_then(|font| metrics.get(font))
+                .and_then(|metrics| {
+                    metrics.estimated_layout(
+                        budget,
+                        raw,
+                        width,
+                        state.character_spacing,
+                        state.word_spacing,
+                    )
+                })
+                .unwrap_or_else(|| {
+                    crate::font_widths::Layout::estimated(
+                        &text,
+                        width,
+                        state.character_spacing,
+                        state.word_spacing,
+                    )
+                })
+        });
         if budget.is_stopped() {
             return 0.;
         }
@@ -2661,8 +2664,28 @@ fn extract_text_elements_with_matrices<'clip>(
             && page_matrix
                 .and_then(crate::text_baseline::upright)
                 .is_some();
+        let separate_numeric_position = measured
+            && last_measured
+            && source_baseline.is_some()
+            && page_matrix.is_some_and(|current| {
+                last_draw.is_some_and(|(last_begin, matrix, width)| {
+                    last_begin == begin
+                        && last_sequence == Some(sequence)
+                        && crate::text_draws::gap(matrix, width, current).is_some_and(|gap| {
+                            elements.last().is_some_and(|previous| {
+                                crate::numeric_tj_gap::separates(
+                                    &previous.text,
+                                    &text,
+                                    gap,
+                                    state.size,
+                                )
+                            })
+                        })
+                })
+            });
         let merge = !positioned
             && !last_positioned
+            && !separate_numeric_position
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
@@ -2783,11 +2806,13 @@ fn extract_text_elements_with_matrices<'clip>(
             last_sequence = Some(sequence);
             last_derived = derived.is_some();
             last_positioned = positioned;
+            last_measured = measured && (!merge || last_measured);
             last_draw = page_matrix.map(|matrix| (begin, matrix, layout.advance));
         } else {
             last_sequence = None;
             last_derived = false;
             last_positioned = false;
+            last_measured = false;
             last_draw = None;
         }
         layout.advance * state.horizontal_scale

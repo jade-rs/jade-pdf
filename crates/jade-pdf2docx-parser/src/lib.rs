@@ -52,6 +52,7 @@ mod metadata_validation_tests;
 mod metadata_workspace;
 mod model;
 mod named_font_encoding;
+mod numeric_tj_gap;
 mod object_bytes;
 mod object_index;
 #[cfg(test)]

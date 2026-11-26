@@ -68,6 +68,7 @@ mod native_spacing;
 mod native_table_rows;
 mod native_table_text;
 mod numbered_page_footers;
+mod numeric_word_gap;
 mod ocr_reconcile;
 mod output;
 mod package;
@@ -2086,7 +2087,8 @@ fn structured_text_runs_from_row(
         if index > 0 {
             let gap = text.bounds.x0 - right;
             let avg_height = height_sum / index as f32;
-            if gap > avg_height * 0.8
+            if (gap > avg_height * 0.8
+                || numeric_word_gap::needs_separator(row[index - 1], text, gap))
                 && !value.starts_with(char::is_whitespace)
                 && !runs
                     .last()

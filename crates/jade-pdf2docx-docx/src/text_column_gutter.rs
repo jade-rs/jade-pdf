@@ -9,6 +9,8 @@ struct Gap {
     right: f32,
     /// 同じ行から複数候補が出ても、垂直範囲の検査で元の行を参照する。
     row: usize,
+    /// 数値同士の隙間は競合候補には残し、本文区間を広げる根拠にはしない。
+    body_evidence: bool,
 }
 
 /// 共通する空白帯と、その存在を複数行で確認できた本文の垂直区間。
@@ -20,12 +22,19 @@ pub(super) struct Gutter {
     bottom: f32,
     /// 根拠となる本文行の最上端baseline。
     top: f32,
+    /// 既存の推定が成立する場合だけ、従来どおり本文範囲外の行も分割する。
+    cut_outside_body: bool,
 }
 
 impl Gutter {
     /// 実際に空白帯を確認した垂直区間にある片側の継続行も同じ段組へ含める。
     pub(super) fn contains(self, text: &ParsedTextElement) -> bool {
         (self.bottom..=self.top).contains(&super::native_baseline::line_y(text))
+    }
+
+    /// 新しく本文だけから復元した段間は、確認した本文区間内だけに使う。
+    pub(super) fn cuts_row(self, text: &ParsedTextElement) -> bool {
+        self.cut_outside_body || self.contains(text)
     }
 }
 
@@ -61,6 +70,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             .fold(first.bounds.x1, f32::max);
         let mut right = first.bounds.x1;
         let mut previous_size = first.font_size;
+        let mut previous = *first;
         for text in row.iter().skip(1) {
             let next = text.bounds.x0;
             let centre = right / 2.0 + next / 2.0;
@@ -73,14 +83,45 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
                     left: right,
                     right: next,
                     row: index,
+                    body_evidence: !super::text_row_segments::numeric_pair(
+                        &previous.text,
+                        &text.text,
+                    ),
                 });
             }
             right = right.max(text.bounds.x1);
             previous_size = text.font_size;
+            previous = text;
         }
     }
+    // 数値の候補を除くだけで、元は複数だった段間を一意と見なさない。
+    let original_cut = supported_cut(&gaps, width, false)?;
+    let (bottom, top) = vertical_span(&gaps, rows, original_cut, false)?;
+    if vertical_span(&gaps, rows, original_cut, true).is_some()
+        && !crosses(rows, original_cut, bottom, top)
+    {
+        return Some(Gutter {
+            x: original_cut,
+            bottom,
+            top,
+            cut_outside_body: true,
+        });
+    }
+    let cut = supported_cut(&gaps, width, true)?;
+    let (bottom, top) = vertical_span(&gaps, rows, cut, true)?;
+    (!crosses(rows, cut, bottom, top)).then_some(Gutter {
+        x: cut,
+        bottom,
+        top,
+        cut_outside_body: false,
+    })
+}
+
+/// 四行以上で共有する空白帯が一つだけあるとき、その帯の最も支持された点を返す。
+fn supported_cut(gaps: &[Gap], width: f32, body_only: bool) -> Option<f32> {
     let mut events = gaps
         .iter()
+        .filter(|gap| !body_only || gap.body_evidence)
         .flat_map(|gap| [(gap.left, 1_i32), (gap.right, -1)])
         .collect::<Vec<_>>();
     events.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -109,33 +150,38 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             }
         }
     }
-    if best.0 < 4 || supported_regions != 1 {
-        return None;
-    }
-    let cut = best.1;
+    (best.0 >= 4 && supported_regions == 1).then_some(best.1)
+}
+
+/// 選んだ段間を共有する四行以上の、実際のbaseline範囲を返す。
+fn vertical_span(
+    gaps: &[Gap],
+    rows: &[Vec<&ParsedTextElement>],
+    cut: f32,
+    body_only: bool,
+) -> Option<(f32, f32)> {
     let mut vertical = gaps
         .iter()
-        .filter(|gap| gap.left < cut && cut < gap.right)
+        .filter(|gap| (!body_only || gap.body_evidence) && gap.left < cut && cut < gap.right)
         .map(|gap| super::native_baseline::line_y(rows[gap.row][0]));
     let first = vertical.next()?;
+    let mut body_rows = 1;
     let (bottom, top) = vertical.fold((first, first), |(bottom, top), y| {
+        body_rows += 1;
         (bottom.min(y), top.max(y))
     });
-    for row in rows {
-        let Some(first) = row.first() else { continue };
-        let y = super::native_baseline::line_y(first);
-        if (bottom..=top).contains(&y)
-            && row
-                .iter()
-                .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
-        {
-            return None;
-        }
-    }
-    Some(Gutter {
-        x: cut,
-        bottom,
-        top,
+    (body_rows >= 4).then_some((bottom, top))
+}
+
+/// 確認した本文範囲内で段間を横断する文字があれば、その段組は採用しない。
+fn crosses(rows: &[Vec<&ParsedTextElement>], cut: f32, bottom: f32, top: f32) -> bool {
+    rows.iter().any(|row| {
+        row.first().is_some_and(|first| {
+            (bottom..=top).contains(&super::native_baseline::line_y(first))
+                && row
+                    .iter()
+                    .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
+        })
     })
 }
 
@@ -224,6 +270,103 @@ mod tests {
         );
     }
 
+    /// 幾何だけなら段間になる反復数値表も、数値同士の隙間を散文の根拠へ数えない。
+    #[test]
+    fn repeated_numeric_fields_do_not_establish_a_prose_gutter() {
+        let mut source = rows();
+        for row in &mut source {
+            row[0].text = "224".into();
+            row[1].text = "144 7 - 6.67%".into();
+        }
+        assert_eq!(infer_owned(&source, 612.), None);
+        let mut partly_numeric = rows();
+        partly_numeric[3][0].text = "224".into();
+        partly_numeric[3][1].text = "144".into();
+        assert_eq!(
+            infer_owned(&partly_numeric, 612.),
+            None,
+            "numeric rows cannot supply the missing fourth body row"
+        );
+    }
+
+    /// 本文と数値表で異なる二つの段間候補が反復する所有入力を作る。
+    fn mixed_gutters() -> Vec<Vec<ParsedTextElement>> {
+        let mut source = (0..4)
+            .map(|i| {
+                vec![
+                    text(70., 210., 700. - i as f32 * 20.),
+                    text(230., 542., 700. - i as f32 * 20.),
+                ]
+            })
+            .collect::<Vec<_>>();
+        for i in 0..4 {
+            let mut row = vec![
+                text(70., 370., 600. - i as f32 * 20.),
+                text(390., 542., 600. - i as f32 * 20.),
+            ];
+            row[0].text = "224".into();
+            row[1].text = "144".into();
+            source.push(row);
+        }
+        source
+    }
+
+    /// 数値の競合候補を取り除いた結果だけで、元は曖昧だった段間を確定しない。
+    #[test]
+    fn numeric_competition_still_keeps_mixed_gutters_ambiguous() {
+        assert_eq!(
+            infer_owned(&mixed_gutters(), 612.),
+            None,
+            "discarding numerical evidence must not create a new unambiguous prose layout"
+        );
+    }
+
+    /// 反復する数値行と本文の間に、元の段間を横断する一段行を持つ所有原本。
+    fn crossing_numeric_scope() -> Vec<Vec<ParsedTextElement>> {
+        let mut source = rows();
+        let mut numeric = vec![text(90., 294., 580.), text(318., 522., 580.)];
+        numeric[0].text = "224".into();
+        numeric[1].text = "144".into();
+        source.push(numeric);
+        source.push(vec![text(90., 522., 670.)]);
+        source
+    }
+
+    /// 数値根拠の範囲を縮めても、元の候補範囲を横断する本文の拒否を解除しない。
+    #[test]
+    fn numeric_scope_reduction_does_not_remove_a_crossing_line_veto() {
+        assert_eq!(
+            infer_owned(&crossing_numeric_scope(), 612.),
+            None,
+            "removing numeric support must not create a new prose column layout"
+        );
+    }
+
+    /// 本文区間の外の数値行は、散文の横断行として本文の段組を拒否しない。
+    #[test]
+    fn numeric_crossing_row_outside_body_does_not_veto_prose_columns() {
+        let mut source = crossing_numeric_scope();
+        source.last_mut().unwrap()[0].bounds.y0 = 610.;
+        source.last_mut().unwrap()[0].bounds.y1 = 620.;
+        source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
+        assert_eq!(infer_owned(&source, 612.), Some(306.));
+    }
+
+    /// 左側に散文があっても、右側が数値だけの行を二段の散文の根拠にはしない。
+    #[test]
+    fn prose_rows_with_only_numeric_right_side_do_not_establish_the_gutter() {
+        let source = (0..4)
+            .map(|i| {
+                let y = 700. - i as f32 * 20.;
+                let mut row = vec![text(90., 250., y), text(260., 294., y), text(318., 522., y)];
+                row[1].text = "2016.".into();
+                row[2].text = "6181, 2018.".into();
+                row
+            })
+            .collect::<Vec<_>>();
+        assert_eq!(infer_owned(&source, 612.), None);
+    }
+
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
     #[test]
     fn crossing_body_line_blocks_gutter_but_heading_does_not() {
@@ -249,6 +392,58 @@ mod tests {
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 数値だけの横断行を本文から外す判断も、一様倍率・移動・行順で変えない。
+        #[test]
+        fn numeric_only_crossing_scope_is_stable_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = crossing_numeric_scope();
+            source.last_mut().unwrap()[0].bounds.y0 = 610.;
+            source.last_mut().unwrap()[0].bounds.y1 = 620.;
+            source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.font_size *= scale;
+            }
+            let cut = infer_owned(&source, 612. * scale).unwrap();
+            prop_assert!((cut - (306. + shift) * scale).abs() < 0.001);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), Some(cut));
+        }
+
+        /// 倍率・平行移動・行順を変えても、数値区間と本文の間の横断行は拒否し続ける。
+        #[test]
+        fn numeric_scope_keeps_crossing_veto_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = crossing_numeric_scope();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.font_size *= scale;
+            }
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+        }
+
+        /// 座標の一様倍率・平行移動・行順によらず、数値候補を含む曖昧さを維持する。
+        #[test]
+        fn mixed_gutter_ambiguity_is_preserved_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = mixed_gutters();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 *= scale;
+                text.bounds.y1 *= scale;
+                text.font_size *= scale;
+            }
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+        }
+
         /// ページ・本文・fontの一様倍率と平行移動で、同じ物理的な空白帯を保つ。
         #[test]
         fn affine_geometry_keeps_the_same_gutter(scale in 0.5_f32..2.0, shift in -10.0_f32..10.0) {
