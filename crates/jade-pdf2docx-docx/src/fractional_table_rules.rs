@@ -11,9 +11,14 @@ pub(super) struct Grid {
 }
 
 /// 同じ整数キーを持つ異なる原本境界があれば、寸法全体を従来経路へ戻す。
-pub(super) fn grid(graphics: &[ParsedGraphicElement], xs: &[i32], ys: &[i32]) -> Option<Grid> {
-    let x = edges(graphics, xs, ys, true)?;
-    let y = edges(graphics, ys, xs, false)?;
+pub(super) fn grid(
+    graphics: &[ParsedGraphicElement],
+    xs: &[i32],
+    ys: &[i32],
+    page: Option<usize>,
+) -> Option<Grid> {
+    let x = edges(graphics, xs, ys, true, page)?;
+    let y = edges(graphics, ys, xs, false, page)?;
     for axis in [&x, &y] {
         let start = f64::from(axis[0]);
         if (f64::from(*axis.last()?) - start) * 20. > f64::from(i32::MAX)
@@ -39,6 +44,7 @@ fn edges(
     keys: &[i32],
     cross: &[i32],
     vertical: bool,
+    page: Option<usize>,
 ) -> Option<Vec<f32>> {
     let lo = *cross.first()? as f32;
     let hi = *cross.last()? as f32;
@@ -50,6 +56,9 @@ fn edges(
         .map(|key| {
             let mut value = None;
             for g in graphics {
+                if page.is_some_and(|page| g.page != page) {
+                    continue;
+                }
                 let b = g.bounds;
                 if ![b.x0, b.y0, b.x1, b.y1, g.stroke_width]
                     .iter()
@@ -164,8 +173,8 @@ mod tests {
                 stroke_width: 1.,
             });
         }
-        assert!(grid(&graphics, &[0, 1], &[10, 20]).is_none());
-        assert!(grid(&[], &[0, 20], &[10, 20]).is_none());
+        assert!(grid(&graphics, &[0, 1], &[10, 20], None).is_none());
+        assert!(grid(&[], &[0, 20], &[10, 20], None).is_none());
     }
 
     proptest! {

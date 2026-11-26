@@ -88,6 +88,7 @@ mod section_chrome_package;
 mod separated_box_table;
 mod source_image_rows;
 mod source_prose_columns;
+mod table_rule_topology;
 mod text_column_gutter;
 mod text_grid_ownership;
 mod text_row_segments;
@@ -4107,12 +4108,7 @@ fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
 ) -> Vec<PositionedTable> {
-    let page_graphics = parsed
-        .graphics
-        .iter()
-        .filter(|graphic| graphic.page == page)
-        .cloned()
-        .collect::<Vec<_>>();
+    let page_graphics = table_rule_topology::page(parsed, page);
     if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
         return vec![table];
     }
@@ -4771,7 +4767,7 @@ fn infer_positioned_table_from_graphics(
         OcrTable::new(cells)
     };
     let geometry = (!text_augmented_columns && !allow_top_origin_text_y)
-        .then(|| fractional_table_rules::grid(page_graphics, &xs, &ys))
+        .then(|| fractional_table_rules::grid(&parsed.graphics, &xs, &ys, Some(page)))
         .flatten();
     let native_cells = native_table_text::cells_with_geometry(
         parsed,
