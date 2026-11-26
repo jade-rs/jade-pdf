@@ -13,15 +13,41 @@ fn source() -> Vec<u8> {
 
 /// 任意の正立変換と追加罫線を独立に制御する。
 fn controlled(prefix: &str, suffix: &str) -> Vec<u8> {
+    font_controlled(prefix, suffix, "Helvetica", 10.)
+}
+
+/// 代替fontとWordのhalf-point量子化を、罫線条件とは独立に制御する。
+fn font_controlled(prefix: &str, suffix: &str, font: &str, size: f32) -> Vec<u8> {
     let content = "1 w 72.25 590.25 m 272.75 590.25 l S 72.25 620.75 m 272.75 620.75 l S 72.25 650.25 m 272.75 650.25 l S 72.25 590.25 m 72.25 650.25 l S 171.75 590.25 m 171.75 650.25 l S 272.75 590.25 m 272.75 650.25 l S BT /F 10 Tf 82 633 Td (Alpha) Tj ET BT /F 10 Tf 82 603 Td (Beta) Tj ET BT /F 10 Tf 182 603 Td (Control) Tj ET";
+    let content = content.replace("/F 10 Tf", &format!("/F {size} Tf"));
     let content = format!("q {prefix} {content} {suffix} Q");
     fixture::pdf(&[
         "<< /Type /Catalog /Pages 2 0 R >>".into(),
         "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
         "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F 5 0 R >> >> /Contents 4 0 R >>".into(),
         fixture::stream(&content),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        format!("<< /Type /Font /Subtype /Type1 /BaseFont /{font} >>"),
     ])
+}
+
+/// 未埋め込みの日本語代替fontでは、狭くなる原本寸法へ無条件に切り替えない。
+#[test]
+fn unverified_fallback_font_keeps_compatible_table_dimensions() {
+    let s = xml(&font_controlled("", "", "MS-PGothic", 10.));
+    assert!(s.contains("<w:gridCol w:w=\"2000\""), "{s}");
+    assert!(!s.contains("<w:gridCol w:w=\"1990\""));
+    assert!(s.contains("<w:trHeight w:val=\"580\""));
+    for text in ["Alpha", "Beta", "Control"] {
+        assert_eq!(s.matches(&format!(">{text}</w:t>")).count(), 1);
+    }
+}
+
+/// 原本の文字高がWordのhalf-pointへ変わる代替fontにも精密化を適用しない。
+#[test]
+fn quantized_fallback_size_keeps_compatible_table_dimensions() {
+    let s = xml(&font_controlled("", "", "Helvetica", 10.25));
+    assert!(s.contains("<w:gridCol w:w=\"2000\""), "{s}");
+    assert!(!s.contains("<w:gridCol w:w=\"1990\""));
 }
 
 /// 列幅は推定キーの100/101ptでなく、原本の99.5/101ptからtwipへ一度だけ丸める。
