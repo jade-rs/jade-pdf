@@ -1,5 +1,6 @@
 //! 原本の完成グリッドを、セル内の表示行が多いだけの推測表へ置換しない。
 use super::*;
+use proptest::prelude::*;
 
 /// 所有する矩形字形をAへ対応させ、独立readerで読めるchecksum付きfontを作る。
 fn owned_font() -> ParsedEmbeddedFont {
@@ -159,4 +160,53 @@ fn complete_verified_source_grid_is_not_replaced_by_more_text_rows() {
     );
     assert_eq!(selected[0].bounds.x0, 0.);
     assert_eq!(selected[0].bounds.x1, 160.);
+}
+
+/// 未確認fontの候補は、以前の文字表への置換を妨げない。
+#[test]
+fn unverified_fonts_keep_the_existing_text_grid_fallback() {
+    let mut parsed = source();
+    parsed.embedded_fonts.clear();
+    let graphic = infer_positioned_table_from_graphics(&parsed, 0, &parsed.graphics).unwrap();
+    assert!(!source_grid_selection::verified(&graphic));
+    let selected = infer_positioned_tables_for_page(&parsed, 0, vec![graphic], false, false);
+    assert_eq!(selected[0].table.row_count(), 4);
+}
+
+/// sourceセルの対応を失った候補を、確認済みの原本表として保護しない。
+#[test]
+fn incomplete_cell_proof_keeps_the_existing_text_grid_fallback() {
+    let parsed = source();
+    let mut graphic = infer_positioned_table_from_graphics(&parsed, 0, &parsed.graphics).unwrap();
+    graphic.native_cells[0][0] = None;
+    assert!(!source_grid_selection::verified(&graphic));
+    let selected = infer_positioned_tables_for_page(&parsed, 0, vec![graphic], false, false);
+    assert_eq!(selected[0].table.row_count(), 4);
+}
+
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// ページ原点からの平行移動でも、元の二行とセル所有を保つ。
+    #[test]
+    fn verified_source_grid_selection_is_translation_invariant(dx in 0u16..32, dy in 0u16..32) {
+        let mut parsed=source();
+        let (dx,dy)=(f32::from(dx),f32::from(dy));
+        let translate=|b:&mut ParsedBounds|{b.x0+=dx;b.x1+=dx;b.y0+=dy;b.y1+=dy;};
+        for graphic in &mut parsed.graphics {translate(&mut graphic.bounds);}
+        for text in &mut parsed.text_elements {
+            translate(&mut text.bounds);
+            text.baseline_y=text.baseline_y.map(|v|v+dy);
+        }
+        parsed.pages[0].width+=dx;parsed.pages[0].height+=dy;
+        let graphic=infer_positioned_table_from_graphics(&parsed,0,&parsed.graphics).unwrap();
+        prop_assert!(source_grid_selection::verified(&graphic));
+        let selected=infer_positioned_tables_for_page(&parsed,0,vec![graphic],false,false);
+        prop_assert_eq!(selected.len(),1);
+        prop_assert_eq!(selected[0].table.row_count(),2);
+        prop_assert_eq!(selected[0].table.col_count(),Some(2));
+        prop_assert_eq!(selected[0].bounds.x0,dx);
+        prop_assert_eq!(selected[0].bounds.x1,160.+dx);
+        prop_assert_eq!(selected[0].bounds.y0,dy);
+        prop_assert_eq!(selected[0].bounds.y1,80.+dy);
+    }
 }

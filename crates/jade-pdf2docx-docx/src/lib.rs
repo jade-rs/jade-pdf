@@ -58,6 +58,7 @@ mod roman_fallback;
 #[cfg(test)]
 mod roman_fallback_tests;
 mod source_font_weight;
+mod source_grid_selection;
 #[cfg(test)]
 mod source_grid_selection_tests;
 #[cfg(test)]
@@ -3931,6 +3932,8 @@ fn infer_positioned_tables_for_page(
             let has_graphic_span_model = graphic_tables
                 .iter()
                 .any(|table| table.docx_table.is_some());
+            let has_verified_graphic_cells =
+                graphic_tables.iter().any(source_grid_selection::verified);
             let max_graphic_non_empty = graphic_tables
                 .iter()
                 .map(|table| ocr_table_non_empty_cell_count(&table.table))
@@ -3945,6 +3948,7 @@ fn infer_positioned_tables_for_page(
             let text_non_empty = ocr_table_non_empty_cell_count(&best_text_table.table);
             let text_gain = text_non_empty.saturating_sub(max_graphic_non_empty);
             if !has_graphic_span_model
+                && !has_verified_graphic_cells
                 && best_text_cols <= max_graphic_cols
                 && text_gain > 2
                 && (!preserve_source_text
