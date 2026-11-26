@@ -1,0 +1,24 @@
+{
+  "id": "Statistics-Japan-CPI-2026-10",
+  "url": "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/pdf/zenkoku.pdf",
+  "official_page": "https://www.stat.go.jp/data/cpi/sokuhou/tsuki/index-z.html",
+  "source_sha256": "aaee8d56c3b468808a4c5e6001a6e84b89345133eab78f9982b94883f0b695e6",
+  "source_bytes": 437176,
+  "source_pages": 12,
+  "source_title": "2025年基準 消費者物価指数 全国 2026年(令和8年)10月分",
+  "source_only_gold_criteria": 107,
+  "source_nonwhite_chars": 22665,
+  "source_gold_manifest_sha256": "e275e8063051f118625d43962d13ada0f7e47650bf0fa2705302a262221cccf1",
+  "rights": {
+    "terms_url": "https://www.stat.go.jp/info/riyou.html",
+    "content_terms": "PDL1.0 with attribution and modified-work notice; not CC0.",
+    "attribution": "出典：消費者物価指数 全国2026年10月分（総務省統計局） https://www.stat.go.jp/data/cpi/sokuhou/tsuki/pdf/zenkoku.pdf",
+    "modified_notice": "総務省統計局の原本を用いたjade-pdfによる変換・評価。政府作成のWord成果物ではない。",
+    "exceptions": "MIC symbol on page1 and Statistics Bureau logo on page12 are expressly outside PDL1.0. Local original retained for evaluation; no original PDF/font/logo assets added to tracked fixtures or relicensed. No third-party photos observed.",
+    "privacy": "All12 pages contain aggregate official statistics and public office contact details; no private filled forms, credentials or confidential data observed."
+  },
+  "all12_source_pages_individually_reviewed_before_product": true,
+  "first_product_not_yet_used": true,
+  "fixture_PDF_NOT_added": true,
+  "production_ready": false
+}
