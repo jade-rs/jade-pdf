@@ -22,6 +22,8 @@ pub(super) struct Cell {
     fallback_runs: Vec<StructuredTextRun>,
     /// 原本の数値群で確認した右寄せ。分割済みなら一行でも元の上端と余白を使う。
     logical_row_right_anchor: Option<bool>,
+    /// 一行の独立した文字群へだけ設定する、セル左端からの確認済みタブ位置。
+    source_tabs: Option<Vec<Option<usize>>>,
 }
 
 /// 従来の整数gridを用いるprivate結合回帰の入口を保持する。
@@ -215,6 +217,7 @@ fn cells_impl(
                             single_line_runs: Vec::new(),
                             fallback_runs: Vec::new(),
                             logical_row_right_anchor: None,
+                            source_tabs: None,
                         });
                     }
                     if elements.is_empty() {
@@ -243,15 +246,23 @@ fn cells_impl(
                             offset.map(|value| (std::ptr::from_ref(element), value))
                         })
                         .collect::<BTreeMap<_, _>>();
+                    let single_physical_line =
+                        rows.len() == 1 && row_span == 1 && cell.grid_span == 1;
+                    let mut source_tabs = None;
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
                             let mut row =
                                 native_spacing::with_interior_spaces(&parsed.text_elements, row);
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-                            let mut line = source_line(row, &text_graphics, *xs.last()? as f32)?;
+                            let mut line =
+                                source_line(row.clone(), &text_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
                             mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
+                            if single_physical_line && !closed_boxes {
+                                source_tabs =
+                                    source_cell_tab_stops::positions(&row, &line, left, right);
+                            }
                             Some(line)
                         })
                         .collect::<Vec<_>>();
@@ -270,6 +281,7 @@ fn cells_impl(
                     .then(|| Cell {
                         background,
                         logical_row_right_anchor: None,
+                        source_tabs,
                         left,
                         right,
                         top,
@@ -453,7 +465,11 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
 
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
 pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
-    if cell.lines.is_empty() || (cell.lines.len() < 2 && cell.logical_row_right_anchor.is_none()) {
+    if cell.lines.is_empty()
+        || (cell.lines.len() < 2
+            && cell.logical_row_right_anchor.is_none()
+            && cell.source_tabs.is_none())
+    {
         return None;
     }
     let spacings = line_spacings(cell)?;
@@ -472,13 +488,17 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         });
     for (index, (line, spacing)) in cell.lines.iter().zip(spacings).enumerate() {
         let spacing = spacing?;
-        let paragraph = line
-            .runs
-            .iter()
-            .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)));
+        let paragraph =
+            if let Some(tabs) = cell.source_tabs.as_ref().filter(|_| cell.lines.len() == 1) {
+                source_cell_tab_stops::paragraph(&line.runs, tabs)
+            } else {
+                line.runs
+                    .iter()
+                    .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
+            };
         let mut paragraph = position_structured_paragraph(paragraph, line, cell.left, None, None)
             .line_spacing(spacing);
-        if right_anchors[index] {
+        if right_anchors[index] && cell.source_tabs.is_none() {
             let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
             paragraph =
                 paragraph
@@ -491,7 +511,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
 }
 
 /// 原本セルでも既存の代替字幅を使い、埋め込みfontと確定した字形配置は上書きしない。
-fn cell_run(source: &StructuredTextRun) -> Run {
+pub(super) fn cell_run(source: &StructuredTextRun) -> Run {
     let mut run = docx_run_from_structured_run(source);
     if !source.style.font_embedded
         && source.style.placement.is_none()
