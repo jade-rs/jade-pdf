@@ -224,3 +224,29 @@ proptest! {
         prop_assert!((d.stroke_width-0.5*scale).abs()<0.001);
     }
 }
+
+/// セル外枠のclipは端のstrokeを切っても、セル全体を横断する原本中心線を失わせない。
+#[test]
+fn cell_boundary_clipping_preserves_the_original_diagonal_centerline() {
+    for content in [
+        "q 100 100 100 100 re W n .5 w 100 200 m 200 100 l S Q",
+        "q 140.04 142.44 120.001 224.04 re W n .48 w 2 J q 1 0 0 1 260.04 366.48 cm 0 0 m -120 -224.04 l S Q Q",
+    ] {
+        assert_eq!(
+            document(&[content], "<< >>", "").source_diagonals.len(),
+            1,
+            "{content}"
+        );
+    }
+}
+
+/// 原本と同じ不透明な黒い後続罫線は、黒い対角線を消す覆いとして扱わない。
+#[test]
+fn opaque_black_border_overpaint_does_not_erase_a_black_diagonal() {
+    let p = document(
+        &["100 200 m 200 100 l S 0 g 99.5 99.5 1 101 re f"],
+        "<< >>",
+        "",
+    );
+    assert_eq!(p.source_diagonals.len(), 1);
+}
