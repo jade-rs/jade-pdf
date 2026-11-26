@@ -1,0 +1,93 @@
+{
+  "time_utc": "2026-11-26T04:14:32.827278+00:00",
+  "head": "a72307e63e9b23d5456eaf59ff80342f57724be6",
+  "source_tree": "4880b722378a8580f310e839bb6889f44f9a8d0e",
+  "Rust_files": 789,
+  "full_default": {
+    "passed": 2651,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 157,
+    "log_sha256": "39db8ca05f04ed7a80dcdc107a5fc76c7d67857e77e012ef7ac07e0a5e74a42d"
+  },
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "fmt_passed": true,
+  "TDD_Reds": [
+    {
+      "label": "source-cell-fills-public-Red-after-directory-setup",
+      "head": "b78ba93d3977b7e19df9571b0c248c0bcbcd4707",
+      "log_sha256": "05dd0076485776314a69fd3262cd41feedfc386c2f7ca324ad778f3f3a517434"
+    },
+    {
+      "label": "source-cell-background-border-rounding-public-Red",
+      "head": "8d0082d2e967de9d67a36e5dcf34c1c58a015342",
+      "log_sha256": "0e475f74498db3b1c6f3a02b3fe1a8b02b006dd28f67aa434943fcdd9f822e2b"
+    },
+    {
+      "label": "source-cell-background-empty-header-public-Red",
+      "head": "8d0082d2e967de9d67a36e5dcf34c1c58a015342",
+      "log_sha256": "89290ce8496ac52940b4ce24b5b1132874d8ede3c14690974fbf2cbe6b15bdae"
+    },
+    {
+      "label": "source-cell-background-page-group-public-Red",
+      "head": "8d0082d2e967de9d67a36e5dcf34c1c58a015342",
+      "log_sha256": "af58cd2710de6990b28c62def4b80f226d2ede81b1ca335e8ce8758bebb0daca"
+    },
+    {
+      "label": "source-cell-background-unconfirmed-font-public-Red",
+      "head": "8d0082d2e967de9d67a36e5dcf34c1c58a015342",
+      "log_sha256": "98476773c65384fe2cf42245acd798c689dfd127deef0f2b2914209ec167cb12"
+    }
+  ],
+  "owned_public_tests": 10,
+  "uniform_translation_PBT_cases": 24,
+  "additional_parser_budget_tests": 2,
+  "native_outcomes": 194,
+  "native_success": 169,
+  "native_rejected": 25,
+  "browser_outcomes": 404,
+  "browser_each_success": 172,
+  "browser_each_rejected": 30,
+  "total_outcomes": 598,
+  "all598_statuses_exact_expected": true,
+  "changed_payloads": 3,
+  "all595_other_payloads_RAW_exact_parent": true,
+  "changed_only_known_labour_defaults": true,
+  "cross_engine202_payloads101_inspections_exact": true,
+  "all3_labour_defaults_RAW_identical_reviewed_prototype": true,
+  "labour_default_DOCX_sha256": "279cae1324246f63728806dbf5c0b2df20a6e839b9a1e7dadd2b84820266ae52",
+  "background_shading_only_document_XML_change": true,
+  "all_other_ZIP_parts_RAW_exact_parent": true,
+  "blue_cells": 11,
+  "yellow_cells": 1,
+  "nonwhite_characters": 1164,
+  "Word_tables": 4,
+  "native_binary_sha256": "a6245f653b3eebbf104861e619947219fdd02778146b66f9c3ae36e9c449b3ca",
+  "raw_release_WASM_sha256": "97ec58c91df7238a34e6880057bd1109870ec4d3ab1659a4c016fe21ae88d4d9",
+  "browser_generated_WASM_sha256": "3bc13252cdadec3f84a6c7b59756acb2077e6dab88f62771000f6b60a8f71984",
+  "source_and_gold_manifest_bindings": "/Users/bokuweb/.codex/worktrees/pdf-source-table-cell-fills/jade-pdf/corpus/wasm-runtime/source-table-cell-fills-qualification/parent-original-gold-binding-before-qualified-runtime.json",
+  "parent_original_gold_manifest_count": 75,
+  "parent_original_gold_file_checks": 52870,
+  "all_original_golds_unchanged": true,
+  "labour_original57_initial20pass37unmet_frozen": true,
+  "labour_known_followup_each34pass23unmet_NOT_unseen": true,
+  "labour_audit": "/Users/bokuweb/.codex/worktrees/pdf-source-table-cell-fills/jade-pdf/corpus/wasm-runtime/source-table-cell-fills-qualification/known-original57-followup-asof-a72307e/receipt.json",
+  "labour_audit_sha256": "bc0383856be96568a370b0a2533beb515718b295c943ae72de1855a1a4fc5db2",
+  "labour_source2_to_Word4pages_still_fails": true,
+  "CPI_original107_initial14pass93unmet_frozen": true,
+  "CPI_known_followup_each26pass81unmet_inherited_by_RAW_identity": true,
+  "CPI_inherited_audit": "/Users/bokuweb/.codex/worktrees/pdf-source-painted-text-emphasis/jade-pdf/corpus/wasm-runtime/source-painted-text-emphasis-qualification/known-original107-followup-asof-2ac2592/receipt.json",
+  "CPI_inherited_audit_sha256": "9ca3f6cdfab9b07777b3c82eb6de76d231ff5b428dcc96fc30c9ae3b54c1d522",
+  "kanpo_design_independently_implemented_no_custom_licensed_code_or_new_dependencies": true,
+  "component_qualified": true,
+  "component_scope": "Only verified nonblack/nonwhite opaque Device-color rectangles behind confirmed non-Type3 top-level text, with no page group, unknown effects, clipping, images, Forms or broad nonrectangular fills. Apply to full source-grid cells only, including empty cells within a confirmed rectangle; source half-border width and integer rounding tolerance capped at2pt. Keep partial or ambiguous paint unconfirmed.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Labour23of57 unmet/unverified: source2pages remain4, graph, font faces, logo, spurious tables, clipping and source geometry remain incomplete.",
+    "CPI26of107, inherited NAOJ/Census/SF94 and three-column prose limits remain; no unseen accuracy rate or whole-document acceptance is claimed."
+  ],
+  "qualification_receipt_sha256": "e7fe32bca4a00b02e367336fc0eb8dbf123bb5d2d3e067b7c353e8ecfe07832f",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-source-table-cell-fills/jade-pdf/corpus/wasm-runtime/source-table-cell-fills-qualification"
+}

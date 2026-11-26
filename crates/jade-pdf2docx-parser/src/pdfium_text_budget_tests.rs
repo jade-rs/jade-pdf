@@ -304,6 +304,7 @@ fn native_segment_reference(text: &PdfPageText<'_>) -> Vec<ParsedTextElement> {
             }
             let bounds = parsed_bounds_from_pdf_rect(segment.bounds());
             let mut result = ParsedTextElement {
+                source_background: None,
                 fill_stroke_width: None,
                 font_weight: None,
                 baseline_y: None,

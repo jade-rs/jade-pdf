@@ -128,7 +128,7 @@ pub use cancellation::ParseCancellation;
 pub use limits::ParseLimits;
 pub use model::{
     ParseError, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
-    ParsedImageElement, ParsedPage, ParsedTextElement, PdfVersion,
+    ParsedImageElement, ParsedPage, ParsedTextBackground, ParsedTextElement, PdfVersion,
 };
 pub use parser::{
     parse_pdf, parse_pdf_bytes, parse_pdf_bytes_with_limits, parse_pdf_bytes_with_options,

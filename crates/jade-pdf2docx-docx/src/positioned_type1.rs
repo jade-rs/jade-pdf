@@ -229,6 +229,7 @@ mod tests {
         parsed.text_elements = runs
             .into_iter()
             .map(|r| ParsedTextElement {
+                source_background: None,
                 fill_stroke_width: None,
                 font_weight: None,
                 page: 0,
@@ -242,6 +243,7 @@ mod tests {
             .collect();
         parsed.embedded_fonts = vec![font];
         parsed.text_elements.push(ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             baseline_y: None,

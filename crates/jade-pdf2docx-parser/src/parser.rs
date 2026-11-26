@@ -40,6 +40,8 @@ mod graphics_draws;
 mod graphics_merge;
 #[path = "stroked_rectangles.rs"]
 mod stroked_rectangles;
+#[path = "text_background.rs"]
+mod text_background;
 #[path = "white_fill_rules.rs"]
 mod white_fill_rules;
 
@@ -629,8 +631,15 @@ fn normalize_elements_to_page_viewports(
     graphics.retain_mut(|graphic| {
         normalize_bounds_for_page(graphic.page, &mut graphic.bounds, viewports)
     });
-    text_elements
-        .retain_mut(|text| normalize_bounds_for_page(text.page, &mut text.bounds, viewports));
+    text_elements.retain_mut(|text| {
+        let keep = normalize_bounds_for_page(text.page, &mut text.bounds, viewports);
+        if let Some(background) = text.source_background.as_mut() {
+            if !normalize_bounds_for_page(text.page, &mut background.bounds, viewports) {
+                text.source_background = None;
+            }
+        }
+        keep
+    });
     image_elements
         .retain_mut(|image| normalize_bounds_for_page(image.page, &mut image.bounds, viewports));
 }
@@ -952,11 +961,29 @@ fn extract_text_elements_with_paint_resources(
                 _ => Default::default(),
             },
         );
-        if texts.iter().any(|t| t.fill_stroke_width.is_some())
+        if texts.iter().any(|t| t.source_background.is_some())
+            && !decode_budget
+                .page_dictionaries(resource_source)
+                .get(page)
+                .and_then(|raw| crate::metadata::entries(raw))
+                .is_some_and(|mut entries| {
+                    !entries.any(|(key, _)| {
+                        crate::metadata_names::resource_name_order(key, "Group").is_eq()
+                    })
+                })
+        {
+            for text in &mut texts {
+                text.source_background = None;
+            }
+        }
+        if texts
+            .iter()
+            .any(|t| t.fill_stroke_width.is_some() || t.source_background.is_some())
             && !white_fill_rules::normal_text_paint(decode_budget, resource_source, page, stream)
         {
             for text in &mut texts {
                 text.fill_stroke_width = None;
+                text.source_background = None;
             }
         }
         if crate::text_result_storage::append(decode_budget, &mut elements, texts).is_none() {
@@ -2543,6 +2570,10 @@ fn extract_text_elements_with_matrices<'clip>(
     alpha: impl FnMut(&[u8]) -> crate::text_alpha::Parameters,
     geometry: impl Fn(&[u8]) -> Option<crate::text_geometry::TextGeometry<'clip>>,
 ) -> Vec<ParsedTextElement> {
+    let backgrounds = inherited_fonts
+        .is_none()
+        .then(|| text_background::scan(budget, content))
+        .flatten();
     let bytes = content;
     let mut elements = Vec::<ParsedTextElement>::new();
     let mut last_sequence = None;
@@ -2713,6 +2744,16 @@ fn extract_text_elements_with_matrices<'clip>(
                     .bounds(budget, layout.right - layout.left, state.size)
             })
         };
+        let source_background = backgrounds
+            .as_ref()
+            .filter(|_| {
+                state
+                    .font
+                    .as_deref()
+                    .and_then(|font| metrics.get(font))
+                    .is_some_and(|font| !font.is_type3())
+            })
+            .and_then(|proof| proof.behind(sequence, bounds?));
         let adjacent = page_matrix.is_some_and(|current| {
             last_draw.is_some_and(|(last_begin, previous, width)| {
                 last_begin == begin
@@ -2757,6 +2798,7 @@ fn extract_text_elements_with_matrices<'clip>(
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
+                    && previous.source_background == source_background
                     && previous.fill_stroke_width == fill_stroke_width
                     && previous.font_weight == font_weight
                     && crate::text_baseline::compatible(previous.baseline_y, source_baseline)
@@ -2809,6 +2851,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
+                            source_background: None,
                             fill_stroke_width: None,
                             font_weight: None,
                             baseline_y: source_baseline,
@@ -2858,6 +2901,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
+                        source_background,
                         fill_stroke_width,
                         font_weight,
                         baseline_y: source_baseline,

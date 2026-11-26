@@ -96,6 +96,7 @@ pub(crate) fn extract_tagged(
             budget,
             &mut elements,
             ParsedTextElement {
+                source_background: None,
                 fill_stroke_width: None,
                 font_weight: weights.weight(budget, segment.bounds())?,
                 baseline_y,

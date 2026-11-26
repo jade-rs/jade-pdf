@@ -116,6 +116,7 @@ mod tests {
     /// 検証用に正立した文字矩形を作る。
     fn fragment(text: &str, x: f32, width: f32) -> ParsedTextElement {
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             baseline_y: None,

@@ -30,6 +30,7 @@ mod column_frame;
 mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
+mod source_cell_background;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;
 mod embedded_face;
@@ -3628,6 +3629,12 @@ fn docx_table_from_model_with_row_height_and_nested(
                     }
                     if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
                         table_cell = native;
+                    }
+                    if let Some(rgb) = native_cell.and_then(native_table_text::background) {
+                        table_cell = table_cell.shading(
+                            docx_rs::Shading::new()
+                                .fill(format!("{:02X}{:02X}{:02X}", rgb[0], rgb[1], rgb[2])),
+                        );
                     }
                     for nested_table in nested_tables {
                         table_cell = table_cell.add_table(docx_table_from_structured_table(

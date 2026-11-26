@@ -113,6 +113,7 @@ mod tests {
     /// 照合用に同じ高さ・書式のnative断片を作る。
     fn fragment(text: String, x: f32, y: f32, width: f32) -> ParsedTextElement {
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             baseline_y: None,

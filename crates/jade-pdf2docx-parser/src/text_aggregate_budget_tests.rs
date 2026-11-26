@@ -14,6 +14,7 @@ fn budget(limit: u64) -> DecodeBudget {
 /// 属性や文字列の保存は対象予算から分離して結果要素を用意する。
 fn element(text: &str) -> ParsedTextElement {
     ParsedTextElement {
+        source_background: None,
         fill_stroke_width: None,
         font_weight: None,
         baseline_y: None,
