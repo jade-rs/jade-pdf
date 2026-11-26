@@ -38,6 +38,7 @@ mod embedded_face;
 mod embedded_style_tests;
 mod glyph_metrics;
 mod graphic_table_cells;
+mod graphic_table_free_ends;
 #[cfg(test)]
 mod graphic_table_merge_tests;
 mod graphic_table_outer_edges;
@@ -4618,6 +4619,7 @@ fn infer_positioned_table_from_graphics(
         && !text_directly_intersects_grid(parsed, page, &xs, &ys);
     if xs.len() < 2
         || ys.len() < 2
+        || graphic_table_free_ends::has_unanchored_column(&xs, &ys, &vertical, &horizontal)
         || (!has_grid_lines(&page_graphics, &xs, &ys)
             && !has_partial_grid_lines(&page_graphics, &xs, &ys))
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
