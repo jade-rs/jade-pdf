@@ -11,6 +11,10 @@
 負のfont size、回転・斜交・反転、未確認の書字方向では`None`を保持する。
 既存の対応済み水平CID metricsを再利用し、追加のCMap展開やfontファイル解析は行わない。
 
+bytes/WASMでは、合成済みの確認済み基線へ有効MediaBox/CropBoxの表示原点を矩形と同じように反映する。
+ページ回転後に正立を確認できない場合は`None`へ戻す。一部表示された文字の基線は表示枠へ丸めない。
+回転本文の数字を保持する範囲と未達は[表示原点と基線の検証](page_viewport_text_baselines.md)を参照する。
+
 CMapの書字方向は文字行列の向きと別に確認する。
 `Identity-V`、埋め込みCMapの`WMode 1`、未解決CMapを水平書字と扱わない。
 Adobeの[font API](https://opensource.adobe.com/dc-acrobat-sdk-docs/acrobatsdk/apireference/PDFEdit_Layer/PDEFont.html)にも、水平と垂直の書字モードを別の値として定義している。
