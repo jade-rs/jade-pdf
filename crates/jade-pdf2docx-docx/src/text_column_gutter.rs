@@ -288,6 +288,22 @@ mod tests {
         );
     }
 
+    /// 数値根拠の範囲を縮めても、元の候補範囲を横断する本文の拒否を解除しない。
+    #[test]
+    fn numeric_scope_reduction_does_not_remove_a_crossing_line_veto() {
+        let mut source = rows();
+        let mut numeric = vec![text(90., 294., 580.), text(318., 522., 580.)];
+        numeric[0].text = "224".into();
+        numeric[1].text = "144".into();
+        source.push(numeric);
+        source.push(vec![text(90., 522., 610.)]);
+        assert_eq!(
+            infer_owned(&source, 612.),
+            None,
+            "removing numeric support must not create a new prose column layout"
+        );
+    }
+
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
     #[test]
     fn crossing_body_line_blocks_gutter_but_heading_does_not() {
