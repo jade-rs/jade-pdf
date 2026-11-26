@@ -202,6 +202,36 @@ mod tests {
         assert!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
     }
 
+    /// 表の数値欄と本文の段間が重なっても、新しい本文段組を上の図表へ延ばさない。
+    #[test]
+    fn refined_prose_gutter_does_not_cut_the_leading_full_width_figure() {
+        let mut source = body();
+        for text in source.iter_mut().flatten() {
+            text.bounds.y0 -= 300.;
+            text.bounds.y1 -= 300.;
+            text.baseline_y = text.baseline_y.map(|y| y - 300.);
+        }
+        for i in 0..4 {
+            let y = 740. - i as f32 * 20.;
+            let mut row = vec![text(90., 230., y), text(240., 280., y), text(320., 522., y)];
+            row[0].text = "Model label".into();
+            source.push(row);
+        }
+        let mut caption = text(90., 522., 560.);
+        caption.text = "Full width caption above prose".into();
+        source.push(vec![caption]);
+        let refs = source.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let gutter = text_column_gutter::infer(&refs, 612.).expect("only verified prose supplies body scope");
+        let mut figure = [text(280., 298., 600.), text(314., 332., 600.)];
+        figure[0].text = "FLOPS label".into();
+        figure[1].text = "FLOPS label".into();
+        assert!(cuts(&figure.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
+        let legacy = body();
+        let refs = legacy.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let legacy_gutter = text_column_gutter::infer(&refs, 612.).unwrap();
+        assert!(!cuts(&figure.iter().collect::<Vec<_>>(), Some(legacy_gutter)).is_empty(), "retain established legacy cuts outside body");
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
         /// 一様倍率と平行移動によらず、上下の全幅数値行を本文の段組へ混ぜない。
