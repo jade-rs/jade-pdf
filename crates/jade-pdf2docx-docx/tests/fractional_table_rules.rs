@@ -50,6 +50,14 @@ fn quantized_fallback_size_keeps_compatible_table_dimensions() {
     assert!(!s.contains("<w:gridCol w:w=\"1990\""));
 }
 
+/// 表と独立した小数罫線が、本文と表を置くsectionの互換原点をずらさない。
+#[test]
+fn fractional_graphic_does_not_shift_compatible_section_origin() {
+    let s = xml(&controlled("", "71.75 700 m 100 700 l S"));
+    assert!(s.contains("w:left=\"1440\" w:header="), "{s}");
+    assert!(!s.contains("w:left=\"1435\" w:header="));
+}
+
 /// 列幅は推定キーの100/101ptでなく、原本の99.5/101ptからtwipへ一度だけ丸める。
 #[test]
 fn editable_table_keeps_fractional_source_column_widths() {
