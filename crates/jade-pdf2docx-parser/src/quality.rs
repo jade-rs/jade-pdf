@@ -129,7 +129,7 @@ fn bounds_are_visible(parsed: &ParsedDocument, page: usize, bounds: crate::Parse
     bounds_are_visible_on_pages(&parsed.pages, page, bounds)
 }
 
-/// ページ幾何だけを参照して可視範囲との交差を判定する。
+/// 回転後の表示ページ寸法を参照し、正規化済みboundsとの交差を判定する。
 fn bounds_are_visible_on_pages(
     pages: &[crate::ParsedPage],
     page: usize,
@@ -142,18 +142,16 @@ fn bounds_are_visible_on_pages(
     else {
         return false;
     };
-    [
-        bounds.x0,
-        bounds.x1,
-        bounds.y0,
-        bounds.y1,
-        page.width,
-        page.height,
-    ]
-    .iter()
-    .all(|value| value.is_finite())
-        && bounds.x0.min(bounds.x1).max(0.0) < bounds.x0.max(bounds.x1).min(page.width)
-        && bounds.y0.min(bounds.y1).max(0.0) < bounds.y0.max(bounds.y1).min(page.height)
+    let (width, height) = if page.rotation.rem_euclid(180) == 90 {
+        (page.height, page.width)
+    } else {
+        (page.width, page.height)
+    };
+    [bounds.x0, bounds.x1, bounds.y0, bounds.y1, width, height]
+        .iter()
+        .all(|value| value.is_finite())
+        && bounds.x0.min(bounds.x1).max(0.0) < bounds.x0.max(bounds.x1).min(width)
+        && bounds.y0.min(bounds.y1).max(0.0) < bounds.y0.max(bounds.y1).min(height)
 }
 
 /// 有限で面積のある可視文字か判定する。描画色や隠し文字の意味までは保証しない。

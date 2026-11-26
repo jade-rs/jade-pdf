@@ -166,6 +166,22 @@ fn assemble(objects: &[Vec<u8>]) -> Vec<u8> {
     pdf
 }
 
+/// 二画素RGBと任意の正式ページ寸法・回転を持つPDFを、xref作成前に組み立てる。
+#[allow(dead_code)]
+pub fn rgb_with_page_geometry(width: u32, height: u32, rotation: i32, content: &[u8]) -> Vec<u8> {
+    let mut objects = image_objects(
+        "/ColorSpace /DeviceRGB /Filter /FlateDecode",
+        &compressed(&[255, 0, 0, 0, 255, 0]),
+        "",
+        8,
+        content,
+        2,
+        1,
+    );
+    objects[2] = format!("<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {width} {height}] /Rotate {rotation} /Resources << /XObject << /Im 4 0 R >> /Font << /F1 7 0 R >> >> /Contents 6 0 R >>").into_bytes();
+    assemble(&objects)
+}
+
 /// 自前PNGのIDATを独立に展開し、filter byteを含むscanlineを返す。
 pub fn scanline(png: &[u8]) -> Vec<u8> {
     use std::io::Read;

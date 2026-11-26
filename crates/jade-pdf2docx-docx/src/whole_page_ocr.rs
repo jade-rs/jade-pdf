@@ -27,7 +27,7 @@ impl Lines {
         Self { text, frames: None }
     }
 
-    /// PDF座標を表示座標へ変換し、文字列の順番は変更しない。
+    /// 正規化済み表示座標をWord frameへ変換し、文字列の順番は変更しない。
     pub(super) fn positioned(
         text: Vec<String>,
         bounds: Vec<ParsedBounds>,
@@ -72,39 +72,20 @@ impl Lines {
 }
 
 impl Frame {
-    /// 画像の表示方向へ戻し、frameで表現不能な値を丸め込みで受け入れない。
+    /// 表示座標の上下原点だけを変換し、表現不能な値を丸め込みで受け入れない。
     fn from_pdf(bounds: ParsedBounds, page: &ParsedPage) -> Result<Self, ConvertError> {
-        let (x, y, width, height) = match page.rotation.rem_euclid(360) {
-            0 => (
-                bounds.x0,
-                page.height - bounds.y1,
-                bounds.x1 - bounds.x0,
-                bounds.y1 - bounds.y0,
-            ),
-            90 => (
-                bounds.y0,
-                bounds.x0,
-                bounds.y1 - bounds.y0,
-                bounds.x1 - bounds.x0,
-            ),
-            180 => (
-                page.width - bounds.x1,
-                bounds.y0,
-                bounds.x1 - bounds.x0,
-                bounds.y1 - bounds.y0,
-            ),
-            270 => (
-                page.height - bounds.y1,
-                page.width - bounds.x1,
-                bounds.y1 - bounds.y0,
-                bounds.x1 - bounds.x0,
-            ),
-            _ => {
-                return Err(ConvertError::Ocr(
-                    "unsupported whole-page OCR rotation".into(),
-                ));
-            }
-        };
+        if !matches!(page.rotation.rem_euclid(360), 0 | 90 | 180 | 270) {
+            return Err(ConvertError::Ocr(
+                "unsupported whole-page OCR rotation".into(),
+            ));
+        }
+        let (_, display_height) = parsed_page_display_size_points(page);
+        let (x, y, width, height) = (
+            bounds.x0,
+            display_height - bounds.y1,
+            bounds.x1 - bounds.x0,
+            bounds.y1 - bounds.y0,
+        );
         let convert = |value: f32, positive: bool| -> Result<u32, ConvertError> {
             let twips = (f64::from(value) * 20.0).round();
             if !twips.is_finite()

@@ -1,0 +1,41 @@
+# 回転ページの可視範囲とOCR座標
+
+正規化済みの文字・画像の矩形を、回転後の表示ページと照合する。可視画像の確認要求、OCRの切り出し、認識行とnative本文の照合を同じ座標系で扱う。
+
+## 表示ページとの交差
+
+`ParsedPage::width`と`height`は回転前のページ寸法であり、parserのviewport処理後の文字・画像の`bounds`は回転済みである。90・270度では表示幅と高さを入れ替えて、`text_is_visible`・`image_requires_ocr`とOCR候補集合の可視範囲を検査する。
+
+有限で正の面積を持つ交差だけを可視とする既存の条件を保持する。表示領域内に少しでも残る画像は確認対象であり、表示外の画像を元のページ高さだけで可視とみなさない。画像に文字レイヤが重なることだけで、画像内の全文を検証済みにはしない。未確認の可視画像は`OcrRequired`を保持し、strictは拒否する。
+
+## OCRの切り出しと復元
+
+native本文と併用する領域OCRは、画像矩形を表示ページ内に制限し、表示座標の下端原点からrasterの上端原点へ変換する。既に回転を適用した矩形へ、もう一度ページ回転を加えない。
+
+`PositionedOcrLine::bounds`は、引き続き描画したページ全体の左上原点の画素座標である。認識行を戻す際はDPIと上下原点だけを変換し、nativeの文字と同じ表示座標で重なりと本文の一致を検査する。不一致・認識漏れ・曖昧な重なりを成功へ格下げしない。ページ全体OCRのWord frameも同じ表示座標から作り、raster上の位置と呼び出し側の行順を維持する。
+
+解像度、行矩形の範囲、本文・画素の予算、対応する直角回転の検査は保持する。公開field、APIの引数、CLI・設定・依存は追加しない。画像のsample・寸法・描画順を、この品質判定によって変更しない。
+
+## 所有する回帰
+
+正式xrefを持つ200×300ptの合成PDFを使う。90・270度の表示内の右端帯の画像を見落とす失敗、表示下端外の画像を拾う失敗、文字の可視性とstrictの実際の返り値の失敗を、修正前に保持した。pure bytesとnative fileの両APIを確認し、native fileの入力byteは不変である。任意のページ寸法・画像位置・直角回転を変える32例のPBTでも、元ページとの交差とstrictの判定を照合する。
+
+公開OCR APIでは、parserが実際に生成した表示座標から、144 DPIの切り出し矩形を確認する。画像に重なるnative行は、同じ領域の座標付きOCR結果と照合して一度だけ保持する。別の対照では、全ページOCRの行位置・物理frame・呼び出し側の順序を直角4種で維持する。認識器は所有するcallbackで模擬しており、実際の文字認識モデルの精度を評価するものではない。
+
+既存の内部座標テストは、同じ原本四隅を正規化した入力で検査し、期待するraster領域は保持する。単なる変換の往復だけでなく、実際に解析した原本から公開APIを通す回帰を使う。
+
+## 継続する検証
+
+[回転画像の相殺と原本ロゴの追試](source_cancelled_image_rotation.md)の固定済み原本・gold・初回結果を保持する。固定した全体テストとnative/WASM回帰を次節に記録する。可視範囲とOCR座標の修正であり、グラフ・表の判別、font・本文配置・改ページや文書全体の外観の未達は引き続き検証する。`whole_document_accepted=false`と`production_ready=false`を維持する。
+
+## 固定した最終検証
+
+実装コミット`a0d2cc5d920bb6d37de825acf9360ca417d99f81`を固定した。Rust1.93.1のCI defaultは2,672成功・0失敗・42無効化、161テスト群で、794個のRustファイルは検証とnative/WASMビルドを通して同一だった。fmt、fixture hygiene2件、WASM distribution10件も通過した。
+
+所有する公開parser回帰6件と公開OCR API回帰3件を含む。pure bytesとnative fileのstrict、表示内外の画像、文字の可視性、32例の回転共変PBTを検査した。実際に解析した原本から、領域の切り出し、重なるnative行の一意な照合、直角4種の全ページOCRのframeとcaller順序を検査した。認識は所有するcallbackで模擬し、認識モデルの精度率は示さない。
+
+strictの誤受理と領域OCRの失敗の実行ログを保存し、各実行時の793個・794個のRust sourceを固定コミットから全byte一致で再構成できることを照合した。最初の全ページ対照のXML locatorの失敗も保留ログとして残し、製品不具合の根拠には使わない。修正した対照は領域OCRの実装変更前にも成功した。
+
+native194件とChromium/WebKit各202件、計598件は全て、成否とpayloadが親と一致した。両ブラウザの202 payload・101 inspectionが一致し、各inspectionも親と一致した。全ての通常DOCXとstrict診断のバイト一致により、runtime別の既存の目視とgoldを継承する。新たな外観合格条件を追加せず、労働力調査35/57・CPI26/107を保持する。
+
+78個の原本・初回結果・gold・保留試作manifest、延べ58,898ファイルを再照合した。ハッシュと範囲は[`corpus/validation-rotated-page-visibility.json`](../corpus/validation-rotated-page-visibility.json)に記録する。原本2→Word4ページ、ベクターgraphの表誤認、本文のはみ出し、font・clipping・全体の外観の未達は残る。可視判定とOCR座標の限定した確認であり、`whole_document_accepted=false`、`production_ready=false`を維持する。

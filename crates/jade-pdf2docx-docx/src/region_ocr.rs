@@ -107,16 +107,17 @@ pub(super) fn plan(
     Ok(targets)
 }
 
-/// 画像の有限な範囲をページ矩形へ制限する。
+/// 正規化済み画像の範囲を、回転後の表示ページ矩形へ制限する。
 fn clipped(
     bounds: jade_pdf2docx_parser::ParsedBounds,
     page: &ParsedPage,
 ) -> jade_pdf2docx_parser::ParsedBounds {
+    let (width, height) = parsed_page_display_size_points(page);
     jade_pdf2docx_parser::ParsedBounds {
         x0: bounds.x0.min(bounds.x1).max(0.0),
-        x1: bounds.x0.max(bounds.x1).min(page.width),
+        x1: bounds.x0.max(bounds.x1).min(width),
         y0: bounds.y0.min(bounds.y1).max(0.0),
-        y1: bounds.y0.max(bounds.y1).min(page.height),
+        y1: bounds.y0.max(bounds.y1).min(height),
     }
 }
 
@@ -125,45 +126,24 @@ fn overlaps(a: jade_pdf2docx_parser::ParsedBounds, b: jade_pdf2docx_parser::Pars
     a.x0.max(b.x0) < a.x1.min(b.x1) && a.y0.max(b.y0) < a.y1.min(b.y1)
 }
 
-/// PDFの左下原点から、回転後の画像の左上原点へ切り出し矩形を変換する。
+/// 回転済み表示座標の左下原点から、rasterの左上原点へ切り出し矩形を変換する。
 pub(super) fn pixel_region(
     bounds: jade_pdf2docx_parser::ParsedBounds,
     page: &ParsedPage,
     dpi: u32,
 ) -> Result<[usize; 4], ConvertError> {
-    let rotation = page.rotation.rem_euclid(360);
-    let (x0, y0, x1, y1) = match rotation {
-        0 => (
-            bounds.x0,
-            page.height - bounds.y1,
-            bounds.x1,
-            page.height - bounds.y0,
-        ),
-        90 => (bounds.y0, bounds.x0, bounds.y1, bounds.x1),
-        180 => (
-            page.width - bounds.x1,
-            bounds.y0,
-            page.width - bounds.x0,
-            bounds.y1,
-        ),
-        270 => (
-            page.height - bounds.y1,
-            page.width - bounds.x1,
-            page.height - bounds.y0,
-            page.width - bounds.x0,
-        ),
-        _ => {
-            return Err(ConvertError::Ocr(
-                "unsupported OCR region page rotation".into(),
-            ));
-        }
-    };
+    if !matches!(page.rotation.rem_euclid(360), 0 | 90 | 180 | 270) {
+        return Err(ConvertError::Ocr(
+            "unsupported OCR region page rotation".into(),
+        ));
+    }
+    let (_, height) = parsed_page_display_size_points(page);
     let scale = f64::from(dpi) / 72.0;
     Ok([
-        (f64::from(x0) * scale).floor() as usize,
-        (f64::from(y0) * scale).floor() as usize,
-        (f64::from(x1) * scale).ceil() as usize,
-        (f64::from(y1) * scale).ceil() as usize,
+        (f64::from(bounds.x0) * scale).floor() as usize,
+        (f64::from(height - bounds.y1) * scale).floor() as usize,
+        (f64::from(bounds.x1) * scale).ceil() as usize,
+        (f64::from(height - bounds.y0) * scale).ceil() as usize,
     ])
 }
 
@@ -282,18 +262,14 @@ mod tests {
     /// 四方向の回転で切り出す画素が画像領域を覆い、ページ内に収まる。
     #[test]
     fn pixel_regions_follow_clockwise_page_rotation() {
-        let bounds = jade_pdf2docx_parser::ParsedBounds {
-            x0: 20.0,
-            y0: 30.0,
-            x1: 80.0,
-            y1: 70.0,
-        };
-        for (rotation, expected) in [
-            (0, [20, 30, 80, 70]),
-            (90, [30, 20, 70, 80]),
-            (180, [120, 30, 180, 70]),
-            (270, [30, 120, 70, 180]),
+        for (rotation, normalized, expected) in [
+            (0, [20., 30., 80., 70.], [20, 30, 80, 70]),
+            (90, [30., 120., 70., 180.], [30, 20, 70, 80]),
+            (180, [120., 30., 180., 70.], [120, 30, 180, 70]),
+            (270, [30., 20., 70., 80.], [30, 120, 70, 180]),
         ] {
+            let [x0, y0, x1, y1] = normalized;
+            let bounds = jade_pdf2docx_parser::ParsedBounds { x0, y0, x1, y1 };
             let page = ParsedPage {
                 page_number: 0,
                 width: 200.0,
@@ -308,9 +284,10 @@ mod tests {
         #[test]
         fn regions_stay_inside_display_pixels(x0 in 0u32..199, y0 in 0u32..299, dx in 1u32..200, dy in 1u32..300, dpi in 1u32..601, rotation in 0i32..4) {
             let page = ParsedPage { page_number: 0, width: 200.0, height: 300.0, rotation: rotation * 90 };
-            let bounds = jade_pdf2docx_parser::ParsedBounds { x0: x0 as f32, y0: y0 as f32, x1: (x0 + dx.min(200 - x0)) as f32, y1: (y0 + dy.min(300 - y0)) as f32 };
-            let [left, top, right, bottom] = pixel_region(bounds, &page, dpi).unwrap();
             let (width, height) = if rotation % 2 == 0 { (200, 300) } else { (300, 200) };
+            let (x0,y0)=(x0%width,y0%height);
+            let bounds = jade_pdf2docx_parser::ParsedBounds { x0: x0 as f32, y0: y0 as f32, x1: (x0 + dx.min(width - x0)) as f32, y1: (y0 + dy.min(height - y0)) as f32 };
+            let [left, top, right, bottom] = pixel_region(bounds, &page, dpi).unwrap();
             proptest::prop_assert!(left < right && top < bottom);
             proptest::prop_assert!(right <= (f64::from(width) * f64::from(dpi) / 72.0).ceil() as usize);
             proptest::prop_assert!(bottom <= (f64::from(height) * f64::from(dpi) / 72.0).ceil() as usize);
