@@ -238,6 +238,19 @@ mod tests {
         assert_eq!(infer_owned(&source, 612.), None);
     }
 
+    /// 数値の競合候補を取り除いた結果だけで、元は曖昧だった段間を確定しない。
+    #[test]
+    fn numeric_competition_still_keeps_mixed_gutters_ambiguous() {
+        let mut source = (0..4)
+            .map(|i| vec![text(70., 210., 700. - i as f32 * 20.), text(230., 542., 700. - i as f32 * 20.)])
+            .collect::<Vec<_>>();
+        for i in 0..4 {
+            let mut row = vec![text(70., 370., 600. - i as f32 * 20.), text(390., 542., 600. - i as f32 * 20.)];
+            row[0].text = "224".into(); row[1].text = "144".into(); source.push(row);
+        }
+        assert_eq!(infer_owned(&source, 612.), None, "discarding numerical evidence must not create a new unambiguous prose layout");
+    }
+
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
     #[test]
     fn crossing_body_line_blocks_gutter_but_heading_does_not() {
