@@ -143,6 +143,15 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
         if !table.nested_tables.is_empty() || grid.ys.len() != table.table.rows.len() + 1 {
             continue;
         }
+        let default = table_border_size_for_pdf_rule(table.stroke_width);
+        if !parsed.graphics.iter().any(|g| {
+            g.page == table.page
+                && g.stroke_width.is_finite()
+                && g.stroke_width > 0.
+                && table_border_size_for_pdf_rule(g.stroke_width) != default
+        }) {
+            continue;
+        }
         let mut model = table
             .docx_table
             .clone()
@@ -161,15 +170,6 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
                     })
             })
         {
-            continue;
-        }
-        let default = table_border_size_for_pdf_rule(table.stroke_width);
-        if !parsed.graphics.iter().any(|g| {
-            g.page == table.page
-                && g.stroke_width.is_finite()
-                && g.stroke_width > 0.
-                && table_border_size_for_pdf_rule(g.stroke_width) != default
-        }) {
             continue;
         }
         let rules = Rules::new(parsed, table.page, grid);
