@@ -119,6 +119,7 @@ mod tests {
                 let prefix=if upper {"JADELAYOUTSPACE-"} else {"JadeLayoutSpace-"};
                 let fonts = (0..count).map(|i| ParsedEmbeddedFont { font_name: format!("{prefix}{i}"), bytes: Vec::new() }).collect::<Vec<_>>();
                 let texts=(count..count+unembedded).map(|i|ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
     font_weight: None,
                     font_name:Some(format!("ABCDEF+ {prefix}{i} ")),baseline_y:None,page:0,font_size:10.,fill_color:None,

@@ -80,6 +80,7 @@ mod tests {
     /// 既存IRを模した正立Type1 glyphを、入力側の所有領域に作る。
     fn glyph(text: &str, x: usize) -> ParsedTextElement {
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             baseline_y: Some(80.),

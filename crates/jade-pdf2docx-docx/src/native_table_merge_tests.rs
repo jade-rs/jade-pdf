@@ -9,6 +9,7 @@ fn source() -> (
 ) {
     let texts = vec![
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             page: 0,
@@ -25,6 +26,7 @@ fn source() -> (
             },
         },
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             page: 0,

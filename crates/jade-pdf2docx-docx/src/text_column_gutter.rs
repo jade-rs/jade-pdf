@@ -206,6 +206,7 @@ mod tests {
     /// 所有の文字列と既知の描画矩形だけを持つ本文断片を作る。
     fn text(left: f32, right: f32, y: f32) -> ParsedTextElement {
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: None,
             baseline_y: None,

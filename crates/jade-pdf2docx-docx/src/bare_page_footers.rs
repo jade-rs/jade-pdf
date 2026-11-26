@@ -241,6 +241,7 @@ mod tests {
                 }],
             });
             parsed.text_elements.push(ParsedTextElement {
+                source_background: None,
                 fill_stroke_width: None,
                 page,
                 text,
@@ -257,6 +258,7 @@ mod tests {
                 },
             });
             parsed.text_elements.push(ParsedTextElement {
+                source_background: None,
                 fill_stroke_width: None,
                 page,
                 text: (page + 1).to_string(),

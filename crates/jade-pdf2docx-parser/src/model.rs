@@ -68,6 +68,8 @@ pub struct ParsedGraphicElement {
 /// PDF content stream から抽出したテキスト要素を表す。
 #[derive(Debug, Clone, PartialEq)]
 pub struct ParsedTextElement {
+    /// 描画順・通常合成・矩形の範囲を確認した文字背後の塗り。未確認はNone。
+    pub source_background: Option<ParsedTextBackground>,
     /// 水平SDK文字または確認済み水平書字の正立描画のbaseline y座標。boundsと同じページ座標系で、未確認はNone。
     /// pure/自作IRではNoneを指定でき、行復元は従来どおりbounds.y0を使う。
     pub baseline_y: Option<f32>,
@@ -87,6 +89,15 @@ pub struct ParsedTextElement {
     pub fill_color: Option<String>,
     /// 抽出した Unicode テキスト。
     pub text: String,
+}
+
+/// 原本文字の背後にある、未遮蔽の不透明なDevice色矩形。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ParsedTextBackground {
+    /// 文字boundsと同じページ座標系の原本矩形。
+    pub bounds: ParsedBounds,
+    /// Device色から変換したRGB成分。CMYKは既存の近似変換を使う。
+    pub rgb: [u8; 3],
 }
 
 /// PDF から抽出した画像要素を表す。

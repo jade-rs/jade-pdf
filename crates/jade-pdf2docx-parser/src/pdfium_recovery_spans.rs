@@ -57,6 +57,7 @@ pub(super) fn join(
         && size == next.font_size
         && previous.page == next.page
         && previous.font_weight == next.font_weight
+        && previous.source_background == next.source_background
         && previous.fill_stroke_width == next.fill_stroke_width
         && previous.font_name == next.font_name
         && previous.fill_color == next.fill_color
@@ -88,6 +89,8 @@ struct Signature<'a> {
     weight: Option<u16>,
     /// sourceの塗りと輪郭線の重ね描きも、別のstyleと区別する。
     fill_stroke_width: Option<u32>,
+    /// 原本背景の色と範囲を別のspanから流用しない。
+    source_background: Option<([u8; 3], [u32; 4])>,
     /// 文字loose boundsではなく、元矩形に対応するobject幾何。
     bounds: [u32; 4],
 }
@@ -105,6 +108,12 @@ fn signature(text: &ParsedTextElement, bounds: [f32; 4]) -> Signature<'_> {
         ),
         weight: text.font_weight,
         fill_stroke_width: text.fill_stroke_width.map(f32::to_bits),
+        source_background: text.source_background.map(|b| {
+            (
+                b.rgb,
+                [b.bounds.x0, b.bounds.y0, b.bounds.x1, b.bounds.y1].map(f32::to_bits),
+            )
+        }),
         bounds: bounds.map(f32::to_bits),
     }
 }

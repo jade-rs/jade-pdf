@@ -72,7 +72,7 @@ fn has_rectangle(budget: &DecodeBudget, content: &[u8]) -> bool {
 }
 
 /// 任意の軸平行変換・反転・90度回転でも、外接矩形ではなく元の四辺を使う。
-fn rectangle(matrix: [f32; 6], values: [f32; 4]) -> Option<ParsedBounds> {
+pub(super) fn rectangle(matrix: [f32; 6], values: [f32; 4]) -> Option<ParsedBounds> {
     if !matrix.iter().chain(&values).all(|v| v.is_finite())
         || !((matrix[1] == 0. && matrix[2] == 0. && matrix[0] != 0. && matrix[3] != 0.)
             || (matrix[0] == 0. && matrix[3] == 0. && matrix[1] != 0. && matrix[2] != 0.))

@@ -5,6 +5,7 @@ use proptest::prelude::*;
 /// 文字内容以外のsource幾何・書体・weightを検査できる要素を作る。
 fn element(text: &str, page: usize) -> ParsedTextElement {
     ParsedTextElement {
+        source_background: None,
         fill_stroke_width: None,
         text: text.into(),
         page,

@@ -253,6 +253,7 @@ fn copy_element(
     text: bool,
 ) -> Option<ParsedTextElement> {
     Some(ParsedTextElement {
+        source_background: element.source_background,
         fill_stroke_width: element.fill_stroke_width,
         font_weight: element.font_weight,
         baseline_y: element.baseline_y,
@@ -317,6 +318,7 @@ mod source_weight_tests {
     #[test]
     fn budgeted_copy_preserves_source_font_weight() {
         let source = ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             font_weight: Some(700),
             baseline_y: Some(700.),

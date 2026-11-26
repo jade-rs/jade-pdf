@@ -4,6 +4,8 @@ use super::*;
 /// 結合後の一セルについて、原本の原点と表示行を保持する。
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Cell {
+    /// 原本文字の背後の確認済み塗りがセル全体を覆う場合だけ保持するRGB。
+    background: Option<[u8; 3]>,
     /// セル左端のPDF座標。
     left: f32,
     /// セル右端。原本の文字が越える場合は一行の水平原点を補正しない。
@@ -66,6 +68,23 @@ fn cells_impl(
         .filter(|graphic| !is_grid_border(graphic, xs, ys))
         .cloned()
         .collect::<Vec<_>>();
+    let page = texts
+        .iter()
+        .flatten()
+        .flatten()
+        .next()
+        .map(|text| text.page);
+    let edge_width = parsed
+        .graphics
+        .iter()
+        .filter(|g| {
+            Some(g.page) == page
+                && is_grid_border(g, xs, ys)
+                && g.stroke_width.is_finite()
+                && g.stroke_width > 0.
+        })
+        .map(|g| g.stroke_width)
+        .fold(0., f32::max);
     model
         .rows
         .iter()
@@ -108,6 +127,30 @@ fn cells_impl(
                         .iter()
                         .flat_map(|row| row.iter().flatten())
                         .collect::<Vec<_>>();
+                    if cell.text.trim().is_empty() {
+                        let background = source_cell_background::empty_color(
+                            parsed,
+                            page?,
+                            ParsedBounds {
+                                x0: left,
+                                y0: bottom,
+                                x1: right,
+                                y1: top,
+                            },
+                            edge_width,
+                        )?;
+                        return Some(Cell {
+                            background: Some(background),
+                            left,
+                            right,
+                            top,
+                            bottom,
+                            lines: Vec::new(),
+                            single_line_runs: Vec::new(),
+                            fallback_runs: Vec::new(),
+                            logical_row_right_anchor: None,
+                        });
+                    }
                     if elements.is_empty() {
                         return None;
                     }
@@ -115,6 +158,16 @@ fn cells_impl(
                     if characters(&original) != characters(&cell.text) {
                         return None;
                     }
+                    let background = source_cell_background::color(
+                        &elements,
+                        ParsedBounds {
+                            x0: left,
+                            y0: bottom,
+                            x1: right,
+                            y1: top,
+                        },
+                        edge_width,
+                    );
                     let rows = source_rows(elements, closed_boxes);
                     // 同じ字形・fontでも別断片の位置を混同せず、確認済み行内の基線差だけを渡す。
                     let offsets = rows
@@ -149,6 +202,7 @@ fn cells_impl(
                                 .all(|v| v.is_finite())
                         }))
                     .then(|| Cell {
+                        background,
                         logical_row_right_anchor: None,
                         left,
                         right,
@@ -368,6 +422,11 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         out = out.add_paragraph(paragraph);
     }
     Some(out)
+}
+
+/// 原本と全文照合したセルの背景色を、Wordセルの最終構築へ渡す。
+pub(super) fn background(cell: &Cell) -> Option<[u8; 3]> {
+    cell.background
 }
 
 /// 容量検査と累積丸めを、段落IDを生成しない遅延iteratorとして実際のbuilderと共有する。

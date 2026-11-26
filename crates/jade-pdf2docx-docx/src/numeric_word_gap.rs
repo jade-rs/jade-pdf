@@ -33,6 +33,7 @@ mod tests {
     /// 所有する同じsize・baselineの数値二欄を作る。
     fn field(text: &str) -> ParsedTextElement {
         ParsedTextElement {
+            source_background: None,
             fill_stroke_width: None,
             page: 0,
             text: text.into(),

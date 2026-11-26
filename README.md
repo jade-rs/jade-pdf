@@ -66,6 +66,8 @@ PDF comparison uses the pinned Pdfium runtime described in the [comparison guide
 
 `ParsedTextElement::fill_stroke_width` separately records a verified same-color, opaque fill-and-stroke text width. Rust struct literals need `fill_stroke_width: None` when unconfirmed. A supported thin stroke can produce Word emphasis while the original FontDescriptor weight remains 400. Unknown paint effects, colors and font types retain the existing behavior. See [painted text emphasis and its limits](docs/source_painted_text_emphasis.md). The fixed follow-up passes 2,639 Rust tests and preserves 592 of 598 prior runtime payloads byte for byte; only the known labour/CPI default emphasis changes. Labour remains 32/57 and CPI 26/107 source criteria, with whole-document production readiness unaccepted.
 
+`ParsedTextElement::source_background` separately records a verified opaque source rectangle behind text. Rust struct literals need `source_background: None` when unconfirmed. Source-framed table cells use the color only when the proven rectangle covers the whole cell; partial fills, unknown effects, fonts and page groups retain existing styling. See [source table backgrounds and their limits](docs/source_table_cell_backgrounds.md).
+
 Inferred centred text lines within the body area retain their PDF centre through section-relative paragraph indents, keeping the previous writable width. Substituted font metrics can still change the visible text width.
 
 Text and table offsets share the page margin origin so overhanging headings and graphics do not shift body content.
