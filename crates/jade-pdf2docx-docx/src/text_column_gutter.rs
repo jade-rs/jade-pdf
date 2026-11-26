@@ -317,6 +317,27 @@ mod tests {
         );
     }
 
+    /// 本文区間の外の数値行は、散文の横断行として本文の段組を拒否しない。
+    #[test]
+    fn numeric_crossing_row_outside_body_does_not_veto_prose_columns() {
+        let mut source = crossing_numeric_scope();
+        source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
+        assert_eq!(infer_owned(&source, 612.), Some(306.));
+    }
+
+    /// 散文を含む参考文献行は、段間の両側が数値で終わっても本文の根拠にする。
+    #[test]
+    fn prose_rows_with_numeric_suffixes_still_establish_the_gutter() {
+        let source = (0..4).map(|i| {
+            let y = 700. - i as f32 * 20.;
+            let mut row = vec![text(90., 250., y), text(260., 294., y), text(318., 522., y)];
+            row[1].text = "2016.".into();
+            row[2].text = "6181, 2018.".into();
+            row
+        }).collect::<Vec<_>>();
+        assert_eq!(infer_owned(&source, 612.), Some(306.));
+    }
+
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
     #[test]
     fn crossing_body_line_blocks_gutter_but_heading_does_not() {

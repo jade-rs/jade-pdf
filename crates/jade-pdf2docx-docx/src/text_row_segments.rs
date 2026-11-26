@@ -180,6 +180,19 @@ mod tests {
         }
     }
 
+    /// 散文行に含まれる年や巻号だけを見て、別段の参考文献の末尾を左段へ結合しない。
+    #[test]
+    fn numeric_suffixes_inside_prose_rows_keep_the_column_cut() {
+        let rows = body();
+        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
+        let mut row = [text(90., 250., 680.), text(260., 298., 680.), text(314., 400., 680.)];
+        row[0].text = "Reference in left column".into();
+        row[1].text = "2016.".into();
+        row[2].text = "6181, 2018.".into();
+        assert!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
         /// 一様倍率と平行移動によらず、上下の全幅数値行を本文の段組へ混ぜない。
