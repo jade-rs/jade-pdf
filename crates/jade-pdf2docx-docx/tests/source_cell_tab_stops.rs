@@ -71,7 +71,7 @@ proptest! {
     fn translated_cell_preserves_relative_tab_stops(dx in -40i16..60, dy in -40i16..60, next in 140u16..200) {
         let s = xml(&controlled(&format!("1 0 0 1 {dx} {dy} cm"), "Helvetica", f32::from(next)));
         prop_assert_eq!(s.matches("<w:tbl>").count(), 1);
-        prop_assert!(s.contains(&format!("w:val=\"left\" w:pos=\"{}\"", (next - 72) * 20)));
+        prop_assert!(s.contains(&format!("w:val=\"left\" w:pos=\"{}\"", (next - 72) * 20)), "relative source tab must be present");
         prop_assert_eq!(s.matches("<w:tab />").count(), 1);
         for word in ["New", "Old", "Control", "End"] { prop_assert_eq!(s.matches(&format!(">{word}</w:t>")).count(), 1); }
     }
