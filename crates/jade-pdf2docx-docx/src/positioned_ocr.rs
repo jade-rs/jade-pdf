@@ -1,8 +1,8 @@
-//! OCRの画素座標を検証し、回転前のPDFページ座標へ戻す。
-use super::{ConvertError, PageOcrRaster, ParsedPage};
+//! OCRの画素座標を検証し、native本文と同じ回転済み表示ページ座標へ戻す。
+use super::{ConvertError, PageOcrRaster, ParsedPage, parsed_page_display_size_points};
 use jade_pdf2docx_parser::ParsedBounds;
 
-/// 行矩形が認識対象内にあることを確認し、DPIとページ回転を逆変換する。
+/// 行矩形が認識対象内にあることを確認し、DPIと上下原点だけを変換する。
 pub(super) fn pdf_bounds(
     page: &ParsedPage,
     raster: PageOcrRaster,
@@ -22,29 +22,18 @@ pub(super) fn pdf_bounds(
             raster.page + 1
         )));
     }
+    if !matches!(page.rotation.rem_euclid(360), 0 | 90 | 180 | 270) {
+        return Err(ConvertError::Ocr(
+            "unsupported OCR line page rotation".into(),
+        ));
+    }
+    let (_, height) = parsed_page_display_size_points(page);
     let scale = 72.0 / f64::from(dpi);
-    let transform = |x: usize, y: usize| -> Result<(f32, f32), ConvertError> {
-        let x = (x as f64 * scale) as f32;
-        let y = (y as f64 * scale) as f32;
-        Ok(match page.rotation.rem_euclid(360) {
-            0 => (x, page.height - y),
-            90 => (y, x),
-            180 => (page.width - x, y),
-            270 => (page.width - y, page.height - x),
-            _ => {
-                return Err(ConvertError::Ocr(
-                    "unsupported OCR line page rotation".into(),
-                ));
-            }
-        })
-    };
-    let (ax, ay) = transform(x0, y0)?;
-    let (bx, by) = transform(x1, y1)?;
     Ok(ParsedBounds {
-        x0: ax.min(bx),
-        y0: ay.min(by),
-        x1: ax.max(bx),
-        y1: ay.max(by),
+        x0: (x0 as f64 * scale) as f32,
+        y0: height - (y1 as f64 * scale) as f32,
+        x1: (x1 as f64 * scale) as f32,
+        y1: height - (y0 as f64 * scale) as f32,
     })
 }
 
@@ -53,14 +42,14 @@ mod tests {
     use super::*;
     use proptest::prelude::*;
 
-    /// 四方向のページ回転で、画像上の行矩形を元のPDF位置へ戻す。
+    /// 四方向のページ回転で、画像上の行矩形をnativeと同じ表示位置へ戻す。
     #[test]
     fn line_positions_follow_page_rotation() {
         for (rotation, expected) in [
             (0, [10., 60., 30., 80.]),
-            (90, [20., 10., 40., 30.]),
-            (180, [170., 20., 190., 40.]),
-            (270, [160., 70., 180., 90.]),
+            (90, [10., 160., 30., 180.]),
+            (180, [10., 60., 30., 80.]),
+            (270, [10., 160., 30., 180.]),
         ] {
             let page = ParsedPage {
                 page_number: 0,
