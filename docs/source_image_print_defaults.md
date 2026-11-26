@@ -24,4 +24,18 @@
 
 RGB sample、stencilの色とalpha、間接属性、未知の効果からの状態復元、既定色空間の拒否、任意RGBとsmoothness・SAの48例PBTを所有する合成PDFで検査する。通常設定を許可することでstrictの画像警告が減ることはあり得るが、他の未対応要因のstrict拒否を解除しない。
 
-この記録は試作と限定した回帰の検査であり、全資料・全runtimeの最終検証は別途固定する。`whole_document_accepted=false`と`production_ready=false`を維持する。kanpoの表・styleの[固定参照記録](source_typography_and_table_opening.md#参照)と同様に、custom licenseのコードや依存は取り込まず独立に実装した。
+ここまでは試作と限定した回帰の検査であり、固定した最終検証を次節に記録する。`whole_document_accepted=false`と`production_ready=false`を維持する。kanpoの表・styleの[固定参照記録](source_typography_and_table_opening.md#参照)と同様に、custom licenseのコードや依存は取り込まず独立に実装した。
+
+## 固定した最終検証
+
+実装コミット`73c76fa9b73c17579971f6838ec4aee234e0d617`を固定した。Rust1.93.1のCI defaultは2,657成功・0失敗・42無効化、158テスト群で、790個のRustファイルは全検証とnative/WASMビルドを通して同一だった。fmt、fixture hygiene2件、WASM distribution10件も通過した。所有する公開回帰6件には48例のRGB sample PBTを含み、通常設定と既定色空間の失敗ログを保持した。
+
+native194件とChromium/WebKit各202件、合計598件は全て直前と成否が一致した。586件はpayloadがバイト一致した。変化は労働力調査とCPIの通常変換各3件、およびstrict診断各3件の計12件だけである。両ブラウザは202 payloadと101 inspectionが一致した。
+
+通常出力6件はruntimeごとの目視済みDOCXとRAW一致した。画像の埋め込みIDだけを置換すると親の本文XMLと一致し、非画像の関係・その他の部品もバイト一致する。労働力調査の8画像は原本のRGBまたはmask alphaと完全一致した。CPIのFlateロゴもRGB完全一致し、JPEGヘッダーは独立decoderとの最大差が各色2階調だった。JPEG全画素一致とは主張しない。
+
+変更した労働力調査2・3ページ、CPI nativeとbrowserの各1・16ページを目視した。その他は目視済み親とRGB一致した。ブラウザCPIはnativeの本文差を保持するため、独立したレンダリングを行った。browserの16ページではロゴが見えるが本文と重なり、nativeでは下端で切れる。画像が戻ったことと原本どおりの配置は別に扱う。
+
+strictは6件全てが引き続き拒否した。消えたのは労働力調査8点・CPI2点の画像置換警告だけで、残る3件のclipping・曲線・OCR等の診断と、その他のinspection値を維持した。原本goldの合格数を画像の回復だけで変更せず、労働力調査34合格・23未達/未確認、CPI26合格・81未達/未確認のままである。初回結果も変更しない。
+
+76個の原本・初回結果・gold・保留試作manifest、延べ54,886ファイルを再照合した。ハッシュと範囲は[`corpus/validation-source-image-print-defaults.json`](../corpus/validation-source-image-print-defaults.json)に記録する。画像の通常印刷設定の限定した確認であり、原本2→Word4ページ、原本12→Word16ページ、graph・font・配置・余分な表・clippingなどの未達を残す。`whole_document_accepted=false`、`production_ready=false`を維持する。
