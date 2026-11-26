@@ -35,7 +35,7 @@ fn separated_cell_groups_keep_their_source_tab_position() {
     let s = xml();
     assert_eq!(s.matches("<w:tbl>").count(), 1);
     assert!(s.contains("w:val=\"left\" w:pos=\"1400\""), "{s}");
-    assert!(s.contains("<w:tab/>"), "{s}");
+    assert!(s.contains("<w:tab />"), "{s}");
     for text in ["New", "Old", "Control", "End"] {
         assert_eq!(s.matches(&format!(">{text}</w:t>")).count(), 1);
     }
