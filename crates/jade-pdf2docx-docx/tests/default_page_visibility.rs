@@ -184,7 +184,12 @@ fn remaining_right_anchored_word_has_room_after_hidden_elements_are_removed() {
     }
     assert!(
         width - left - right - indent_left - indent_right >= expected,
-        "Word flow width must fit the same source word without hidden content padding"
+        "Word flow width must fit the same source word without hidden content padding: available={} expected={} parsed={:?}",
+        width - left - right - indent_left - indent_right,
+        expected,
+        parse_pdf_bytes("owned-width-diagnostic.pdf", &source(270, true, Some(300)))
+            .unwrap()
+            .text_elements
     );
 }
 

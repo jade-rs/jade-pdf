@@ -30,6 +30,7 @@ mod column_frame;
 mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
+mod rotated_text_fallback;
 mod source_cell_background;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
@@ -1516,7 +1517,7 @@ fn structured_page_left_x(
     positioned_tables: &[PositionedTable],
     page: &StructuredTextPage,
 ) -> f32 {
-    positioned_tables
+    let source_left = positioned_tables
         .iter()
         .filter(|table| table.page == page.page)
         .map(|table| table.bounds.x0)
@@ -1536,7 +1537,8 @@ fn structured_page_left_x(
                 .map(|graphic| graphic.bounds.x0.min(graphic.bounds.x1)),
         )
         .filter(|value| value.is_finite() && *value >= 0.0)
-        .fold(f32::INFINITY, f32::min)
+        .fold(f32::INFINITY, f32::min);
+    source_left.min(rotated_text_fallback::left_x(parsed, page).unwrap_or(f32::INFINITY))
 }
 
 /// 指定 PDF ページの page size と content 原点由来の margin を返す。
