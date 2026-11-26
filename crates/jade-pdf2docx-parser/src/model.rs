@@ -67,7 +67,8 @@ pub struct ParsedGraphicElement {
     pub stroke_width: f32,
 }
 
-/// 塗り・dash・alpha・clipを確認した、方向を失わない黒いstroke対角線。
+/// dash・stroke alpha・clip内の中心線矩形を確認した、方向を失わない黒い対角線。
+/// セル境界で端のstrokeが切れる場合を含み、clip照合はf32演算差を最大0.001pt許す。
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct ParsedSourceDiagonal {
     /// 対象ページ番号。

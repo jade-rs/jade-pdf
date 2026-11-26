@@ -68,7 +68,7 @@ pub(super) fn occlude(
     });
 }
 
-/// 描画前のclipとページ内へstroke全体が収まる、非軸平行の線分だけを保存する。
+/// ページ内のstrokeと描画前clip内の中心線矩形を確認し、非軸平行の端点を保存する。
 #[allow(clippy::too_many_arguments)]
 pub(super) fn emit(
     budget: &DecodeBudget,
@@ -99,7 +99,7 @@ pub(super) fn emit(
     ];
     if padded.iter().all(|v| v.is_finite())
         && page_clip.contains_rect(padded, [1., 0., 0., 1., 0., 0.])
-        && clip.is_none_or(|c| c.contains_rect(padded, [1., 0., 0., 1., 0., 0.]))
+        && clip.is_none_or(|c| centerline_rectangle_is_inside(c, start, end))
     {
         try_push(
             budget,
@@ -113,6 +113,29 @@ pub(super) fn emit(
         )?;
     }
     Some(())
+}
+
+/// セル境界で端のstrokeを切るclipでも中心線の矩形全体を確認し、元の端点は動かさない。
+/// f32の変換順序による境界差だけを最大0.001pt許す。小さい領域はその1/4までに制限する。
+fn centerline_rectangle_is_inside(
+    clip: &crate::form_clip::Clip,
+    start: [f32; 2],
+    end: [f32; 2],
+) -> bool {
+    let left = start[0].min(end[0]);
+    let right = start[0].max(end[0]);
+    let bottom = start[1].min(end[1]);
+    let top = start[1].max(end[1]);
+    let epsilon = 0.001_f32.min((right - left) / 4.).min((top - bottom) / 4.);
+    clip.contains_rect(
+        [
+            left + epsilon,
+            bottom + epsilon,
+            right - epsilon,
+            top - epsilon,
+        ],
+        [1., 0., 0., 1., 0., 0.],
+    )
 }
 
 /// 原点移動とcardinal page rotationで、外接矩形へ向きを潰さず二端点を変換する。
@@ -202,6 +225,7 @@ mod tests {
             matrix,
             width,
             cap: Some(2),
+            fill: Default::default(),
             paint: Default::default(),
         };
         for m in [

@@ -21,6 +21,8 @@ struct State {
     width: f32,
     /// 単純線分の端を定義できるPDF line cap。未知値はNone。
     cap: Option<u8>,
+    /// 後続の黒塗りが元の黒strokeを消さないことの、strokeと独立な根拠。
+    fill: Paint,
     /// 不透明な黒い実線の根拠。
     paint: Paint,
 }
@@ -50,6 +52,7 @@ fn scan<'a>(
         matrix: [1., 0., 0., 1., 0., 0.],
         width: 1.,
         cap: Some(0),
+        fill: Default::default(),
         paint: Default::default(),
     };
     let mut saved = Vec::new();
@@ -91,6 +94,19 @@ fn scan<'a>(
             continue;
         }
         state.paint.apply(word, &args[..count]);
+        let fill_word: Option<&[u8]> = match word {
+            b"g" => Some(b"G"),
+            b"rg" => Some(b"RG"),
+            b"k" => Some(b"K"),
+            b"cs" => Some(b"CS"),
+            b"sc" => Some(b"SC"),
+            b"scn" => Some(b"SCN"),
+            _ => None,
+        };
+        if let Some(fill_word) = fill_word {
+            state.fill.apply(fill_word, &args[..count]);
+        }
+
         match (word, &args[..count]) {
             (b"q", []) => {
                 budget.check_form_graphics_depth(saved.len() + 1)?;
@@ -125,11 +141,16 @@ fn scan<'a>(
             (b"w", [Operand::Number(w)]) => state.width = *w,
             (b"w", _) => state.width = f32::NAN,
             (b"gs", [Operand::Name(name)]) => {
+                // stroke用CAの解決をfill用caの根拠へ使わない。Qまでは未確認を保つ。
+                state.fill.state(None);
                 state
                     .paint
                     .state(resources::resolve(budget, resolver, page_resources, name))
             }
-            (b"gs", _) => state.paint.state(None),
+            (b"gs", _) => {
+                state.paint.state(None);
+                state.fill.state(None);
+            }
             (b"m" | b"l", [Operand::Number(x), Operand::Number(y)]) => {
                 let next = point(state.matrix, *x, *y);
                 if let Some(p) = next {
@@ -213,7 +234,11 @@ fn scan<'a>(
                 bounds = None;
             }
             (b"f" | b"F" | b"f*" | b"B" | b"B*" | b"b" | b"b*", []) => {
-                occlude(output, page, if curved { None } else { bounds });
+                if !(state.fill.supported()
+                    && resources::native_device(resolver, page_resources, state.fill.components()))
+                {
+                    occlude(output, page, if curved { None } else { bounds });
+                }
                 segments.clear();
                 current = None;
                 first = None;

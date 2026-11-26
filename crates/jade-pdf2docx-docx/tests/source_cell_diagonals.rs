@@ -184,3 +184,16 @@ proptest! {
         prop_assert_eq!(s.matches("<w:tr2bl ").count(),usize::from(opposite));prop_assert_eq!(s.matches("<w:tl2br ").count(),usize::from(!opposite));
     }
 }
+
+/// 原本セルの矩形clipで端を切った斜線も、同じ空セルだけに保持する。
+#[test]
+fn cell_clipped_source_diagonal_survives_black_border_overpaint() {
+    let line = "q 172 620 100 30 re W n 172 650 m 272 620 l S Q 0 g 171.5 619.5 1 31 re f";
+    let s = xml(convert_minimum_pdf_bytes_to_docx_bytes(
+        "owned-clipped-cell-diagonal.pdf",
+        &controlled(line, "", false, 0., 0., 1.),
+    )
+    .unwrap());
+    assert_eq!(s.matches("<w:tl2br ").count(), 1);
+    assert_eq!(s.matches("<w:tr2bl ").count(), 0);
+}
