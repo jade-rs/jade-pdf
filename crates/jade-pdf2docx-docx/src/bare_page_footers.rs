@@ -241,6 +241,7 @@ mod tests {
                 }],
             });
             parsed.text_elements.push(ParsedTextElement {
+                fill_stroke_width: None,
                 page,
                 text,
                 font_size: 12.0,
@@ -256,6 +257,7 @@ mod tests {
                 },
             });
             parsed.text_elements.push(ParsedTextElement {
+                fill_stroke_width: None,
                 page,
                 text: (page + 1).to_string(),
                 font_size: 11.04,

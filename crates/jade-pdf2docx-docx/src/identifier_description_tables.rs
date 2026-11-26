@@ -223,6 +223,7 @@ mod tests {
                 (format!("Original description {index}"), 234.0, 450.0),
             ] {
                 parsed.text_elements.push(ParsedTextElement {
+                    fill_stroke_width: None,
                     page: 0,
                     text,
                     font_size: 10.0,

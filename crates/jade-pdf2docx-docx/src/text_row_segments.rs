@@ -90,6 +90,7 @@ mod tests {
     /// 既知の原点・em高を持つ所有断片を作り、製品の段組推定から期待値を逆算しない。
     fn text(left: f32, right: f32, y: f32) -> ParsedTextElement {
         ParsedTextElement {
+            fill_stroke_width: None,
             page: 0,
             text: "376".into(),
             font_name: None,

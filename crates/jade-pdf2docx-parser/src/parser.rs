@@ -375,7 +375,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     crate::page_geometry_diagnostics::collect(decode_budget, page_count, &pages, &mut quality)?;
     let mut graphics = extract_graphics_with_resources(decode_budget, &bytes, &tree_source);
     decode_budget.check()?;
-    let mut text_elements = extract_text_elements_from_pdf_bytes(decode_budget, &bytes);
+    let mut text_elements =
+        extract_text_elements_with_paint_resources(decode_budget, &bytes, &tree_source);
     decode_budget.check()?;
     let form_text = extract_form_text_elements(decode_budget, bytes, &mut quality);
     decode_budget.check()?;
@@ -851,9 +852,19 @@ fn extract_graphics_with_resources(
 }
 
 /// PDFの座標付き本文を抽出し、空のページFont対応も全体fallbackより優先する。
+#[cfg(test)]
 fn extract_text_elements_from_pdf_bytes(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
+) -> Vec<ParsedTextElement> {
+    extract_text_elements_with_paint_resources(decode_budget, bytes, bytes)
+}
+
+/// 文字本文と、検証済み展開metadataから得るpaintの根拠を分けて借用する。
+fn extract_text_elements_with_paint_resources(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    resource_source: &[u8],
 ) -> Vec<ParsedTextElement> {
     let font_names = parse_font_resource_base_fonts(decode_budget, bytes);
     let font_encodings = parse_font_resource_encodings(decode_budget, bytes);
@@ -889,7 +900,8 @@ fn extract_text_elements_from_pdf_bytes(
     let mut alpha_resolver = alpha_objects
         .as_ref()
         .map(|objects| crate::resource_resolver::ResourceResolver::new(objects, decode_budget));
-    for (page, stream) in streams {
+    for (page, stream) in &streams {
+        let page = *page;
         let page_resources = page_font_resources.get(page);
         let page_font_names = page_resources
             .map(|resources| &resources.base_fonts as &dyn crate::metadata_map::Lookup<String>)
@@ -900,7 +912,7 @@ fn extract_text_elements_from_pdf_bytes(
         let page_font_cmaps = page_resources
             .map(|resources| &resources.cmaps as &dyn crate::metadata_map::Lookup<ToUnicodeCMap>)
             .unwrap_or(&font_cmaps);
-        let texts = extract_text_elements_from_content_stream(
+        let mut texts = extract_text_elements_from_content_stream(
             decode_budget,
             page,
             &stream,
@@ -940,6 +952,13 @@ fn extract_text_elements_from_pdf_bytes(
                 _ => Default::default(),
             },
         );
+        if texts.iter().any(|t| t.fill_stroke_width.is_some())
+            && !white_fill_rules::normal_text_paint(decode_budget, resource_source, page, stream)
+        {
+            for text in &mut texts {
+                text.fill_stroke_width = None;
+            }
+        }
         if crate::text_result_storage::append(decode_budget, &mut elements, texts).is_none() {
             return Vec::new();
         }
@@ -2646,6 +2665,15 @@ fn extract_text_elements_with_matrices<'clip>(
             return 0.;
         }
         let font_size = state.size * geometry.map_or(1., |g| g.vertical_scale().max(f32::EPSILON));
+        let fill_stroke_width = (state.rendering.fills_and_strokes()
+            && inherited_fonts.is_none()
+            && state
+                .font
+                .as_deref()
+                .and_then(|name| metrics.get(name))
+                .is_some_and(|font| !font.is_type3()))
+        .then(|| current_geometry.and_then(|g| state.stroke_paint.same_color_width(g.matrix)))
+        .flatten();
         let clipped = geometry
             .filter(|g| g.needs_glyph_clip(layout.left, layout.right, state.size))
             .and_then(|geometry| {
@@ -2729,6 +2757,7 @@ fn extract_text_elements_with_matrices<'clip>(
             && (last_sequence == Some(sequence) || adjacent)
             && elements.last().is_some_and(|previous| {
                 previous.font_size == font_size
+                    && previous.fill_stroke_width == fill_stroke_width
                     && previous.font_weight == font_weight
                     && crate::text_baseline::compatible(previous.baseline_y, source_baseline)
                     && previous.font_name.as_deref() == font_name
@@ -2780,6 +2809,7 @@ fn extract_text_elements_with_matrices<'clip>(
                         budget,
                         &mut elements,
                         ParsedTextElement {
+                            fill_stroke_width: None,
                             font_weight: None,
                             baseline_y: source_baseline,
                             page,
@@ -2828,6 +2858,7 @@ fn extract_text_elements_with_matrices<'clip>(
                     budget,
                     &mut elements,
                     ParsedTextElement {
+                        fill_stroke_width,
                         font_weight,
                         baseline_y: source_baseline,
                         page,

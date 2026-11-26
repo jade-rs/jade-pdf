@@ -8,6 +8,10 @@ pub(crate) struct Mode {
 }
 
 impl Mode {
+    /// clipを兼ねない明示的な塗りと輪郭線の重ね描きだけを区別する。
+    pub(crate) fn fills_and_strokes(self) -> bool {
+        self.value == 2
+    }
     /// 通常FontではTrのfill/stroke種別に対応するalphaが正の場合だけpaintする。
     /// Type3はglyph内部で状態を変更できるため従来のunsupported診断へ委ねる。
     pub(crate) fn paints_with_alpha(

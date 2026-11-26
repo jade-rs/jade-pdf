@@ -12,6 +12,7 @@ fn fingerprint(offset: f32) -> Option<Key> {
 /// 水平な同一fontの連続文字を作る。
 fn element(text: &str, left: f32, right: f32) -> ParsedTextElement {
     ParsedTextElement {
+        fill_stroke_width: None,
         font_weight: None,
         text: text.into(),
         page: 0,

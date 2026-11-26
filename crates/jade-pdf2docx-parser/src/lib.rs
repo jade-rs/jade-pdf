@@ -107,6 +107,7 @@ mod text_draws;
 mod text_geometry;
 mod text_rendering;
 mod text_result_storage;
+mod text_stroke_paint;
 mod text_word_gap;
 mod tounicode_cache;
 mod truetype_winansi;

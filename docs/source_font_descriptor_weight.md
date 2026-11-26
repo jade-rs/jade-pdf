@@ -1,5 +1,7 @@
 # FontDescriptorに明記された文字の太さ
 
+同色の塗りと細い輪郭線を重ねた[描画による強調](source_painted_text_emphasis.md)は、`fill_stroke_width`という別の属性で保持する。その場合も、このページで扱うFontDescriptorのweight値は400から700へ書き換えない。
+
 名前が`Regular`でもFontDescriptorが700を宣言するPDFでは、名前の推測だけでは原本の太字を失う。bytes/WASM解析は、選択したfont resourceのdescriptor直下の`FontWeight`を読み、`ParsedTextElement::font_weight: Option<u16>`として保持する。simple fontとType0の単一descendant、直接値と数値への間接参照を扱う。幅情報がないfontでも独立に保持する。
 
 採用する値は有限の整数1..=1000だけとする。属性の欠落、型違い、未解決参照、重複した属性、複数descendant、入れ子にある同名属性は未確認の`None`とする。名前や`StemV`から数値を作らない。走査は既存の停止・処理時間予算とresource resolverを共有し、依存を追加しない。同じ名前でも太さの異なるspanは連結しない。

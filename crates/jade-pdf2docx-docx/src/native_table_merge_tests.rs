@@ -9,6 +9,7 @@ fn source() -> (
 ) {
     let texts = vec![
         ParsedTextElement {
+            fill_stroke_width: None,
             font_weight: None,
             page: 0,
             text: "TOP".into(),
@@ -24,6 +25,7 @@ fn source() -> (
             },
         },
         ParsedTextElement {
+            fill_stroke_width: None,
             font_weight: None,
             page: 0,
             text: "lower".into(),

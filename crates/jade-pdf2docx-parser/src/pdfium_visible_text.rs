@@ -229,6 +229,7 @@ fn extract_mode(
             break;
         };
         let element = ParsedTextElement {
+            fill_stroke_width: None,
             font_weight: tags.weight(&name),
             baseline_y: crate::pdfium_text::horizontal_baseline(&character),
             page,

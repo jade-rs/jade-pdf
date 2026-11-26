@@ -29,6 +29,8 @@ pub(crate) struct State {
     pub(crate) rendering: crate::text_rendering::Mode,
     /// fill/strokeの透明度を独立して保持する。
     pub(crate) alpha: crate::text_alpha::State,
+    /// 文字の塗りと線の実際の描画色・幅。
+    pub(crate) stroke_paint: crate::text_stroke_paint::State,
 }
 
 impl State {
@@ -46,6 +48,7 @@ impl State {
             rise: 0.,
             rendering,
             alpha: Default::default(),
+            stroke_paint: Default::default(),
         }
     }
 
@@ -73,6 +76,7 @@ impl State {
             rise: self.rise,
             rendering: self.rendering,
             alpha: self.alpha,
+            stroke_paint: self.stroke_paint,
         })
     }
 
@@ -95,6 +99,7 @@ impl State {
                 }
             }))
         .then_some(&values[..args.len().min(6)]);
+        self.stroke_paint.update(word, numbers);
         match (word, args, numbers) {
             (b"Tf", [Operand::Name(name), Operand::Number(size)], _) => {
                 self.font = crate::metadata_names::resource_name(budget, name);

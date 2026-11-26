@@ -320,9 +320,9 @@ fn scan<'a>(
 }
 
 /// 一ページのContentsを、境界の字句を変えずに連続する本文へ組み立てる。
-pub(super) fn joined<'a>(
+pub(super) fn joined<'a, T: AsRef<[u8]>>(
     budget: &DecodeBudget,
-    streams: &'a [(usize, Vec<u8>)],
+    streams: &'a [(usize, T)],
     start: usize,
 ) -> Option<(usize, Cow<'a, [u8]>, usize)> {
     if budget.is_stopped() {
@@ -336,14 +336,14 @@ pub(super) fn joined<'a>(
             .count();
     let group = &streams[start..end];
     let content = if group.len() == 1 {
-        Cow::Borrowed(group[0].1.as_slice())
+        Cow::Borrowed(group[0].1.as_ref())
     } else {
         let total = group
             .iter()
-            .try_fold(0_usize, |n, (_, s)| n.checked_add(s.len()))?;
+            .try_fold(0_usize, |n, (_, s)| n.checked_add(s.as_ref().len()))?;
         let mut bytes = budget.metadata_vector(total)?;
         for (_, chunk) in group {
-            bytes.extend_from_slice(chunk);
+            bytes.extend_from_slice(chunk.as_ref());
         }
         Cow::Owned(bytes)
     };

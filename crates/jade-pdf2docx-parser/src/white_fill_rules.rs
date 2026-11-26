@@ -9,7 +9,11 @@ use crate::{
 };
 
 /// 未対応の効果を含まない、完全かつ一意なExtGStateだけを許可する。
-fn normal_state<'a>(resolver: &mut ResourceResolver<'_, 'a>, raw: &'a [u8]) -> Option<()> {
+fn normal_state<'a>(
+    resolver: &mut ResourceResolver<'_, 'a>,
+    raw: &'a [u8],
+    require_stroke: bool,
+) -> Option<()> {
     let (state, _) = resolver.resolve(raw)?;
     if !metadata::dictionary_entries_complete(state) {
         return None;
@@ -36,7 +40,9 @@ fn normal_state<'a>(resolver: &mut ResourceResolver<'_, 'a>, raw: &'a [u8]) -> O
         };
         let valid = match index {
             0 => metadata::is_name(value, b"ExtGState"),
-            1 => number().is_some_and(|n| (0.0..=1.0).contains(&n)),
+            1 => {
+                number().is_some_and(|n| (0.0..=1.0).contains(&n) && (!require_stroke || n == 1.0))
+            }
             2 => number() == Some(1.0),
             3 => metadata::is_name(value, b"Normal"),
             4 => metadata::is_name(value, b"None"),
@@ -58,6 +64,7 @@ fn page_states<'a>(
     budget: &DecodeBudget,
     resolver: &mut ResourceResolver<'_, 'a>,
     resource: &'a [u8],
+    require_stroke: bool,
 ) -> Option<Vec<&'a [u8]>> {
     if !metadata::dictionary_entries_complete(resource) {
         return None;
@@ -95,7 +102,7 @@ fn page_states<'a>(
         if budget.is_stopped() || name.contains(&b'#') {
             return None;
         }
-        normal_state(resolver, raw)?;
+        normal_state(resolver, raw, require_stroke)?;
         names.push(name);
     }
     names.sort_unstable();
@@ -106,7 +113,12 @@ fn page_states<'a>(
 }
 
 /// 配列・文字列内の偽命令を除き、全gsとDevice色のoperandが確認できることを検査する。
-fn commands(budget: &DecodeBudget, content: &[u8], states: &[&[u8]]) -> Option<Vec<usize>> {
+fn commands(
+    budget: &DecodeBudget,
+    content: &[u8],
+    states: &[&[u8]],
+    collect_white: bool,
+) -> Option<Vec<usize>> {
     let mut lexer = Lexer {
         bytes: content,
         cursor: 0,
@@ -163,7 +175,18 @@ fn commands(budget: &DecodeBudget, content: &[u8], states: &[&[u8]]) -> Option<V
                 });
             }
             (b"cs" | b"sc" | b"scn", _) => white = false,
-            (b"f" | b"f*", []) if white => {
+            (b"Tr", [Operand::Number(value)]) if !collect_white => {
+                if !value.is_finite() || !(0.0..=7.0).contains(value) || value.fract() != 0.0 {
+                    return None;
+                }
+            }
+            (b"w", [Operand::Number(value)]) if !collect_white => {
+                if !value.is_finite() || *value < 0.0 {
+                    return None;
+                }
+            }
+            (b"Tr" | b"w", _) if !collect_white => return None,
+            (b"f" | b"f*", []) if white && collect_white => {
                 crate::metadata_workspace::try_push(budget, &mut positions, lexer.cursor)?
             }
             _ => {}
@@ -179,6 +202,28 @@ pub(super) fn positions(
     source: &[u8],
     page: usize,
     streams: &[(usize, Vec<u8>)],
+) -> Option<Vec<usize>> {
+    validated(budget, source, page, streams, false, true)
+}
+
+/// 非strokeだけでなくstrokeも不透明な所属ページだけを、文字強調の根拠にする。
+pub(super) fn normal_text_paint(
+    budget: &DecodeBudget,
+    source: &[u8],
+    page: usize,
+    content: &[u8],
+) -> bool {
+    validated(budget, source, page, &[(page, content)], true, false).is_some()
+}
+
+/// 内容とResourceを同じ所属ページで照合する、二種類のpaint検証の共通処理。
+fn validated<T: AsRef<[u8]>>(
+    budget: &DecodeBudget,
+    source: &[u8],
+    page: usize,
+    streams: &[(usize, T)],
+    require_stroke: bool,
+    collect_white: bool,
 ) -> Option<Vec<usize>> {
     let Some(start) = streams.iter().position(|(p, _)| *p == page) else {
         return None;
@@ -205,10 +250,10 @@ pub(super) fn positions(
     let Some(resource) = resource else {
         return None;
     };
-    let Some(states) = page_states(budget, &mut resolver, resource) else {
+    let Some(states) = page_states(budget, &mut resolver, resource, require_stroke) else {
         return None;
     };
-    commands(budget, &content, &states)
+    commands(budget, &content, &states, collect_white)
 }
 
 #[cfg(test)]
@@ -224,14 +269,14 @@ mod tests {
                 max_total_metadata_workspace_bytes: limit,
                 ..Default::default()
             });
-            let positions = commands(&budget, b"1 g f f*", &[]);
+            let positions = commands(&budget, b"1 g f f*", &[], true);
             assert_eq!(positions.is_some(), limit == total);
             assert_eq!(budget.is_stopped(), limit != total);
             if limit == total {
                 assert!(budget.check().is_ok());
                 assert_eq!(positions.unwrap(), [5, 8]);
             }
-            assert!(commands(&budget, b"1 g f", &[]).is_none());
+            assert!(commands(&budget, b"1 g f", &[], true).is_none());
             assert!(budget.is_stopped());
             assert!(budget.check().is_err());
         }
@@ -254,7 +299,8 @@ mod tests {
                 commands(
                     &DecodeBudget::default(),
                     format!("1 g f {tail}").as_bytes(),
-                    &[]
+                    &[],
+                    true
                 )
                 .is_none(),
                 "{tail}"
