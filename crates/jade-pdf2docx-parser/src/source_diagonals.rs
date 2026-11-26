@@ -207,6 +207,7 @@ fn scan<'a>(
                 ],
             ) => state.matrix = super::concat_matrix(state.matrix, [*a, *b, *c, *d, *e, *f]),
             (b"w", [Operand::Number(w)]) => state.width = *w,
+            (b"w", _) => state.width = f32::NAN,
             (b"gs", [Operand::Name(name)]) => {
                 state
                     .paint
