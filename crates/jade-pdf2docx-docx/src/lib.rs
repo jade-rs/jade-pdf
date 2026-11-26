@@ -36,6 +36,7 @@ mod source_cell_background;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;
+mod body_table_rules;
 mod embedded_face;
 #[cfg(test)]
 mod embedded_style_tests;
@@ -1814,12 +1815,13 @@ fn text_lines_by_page_from_pdf_text_elements(
                     .then(a.bounds.x0.total_cmp(&b.bounds.x0))
             });
             let page_width = page_width_for_layout(parsed, page, &texts);
-            let page_graphics = parsed
+            let mut page_graphics = parsed
                 .graphics
                 .iter()
                 .filter(|graphic| graphic.page == page)
                 .cloned()
                 .collect::<Vec<_>>();
+            body_table_rules::remove_outer_frames(&mut page_graphics, positioned_tables);
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
                 if let Some(row) = rows.iter_mut().find(|row| {
