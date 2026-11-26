@@ -1,8 +1,8 @@
 //! PDF画像の下端原点とWord描画anchorの上端原点を分離する。
-use super::{ParsedImageElement, ParsedPage, pdf_points_to_emu};
+use super::{ParsedImageElement, ParsedPage, parsed_page_display_size_points, pdf_points_to_emu};
 use docx_rs::{Pic, RelativeFromHType, RelativeFromVType};
 
-/// 所属する正立ページの高さから画像上端を求め、余白に依存しない位置を保存する。
+/// 確認済み表示ページの高さから画像上端を求め、余白に依存しない位置を保存する。
 /// 寸法不明・ページ回転が未解決の場合は従来の配置を保つ。
 pub(super) fn picture(mut image: ParsedImageElement, page: Option<&ParsedPage>) -> Pic {
     let extent = upright_extent(&image);
@@ -14,12 +14,7 @@ pub(super) fn picture(mut image: ParsedImageElement, page: Option<&ParsedPage>) 
         Pic::new_with_dimensions(bytes, image.width_px, image.height_px)
     };
     if image.floating || image.rotation_degrees != 0 {
-        let top = page
-            .filter(|page| {
-                page.rotation.rem_euclid(360) == 0 && page.height.is_finite() && page.height > 0.
-            })
-            .map(|page| page.height - image.bounds.y1)
-            .filter(|top| top.is_finite());
+        let top = page.and_then(|page| page_top(&image, page));
         pic = pic
             .floating()
             .offset_x(pdf_points_to_emu(image.bounds.x0).unwrap_or(0))
@@ -35,6 +30,32 @@ pub(super) fn picture(mut image: ParsedImageElement, page: Option<&ParsedPage>) 
         }
     }
     pic
+}
+
+/// 正立pageの旧経路と、相殺済み画像の検証可能な回転pageだけで表示上端を求める。
+fn page_top(image: &ParsedImageElement, page: &ParsedPage) -> Option<f32> {
+    if page.rotation.rem_euclid(360) == 0 {
+        return (page.height.is_finite() && page.height > 0.)
+            .then_some(page.height - image.bounds.y1)
+            .filter(|top| top.is_finite());
+    }
+    if !matches!(page.rotation.rem_euclid(360), 90 | 180 | 270) || upright_extent(image).is_none() {
+        return None;
+    }
+    let (width, height) = parsed_page_display_size_points(page);
+    let b = image.bounds;
+    let top = height - b.y1;
+    (width.is_finite()
+        && height.is_finite()
+        && width > 0.
+        && height > 0.
+        && b.x0 >= 0.
+        && b.y0 >= 0.
+        && b.x1 <= width
+        && b.y1 <= height
+        && fits_signed_emu(b.x0)
+        && fits_signed_emu(top))
+    .then_some(top)
 }
 
 /// 原本page内の正立した完全矩形だけを、flowから独立したcanvas配置へ使う。
