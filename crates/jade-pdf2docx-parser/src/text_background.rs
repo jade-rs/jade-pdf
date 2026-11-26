@@ -8,6 +8,9 @@ use crate::{
     text_draws::Operand,
 };
 
+#[path = "text_background_clip.rs"]
+mod clipping;
+
 /// q/Qで復元する矩形の色と座標系。
 #[derive(Clone, Copy)]
 struct State {
@@ -15,6 +18,8 @@ struct State {
     matrix: [f32; 6],
     /// 確認できたDevice色。不明な色空間ではNone。
     color: Option<[u8; 3]>,
+    /// q/Qで復元する、確認済みの矩形clip。
+    clip: clipping::Clip,
 }
 
 /// 一つの塗りの原本範囲と描画順。
@@ -95,6 +100,7 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
     let mut state = State {
         matrix: [1., 0., 0., 1., 0., 0.],
         color: Some([0; 3]),
+        clip: clipping::Clip::Unbounded,
     };
     let mut saved = Vec::new();
     let mut fills = Vec::new();
@@ -102,6 +108,7 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
     let mut path_bounds: Option<ParsedBounds> = None;
     let mut nonrect = false;
     let mut curved = false;
+    let mut pending_clip = None;
     while let Some((token, span)) = lexer.next_spanned() {
         if budget.is_stopped() {
             return None;
@@ -181,7 +188,13 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
             }
             b"m" | b"l" => return None,
             b"c" | b"v" | b"y" => curved = true,
-            b"W" | b"W*" | b"Do" | b"BI" | b"sh" => return None,
+            b"W" | b"W*" => {
+                if count != 0 || nonrect || curved {
+                    return None;
+                }
+                pending_clip = Some(rectangle?);
+            }
+            b"Do" | b"BI" | b"sh" => return None,
             b"Tr" if !numeric || count != 1 || numbers[0] >= 4. => return None,
             b"f" | b"F" | b"f*" | b"B" | b"B*" | b"b" | b"b*" => {
                 if count != 0 || curved {
@@ -191,7 +204,7 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
                     if !path_bounds.is_some_and(thin) {
                         return None;
                     }
-                } else if let Some(bounds) = rectangle {
+                } else if let Some(bounds) = rectangle.and_then(|bounds| state.clip.apply(bounds)) {
                     if !thin(bounds) {
                         if fills.len() == 256 {
                             return None;
@@ -207,12 +220,19 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
                         )?;
                     }
                 }
+                // Wの新clipは現在のpathを描画した後に適用する。
+                if let Some(next) = pending_clip.take() {
+                    state.clip = state.clip.intersect(next);
+                }
                 rectangle = None;
                 path_bounds = None;
                 nonrect = false;
                 curved = false;
             }
             b"n" | b"S" | b"s" => {
+                if let Some(next) = pending_clip.take() {
+                    state.clip = state.clip.intersect(next);
+                }
                 rectangle = None;
                 path_bounds = None;
                 nonrect = false;
@@ -222,7 +242,7 @@ pub(super) fn scan(budget: &DecodeBudget, content: &[u8]) -> Option<Backgrounds>
         }
         count = 0;
     }
-    (count == 0 && saved.is_empty()).then_some(Backgrounds { fills })
+    (count == 0 && saved.is_empty() && pending_clip.is_none()).then_some(Backgrounds { fills })
 }
 
 /// 確認した塗りだけを描画順で借用する。
