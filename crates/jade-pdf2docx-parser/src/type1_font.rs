@@ -7,7 +7,7 @@ use crate::{
     text::Type1Mapping,
 };
 
-/// Font辞書に組み込み表の適用が必要なら、完成表と未知codeを返す。
+/// 原本Font辞書の検証済み単byte経路から、完成表と未知codeを返す。
 pub(crate) fn read<'bytes>(
     budget: &DecodeBudget,
     bytes: &[u8],
@@ -19,6 +19,9 @@ pub(crate) fn read<'bytes>(
     let subtype = metadata::value(font, b"Subtype")
         .and_then(|v| resolver.resolve(v))?
         .0;
+    if metadata::is_name(subtype, b"TrueType") {
+        return crate::truetype_winansi::read(budget, font, resolver, number);
+    }
     if !metadata::is_name(subtype, b"Type1") && !metadata::is_name(subtype, b"MMType1") {
         return None;
     }
