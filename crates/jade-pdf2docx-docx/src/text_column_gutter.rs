@@ -134,10 +134,18 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
     if body_rows < 4 {
         return None;
     }
+    // 根拠の縮小によって、以前は横断行が拒否していた段組を新しく確定しない。
+    let (veto_bottom, veto_top) = gaps
+        .iter()
+        .filter(|gap| gap.left < cut && cut < gap.right)
+        .map(|gap| super::native_baseline::line_y(rows[gap.row][0]))
+        .fold((bottom, top), |(bottom, top), y| {
+            (bottom.min(y), top.max(y))
+        });
     for row in rows {
         let Some(first) = row.first() else { continue };
         let y = super::native_baseline::line_y(first);
-        if (bottom..=top).contains(&y)
+        if (veto_bottom..=veto_top).contains(&y)
             && row
                 .iter()
                 .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
@@ -288,17 +296,22 @@ mod tests {
         );
     }
 
-    /// 数値根拠の範囲を縮めても、元の候補範囲を横断する本文の拒否を解除しない。
-    #[test]
-    fn numeric_scope_reduction_does_not_remove_a_crossing_line_veto() {
+    /// 反復する数値行と本文の間に、元の段間を横断する一段行を持つ所有原本。
+    fn crossing_numeric_scope() -> Vec<Vec<ParsedTextElement>> {
         let mut source = rows();
         let mut numeric = vec![text(90., 294., 580.), text(318., 522., 580.)];
         numeric[0].text = "224".into();
         numeric[1].text = "144".into();
         source.push(numeric);
         source.push(vec![text(90., 522., 610.)]);
+        source
+    }
+
+    /// 数値根拠の範囲を縮めても、元の候補範囲を横断する本文の拒否を解除しない。
+    #[test]
+    fn numeric_scope_reduction_does_not_remove_a_crossing_line_veto() {
         assert_eq!(
-            infer_owned(&source, 612.),
+            infer_owned(&crossing_numeric_scope(), 612.),
             None,
             "removing numeric support must not create a new prose column layout"
         );
@@ -329,6 +342,22 @@ mod tests {
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 倍率・平行移動・行順を変えても、数値区間と本文の間の横断行は拒否し続ける。
+        #[test]
+        fn numeric_scope_keeps_crossing_veto_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = crossing_numeric_scope();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.font_size *= scale;
+            }
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+        }
+
         /// 座標の一様倍率・平行移動・行順によらず、数値候補を含む曖昧さを維持する。
         #[test]
         fn mixed_gutter_ambiguity_is_preserved_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
