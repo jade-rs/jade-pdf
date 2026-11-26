@@ -1,0 +1,94 @@
+{
+  "time_utc": "2026-11-26T15:56:06.134490+00:00",
+  "head": "175aa425168fcdce9ca68a6ededc411eb33e264c",
+  "parent": "d8d83791fe60c317de45e052592cb81d2c2bf632",
+  "component_qualified": true,
+  "component_scope": "Eligible single physical-line, nonmerged native table cells: preserve independent source run origins using explicit Word tabs only after text/font/geometry matching and measured simple-glyph clearance, or a conservative one-em Helvetica ASCII bound. Keep fallback when unsupported.",
+  "Rust_files": 825,
+  "full_default_counts": [
+    2796,
+    0,
+    42
+  ],
+  "full_groups": 177,
+  "full_log_sha256": "3bd2667d3ab4b2aed264db956b7c41b3dcd616014e450eeb86ccea7011c1a705",
+  "checks": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-fmt-v1-receipt.json",
+      "sha256": "8902705de3a30e6c6932f50ad4083a86b606a7d0e5d65d5a07433bc3c23a9ea6",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-fixture-hygiene-v1-receipt.json",
+      "sha256": "e36d5e6cb65057ac2f77ec3f7d2032b2015b907f4059242c2ed1528f2a05a506",
+      "log_sha256": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-WASM-distribution-v1-receipt.json",
+      "sha256": "e3d729b1dfd3031194adb00147c9e519dd0a12c12439921ea70ed803a7db2519",
+      "log_sha256": "d9853af017010fbcf76d87c8fe46b87ae058237da982d900a1181a4a916ad331"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-post-full-native-build-v1-receipt.json",
+      "sha256": "b46f6a5b4cf64da88f482c911638d493c390f6ddcdb2165a8906b3e984dead81",
+      "log_sha256": "9a6f6aedb9f6c0d1d7c460842ed32cf5a927b0e8c7d7ea381106a9be77bd5c6b"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-post-full-WASM-build-v1-receipt.json",
+      "sha256": "93fcee7787c8aa74ce08637b599b035e3397037ab2ecea221208217c520cfd04",
+      "log_sha256": "365c34df650643c49e78734894255d15414f920e048e88708808a82ac6686953"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-private-Green-v4-receipt.json",
+      "sha256": "4cbdb60d282bf9949bf2d6673642d9c6c1c44eedc0a2eef9b2a7fc1dcab6bb86",
+      "log_sha256": "974bb15ff742bdf5477984913dc48c0ba7d162a3d6fbc7e3f03427d7e5ae4e25"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/source-cell-tab-stops-public-Green-v4-receipt.json",
+      "sha256": "bfe1750d35b81d2ccc3c5f8fcb3087094d8777abbe5247f285febe6882202676",
+      "log_sha256": "a0e0376e6c2d1d6a5c1d3d04fbab58096dce229a7f9fc91c1ac58462681b141d"
+    }
+  ],
+  "actual_public_Red_source_files": 824,
+  "actual_unmeasured_font_Red_source_files": 825,
+  "prior_original_gold_manifests": 89,
+  "prior_original_gold_file_checks": 91766,
+  "total_outcomes": 754,
+  "statuses_preserved": 754,
+  "RAW_exact_parent": 748,
+  "changed_outputs": 6,
+  "all6_changed_MHLW_outputs_RAW_identical_and_review_bound": true,
+  "MHLW_original69_verified": 69,
+  "MHLW_original69_unmet": 0,
+  "MHLW_spacing5_verified": 5,
+  "MHLW_spacing5_unmet": 0,
+  "MHLW_supplemental4_verified": 3,
+  "MHLW_supplemental4_unmet": 1,
+  "spacing_max_errors": {
+    "all48_new_to_open_gaps": 0.21991759319993776,
+    "all48_new_amount_left_anchors": 0.7800000000000011,
+    "all48_opening_parenthesis_left_anchors": 0.7799999999999727,
+    "all48_old_amount_left_anchors": 0.7799999999999727,
+    "all48_closing_parenthesis_left_anchors": 0.7800000000000296
+  },
+  "runtime_aggregate": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/native246-browser127-runtime-aggregate-v2.json",
+  "runtime_aggregate_sha256": "b55e0fed0cc80099f39ed0f4c4fa151707cd64ae44005401ca8d95d02d8937cb",
+  "spacing_audit": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/MHLW-known-spacing5-followup-audit-v1/receipt.json",
+  "spacing_audit_sha256": "949b3c7d7cac8981414939aff15765004f257283e776ba536178f52d08e39445",
+  "next_source_only_gold_manifest": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/NTA-commuting-allowance-QA-before-any-product-v2-20261127/source-and-gold-manifest-before-any-product.json",
+  "next_source_only_gold_manifest_sha256": "8f6b1b4a1f50882a9440e32205f5cc78a310069b8fb75dbc2cf91ba0380ad1d6",
+  "next_source62_NOT_converted_and_NOT_counted_as_accuracy": true,
+  "canonical_native_pool": "qualified-native246-v2/receipt.json",
+  "canonical_browser_pool_template": "qualified-browser127-v2-{engine}/receipt.json",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "limitations": [
+    "Original0.12pt MHLW horizontal rules still become0.25pt; intra-word pitch and some vertical text anchors differ.",
+    "Microsoft Word rendering is unverified; current visual evidence uses LibreOffice.",
+    "Kanpo40/52,CPI26/107,Labour36/57 and other original limits inherit by RAW identity; graphics, clipping and pagination remain unaccepted.",
+    "No public API, CLI, dependency or tracked PDF fixture added."
+  ],
+  "qualification_receipt": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-tab-stops/jade-pdf/corpus/wasm-runtime/source-cell-tab-stops-qualification/qualification-receipt.json",
+  "qualification_receipt_sha256": "9b094cee161405370ac6e583f0e9c85fe4e1953e3ad35ef8d23d3710847e9963",
+  "guide": "docs/source_cell_tab_stops.md"
+}
