@@ -19,7 +19,9 @@ pub(super) fn cuts(
     let mut cuts = Vec::new();
     for text in row.iter().skip(1) {
         if text.bounds.x0 - right > avg_height * 8.0
-            || gutter.is_some_and(|g| right < g.x && g.x < text.bounds.x0 && !numeric_only)
+            || gutter.is_some_and(|g| {
+                g.cuts_row(first) && right < g.x && g.x < text.bounds.x0 && !numeric_only
+            })
         {
             cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
         }
@@ -202,9 +204,8 @@ mod tests {
         assert!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
     }
 
-    /// 表の数値欄と本文の段間が重なっても、新しい本文段組を上の図表へ延ばさない。
-    #[test]
-    fn refined_prose_gutter_does_not_cut_the_leading_full_width_figure() {
+    /// 二段の本文の上に、同じ段間位置へ数値欄を持つ表と全幅captionを配置する。
+    fn numerical_table_above_body() -> Vec<Vec<ParsedTextElement>> {
         let mut source = body();
         for text in source.iter_mut().flatten() {
             text.bounds.y0 -= 300.;
@@ -220,20 +221,63 @@ mod tests {
         let mut caption = text(90., 522., 560.);
         caption.text = "Full width caption above prose".into();
         source.push(vec![caption]);
-        let refs = source.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
-        let gutter = text_column_gutter::infer(&refs, 612.).expect("only verified prose supplies body scope");
+        source
+    }
+
+    /// 表の数値欄と本文の段間が重なっても、新しい本文段組を上の図表へ延ばさない。
+    #[test]
+    fn refined_prose_gutter_does_not_cut_the_leading_full_width_figure() {
+        let source = numerical_table_above_body();
+        let refs = source
+            .iter()
+            .map(|row| row.iter().collect())
+            .collect::<Vec<_>>();
+        let gutter = text_column_gutter::infer(&refs, 612.)
+            .expect("only verified prose supplies body scope");
         let mut figure = [text(280., 298., 600.), text(314., 332., 600.)];
         figure[0].text = "FLOPS label".into();
         figure[1].text = "FLOPS label".into();
         assert!(cuts(&figure.iter().collect::<Vec<_>>(), Some(gutter)).is_empty());
         let legacy = body();
-        let refs = legacy.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let refs = legacy
+            .iter()
+            .map(|row| row.iter().collect())
+            .collect::<Vec<_>>();
         let legacy_gutter = text_column_gutter::infer(&refs, 612.).unwrap();
-        assert!(!cuts(&figure.iter().collect::<Vec<_>>(), Some(legacy_gutter)).is_empty(), "retain established legacy cuts outside body");
+        assert!(
+            !cuts(&figure.iter().collect::<Vec<_>>(), Some(legacy_gutter)).is_empty(),
+            "retain established legacy cuts outside body"
+        );
     }
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(24))]
+        /// 座標の倍率・移動・行順によらず、新規の狭い段間を確認済み本文区間へ限定する。
+        #[test]
+        fn refined_gutter_scope_is_stable_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {
+            let transform = |text: &mut ParsedTextElement| {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.baseline_y = text.baseline_y.map(|y| (y + shift) * scale);
+                text.font_size *= scale;
+            };
+            let mut source = numerical_table_above_body();
+            for text in source.iter_mut().flatten() { transform(text); }
+            for reverse in [false, true] {
+                if reverse { source.reverse(); }
+                let refs = source.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+                let gutter = text_column_gutter::infer(&refs, 612. * scale).unwrap();
+                for (y, should_split) in [(600., false), (380., true)] {
+                    let mut row = [text(280., 298., y), text(314., 332., y)];
+                    row[0].text = "left prose".into(); row[1].text = "right prose".into();
+                    for text in &mut row { transform(text); }
+                    prop_assert_eq!(!cuts(&row.iter().collect::<Vec<_>>(), Some(gutter)).is_empty(), should_split);
+                }
+            }
+        }
+
         /// 一様倍率と平行移動によらず、上下の全幅数値行を本文の段組へ混ぜない。
         #[test]
         fn numeric_rows_do_not_become_prose_columns_under_affine_changes(scale in 0.5f32..2., shift in -10f32..10.) {

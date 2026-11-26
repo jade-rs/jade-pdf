@@ -9,7 +9,7 @@ struct Gap {
     right: f32,
     /// 同じ行から複数候補が出ても、垂直範囲の検査で元の行を参照する。
     row: usize,
-    /// 数値だけの行の隙間は競合候補には残し、本文区間を広げる根拠にはしない。
+    /// 数値同士の隙間は競合候補には残し、本文区間を広げる根拠にはしない。
     body_evidence: bool,
 }
 
@@ -22,12 +22,19 @@ pub(super) struct Gutter {
     bottom: f32,
     /// 根拠となる本文行の最上端baseline。
     top: f32,
+    /// 既存の推定が成立する場合だけ、従来どおり本文範囲外の行も分割する。
+    cut_outside_body: bool,
 }
 
 impl Gutter {
     /// 実際に空白帯を確認した垂直区間にある片側の継続行も同じ段組へ含める。
     pub(super) fn contains(self, text: &ParsedTextElement) -> bool {
         (self.bottom..=self.top).contains(&super::native_baseline::line_y(text))
+    }
+
+    /// 新しく本文だけから復元した段間は、確認した本文区間内だけに使う。
+    pub(super) fn cuts_row(self, text: &ParsedTextElement) -> bool {
+        self.cut_outside_body || self.contains(text)
     }
 }
 
@@ -63,7 +70,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             .fold(first.bounds.x1, f32::max);
         let mut right = first.bounds.x1;
         let mut previous_size = first.font_size;
-        let body_evidence = !super::text_row_segments::numeric_row(row);
+        let mut previous = *first;
         for text in row.iter().skip(1) {
             let next = text.bounds.x0;
             let centre = right / 2.0 + next / 2.0;
@@ -76,15 +83,45 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
                     left: right,
                     right: next,
                     row: index,
-                    body_evidence,
+                    body_evidence: !super::text_row_segments::numeric_pair(
+                        &previous.text,
+                        &text.text,
+                    ),
                 });
             }
             right = right.max(text.bounds.x1);
             previous_size = text.font_size;
+            previous = text;
         }
     }
+    // 数値の候補を除くだけで、元は複数だった段間を一意と見なさない。
+    let original_cut = supported_cut(&gaps, width, false)?;
+    let (bottom, top) = vertical_span(&gaps, rows, original_cut, false)?;
+    if vertical_span(&gaps, rows, original_cut, true).is_some()
+        && !crosses(rows, original_cut, bottom, top)
+    {
+        return Some(Gutter {
+            x: original_cut,
+            bottom,
+            top,
+            cut_outside_body: true,
+        });
+    }
+    let cut = supported_cut(&gaps, width, true)?;
+    let (bottom, top) = vertical_span(&gaps, rows, cut, true)?;
+    (!crosses(rows, cut, bottom, top)).then_some(Gutter {
+        x: cut,
+        bottom,
+        top,
+        cut_outside_body: false,
+    })
+}
+
+/// 四行以上で共有する空白帯が一つだけあるとき、その帯の最も支持された点を返す。
+fn supported_cut(gaps: &[Gap], width: f32, body_only: bool) -> Option<f32> {
     let mut events = gaps
         .iter()
+        .filter(|gap| !body_only || gap.body_evidence)
         .flat_map(|gap| [(gap.left, 1_i32), (gap.right, -1)])
         .collect::<Vec<_>>();
     events.sort_by(|a, b| a.0.total_cmp(&b.0));
@@ -113,13 +150,19 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             }
         }
     }
-    if best.0 < 4 || supported_regions != 1 {
-        return None;
-    }
-    let cut = best.1;
+    (best.0 >= 4 && supported_regions == 1).then_some(best.1)
+}
+
+/// 選んだ段間を共有する四行以上の、実際のbaseline範囲を返す。
+fn vertical_span(
+    gaps: &[Gap],
+    rows: &[Vec<&ParsedTextElement>],
+    cut: f32,
+    body_only: bool,
+) -> Option<(f32, f32)> {
     let mut vertical = gaps
         .iter()
-        .filter(|gap| gap.body_evidence && gap.left < cut && cut < gap.right)
+        .filter(|gap| (!body_only || gap.body_evidence) && gap.left < cut && cut < gap.right)
         .map(|gap| super::native_baseline::line_y(rows[gap.row][0]));
     let first = vertical.next()?;
     let mut body_rows = 1;
@@ -127,33 +170,18 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
         body_rows += 1;
         (bottom.min(y), top.max(y))
     });
-    if body_rows < 4 {
-        return None;
-    }
-    // 根拠の縮小によって、以前は横断行が拒否していた段組を新しく確定しない。
-    let (veto_bottom, veto_top) = gaps
-        .iter()
-        .filter(|gap| gap.left < cut && cut < gap.right)
-        .map(|gap| super::native_baseline::line_y(rows[gap.row][0]))
-        .fold((bottom, top), |(bottom, top), y| {
-            (bottom.min(y), top.max(y))
-        });
-    for row in rows {
-        let Some(first) = row.first() else { continue };
-        let y = super::native_baseline::line_y(first);
-        if (veto_bottom..=veto_top).contains(&y)
-            && ((bottom..=top).contains(&y) || !super::text_row_segments::numeric_row(row))
-            && row
-                .iter()
-                .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
-        {
-            return None;
-        }
-    }
-    Some(Gutter {
-        x: cut,
-        bottom,
-        top,
+    (body_rows >= 4).then_some((bottom, top))
+}
+
+/// 確認した本文範囲内で段間を横断する文字があれば、その段組は採用しない。
+fn crosses(rows: &[Vec<&ParsedTextElement>], cut: f32, bottom: f32, top: f32) -> bool {
+    rows.iter().any(|row| {
+        row.first().is_some_and(|first| {
+            (bottom..=top).contains(&super::native_baseline::line_y(first))
+                && row
+                    .iter()
+                    .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
+        })
     })
 }
 
@@ -300,7 +328,7 @@ mod tests {
         numeric[0].text = "224".into();
         numeric[1].text = "144".into();
         source.push(numeric);
-        source.push(vec![text(90., 522., 610.)]);
+        source.push(vec![text(90., 522., 670.)]);
         source
     }
 
@@ -318,13 +346,15 @@ mod tests {
     #[test]
     fn numeric_crossing_row_outside_body_does_not_veto_prose_columns() {
         let mut source = crossing_numeric_scope();
+        source.last_mut().unwrap()[0].bounds.y0 = 610.;
+        source.last_mut().unwrap()[0].bounds.y1 = 620.;
         source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
         assert_eq!(infer_owned(&source, 612.), Some(306.));
     }
 
-    /// 散文を含む参考文献行は、段間の両側が数値で終わっても本文の根拠にする。
+    /// 左側に散文があっても、右側が数値だけの行を二段の散文の根拠にはしない。
     #[test]
-    fn prose_rows_with_numeric_suffixes_still_establish_the_gutter() {
+    fn prose_rows_with_only_numeric_right_side_do_not_establish_the_gutter() {
         let source = (0..4)
             .map(|i| {
                 let y = 700. - i as f32 * 20.;
@@ -334,7 +364,7 @@ mod tests {
                 row
             })
             .collect::<Vec<_>>();
-        assert_eq!(infer_owned(&source, 612.), Some(306.));
+        assert_eq!(infer_owned(&source, 612.), None);
     }
 
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
@@ -366,6 +396,8 @@ mod tests {
         #[test]
         fn numeric_only_crossing_scope_is_stable_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
             let mut source = crossing_numeric_scope();
+            source.last_mut().unwrap()[0].bounds.y0 = 610.;
+            source.last_mut().unwrap()[0].bounds.y1 = 620.;
             source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
             for text in source.iter_mut().flatten() {
                 text.bounds.x0 = (text.bounds.x0 + shift) * scale;
