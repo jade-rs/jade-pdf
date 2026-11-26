@@ -1,0 +1,171 @@
+{
+  "time_utc": "2026-11-26T14:08:59.069214+00:00",
+  "head": "56c75e64fa688d3bd53b52f9cb38b896cc97c510",
+  "source_tree": "cb93fd18bf7a9df8d2fcb319be07495f942f3432",
+  "parent": "96114943fc5f46fe4c4c69c8d08a0a5c37c539ca",
+  "Rust_files": 820,
+  "full_default": {
+    "passed": 2777,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 175,
+    "log_sha256": "e13c481b6d523b004229591af53e261a94a6143b2c73115b5e4347c9a9a7f6b4",
+    "label": "fractional-rules-CI-default-full-v5"
+  },
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "public_parser_tests": 4,
+  "public_Word_tests": 7,
+  "private_fractional_geometry_tests": 3,
+  "PBT_cases_per_new_property": 32,
+  "actual_TDD_Red_executions": 6,
+  "source_and_failure_proofs": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/actual-Red-and-initial-compile-source-proof/receipt.json",
+      "sha256": "47d175cf2db9ac4caf9bc9fedb2388831b68bea4225ab66bb5577ab96883a0ef"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/private-compile-and-diagonal-regression-source-proof/receipt.json",
+      "sha256": "22e9350f5425ee631c52d9fd2ce8f47055bec1c3c01bc4a378a432d2f3e64c2c"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/failed-default-full-v1-source-proof/receipt.json",
+      "sha256": "f96713237663607c5a2db86431873d27d0258c22f2ec762f3f11cd36fcd83878"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/body-flow-Red-and-held-runtime-v1-source-proof/receipt.json",
+      "sha256": "ae4920f2d5ebfdd90003f9a485336a4ddc06798d8bf90b3199749a29ab13e030"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/full3-and-MHLW-row-boundary-Red-source-proof/receipt.json",
+      "sha256": "274a7b5b0800372c4a16708bb06ae0f6b9febdbacf5c27bccacc8f5a71579293"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/runtime-v3-render-regression-source-proof/receipt.json",
+      "sha256": "d46ef8e90e7683661cf09f16c21c1acef02fdb97a93c8f6c2c8f28dc52dfccca"
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/fallback-metrics-and-body-origin-Red-source-proof/receipt.json",
+      "sha256": "94c052cafe70e3ad86e265fe8deb4525435dc8ae9b92aa74da8afd3dc7ce2338"
+    }
+  ],
+  "held_producers": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/known19-prototype-v1-HELD-topology-analysis.json",
+      "sha256": "871689382f17e03197ece595f9768a518dfef12aa1e9c15edcf8199c8ec45251",
+      "not_accepted": true
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/qualified-runtime-v1-HELD-BatchNorm-body-flow.json",
+      "sha256": "9c802297ac6b5a676ed7f0739f99004ba644a749332918981fd56aaad481d03d",
+      "not_accepted": true
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/qualified-runtime-v2-HELD-MHLW-row-boundary.json",
+      "sha256": "766cba1c7d0360c67ec843fd4f5eb2d0ba702d5216d9864a751399deac37d438",
+      "not_accepted": true
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/qualified-runtime-v3-HELD-CPI-Labour-render.json",
+      "sha256": "903dd0f31f3b7343078e2408db93184d303d285a26c9aff39e77995a7a3b4eb6",
+      "not_accepted": true
+    }
+  ],
+  "compile_and_wrong_package_launch_failures_retained_NOT_counted_as_Red_or_Green": true,
+  "total_outcomes": 754,
+  "legacy_outcomes": 748,
+  "all748_legacy_statuses_and_RAW_payloads_exact_parent": true,
+  "new_known_followup_outcomes": 6,
+  "statuses_NOT_an_accuracy_rate": true,
+  "native_outcomes": 246,
+  "native_success": 216,
+  "native_rejected": 30,
+  "browser_each_cases": 127,
+  "browser_each_outcomes": 254,
+  "browser_each_success": 218,
+  "browser_each_rejected": 36,
+  "qualified_native_pool": "qualified-native246-v4/receipt.json",
+  "qualified_browser_pool_template": "qualified-browser127-v4-{engine}/receipt.json",
+  "cross_engine254_payloads127_inspections_exact": true,
+  "prior95_input_groups_bytes_and_order_preserved": true,
+  "next_fixed_input_groups": 96,
+  "inspection_changes_ONLY_graphics_counts": [
+    {
+      "id": "EfficientNet",
+      "parent_graphics_count": 136,
+      "candidate_graphics_count": 138
+    },
+    {
+      "id": "BERT",
+      "parent_graphics_count": 76,
+      "candidate_graphics_count": 77
+    },
+    {
+      "id": "DigitalAgency-accessibility-checklist-2025",
+      "parent_graphics_count": 63,
+      "candidate_graphics_count": 65
+    },
+    {
+      "id": "NAOJ-calendar-2026",
+      "parent_graphics_count": 95,
+      "candidate_graphics_count": 198
+    },
+    {
+      "id": "NAOJ-page1-excerpt",
+      "parent_graphics_count": 25,
+      "candidate_graphics_count": 29
+    },
+    {
+      "id": "Statistics-Japan-CPI-2026-10",
+      "parent_graphics_count": 511,
+      "candidate_graphics_count": 513
+    },
+    {
+      "id": "Statistics-Japan-Labour-Recent-Trends-2026-09",
+      "parent_graphics_count": 319,
+      "candidate_graphics_count": 368
+    }
+  ],
+  "all6_MHLW_payloads_RAW_identical_and_bound_to_one_individually_viewed_page": true,
+  "MHLW_original69_verified": 68,
+  "MHLW_original69_unmet": 1,
+  "MHLW_original69_unverified": 0,
+  "MHLW_initial_unseen_result_retained_and_NOT_relabelled": true,
+  "MHLW_original_all1474_characters_and48_five_field_cell_owners_preserved": true,
+  "MHLW_original48_new_amounts_bold_and48_old_amounts_regular": true,
+  "MHLW_max_column_anchor_error": 0.7400000000000091,
+  "MHLW_max_row_boundary_error": 0.5392000000000507,
+  "MHLW_rule_width_failure_retained": true,
+  "MHLW_source69_audit": {
+    "path": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification/MHLW-original69-known-followup-six-runtime-audit-v4/receipt.json",
+    "sha256": "4abbdc8b42d08d42a840bffce1869314d8711b09e1d8f8a29cdea7e61bef291c"
+  },
+  "MHLW_spacing_difference_NOT_covered_by69_criteria": true,
+  "parent_original_gold_manifest_count": 87,
+  "parent_original_gold_file_checks": 79724,
+  "all_original_golds_unchanged": true,
+  "Kanpo_original52_remains40pass9unmet3unverified_by_RAW_identity": true,
+  "CPI_original107_remains26pass81unmet_by_RAW_identity": true,
+  "labour_original57_remains36pass21unmet_by_RAW_identity": true,
+  "NTA_stamp_selected30_and_separate_bonus30_inherit_by_RAW_identity": true,
+  "native_binary_sha256": "9261ac43f01b353cc2eee01223699a6501dfc517804c5b2ca7dbc8110124950b",
+  "raw_release_WASM_sha256": "6732ab350ab6071d36e38fab1153aae0e9062bdbb5a10e5de0c8c149a7f38477",
+  "browser_generated_WASM_sha256": "a195ea264284a387f5796d48e345ae593198ee9f07cb0073e2f8d06f866bb61d",
+  "public_Rust_API_value_change": "ParsedGraphicElement.bounds preserves fractional source coordinates; graphics counts may increase. Explicit round() is needed for callers requiring old integer keys.",
+  "no_new_CLI_parameters_or_dependencies": true,
+  "no_external_assets_added_to_tracked_fixtures": true,
+  "component_qualified": true,
+  "component_scope": "Fractional source rule retention and conditionally precise editable Word table sizing; whole-document visual fidelity is not accepted.",
+  "Microsoft_Word_visual_verification_NOT_performed": true,
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "MHLW inner/outer rule widths and exact amount spacing.",
+    "Kanpo diagonal display and exact source fonts/anchors.",
+    "CPI vector graphs, clipping and12-to16-page expansion.",
+    "Labour vector graphs and2-to3-page expansion."
+  ],
+  "qualification_receipt_sha256": "9f56384e4470bf70d86ef40c32fd1a2cd0e75b4904844de8aec321693602e82f",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-fractional-table-rules/jade-pdf/corpus/wasm-runtime/fractional-table-rules-qualification"
+}
