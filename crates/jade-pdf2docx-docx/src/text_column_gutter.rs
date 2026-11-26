@@ -9,6 +9,8 @@ struct Gap {
     right: f32,
     /// 同じ行から複数候補が出ても、垂直範囲の検査で元の行を参照する。
     row: usize,
+    /// 数値だけの隙間は競合候補には残し、本文の垂直範囲を広げる根拠にはしない。
+    body_evidence: bool,
 }
 
 /// 共通する空白帯と、その存在を複数行で確認できた本文の垂直区間。
@@ -69,12 +71,15 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
                 && right - first.bounds.x0 >= width * 0.2
                 && end - next >= width * 0.2
                 && (width * 0.3..=width * 0.7).contains(&centre)
-                && !super::text_row_segments::numeric_pair(&previous.text, &text.text)
             {
                 gaps.push(Gap {
                     left: right,
                     right: next,
                     row: index,
+                    body_evidence: !super::text_row_segments::numeric_pair(
+                        &previous.text,
+                        &text.text,
+                    ),
                 });
             }
             right = right.max(text.bounds.x1);
@@ -118,12 +123,17 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
     let cut = best.1;
     let mut vertical = gaps
         .iter()
-        .filter(|gap| gap.left < cut && cut < gap.right)
+        .filter(|gap| gap.body_evidence && gap.left < cut && cut < gap.right)
         .map(|gap| super::native_baseline::line_y(rows[gap.row][0]));
     let first = vertical.next()?;
+    let mut body_rows = 1;
     let (bottom, top) = vertical.fold((first, first), |(bottom, top), y| {
+        body_rows += 1;
         (bottom.min(y), top.max(y))
     });
+    if body_rows < 4 {
+        return None;
+    }
     for row in rows {
         let Some(first) = row.first() else { continue };
         let y = super::native_baseline::line_y(first);
@@ -236,19 +246,46 @@ mod tests {
             row[1].text = "144 7 - 6.67%".into();
         }
         assert_eq!(infer_owned(&source, 612.), None);
+        let mut partly_numeric = rows();
+        partly_numeric[3][0].text = "224".into();
+        partly_numeric[3][1].text = "144".into();
+        assert_eq!(
+            infer_owned(&partly_numeric, 612.),
+            None,
+            "numeric rows cannot supply the missing fourth body row"
+        );
+    }
+
+    /// 本文と数値表で異なる二つの段間候補が反復する所有入力を作る。
+    fn mixed_gutters() -> Vec<Vec<ParsedTextElement>> {
+        let mut source = (0..4)
+            .map(|i| {
+                vec![
+                    text(70., 210., 700. - i as f32 * 20.),
+                    text(230., 542., 700. - i as f32 * 20.),
+                ]
+            })
+            .collect::<Vec<_>>();
+        for i in 0..4 {
+            let mut row = vec![
+                text(70., 370., 600. - i as f32 * 20.),
+                text(390., 542., 600. - i as f32 * 20.),
+            ];
+            row[0].text = "224".into();
+            row[1].text = "144".into();
+            source.push(row);
+        }
+        source
     }
 
     /// 数値の競合候補を取り除いた結果だけで、元は曖昧だった段間を確定しない。
     #[test]
     fn numeric_competition_still_keeps_mixed_gutters_ambiguous() {
-        let mut source = (0..4)
-            .map(|i| vec![text(70., 210., 700. - i as f32 * 20.), text(230., 542., 700. - i as f32 * 20.)])
-            .collect::<Vec<_>>();
-        for i in 0..4 {
-            let mut row = vec![text(70., 370., 600. - i as f32 * 20.), text(390., 542., 600. - i as f32 * 20.)];
-            row[0].text = "224".into(); row[1].text = "144".into(); source.push(row);
-        }
-        assert_eq!(infer_owned(&source, 612.), None, "discarding numerical evidence must not create a new unambiguous prose layout");
+        assert_eq!(
+            infer_owned(&mixed_gutters(), 612.),
+            None,
+            "discarding numerical evidence must not create a new unambiguous prose layout"
+        );
     }
 
     /// 本文区間を横断する一段行は拒否し、区間外の見出しは段組を壊さない。
@@ -276,6 +313,22 @@ mod tests {
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 座標の一様倍率・平行移動・行順によらず、数値候補を含む曖昧さを維持する。
+        #[test]
+        fn mixed_gutter_ambiguity_is_preserved_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = mixed_gutters();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 *= scale;
+                text.bounds.y1 *= scale;
+                text.font_size *= scale;
+            }
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), None);
+        }
+
         /// ページ・本文・fontの一様倍率と平行移動で、同じ物理的な空白帯を保つ。
         #[test]
         fn affine_geometry_keeps_the_same_gutter(scale in 0.5_f32..2.0, shift in -10.0_f32..10.0) {
