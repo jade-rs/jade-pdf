@@ -131,3 +131,38 @@ pub(in crate::parser) fn in_viewports(
         line.start.iter().chain(&line.end).all(|v| v.is_finite())
     });
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// min/maxでNaNが有限な相方へ隠れても、未知の元端点を結果へ保存しない。
+    #[test]
+    fn raw_nonfinite_points_cannot_be_hidden_by_bounds_normalization() {
+        let budget = DecodeBudget::default();
+        let page = crate::form_clip::Clip::page(&budget, None, None).unwrap();
+        for invalid in [f32::NAN, f32::INFINITY, f32::NEG_INFINITY] {
+            for i in 0..4 {
+                let mut points = [[100., 200.], [200., 100.]];
+                points[i / 2][i % 2] = invalid;
+                let mut output = Vec::new();
+                assert!(
+                    emit(
+                        &budget,
+                        &mut output,
+                        0,
+                        (points[0], points[1]),
+                        0.5,
+                        None,
+                        &page
+                    )
+                    .is_some()
+                );
+                assert!(
+                    output.is_empty(),
+                    "raw nonfinite coordinate{i} must remain unknown"
+                );
+            }
+        }
+    }
+}
