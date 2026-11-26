@@ -107,6 +107,43 @@ fn graphics_merge_handles_extreme_endpoints() {
     );
 }
 
+/// 正負のゼロは同じ軸であり、別の線幅が間にあっても連続する各幅の区間を分断しない。
+#[test]
+fn zero_axis_signs_do_not_fragment_width_groups() {
+    let lines = [
+        (-0.0, 1., 0., 3.),
+        (-0.0, 2., 0., 3.),
+        (0.0, 1., 3., 4.),
+        (0.0, 2., 3., 4.),
+    ]
+    .into_iter()
+    .map(|(y, width, start, end)| ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds {
+            x0: start,
+            x1: end,
+            y0: y,
+            y1: y,
+        },
+        stroke_width: width,
+    })
+    .collect();
+    let merged = merge_axis_aligned_segments(lines);
+    assert_eq!(merged.len(), 2);
+    assert!(
+        merged
+            .iter()
+            .all(|line| line.bounds.x0 == 0. && line.bounds.x1 == 4.)
+    );
+    assert_eq!(
+        merged
+            .iter()
+            .map(|line| line.stroke_width)
+            .collect::<Vec<_>>(),
+        vec![1., 2.]
+    );
+}
+
 /// 小さいPDFのq保存増幅を公開APIでも資源超過として返す。
 #[test]
 fn public_graphics_state_amplification_is_limited() {
