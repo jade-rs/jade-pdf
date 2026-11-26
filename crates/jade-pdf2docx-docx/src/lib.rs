@@ -1041,9 +1041,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .iter()
         .filter(|table| table.page == page.page)
     {
-        let top_y = table.bounds.y1;
+        let flow_top_y = table.bounds.y1;
+        let top_y = positioned_table_layout_bounds(table).y1;
         blocks.push(StructuredBlock::Table {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            order_index: block_insertion_order_index(&page.lines, flow_top_y),
             top_y,
             table: table.clone(),
         });
@@ -1223,11 +1224,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             StructuredBlock::Table { table, .. } => {
                 previous_line = None;
                 let placement = adjacent_tables[block_index];
-                previous_nonparagraph_bottom_y = Some(
-                    placement
-                        .map(|p| p.bottom)
-                        .unwrap_or(table.bounds.y0.min(table.bounds.y1)),
-                );
+                previous_nonparagraph_bottom_y =
+                    Some(placement.map(|p| p.bottom).unwrap_or_else(|| {
+                        let bounds = positioned_table_layout_bounds(&table);
+                        bounds.y0.min(bounds.y1)
+                    }));
                 table
                     .table
                     .validate()
@@ -1577,7 +1578,7 @@ fn structured_page_layout(
         positioned_tables
             .iter()
             .filter(|table| table.page == page.page)
-            .map(|table| table.bounds.y1)
+            .map(|table| positioned_table_layout_bounds(table).y1)
             .chain(page.lines.iter().map(|line| line.top_y))
             .chain(
                 parsed
@@ -3028,6 +3029,15 @@ struct PositionedTable {
     nested_tables: Vec<PositionedTable>,
 }
 
+/// 本文の挿入順を変えず、Wordの実際の位置・寸法だけへ確認済み原本境界を返す。
+fn positioned_table_layout_bounds(table: &PositionedTable) -> ParsedBounds {
+    table
+        .source_rule_grid
+        .as_ref()
+        .map(|grid| grid.bounds())
+        .unwrap_or(table.bounds)
+}
+
 /// DOCX 出力用の表モデル。
 #[derive(Debug, Clone, PartialEq)]
 struct DocxTableModel {
@@ -3499,11 +3509,7 @@ fn apply_positioned_table_layout(
     table: &PositionedTable,
     origin_x: f32,
 ) -> Table {
-    let bounds = table
-        .source_rule_grid
-        .as_ref()
-        .map(|g| g.bounds())
-        .unwrap_or(table.bounds);
+    let bounds = positioned_table_layout_bounds(table);
     let width = (bounds.x1 - bounds.x0).abs();
     let top_cell_margin = positioned_table_top_cell_margin_twips(table);
     let horizontal_cell_margin = table

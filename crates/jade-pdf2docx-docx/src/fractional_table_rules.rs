@@ -225,6 +225,15 @@ mod tests {
             "fractional geometry must not splice a floating table into a source body paragraph"
         );
         assert_eq!(
+            positioned_table_layout_bounds(&table),
+            ParsedBounds {
+                x0: 20.25,
+                x1: 100.25,
+                y0: 30.25,
+                y1: 90.25
+            }
+        );
+        assert_eq!(
             table.source_rule_grid.unwrap().bounds(),
             ParsedBounds {
                 x0: 20.25,
