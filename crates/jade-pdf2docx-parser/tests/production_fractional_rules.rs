@@ -72,6 +72,21 @@ fn collinear_fragments_keep_source_extents_when_joined() {
     assert_eq!(g.stroke_width, 0.5);
 }
 
+/// 同一直線の隣り合う線でも太さが異なれば、原本の幅と区間を潰さない。
+#[test]
+fn collinear_different_widths_remain_source_fragments() {
+    let parsed = parse_pdf_bytes(
+        "owned-varying-source-widths.pdf",
+        &source(".5 w 20.25 30.75 m 40.5 30.75 l S 1.5 w 40.5 30.75 m 60.75 30.75 l S"),
+    )
+    .unwrap();
+    assert_eq!(parsed.graphics.len(), 2);
+    assert_eq!(parsed.graphics[0].stroke_width, 0.5);
+    assert_eq!(parsed.graphics[0].bounds.x1, 40.5);
+    assert_eq!(parsed.graphics[1].stroke_width, 1.5);
+    assert_eq!(parsed.graphics[1].bounds.x0, 40.5);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 二進表現が正確な四分ptの平行移動でも、原本四辺をそのまま公開する。
