@@ -2992,7 +2992,7 @@ fn block_insertion_order_index(lines: &[StructuredTextLine], top_y: f32) -> usiz
 struct PositionedTable {
     /// PDF page 番号。
     page: usize,
-    /// 表全体の bounds。
+    /// 表推定・本文挿入順の互換矩形。精密なWord寸法はsource_rule_gridを使う。
     bounds: ParsedBounds,
     /// gridへの原本本文割当で使ったY反転の判断を、本文の除外にもそのまま使う。
     allow_top_origin_text_y: bool,
@@ -3008,7 +3008,7 @@ struct PositionedTable {
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
-    /// 寸法・セル配置へ渡した原本境界。表示行へ分割した表では保持しない。
+    /// 寸法・セル配置へ渡した原本の物理grid。論理行分割後の行indexとは区別する。
     source_rule_grid: Option<fractional_table_rules::Grid>,
     /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
     row_heights_twips: Vec<f32>,
@@ -3499,7 +3499,12 @@ fn apply_positioned_table_layout(
     table: &PositionedTable,
     origin_x: f32,
 ) -> Table {
-    let width = (table.bounds.x1 - table.bounds.x0).abs();
+    let bounds = table
+        .source_rule_grid
+        .as_ref()
+        .map(|g| g.bounds())
+        .unwrap_or(table.bounds);
+    let width = (bounds.x1 - bounds.x0).abs();
     let top_cell_margin = positioned_table_top_cell_margin_twips(table);
     let horizontal_cell_margin = table
         .font_name
@@ -3519,12 +3524,16 @@ fn apply_positioned_table_layout(
     if !table.column_widths_twips.is_empty() {
         docx_table = docx_table.set_grid(table.column_widths_twips.clone());
     }
-    if let Some(width_twips) = pdf_points_to_twips(width)
+    if let Some(width_twips) = table
+        .source_rule_grid
+        .as_ref()
+        .map(|_| table.column_widths_twips.iter().sum())
+        .or_else(|| pdf_points_to_twips(width))
         && width_twips > 0
     {
         docx_table = docx_table.width(width_twips, WidthType::Dxa);
     }
-    if let Some(indent) = pdf_points_to_indent_twips((table.bounds.x0 - origin_x).max(0.0))
+    if let Some(indent) = pdf_points_to_indent_twips((bounds.x0 - origin_x).max(0.0))
         && indent > 0
     {
         docx_table = docx_table.indent(indent);
@@ -4790,15 +4799,12 @@ fn infer_positioned_table_from_graphics(
     let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
     Some(PositionedTable {
         page,
-        bounds: geometry
-            .as_ref()
-            .map(|g| g.bounds())
-            .unwrap_or(ParsedBounds {
-                x0: *xs.first().expect("xs is not empty") as f32,
-                y0: *ys.first().expect("ys is not empty") as f32,
-                x1: *xs.last().expect("xs is not empty") as f32,
-                y1: *ys.last().expect("ys is not empty") as f32,
-            }),
+        bounds: ParsedBounds {
+            x0: *xs.first().expect("xs is not empty") as f32,
+            y0: *ys.first().expect("ys is not empty") as f32,
+            x1: *xs.last().expect("xs is not empty") as f32,
+            y1: *ys.last().expect("ys is not empty") as f32,
+        },
         allow_top_origin_text_y,
         stroke_width: table_rule_stroke_width(&page_graphics, &xs, &ys),
         font_name,

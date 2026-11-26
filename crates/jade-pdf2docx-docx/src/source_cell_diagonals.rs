@@ -26,10 +26,17 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
         let Some(ys) = row_edges(table) else {
             continue;
         };
-        let mut xs = vec![table.bounds.x0];
-        for w in &table.column_widths_twips {
-            xs.push(xs.last().copied().unwrap() + *w as f32 / 20.);
-        }
+        let xs = if let Some(grid) = &table.source_rule_grid
+            && grid.xs.len() == table.column_widths_twips.len() + 1
+        {
+            grid.xs.clone()
+        } else {
+            let mut xs = vec![table.bounds.x0];
+            for w in &table.column_widths_twips {
+                xs.push(xs.last().copied().unwrap() + *w as f32 / 20.);
+            }
+            xs
+        };
         if !xs.iter().all(|x| x.is_finite())
             || (xs.last().copied().unwrap() - table.bounds.x1).abs() > 1.
         {
