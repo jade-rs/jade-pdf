@@ -1,0 +1,236 @@
+{
+  "time_utc": "2026-11-26T11:57:43.837222+00:00",
+  "head": "4d64ef6b242f373825ecd6eb2c3bdd3fd49fc33d",
+  "source_tree": "36dbe02ebb444b6e2a1de0b334de49095f92a34f",
+  "Rust_files": 816,
+  "full_default": {
+    "passed": 2763,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 173,
+    "log_sha256": "46e5af2e4ca30afb9798ed89a7781aff2e10ef66d134db313f0cf94b54f9ff32",
+    "label": "source-cell-diagonal-CI-default-full-v2"
+  },
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "public_parser_tests": 12,
+  "public_Word_tests": 8,
+  "private_geometry_tests": 4,
+  "public_parser_PBT_cases": 32,
+  "public_Word_PBT_cases": 32,
+  "six_actual_Red_executions": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/four-real-Red-source-proof/receipt.json",
+      "sha256": "bde6771b89cdd173496eefd6b4ba278c457b4a4a88e6870044ebd47bff0f22ce",
+      "rows": [
+        {
+          "label": "source-cell-diagonal-public-Red",
+          "head": "a929224537cc645d92056812367c71cd2db6e9ac",
+          "Rust_files": 811,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/four-real-Red-source-proof/source-cell-diagonal-public-Red.tar",
+          "source_archive_sha256": "a33cfc1821ee85c1e70a634b813a381cdda8e04177cbf81b2defb8f972b65bea",
+          "actual_Red_log_sha256": "4a687cf79e2fe4da88e5ea46bdbde0f446be1bf830b1f835d1abe908268090a2",
+          "no_tests_rerun_for_source_reconstruction": true
+        },
+        {
+          "label": "source-diagonal-invalid-width-public-Red",
+          "head": "bc12fb00be81e9e5895526e2670428f344f46bd3",
+          "Rust_files": 814,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/four-real-Red-source-proof/source-diagonal-invalid-width-public-Red.tar",
+          "source_archive_sha256": "8ceb8854d639df2962e6d9d3f8bcda81f252f700d4005fdcc46d605f700d69bd",
+          "actual_Red_log_sha256": "c3b15c22e648938e20920b8e3a4002f4939551bf5741d30d6397e810d0f15132",
+          "no_tests_rerun_for_source_reconstruction": true
+        },
+        {
+          "label": "source-diagonal-unverified-geometry-public-Red",
+          "head": "cedc91bc6001a2f968e6928231e51a8744ec0aa9",
+          "Rust_files": 814,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/four-real-Red-source-proof/source-diagonal-unverified-geometry-public-Red.tar",
+          "source_archive_sha256": "4353c1487519312e6ddb24e565e20e779a87462394fb23a339dcc5d132b2ca38",
+          "actual_Red_log_sha256": "ae6ce6c3973e652b1dce549d3b3d0fd1aa36a6da5dc446a340b4643817c58899",
+          "no_tests_rerun_for_source_reconstruction": true
+        },
+        {
+          "label": "source-diagonal-raw-point-private-Red",
+          "head": "7163b9115f759ba1dc5797e797da31c6ec4dcdaf",
+          "Rust_files": 815,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/four-real-Red-source-proof/source-diagonal-raw-point-private-Red.tar",
+          "source_archive_sha256": "4b7fdf3af0a7dbbfd32068d3694b066cceb384ad633dd8873ec1c0d948c03837",
+          "actual_Red_log_sha256": "2b144e0bce2b00bc6f37e4d9232de1071a91aee0e224468b292fb20c051f32cc",
+          "no_tests_rerun_for_source_reconstruction": true
+        }
+      ]
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/cell-clip-and-black-overpaint-real-Red-source-proof/receipt.json",
+      "sha256": "a21fc213fe81c24add6dcd58e5c492730c154959e459b9eddb95d66520a44acf",
+      "rows": [
+        {
+          "label": "source-diagonal-cell-clip-public-Red",
+          "head": "f4e4ad90fb437ec92969401056e5644ac9b1fe0e",
+          "Rust_files": 815,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/cell-clip-and-black-overpaint-real-Red-source-proof/source-diagonal-cell-clip-public-Red.tar",
+          "source_archive_sha256": "4d0c553656cb2ba12d5e0e7caf3ea542fab1dd4a7beca4ae9b554ab862383933",
+          "actual_Red_log_sha256": "9a0ef23d92a20be5d1a320805d055ae4c594c55352501f0c35dff3e6618dc1e1",
+          "no_tests_rerun_for_source_reconstruction": true
+        },
+        {
+          "label": "source-diagonal-black-overpaint-public-Red",
+          "head": "f4e4ad90fb437ec92969401056e5644ac9b1fe0e",
+          "Rust_files": 815,
+          "actual_exit": 101,
+          "failed": 1,
+          "all_executed_Rust_source_bytes_exact_committed_Red": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/cell-clip-and-black-overpaint-real-Red-source-proof/source-diagonal-black-overpaint-public-Red.tar",
+          "source_archive_sha256": "4d0c553656cb2ba12d5e0e7caf3ea542fab1dd4a7beca4ae9b554ab862383933",
+          "actual_Red_log_sha256": "e3ef4bd809eac4caabc31441da5482f14178aa05c4752be3ebfa6e13b04091c2",
+          "no_tests_rerun_for_source_reconstruction": true
+        }
+      ]
+    }
+  ],
+  "failed_full_v1_source_proof": {
+    "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/failed-default-full-v1-budget-diagnostic-resume-v2/receipt.json",
+    "sha256": "f1e67807a5250e64735074709a66aa731208067b8b993f45ea269771414cac26",
+    "partial_counts": [
+      1895,
+      1,
+      35
+    ],
+    "not_accepted": true,
+    "reason": "Unrelated axis-only input entered the new q-state scan and hit Form-depth256 before the legacy64KiB metadata limit. Constant-space candidate preflight restores the existing public budget guard."
+  },
+  "compile_failures_preserved": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/initial-compile-failure-source-proof/receipt.json",
+      "sha256": "efbeb6e0babc03147fcd409f1ad4b6ccf1d95ff3efcbc63f624d70a297cc1472",
+      "source_archive_sha256": "b9ced6cd608c387fabc7a4a275340d72c57c39863ab23cb5aa7b0b38739160d3",
+      "not_accepted_as_test_Red_or_Green": true
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/second-compile-failure-source-proof/receipt.json",
+      "sha256": "3e1b93cde9f533e969050431e95265a207a5c41e0e8bbdedf257afcecdf60f6f",
+      "source_archive_sha256": "12dd775de641cc3c7ab8e421cd22dc8f2fb5f2820007e4425917080dd10d7aba",
+      "not_accepted_as_test_Red_or_Green": true
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/preflight-untyped-point-compile-failures-source-proof/receipt.json",
+      "sha256": "c127bc31defa8019832b408b874f60322ea8533552eb52154df4a91c61edc4d1",
+      "source_archive_sha256": "5666ed84ffdbec5c012ccc0e7f73a4ef13d9f0c72ce843b9f69a2a2cb5971904",
+      "not_accepted_as_test_Red_or_Green": true
+    }
+  ],
+  "total_outcomes": 748,
+  "legacy_outcomes": 700,
+  "all700_legacy_statuses_exact_parent": true,
+  "legacy_RAW_payloads_unchanged": 699,
+  "legacy_payload_changes": 1,
+  "new_known_synthetic_outcomes": 48,
+  "all48_new_statuses_and_source_defined_OOXML_checks_passed": true,
+  "statuses_NOT_an_accuracy_rate": true,
+  "native_outcomes": 244,
+  "native_success": 214,
+  "native_rejected": 30,
+  "browser_each_cases": 126,
+  "browser_each_outcomes": 252,
+  "browser_each_success": 216,
+  "browser_each_rejected": 36,
+  "qualified_native_pool": "qualified-native244-v2/receipt.json",
+  "qualified_browser_pool_template": "qualified-browser126-v2-{engine}/receipt.json",
+  "cross_engine252_payloads126_inspections_exact": true,
+  "all_prior_fixed_input_groups_and_histories_preserved": true,
+  "all6_payloads_per_new_case_RAW_identical": true,
+  "all48_new_payloads_RAW_bound_to8_individually_reviewed_output_pages": true,
+  "qualified_Kanpo_RAW_exact_reviewed_two_page_prototype": true,
+  "all10_output_pages_review_bound": true,
+  "all_original_golds_unchanged": true,
+  "parent_original_gold_manifest_count": 85,
+  "parent_original_gold_file_checks": 77183,
+  "owned_source_and_gold_versions": [
+    {
+      "version": 1,
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/owned8-source-and-gold-before-first-product-v1/source-and-gold-manifest-before-first-product.json",
+      "sha256": "92786866f20b68d2b59dfc970ff07f316b8e481ae644a3aa3df75ab5b5251f4a",
+      "files": 10,
+      "held_before_any_product": true
+    },
+    {
+      "version": 2,
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/owned8-source-and-gold-before-first-product-v2/source-and-gold-manifest-before-first-product.json",
+      "sha256": "05103e1b9ab53e2d00702c1e84ac7e3842dd076b1df8cf3e7f64ada2566ed648",
+      "files": 10,
+      "held_before_any_product": false
+    }
+  ],
+  "source_v1_white_text_generator_error_held_before_any_product": true,
+  "source_v2_gold_fixed_and_pages_review_bound_before_first_product": true,
+  "Kanpo_native_original52_verified_pass": 40,
+  "Kanpo_native_original52_unmet": 9,
+  "Kanpo_native_original52_unverified": 3,
+  "Kanpo_all1622_glyphs_on_original_pages_preserved": true,
+  "Kanpo_four_source_diagonals_in_IR_and_editable_Word_OOXML": true,
+  "Kanpo_four_diagonals_NOT_visible_in_this_LibreOffice": true,
+  "Microsoft_Word_visual_verification_pending": true,
+  "no_original_diagonal_criterion_promoted": true,
+  "CPI_each26pass81unmet_inherited_by_RAW_identity": true,
+  "labour_each36pass21unmet_inherited_by_RAW_identity": true,
+  "NTA_stamp_selected30_cell_associations_inherited_by_RAW_identity": true,
+  "NTA_bonus_separate_original30_inherited_by_RAW_identity": true,
+  "audits": {
+    "Kanpo": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification/known-original-Kanpo-followup-asof-4d64ef6/receipt.json",
+      "sha256": "e801a2ead2004517fcb8f5e1edb25d6a43fe8e2b1eb27a432c923b02ca184bac"
+    },
+    "CPI": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/known-original-CPI-followup-asof-ee44f66/receipt.json",
+      "sha256": "2d2bae8af5faf3e72ddca5e37d1986c07a5e6953622f9050251184fe30a2ce1d"
+    },
+    "labour": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-positioned-cell-fallback-stretch/jade-pdf/corpus/wasm-runtime/positioned-cell-fallback-stretch-qualification/known-original-labour-followup-asof-260335a/receipt.json",
+      "sha256": "ead1db96e399fb5891dbb61fcda8e7dec1f9762d1022576db441a4764db552a7"
+    },
+    "NTA-stamp": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/known-original-NTA-stamp-followup-asof-ee44f66/receipt.json",
+      "sha256": "703fa867fee6e9c580f09226095c889602dd18edcb9ef8c652796a2e5634073e"
+    }
+  },
+  "native_binary_sha256": "20200606901c9f8941557e741674dbb413560bb989907df659079b7033856399",
+  "raw_release_WASM_sha256": "4d1c055683c06a42326fcc1ddcb76155cd0cd05ef616712e722f889a2cecbf34",
+  "browser_generated_WASM_sha256": "2efbfe9148d6476c3bac5aca7e639a2d5243519bb343a7644183f018496aa7cd",
+  "public_Rust_API_changes": [
+    "ParsedDocument.source_diagonals: Vec<ParsedSourceDiagonal>",
+    "ParsedSourceDiagonal { page,start,end,stroke_width }"
+  ],
+  "hand_built_IR_migration": "Initialize source_diagonals with Vec::new() when no verified source lines are supplied.",
+  "no_new_CLI_parameters_or_dependencies": true,
+  "no_payload_geometry_text_or_style_normalization": true,
+  "component_qualified": true,
+  "component_scope": "Directed source diagonal IR and editable WordprocessingML empty-cell diagonal borders only; no renderer visibility acceptance.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Four original Kanpo slashes are in Word OOXML but remain invisible in this LibreOffice renderer. Actual Microsoft Word rendering is unverified because Word is not installed here.",
+    "Kanpo curved brace, source font metrics, precise footer/heading anchors and other9 unmet/3 unverified original criteria remain.",
+    "Browser original encrypted Kanpo/NTA stamp rejection and native strict quality rejection remain.",
+    "Inherited CPI graphs/clipping/12-to-16 pagination, labour plot/2-to-3 pagination and other prior NAOJ/Census/SF94/prose/rotation limitations remain.",
+    "New synthetic negative cases only deny false solid-border promotion; their dashed/partial/covered graphic appearance is not accepted."
+  ],
+  "qualification_receipt_sha256": "3fb7f82581d982810bcb25227c94a7ea09894018feff1764d875ce405d8ee156",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-diagonals/jade-pdf/corpus/wasm-runtime/source-cell-diagonals-qualification"
+}
