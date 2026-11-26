@@ -1,0 +1,91 @@
+{
+  "time_utc": "2026-11-26T01:06:24.566349+00:00",
+  "Rust_files": 780,
+  "native_outcomes": 192,
+  "native_success": 168,
+  "native_rejected": 24,
+  "browser_outcomes": 400,
+  "browser_each_success": 171,
+  "browser_each_rejected": 29,
+  "total_outcomes": 592,
+  "all592_statuses_exact_expected": true,
+  "changed_payloads": 19,
+  "all573_other_payloads_RAW_exact_qualified_parent": true,
+  "cross_engine200_payloads100_inspections_exact": true,
+  "all19_nonwhite_character_inventories_and_media_and_table_counts_exact_parent": true,
+  "all19_bold_italic_font_color_size_character_style_multisets_exact_parent": true,
+  "underline_and_one_EfficientNet_superscript_position_changes_NOT_claimed_exact": true,
+  "all_nonbody_XML_changes_only_generated_paragraph_IDs": true,
+  "EfficientNet_native_browser19pages_and_BERT27_BatchNorm18_CPI16": true,
+  "EfficientNet_4_changed_page_pairs_reviewed_and34_others_RGB_exact_parent": true,
+  "NAOJ5page_and1page_excerpt_variants_RGB_exact_official_parent_inherited_by_RAW_identity": true,
+  "known_CPI_original107_each26pass81unmet_or_unverified_NOT_unseen": true,
+  "known_CPI107_audit": "/Users/bokuweb/.codex/worktrees/pdf-wide-numeric-tj-column-runs/jade-pdf/corpus/wasm-runtime/wide-numeric-tj-field-spacing-qualification/known-original107-field-spacing-followup-asof-c30c8e1/receipt.json",
+  "browser_CPI107_inheritance_canonical_image_reference_proof": "/Users/bokuweb/.codex/worktrees/pdf-wide-numeric-tj-column-runs/jade-pdf/corpus/wasm-runtime/wide-numeric-tj-field-spacing-qualification/cohort-image-reference-binding-and-prototype-render-inheritance.json",
+  "initial_CPI14of107_and_parent15of107_original_golds_unchanged": true,
+  "parent_original_gold_files_reverified": 45911,
+  "all_original_gold_files_unchanged": true,
+  "unaffected_Census128of130_and_SF94_failures_inherited_by_RAW_identity": true,
+  "NAOJ_original44_native36_browser27_retained_and2152char_criterion_still_fails2153": true,
+  "component_qualified": true,
+  "component_scope": "Preserve independently measured upright TJ numeric operands, numerical source right anchors and word separators; keep numerical table gaps from extending newly recovered prose columns into leading figures. Preserve ambiguous/legacy column inference. No public API or dependency change.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "CPI still16 Word pages from12 and81of107 source criteria unmet/unverified; merged headers, six graphs, typography and logo decode remain incomplete.",
+    "Paper graphs, math, column/footnote collisions and layout remain unaccepted. EfficientNet body9 spacing and one superscript position change; underline changes do not prove whole-source fidelity.",
+    "NAOJ/Census/SF94 and three-column prose limitations remain. All held iterations are retained and excluded from the accepted comparison baseline."
+  ],
+  "source_head": "e9c49b9b2ce5432cd911ceebfc2f2ae49ecaad82",
+  "source_tree": "9817649b6625e98b0a64c57b5b2389e8a272de2e",
+  "full_default": {
+    "passed": 2611,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 153,
+    "log_sha256": "5ed90e04ca01925bc0aa8f7671befdc090487f48f1cd2c4148b2abae4a016b73"
+  },
+  "native_binary_sha256": "15e38850456569af8778ef5c6552122a260c0503d36881fd61e8d34af72f6c92",
+  "raw_release_WASM_sha256": "827105f7ee1ced917a4facbc578df488ffd3c6e4bfc2f47c8c5c39df54876cde",
+  "browser_generated_WASM_sha256": "b2359617416accdabdba7f490c60a6847af6dbd2789f73a0f6efa15c048039c5",
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "fmt_passed": true,
+  "TDD_Reds": [
+    {
+      "label": "wide-numeric-TJ-public-position-Red",
+      "source_head": "1f86d9eca9abab4fb41b145e7c6b36e51ff0472e",
+      "log_sha256": "30bec16d3a6f478e7c8fed0514dc3668a9e2ef7b18099996e11678ff0e86d5f0"
+    },
+    {
+      "label": "numeric-right-anchor-half-em-coordinate-Red",
+      "source_head": "6cf4ea999a45c626ed22e0f35f2da0d4d7d80cc8",
+      "log_sha256": "5b59081e3958886dfe06784a7da906ac1a30c258a278ec8c54fddbf5b6e3511e"
+    },
+    {
+      "label": "numeric-TJ-unmeasured-widths-public-Red",
+      "source_head": "c214280cc57ff94f1785c7c9855a8aa4d5eea9dd",
+      "log_sha256": "e2a6ffbc47f064c1b667cb6d37e82ae6fe545d86102ab0da4c713c000b2169d7"
+    },
+    {
+      "label": "numeric-field-body-separator-public-Red",
+      "source_head": "da102d84e17e73748d05c03cef231c8d5110aa91",
+      "log_sha256": "e13ef0d00bb9f3b5ffa2e5fe946bdeeb460e49461af0b537b0a62613cd041bd4"
+    },
+    {
+      "label": "refined-prose-gutter-leading-figure-owned-Red",
+      "source_head": "148883ee1c69c220872e96e74522d519bf934abc",
+      "log_sha256": "85015769c70e69103dcbc8ffdbdfe7a85bf906cf75becf6b0b9d4294ca1508fa"
+    }
+  ],
+  "source_gold_registration": "corpus/statistics-japan-cpi-prospective-gold.json",
+  "qualification_receipt_sha256": "ec1efc9c9cdb247af86d8508c0a397250b4a22c962fef171a0622465079759cf",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-wide-numeric-tj-column-runs/jade-pdf/corpus/wasm-runtime/wide-numeric-tj-body-gutter-scope-qualification",
+  "verification_corrections": [
+    "Failed typography/page-flow prototypes are frozen in separate HELD manifests and excluded from the qualified parent baseline7c5a17a.",
+    "Only numeric gaps are excluded from new body evidence; all gaps remain for ambiguity rejection. New body-only inference is vertically bounded while established legacy cuts are preserved.",
+    "Owned scope hypotheses were corrected from actual source geometry without editing original107 golds. The review correction is retained in the local evidence namespace.",
+    "Browser image IDs depend on known11/cohort history. RAW hashes are preserved; inherited render/source checks use exact XML after image-ID-to-media-SHA substitution only, with all other ZIP parts RAW exact.",
+    "EfficientNet baseline position of one superscript changes and underline changes are reported rather than asserted identical. Whole-document typography and appearance remain unaccepted."
+  ]
+}
