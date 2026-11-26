@@ -29,20 +29,30 @@ fn key(value: f32) -> u32 {
 
 impl<'a> Rules<'a> {
     /// 一ページの有限な軸平行線だけを索引化し、線幅不明の候補は辺の照合時に拒否する。
-    fn new(parsed: &'a ParsedDocument, page: usize) -> Self {
+    fn new(parsed: &'a ParsedDocument, page: usize, grid: &fractional_table_rules::Grid) -> Self {
         let mut out = Self {
-            horizontal: BTreeMap::new(),
-            vertical: BTreeMap::new(),
+            horizontal: grid.ys.iter().map(|y| (key(*y), Vec::new())).collect(),
+            vertical: grid.xs.iter().map(|x| (key(*x), Vec::new())).collect(),
         };
         for graphic in parsed.graphics.iter().filter(|g| g.page == page) {
             let b = graphic.bounds;
             if ![b.x0, b.x1, b.y0, b.y1].iter().all(|v| v.is_finite()) {
                 continue;
             }
-            if b.x0 < b.x1 && b.y0 == b.y1 {
-                out.horizontal.entry(key(b.y0)).or_default().push(graphic);
-            } else if b.y0 < b.y1 && b.x0 == b.x1 {
-                out.vertical.entry(key(b.x0)).or_default().push(graphic);
+            if b.x0 < b.x1
+                && b.y0 == b.y1
+                && b.x1 > grid.xs[0]
+                && b.x0 < grid.xs[grid.xs.len() - 1]
+                && let Some(axis) = out.horizontal.get_mut(&key(b.y0))
+            {
+                axis.push(graphic);
+            } else if b.y0 < b.y1
+                && b.x0 == b.x1
+                && b.y1 > grid.ys[0]
+                && b.y0 < grid.ys[grid.ys.len() - 1]
+                && let Some(axis) = out.vertical.get_mut(&key(b.x0))
+            {
+                axis.push(graphic);
             }
         }
         out
@@ -162,7 +172,7 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
         }) {
             continue;
         }
-        let rules = Rules::new(parsed, table.page);
+        let rules = Rules::new(parsed, table.page, grid);
         let mut changed = false;
         for (ri, row) in model.rows.iter_mut().enumerate() {
             for (ci, cell) in row.iter_mut().enumerate() {
