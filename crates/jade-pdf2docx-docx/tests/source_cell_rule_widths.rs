@@ -14,8 +14,20 @@ fn source(prefix: &str, font: &str) -> Vec<u8> {
 
 /// 一本の内側縦辺を差し替え、物理gap・線幅変化・角の実在inkを検査する。
 fn source_with_vertical(prefix: &str, font: &str, vertical: &str) -> Vec<u8> {
+    source_with_bottom_text(prefix, font, vertical, 10., 603., "Beta")
+}
+
+/// 下段の文字高と基線を制御し、行高の精密化で文字を切らないことを確認する。
+fn source_with_bottom_text(
+    prefix: &str,
+    font: &str,
+    vertical: &str,
+    size: f32,
+    y: f32,
+    text: &str,
+) -> Vec<u8> {
     let content = format!(
-        "q {prefix} 1.5 w 72.25 590.25 200.5 60 re S .5 w {vertical} 72.25 620.75 m 272.75 620.75 l S BT /F 10 Tf 82 633 Td (Alpha) Tj ET BT /F 10 Tf 82 603 Td (Beta) Tj ET BT /F 10 Tf 182 603 Td (Control) Tj ET Q"
+        "q {prefix} 1.5 w 72.25 590.25 200.5 60 re S .5 w {vertical} 72.25 620.75 m 272.75 620.75 l S BT /F 10 Tf 82 633 Td (Alpha) Tj ET BT /F {size} Tf 82 {y} Td ({text}) Tj ET BT /F 10 Tf 182 603 Td (Control) Tj ET Q"
     );
     fixture::pdf(&[
         "<< /Type /Catalog /Pages 2 0 R >>".into(),
@@ -24,6 +36,27 @@ fn source_with_vertical(prefix: &str, font: &str, vertical: &str) -> Vec<u8> {
         fixture::stream(&content),
         format!("<< /Type /Font /Subtype /Type1 /BaseFont /{font} >>"),
     ])
+}
+
+/// 原本には収まる文字が補正後のWord行高を越える場合、水平罫線と行高を従来値へ戻す。
+#[test]
+fn row_pitch_refinement_does_not_reduce_verified_text_capacity() {
+    let xml = document_xml(&source_with_bottom_text(
+        "",
+        "Helvetica",
+        "1.5 w 171.75 590.25 m 171.75 650.25 l S .5 w",
+        30.5,
+        590.25,
+        "B",
+    ));
+    assert!(
+        xml.contains("<w:gridCol w:w=\"1990\""),
+        "source geometry must still be eligible: {xml}"
+    );
+    assert!(!xml.contains("w:val=\"single\" w:sz=\"4\""));
+    assert!(xml.contains("<w:trHeight w:val=\"590\""));
+    assert!(xml.contains("<w:trHeight w:val=\"610\""));
+    assert_eq!(xml.matches(">B</w:t>").count(), 1);
 }
 
 /// byte APIの出力から、書換えずにセルごとのWord本文を読む。

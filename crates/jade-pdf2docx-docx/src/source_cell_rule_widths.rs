@@ -206,7 +206,12 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
         }
         if changed {
             pitch::apply(table, &mut model);
-            table.docx_table = Some(model);
+            if model.rows.iter().flatten().any(|cell| {
+                cell.borders
+                    .is_some_and(|b| b.source_side_sizes.iter().any(Option::is_some))
+            }) {
+                table.docx_table = Some(model);
+            }
         }
     }
 }
