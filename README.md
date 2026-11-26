@@ -94,6 +94,8 @@ Table body filtering reuses the original coordinate-assignment decision to retai
 
 Measured numeric operands separated by a wide `TJ` gap retain distinct source positions and editable table cells. Numeric word gaps and right anchors are preserved while newly recovered prose gutters stay within their verified body range. See [numeric source positions and remaining fidelity limits](docs/source_numeric_tj_positions.md).
 
+Verified white fill no longer becomes a black rule connecting independent tables. Adjacent source-framed tables retain their shared top and separate editable cells, with one group height reserved in the text flow. See [white fill, adjacent tables and remaining source fidelity limits](docs/source_white_fill_and_adjacent_tables.md).
+
 Detected two-column text retains page-specific Word sections when another page contains an image or inferred table. A final table keeps its page boundary outside the table; floating-image-only and running-header-only pages retain known source dimensions. Sustained central gutters can recover narrow two-column text. Explicit column widths keep right-column prefixes out of the preceding column frame; paragraph offsets use those same widths. Verified column bodies flow from left to right once per source page, including unmatched rows. Column candidates with unsplit body rows crossing into the next column are rejected. Pages containing images or tables, OCR content, full-height tables, and complex column layouts retain limitations; see the [text-column guide](docs/text_columns.md).
 
 PDF comparison qualification uses 90 registered public PDFs (76 regular documents with 717 pages, 10 robustness inputs, one specification reference, and three unresolved semantic gold cases). Three additional reviewed W3C files represent two independent visible contents and remain outside the registered corpus. See the [corpus record](corpus/README.md) for validated profiles and remaining accuracy limits.
@@ -177,6 +179,8 @@ PDF由来の太字・通常体と表の先頭行の改ページについては�
 ヘッダーで途切れる表の外辺、複数行の数値列の右揃え、罫線と文字下線の区別については、[部分的な表の外辺と数値配置](docs/native_partial_table_edges.md)を参照してください。
 
 単一のTJ命令で離して描かれた数値のセル対応、本文の語間、図表と段組みの区別については、[原本数値の描画位置の保持](docs/source_numeric_tj_positions.md)を参照してください。
+
+白い塗りによる偽の罫線と横並び表の配置については、[白い塗りと横並びの原本表](docs/source_white_fill_and_adjacent_tables.md)を参照してください。
 
 連続する原本ページの装飾付き番号を、文字と書式を保持してfooterへ移す条件と制約は、[原本ページ番号の保持](docs/source_numbered_footers.md)を参照してください。
 
