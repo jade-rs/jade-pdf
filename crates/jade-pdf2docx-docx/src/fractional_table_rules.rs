@@ -147,6 +147,94 @@ mod tests {
     use super::*;
     use proptest::prelude::*;
 
+    /// 一意な原本境界の精密化を、既存の本文への挿入順へ逆流させない。
+    #[test]
+    fn fractional_dimensions_do_not_move_body_flow_anchors() {
+        let mut graphics = Vec::new();
+        for x in [20.25, 60.75, 100.25] {
+            graphics.push(ParsedGraphicElement {
+                page: 0,
+                bounds: ParsedBounds {
+                    x0: x,
+                    x1: x,
+                    y0: 30.25,
+                    y1: 90.25,
+                },
+                stroke_width: 0.5,
+            });
+        }
+        for y in [30.25, 60.75, 90.25] {
+            graphics.push(ParsedGraphicElement {
+                page: 0,
+                bounds: ParsedBounds {
+                    x0: 20.25,
+                    x1: 100.25,
+                    y0: y,
+                    y1: y,
+                },
+                stroke_width: 0.5,
+            });
+        }
+        let text = |value: &str, x, y| ParsedTextElement {
+            page: 0,
+            text: value.into(),
+            font_name: Some("Helvetica".into()),
+            font_size: 10.,
+            font_weight: Some(400),
+            fill_color: None,
+            fill_stroke_width: None,
+            source_background: None,
+            baseline_y: Some(y),
+            bounds: ParsedBounds {
+                x0: x,
+                x1: x + 10.,
+                y0: y,
+                y1: y + 10.,
+            },
+        };
+        let parsed = ParsedDocument {
+            path: "owned-fractional-flow.pdf".into(),
+            byte_len: 1,
+            header: "%PDF-1.7".into(),
+            version: jade_pdf2docx_parser::PdfVersion { major: 1, minor: 7 },
+            page_count: 1,
+            pages: vec![ParsedPage {
+                page_number: 0,
+                width: 200.,
+                height: 200.,
+                rotation: 0,
+            }],
+            graphics,
+            source_diagonals: Vec::new(),
+            text_elements: vec![text("A", 30., 75.), text("B", 70., 45.)],
+            image_elements: Vec::new(),
+            embedded_fonts: Vec::new(),
+            text_preview: String::new(),
+            quality: Default::default(),
+        };
+        let view = table_rule_topology::page(&parsed, 0);
+        let table = infer_positioned_table_from_graphics(&parsed, 0, &view).unwrap();
+        assert_eq!(
+            table.bounds,
+            ParsedBounds {
+                x0: 20.,
+                x1: 100.,
+                y0: 30.,
+                y1: 90.
+            },
+            "fractional geometry must not splice a floating table into a source body paragraph"
+        );
+        assert_eq!(
+            table.source_rule_grid.unwrap().bounds(),
+            ParsedBounds {
+                x0: 20.25,
+                x1: 100.25,
+                y0: 30.25,
+                y1: 90.25
+            }
+        );
+    }
+
     /// 端点の丸めが同じtwipへ潰れるほど細い領域をWordセル幅へ渡さない。
     #[test]
     fn sub_twip_or_unresolved_grid_uses_fallback() {
