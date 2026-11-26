@@ -30,6 +30,18 @@ DeviceGray・RGB・CMYKの有限成分を確認し、既存の8bit RGB変換を�
 
 native試作では青い11セルと9月の`2.4`の黄色1セルを確認し、背景のshadingだけを除くと親の本文XMLと一致した。他のZIP部品もバイト一致し、非空白1,164文字・4表・4ページを保持した。変更した1ページ目を原本と目視し、残り3ページは目視済み親出力とRGB一致した。最初の部分的な色回復だけの試作は保留とし、承認済みの基準にしない。
 
-原本2ページがWord4ページになる問題、graph、font face、logo、余分な表、clippingなどは残る。この段階は試作の確認であり、ワークスペース全体とnative/WASM比較の最終確認は別に行う。`whole_document_accepted=false`と`production_ready=false`を維持する。
+原本2ページがWord4ページになる問題、graph、font face、logo、余分な表、clippingなどは残る。ここまでは試作時の確認であり、固定した最終結果を次節に記録する。`whole_document_accepted=false`と`production_ready=false`を維持する。
 
 kanpoの表とstyleを原本の所有へ結び付ける考え方は[固定した参照記録](source_typography_and_table_opening.md#参照)を参照する。custom licenseのコードや依存は取り込まず、既存のRust parserとWord builderへ独立に実装する。
+
+## 固定した最終検証
+
+実装コミット`a72307e63e9b23d5456eaf59ff80342f57724be6`を固定し、Rust1.93.1のCI defaultは2,651成功・0失敗・42無効化、157テスト群だった。789個のRustファイルは検証・native/WASMビルドを通して同一である。fmt、fixture hygiene2件、WASM distribution10件も通過した。
+
+公開回帰10件と、平行移動24例のPBT、追加したparser予算境界2件を含む。最初の色消失、罫線内側と丸め、空セル、page group、不明fontの失敗ログを保持した。隣の通常セル、別色や後続の遮蔽、部分塗り、未知の合成、Type3の否定例を確認した。
+
+native194件とChromium/WebKit各202件、合計598件は直前の固定済み出力と全ての成否が一致した。595件はpayloadがバイト一致し、変化は既知の労働力調査の通常変換3件だけだった。3環境のDOCXは目視した試作とRAW一致し、両ブラウザは202 payloadと101 inspectionが一致する。CPIを含む他資料の元の未達を変更しない。
+
+原本57条件の追試は、各環境で34合格・23未達/未確認となった。直前32/25から追加合格したのは、両表の青い見出しと9月2.4の黄色セルの2条件だけである。初回20/37、表の改善31/26、文字強調32/25は履歴として不変にする。未見文書の精度率とは扱わない。原本2→Word4ページ、graph・font・logo・余分な表・clipping・原本座標との対応は依然として未達である。
+
+原本・初回結果・gold・保留試作の75 manifest、延べ52,870ファイルを再照合した。ハッシュと範囲は[`corpus/validation-source-table-cell-backgrounds.json`](../corpus/validation-source-table-cell-backgrounds.json)に記録する。限定したセル背景の確認であり、`whole_document_accepted=false`、`production_ready=false`を維持する。
