@@ -87,6 +87,19 @@ fn collinear_different_widths_remain_source_fragments() {
     assert_eq!(parsed.graphics[1].bounds.x0, 40.5);
 }
 
+/// 原本の空隙を表推定の1pt許容で埋めず、辺全体のcoverageを後段で確認できるようにする。
+#[test]
+fn collinear_gap_remains_visible_in_source_fragments() {
+    let parsed = parse_pdf_bytes(
+        "owned-source-rule-gap.pdf",
+        &source(".5 w 20.25 30.75 m 40.5 30.75 l S 41.25 30.75 m 60.75 30.75 l S"),
+    )
+    .unwrap();
+    assert_eq!(parsed.graphics.len(), 2);
+    assert_eq!(parsed.graphics[0].bounds.x1, 40.5);
+    assert_eq!(parsed.graphics[1].bounds.x0, 41.25);
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 二進表現が正確な四分ptの平行移動でも、原本四辺をそのまま公開する。
