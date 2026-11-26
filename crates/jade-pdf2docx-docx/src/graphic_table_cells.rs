@@ -68,6 +68,7 @@ pub(super) fn model(
                 left: has_vertical_boundary_in_band(graphics, xs[col], bottom, top),
                 right: has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top),
                 size_eighths_pt: size,
+                source_side_sizes: [None; 4],
             };
             needed |=
                 span > 1 || !borders.top || !borders.bottom || !borders.left || !borders.right;

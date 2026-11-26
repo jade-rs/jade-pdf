@@ -42,14 +42,14 @@ pub(super) fn merge(mut lines: Vec<ParsedGraphicElement>) -> Vec<ParsedGraphicEl
             let previous = &mut lines[written - 1];
             let (old_axis, old_page, old_fixed, _, old_end) = key(previous);
             if (axis, page, fixed) == (old_axis, old_page, old_fixed)
-                && f64::from(start) <= f64::from(old_end) + 1.0
+                && previous.stroke_width == current.stroke_width
+                && start <= old_end
             {
                 if axis {
                     previous.bounds.y1 = old_end.max(end);
                 } else {
                     previous.bounds.x1 = old_end.max(end);
                 }
-                previous.stroke_width = previous.stroke_width.max(current.stroke_width);
                 continue;
             }
         }
