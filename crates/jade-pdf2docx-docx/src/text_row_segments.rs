@@ -15,18 +15,15 @@ pub(super) fn cuts(
         .sum::<f32>()
         / row.len() as f32;
     let mut right = first.bounds.x1;
-    let mut previous = *first;
+    let numeric_only = numeric_row(row);
     let mut cuts = Vec::new();
     for text in row.iter().skip(1) {
         if text.bounds.x0 - right > avg_height * 8.0
-            || gutter.is_some_and(|g| {
-                right < g.x && g.x < text.bounds.x0 && !numeric_pair(&previous.text, &text.text)
-            })
+            || gutter.is_some_and(|g| right < g.x && g.x < text.bounds.x0 && !numeric_only)
         {
             cuts.push(right / 2.0 + text.bounds.x0 / 2.0);
         }
         right = right.max(text.bounds.x1);
-        previous = text;
     }
     cuts
 }
@@ -34,6 +31,11 @@ pub(super) fn cuts(
 /// 数値・符号・単位記号だけの短い二断片を、散文の狭い段間の根拠から除く。
 pub(super) fn numeric_pair(left: &str, right: &str) -> bool {
     numeric_fragment(left) && numeric_fragment(right)
+}
+
+/// 行全体が数値表記の場合だけ散文の段間から除き、散文内の年・巻号は除かない。
+pub(super) fn numeric_row(row: &[&ParsedTextElement]) -> bool {
+    !row.is_empty() && row.iter().all(|text| numeric_fragment(&text.text))
 }
 
 /// 値の妥当性は推測せず、数字を含む短い非散文の表記だけを確認する。
@@ -184,9 +186,16 @@ mod tests {
     #[test]
     fn numeric_suffixes_inside_prose_rows_keep_the_column_cut() {
         let rows = body();
-        let refs = rows.iter().map(|row| row.iter().collect()).collect::<Vec<_>>();
+        let refs = rows
+            .iter()
+            .map(|row| row.iter().collect())
+            .collect::<Vec<_>>();
         let gutter = text_column_gutter::infer(&refs, 612.).unwrap();
-        let mut row = [text(90., 250., 680.), text(260., 298., 680.), text(314., 400., 680.)];
+        let mut row = [
+            text(90., 250., 680.),
+            text(260., 298., 680.),
+            text(314., 400., 680.),
+        ];
         row[0].text = "Reference in left column".into();
         row[1].text = "2016.".into();
         row[2].text = "6181, 2018.".into();

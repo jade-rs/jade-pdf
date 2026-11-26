@@ -9,7 +9,7 @@ struct Gap {
     right: f32,
     /// 同じ行から複数候補が出ても、垂直範囲の検査で元の行を参照する。
     row: usize,
-    /// 数値だけの隙間は競合候補には残し、本文の垂直範囲を広げる根拠にはしない。
+    /// 数値だけの行の隙間は競合候補には残し、本文区間を広げる根拠にはしない。
     body_evidence: bool,
 }
 
@@ -63,7 +63,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             .fold(first.bounds.x1, f32::max);
         let mut right = first.bounds.x1;
         let mut previous_size = first.font_size;
-        let mut previous = *first;
+        let body_evidence = !super::text_row_segments::numeric_row(row);
         for text in row.iter().skip(1) {
             let next = text.bounds.x0;
             let centre = right / 2.0 + next / 2.0;
@@ -76,15 +76,11 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
                     left: right,
                     right: next,
                     row: index,
-                    body_evidence: !super::text_row_segments::numeric_pair(
-                        &previous.text,
-                        &text.text,
-                    ),
+                    body_evidence,
                 });
             }
             right = right.max(text.bounds.x1);
             previous_size = text.font_size;
-            previous = text;
         }
     }
     let mut events = gaps
@@ -146,6 +142,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
         let Some(first) = row.first() else { continue };
         let y = super::native_baseline::line_y(first);
         if (veto_bottom..=veto_top).contains(&y)
+            && ((bottom..=top).contains(&y) || !super::text_row_segments::numeric_row(row))
             && row
                 .iter()
                 .any(|text| text.bounds.x0 < cut && cut < text.bounds.x1)
@@ -328,13 +325,15 @@ mod tests {
     /// 散文を含む参考文献行は、段間の両側が数値で終わっても本文の根拠にする。
     #[test]
     fn prose_rows_with_numeric_suffixes_still_establish_the_gutter() {
-        let source = (0..4).map(|i| {
-            let y = 700. - i as f32 * 20.;
-            let mut row = vec![text(90., 250., y), text(260., 294., y), text(318., 522., y)];
-            row[1].text = "2016.".into();
-            row[2].text = "6181, 2018.".into();
-            row
-        }).collect::<Vec<_>>();
+        let source = (0..4)
+            .map(|i| {
+                let y = 700. - i as f32 * 20.;
+                let mut row = vec![text(90., 250., y), text(260., 294., y), text(318., 522., y)];
+                row[1].text = "2016.".into();
+                row[2].text = "6181, 2018.".into();
+                row
+            })
+            .collect::<Vec<_>>();
         assert_eq!(infer_owned(&source, 612.), Some(306.));
     }
 
@@ -363,6 +362,24 @@ mod tests {
 
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(32))]
+        /// 数値だけの横断行を本文から外す判断も、一様倍率・移動・行順で変えない。
+        #[test]
+        fn numeric_only_crossing_scope_is_stable_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
+            let mut source = crossing_numeric_scope();
+            source.last_mut().unwrap()[0].text = "224 144 7 6.67%".into();
+            for text in source.iter_mut().flatten() {
+                text.bounds.x0 = (text.bounds.x0 + shift) * scale;
+                text.bounds.x1 = (text.bounds.x1 + shift) * scale;
+                text.bounds.y0 = (text.bounds.y0 + shift) * scale;
+                text.bounds.y1 = (text.bounds.y1 + shift) * scale;
+                text.font_size *= scale;
+            }
+            let cut = infer_owned(&source, 612. * scale).unwrap();
+            prop_assert!((cut - (306. + shift) * scale).abs() < 0.001);
+            source.reverse();
+            prop_assert_eq!(infer_owned(&source, 612. * scale), Some(cut));
+        }
+
         /// 倍率・平行移動・行順を変えても、数値区間と本文の間の横断行は拒否し続ける。
         #[test]
         fn numeric_scope_keeps_crossing_veto_under_affine_changes(scale in 0.5_f32..2., shift in -10_f32..10.) {
