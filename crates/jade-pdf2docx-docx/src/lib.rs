@@ -2051,6 +2051,17 @@ fn paragraph_from_structured_line(
     let paragraph = line.runs.iter().fold(Paragraph::new(), |paragraph, run| {
         paragraph.add_run(docx_run_from_structured_run(run))
     });
+    position_structured_paragraph(paragraph, line, origin_x, page_width, section_origin_x)
+}
+
+/// runを再構築せず、原本行の寄せと相対原点を既存段落へ適用する。
+fn position_structured_paragraph(
+    paragraph: Paragraph,
+    line: &StructuredTextLine,
+    origin_x: f32,
+    page_width: Option<f32>,
+    section_origin_x: Option<f32>,
+) -> Paragraph {
     match line.alignment {
         ParagraphAlignment::Center => {
             let paragraph = paragraph.align(AlignmentType::Center);
