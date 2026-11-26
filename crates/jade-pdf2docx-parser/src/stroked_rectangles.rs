@@ -10,7 +10,7 @@ use crate::{
 };
 use std::borrow::Cow;
 #[path = "rectangle_paint.rs"]
-mod paint;
+pub(super) mod paint;
 #[path = "rectangle_resources.rs"]
 pub(super) mod resources;
 

@@ -226,6 +226,7 @@ mod tests {
     #[test]
     fn verified_blank_regions_keep_empty_page_boundaries() {
         let parsed = ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: QualityReport::default(),
             path: PathBuf::new(),
             byte_len: 0,

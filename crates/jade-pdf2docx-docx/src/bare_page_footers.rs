@@ -203,6 +203,7 @@ mod tests {
     #[test]
     fn footer_candidates_require_confirmed_upright_source_baselines() {
         let mut parsed = ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "unverified-footer-direction.pdf".into(),
             byte_len: 1,

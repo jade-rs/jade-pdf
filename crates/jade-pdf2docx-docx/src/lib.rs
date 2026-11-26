@@ -33,6 +33,7 @@ mod prepared_docx;
 mod rotated_body_digit;
 mod rotated_text_fallback;
 mod source_cell_background;
+mod source_cell_diagonals;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;
@@ -3060,6 +3061,10 @@ struct DocxCellBorders {
     bottom: bool,
     /// 右罫線を出力する。
     right: bool,
+    /// 原本の左上から右下の対角線幅。未確認はNone。
+    diagonal_tl2br: Option<usize>,
+    /// 原本の右上から左下の対角線幅。未確認はNone。
+    diagonal_tr2bl: Option<usize>,
     /// DOCX の border size（1/8pt 単位）。
     size_eighths_pt: usize,
 }
@@ -3077,6 +3082,8 @@ impl DocxCellBorders {
             left: true,
             bottom: true,
             right: true,
+            diagonal_tl2br: None,
+            diagonal_tr2bl: None,
             size_eighths_pt,
         }
     }
@@ -3796,6 +3803,20 @@ fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
         borders.right,
         borders.size_eighths_pt,
     ));
+    if let Some(size) = borders.diagonal_tl2br {
+        out = out.set(
+            TableCellBorder::new(TableCellBorderPosition::Tl2br)
+                .size(size)
+                .color("000000"),
+        );
+    }
+    if let Some(size) = borders.diagonal_tr2bl {
+        out = out.set(
+            TableCellBorder::new(TableCellBorderPosition::Tr2bl)
+                .size(size)
+                .color("000000"),
+        );
+    }
     out
 }
 
@@ -3867,6 +3888,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         })
         .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
+    source_cell_diagonals::apply(parsed, &mut tables);
     tables.sort_by(|a, b| {
         a.page
             .cmp(&b.page)

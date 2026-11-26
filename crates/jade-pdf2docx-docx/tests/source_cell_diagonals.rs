@@ -20,10 +20,21 @@ fn source() -> Vec<u8> {
 /// 黒い斜線を、同じ空セルの左上から右下へ引くWord罫線にする。
 #[test]
 fn a_source_diagonal_is_preserved_in_its_empty_table_cell() {
-    let output=convert_minimum_pdf_bytes_to_docx_bytes("owned-cell-diagonal.pdf",&source()).unwrap();
-    let mut zip=zip::ZipArchive::new(Cursor::new(output)).unwrap();
-    let mut xml=String::new();zip.by_name("word/document.xml").unwrap().read_to_string(&mut xml).unwrap();
-    assert_eq!(xml.matches("<w:tbl>").count(),1);
-    assert!(xml.contains("Alpha</w:t>") && xml.contains("Beta</w:t>") && xml.contains("Control</w:t>"));
-    assert_eq!(xml.matches("<w:tl2br ").count(),1,"the actual top-left-to-bottom-right source line must remain in its cell");
+    let output =
+        convert_minimum_pdf_bytes_to_docx_bytes("owned-cell-diagonal.pdf", &source()).unwrap();
+    let mut zip = zip::ZipArchive::new(Cursor::new(output)).unwrap();
+    let mut xml = String::new();
+    zip.by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert_eq!(xml.matches("<w:tbl>").count(), 1);
+    assert!(
+        xml.contains("Alpha</w:t>") && xml.contains("Beta</w:t>") && xml.contains("Control</w:t>")
+    );
+    assert_eq!(
+        xml.matches("<w:tl2br ").count(),
+        1,
+        "the actual top-left-to-bottom-right source line must remain in its cell"
+    );
 }

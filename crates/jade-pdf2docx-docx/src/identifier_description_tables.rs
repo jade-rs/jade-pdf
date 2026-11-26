@@ -202,6 +202,7 @@ mod tests {
     /// SDKが数字の途中で分けた原本断片を、空白を含めず同じbaselineへ並べる。
     fn fragmented_codes() -> ParsedDocument {
         let mut parsed = ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "owned-fragmented-identifiers.pdf".into(),
             byte_len: 1,

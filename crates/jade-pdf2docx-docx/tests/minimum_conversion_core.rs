@@ -2496,6 +2496,7 @@ fn byte_conversion_preserves_wide_single_column_rule_boxes_as_tables() {
 #[test]
 fn inferred_table_assigns_text_elements_to_cells() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2541,6 +2542,7 @@ fn inferred_table_assigns_text_elements_to_cells() {
 #[test]
 fn inferred_table_exposes_spans_from_missing_graphic_rules() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2593,6 +2595,7 @@ fn inferred_table_exposes_spans_from_missing_graphic_rules() {
 #[test]
 fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2646,6 +2649,7 @@ fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
 #[test]
 fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2769,6 +2773,7 @@ fn dense_article_with_a_decorative_line_is_not_a_text_grid_table() {
         })
         .collect();
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "article.pdf".into(),
         byte_len: 0,
@@ -2793,6 +2798,7 @@ fn dense_article_with_a_decorative_line_is_not_a_text_grid_table() {
 #[test]
 fn inferred_table_exposes_rowspans_from_missing_horizontal_rules() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2857,6 +2863,7 @@ fn inferred_table_uses_one_page_grid_without_mixing_other_pages() {
         graphic.page = 1;
     }
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -2905,6 +2912,7 @@ fn inferred_table_uses_one_page_grid_without_mixing_other_pages() {
 #[test]
 fn inferred_table_falls_back_to_repeated_text_columns_when_grid_lines_are_missing() {
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "synthetic.pdf".into(),
         byte_len: 0,
@@ -3777,6 +3785,7 @@ fn parsed_document_for_auto_ocr(
     text_preview: String,
 ) -> ParsedDocument {
     ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "auto-ocr.pdf".into(),
         byte_len: 1,

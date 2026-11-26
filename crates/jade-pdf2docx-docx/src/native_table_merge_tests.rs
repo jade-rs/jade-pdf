@@ -60,6 +60,7 @@ fn source() -> (
     };
     let grouped = vec![vec![vec![texts[0].clone()]], vec![vec![texts[1].clone()]]];
     let parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         path: "owned-native-vertical-merge.pdf".into(),
         byte_len: 1,
         header: "%PDF-1.7".into(),

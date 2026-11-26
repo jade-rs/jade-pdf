@@ -22,6 +22,8 @@ pub struct ParsedDocument {
     pub pages: Vec<ParsedPage>,
     /// PDF content stream から抽出した線分 graphics。
     pub graphics: Vec<ParsedGraphicElement>,
+    /// 軸平行graphicsと分けて保持する、確認済みの不透明な黒い実線の対角線。
+    pub source_diagonals: Vec<ParsedSourceDiagonal>,
     /// PDF content stream から抽出した座標付きテキスト。
     pub text_elements: Vec<ParsedTextElement>,
     /// PDF 内で検出した画像要素。
@@ -62,6 +64,19 @@ pub struct ParsedGraphicElement {
     /// 線分の外接 bounds。
     pub bounds: ParsedBounds,
     /// stroke 幅。filled rectangle 由来の場合は推定幅。
+    pub stroke_width: f32,
+}
+
+/// 塗り・dash・alpha・clipを確認した、方向を失わない黒いstroke対角線。
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct ParsedSourceDiagonal {
+    /// 対象ページ番号。
+    pub page: usize,
+    /// graphicsと同じ表示ページ座標系の始点。
+    pub start: [f32; 2],
+    /// graphicsと同じ表示ページ座標系の終点。
+    pub end: [f32; 2],
+    /// 一様なCTMを反映した正のstroke幅。
     pub stroke_width: f32,
 }
 

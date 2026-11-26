@@ -388,6 +388,7 @@ mod tests {
     #[test]
     fn pdfium_text_replaces_readable_but_wrong_pure_text() {
         let mut parsed = ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "libreoffice.pdf".into(),
             byte_len: 0,
@@ -559,6 +560,7 @@ mod tests {
     #[test]
     fn text_elements_have_invalid_geometry_detects_out_of_page_elements() {
         let parsed = ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "broken.pdf".into(),
             byte_len: 0,
