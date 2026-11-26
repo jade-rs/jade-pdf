@@ -17,8 +17,8 @@ fn source(content: &str, resources: &str) -> Vec<u8> {
     ])
 }
 
-/// 白い中央帯を挟む黒い二本の原本罫線を、元の座標のまま返す。
-fn edges(prefix: &str, resources: &str) -> Vec<[i32; 4]> {
+/// 白い中央帯を挟む黒い二本の原本中心線を、小数ptのまま返す。
+fn source_edges(prefix: &str, resources: &str) -> Vec<[f32; 4]> {
     let content =
         format!("{prefix} 0 g 20 100 100 1 re f 1 g 120 100 20 1 re f 0 g 140 100 100 1 re f");
     let parsed =
@@ -26,20 +26,25 @@ fn edges(prefix: &str, resources: &str) -> Vec<[i32; 4]> {
     parsed
         .graphics
         .iter()
-        .map(|g| {
-            [
-                g.bounds.x0 as i32,
-                g.bounds.y0 as i32,
-                g.bounds.x1 as i32,
-                g.bounds.y1 as i32,
-            ]
-        })
+        .map(|g| [g.bounds.x0, g.bounds.y0, g.bounds.x1, g.bounds.y1])
+        .collect()
+}
+
+/// 既存の粗いgrid比較は明示的に丸め、小数座標を整数castで切り捨てない。
+fn edges(prefix: &str, resources: &str) -> Vec<[i32; 4]> {
+    source_edges(prefix, resources)
+        .into_iter()
+        .map(|b| b.map(|v| v.round() as i32))
         .collect()
 }
 
 /// DeviceGrayの白塗りは黒い中心線ではなく、離れた黒罫線の空白帯として残す。
 #[test]
 fn opaque_white_fill_does_not_bridge_black_rules() {
+    assert_eq!(
+        source_edges("", "<< >>"),
+        [[20., 100.5, 120., 100.5], [140., 100.5, 240., 100.5]]
+    );
     assert_eq!(
         edges("", "<< >>"),
         [[20, 101, 120, 101], [140, 101, 240, 101]]
