@@ -137,6 +137,57 @@ fn native_file_default_keeps_only_the_displayed_source_elements() {
     }
 }
 
+/// 回転原本の縦長boundsを通常の横書きへ戻す対照で、残る単語の幅を確保する。
+#[test]
+fn remaining_right_anchored_word_has_room_after_hidden_elements_are_removed() {
+    let original = parse_pdf_bytes("owned-horizontal-word.pdf", &source(0, false, None)).unwrap();
+    let word = original
+        .text_elements
+        .iter()
+        .find(|t| t.text == "Visible")
+        .unwrap();
+    let expected = ((word.bounds.x1 - word.bounds.x0) * 20.).ceil() as i32;
+    let xml = document(&source(270, true, Some(300)));
+    let mut reader = quick_xml::Reader::from_str(&xml);
+    let (mut width, mut left, mut right, mut indent_left, mut indent_right) = (0, 0, 0, 0, 0);
+    loop {
+        match reader.read_event().unwrap() {
+            quick_xml::events::Event::Empty(tag) => {
+                let value = |key: &[u8]| {
+                    tag.attributes()
+                        .map(Result::unwrap)
+                        .find(|a| a.key.as_ref() == key)
+                        .map(|a| {
+                            std::str::from_utf8(&a.value)
+                                .unwrap()
+                                .parse::<i32>()
+                                .unwrap()
+                        })
+                        .unwrap_or(0)
+                };
+                match tag.name().as_ref() {
+                    b"w:pgSz" => width = value(b"w:w"),
+                    b"w:pgMar" => {
+                        left = value(b"w:left");
+                        right = value(b"w:right");
+                    }
+                    b"w:ind" => {
+                        indent_left = value(b"w:left");
+                        indent_right = value(b"w:right");
+                    }
+                    _ => {}
+                }
+            }
+            quick_xml::events::Event::Eof => break,
+            _ => {}
+        }
+    }
+    assert!(
+        width - left - right - indent_left - indent_right >= expected,
+        "Word flow width must fit the same source word without hidden content padding"
+    );
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 直角回転と上下左右の配置によらず、表示枠へ一部でも交差する画像だけを残す。
