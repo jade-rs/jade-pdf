@@ -1,6 +1,9 @@
 //! 物理gridを確認した単純な表で、原本の各辺全体を覆う線幅だけをセル罫線へ渡す。
 use super::*;
 
+#[path = "source_cell_rule_pitch.rs"]
+mod pitch;
+
 /// 同じ軸座標にある原本線分を、表のセル数に比例する全graphics再走査なしで参照する。
 struct Rules<'a> {
     /// 水平線の固定Yと、原本の区間・太さ。
@@ -202,6 +205,7 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
             }
         }
         if changed {
+            pitch::apply(table, &mut model);
             table.docx_table = Some(model);
         }
     }
