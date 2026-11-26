@@ -51,7 +51,13 @@ fn boundary(model: &DocxTableModel, row: usize, default: usize) -> Option<usize>
         } else {
             default
         };
-        let current = above.max(below);
+        let current = if row == 0 {
+            below
+        } else if row == model.rows.len() {
+            above
+        } else {
+            above.max(below)
+        };
         if width.is_some_and(|old| old != current) {
             return None;
         }
