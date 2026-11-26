@@ -18,3 +18,28 @@ pub(crate) fn compatible(previous: Option<f32>, next: Option<f32>) -> bool {
         _ => false,
     }
 }
+
+/// 表示原点へ基線を移し、ページ回転後に正立と確認できない基線は公開しない。
+pub(crate) fn in_viewport(baseline: Option<f32>, origin_y: f32, rotation: i32) -> Option<f32> {
+    let y = baseline?;
+    if rotation.rem_euclid(360) != 0 || !y.is_finite() || !origin_y.is_finite() {
+        return None;
+    }
+    let relative = y - origin_y;
+    relative.is_finite().then_some(relative)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// 非有限値・計算overflow・未知基線を、表示内の正立基線へ昇格しない。
+    #[test]
+    fn invalid_or_unconfirmed_baselines_remain_unknown() {
+        assert_eq!(in_viewport(None, 0., 0), None);
+        assert_eq!(in_viewport(Some(f32::NAN), 0., 0), None);
+        assert_eq!(in_viewport(Some(80.), f32::INFINITY, 0), None);
+        assert_eq!(in_viewport(Some(f32::MAX), -f32::MAX, 0), None);
+        assert_eq!(in_viewport(Some(80.), 50., 45), None);
+    }
+}
