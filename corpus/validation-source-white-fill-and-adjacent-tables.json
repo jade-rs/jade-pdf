@@ -1,0 +1,81 @@
+{
+  "time_utc": "2026-11-26T02:29:32.054770+00:00",
+  "head": "8c219d218cf60247dfc80713c1455e3d22f4a85f",
+  "source_tree": "2dd1b42e58677c6eca9563d707b80c349fcba240",
+  "Rust_files": 784,
+  "full_default": {
+    "passed": 2628,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 155,
+    "log_sha256": "05757f2c4829d64ed39b48d46290f71241b4b22740d6d2658965865e601008fc"
+  },
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "fmt_passed": true,
+  "TDD_Reds": [
+    {
+      "label": "white-fill-clearance-public-Red",
+      "head": "c232275259a04dff44cbe682b4b672f8cc734a3e",
+      "log_sha256": "256600fe0ace4046e19485210832ea1cd2c08db684fe7908df022cb29301339f"
+    },
+    {
+      "label": "white-fill-compressed-resource-public-Red",
+      "head": "eb6b53d1dce40a0a67debba365941f80e09d359f",
+      "log_sha256": "ebbb23c8aac287c703420f29cf47b24d8e0c9c1afd8117f5edd8db73acbfb07f"
+    },
+    {
+      "label": "source-adjacent-tables-public-Red",
+      "head": "eb6b53d1dce40a0a67debba365941f80e09d359f",
+      "log_sha256": "38097b6bcb6f0c26b8ed6676bd6b4613ac4f6fdd5db04d56815e0b6aa5a678d9"
+    },
+    {
+      "label": "adjacent-table-segmented-outer-edge-Red",
+      "head": "0405feef111952f504e84fd82d571e64253ea68d",
+      "log_sha256": "39ff8271048f36fcaae32e72c2705ccb1f178be56ac1a92d7b3763bc3ded2885"
+    }
+  ],
+  "native_outcomes": 194,
+  "native_success": 169,
+  "native_rejected": 25,
+  "browser_outcomes": 404,
+  "browser_each_success": 172,
+  "browser_each_rejected": 30,
+  "total_outcomes": 598,
+  "all598_statuses_exact_expected": true,
+  "all592_prior_qualified_payloads_RAW_exact_parent": true,
+  "all3_initial_labour_strict_rejections_RAW_exact": true,
+  "changed_payloads": 3,
+  "all595_other_payloads_RAW_exact": true,
+  "cross_engine202_payloads101_inspections_exact": true,
+  "all3_labour_defaults_RAW_identical": true,
+  "labour_default_DOCX_sha256": "090ab29402fd3bcc182868bb3ada44aae4c317c490ff7aa6e22f6c1ac25fd8d4",
+  "native_binary_sha256": "26354a05f1aec9a753051c8e958ca0022864668fd149b8f303814f8ff423e8e1",
+  "raw_release_WASM_sha256": "a83eefa1abfaae9b076bdc4d1260bcba805fe71b0e93d260dbcfd689fdc09e6c",
+  "browser_generated_WASM_sha256": "6c4fbadea52829f510b52c6b7beac19e1a6d2c431d2a6cec64ae72308d1ade1d",
+  "source_and_gold_manifest_bindings": "/Users/bokuweb/.codex/worktrees/pdf-japanese-labour-trends-holdout/jade-pdf/corpus/wasm-runtime/japanese-labour-trends-holdout-qualification/parent-original-gold-binding-before-qualified-runtime.json",
+  "parent_original_gold_file_checks": 48643,
+  "all_original_golds_unchanged": true,
+  "labour_original57_initial20pass37unmet_each_frozen": true,
+  "labour_known_followup_each31pass26unmet_or_unverified_NOT_unseen": true,
+  "known_original57_audit": "/Users/bokuweb/.codex/worktrees/pdf-japanese-labour-trends-holdout/jade-pdf/corpus/wasm-runtime/japanese-labour-trends-holdout-qualification/known-original57-followup-asof-8c219d2/receipt.json",
+  "known_original57_audit_sha256": "0589c3273f8e58ba7e50b23cfa81c22182cfe87bc492a31037664a7eb20819df",
+  "labour_source2_to_Word4pages_still_fails": true,
+  "all4_product_pages_reviewed_by_direct_view_or_RGB_identity": true,
+  "labour_source_two_real_tables_recovered_with_merged_headers_and7_source_owned_numeric_cells": true,
+  "boxed_prose_heading_and_chart_still_invented_tables": true,
+  "source_white_bridge_only_removed_and_all_other_graphics_and_text_IR_exact": true,
+  "one_group_height_reservation_prevents_table_stacking_and_extra_fifth_page": true,
+  "held_white_fill_only_and_OOXML_experiments_NOT_accepted_baseline": true,
+  "kanpo_design_independently_implemented_no_custom_licensed_code_or_new_dependencies": true,
+  "component_qualified": true,
+  "component_scope": "Only independently confirmed Device-white fill-rule candidates at verified lexical paint positions are excluded; normal opaque page ExtGState and unmodified Device color spaces are required. Only same-top independent source-framed adjacent tables on unrotated non-column pages use floating Word placement with one source-height reservation. Unknown effects/ambiguous ownership retain legacy behavior.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Labour26of57 still unmet/unverified: original2pages remain4, boxed prose heading/chart are spurious tables, blue/yellow fills, font/explicit stroke emphasis, logo, graph/narrative geometry and clipping remain incomplete.",
+    "CPI26of107, NAOJ36of44 native/27of44 browser, Census128of130, SF94 and three-column prose limitations are inherited unchanged by RAW identity; no whole-document acceptance is claimed."
+  ],
+  "qualification_receipt_sha256": "ea4c89834aca2d769f1ba0246867197c65dce8d14680df79bb37099c40da73b7",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-japanese-labour-trends-holdout/jade-pdf/corpus/wasm-runtime/japanese-labour-trends-holdout-qualification"
+}

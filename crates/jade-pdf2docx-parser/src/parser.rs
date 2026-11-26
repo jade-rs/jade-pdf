@@ -40,6 +40,8 @@ mod graphics_draws;
 mod graphics_merge;
 #[path = "stroked_rectangles.rs"]
 mod stroked_rectangles;
+#[path = "white_fill_rules.rs"]
+mod white_fill_rules;
 
 /// 罫線本文を共有予算付きで抽出し、失敗時は部分結果を破棄する。
 #[cfg(test)]
@@ -371,7 +373,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     decode_budget.check()?;
     let mut quality = QualityReport::default();
     crate::page_geometry_diagnostics::collect(decode_budget, page_count, &pages, &mut quality)?;
-    let mut graphics = extract_graphics_from_pdf_bytes(decode_budget, &bytes);
+    let mut graphics = extract_graphics_with_resources(decode_budget, &bytes, &tree_source);
     decode_budget.check()?;
     let mut text_elements = extract_text_elements_from_pdf_bytes(decode_budget, &bytes);
     decode_budget.check()?;
@@ -782,9 +784,19 @@ fn append_compressed_objects_as_indirect_objects(
 }
 
 /// PDF のページ本文を filter に応じて展開し、線分 graphics を抽出する。
+#[cfg(test)]
 fn extract_graphics_from_pdf_bytes(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
+) -> Vec<ParsedGraphicElement> {
+    extract_graphics_with_resources(decode_budget, bytes, bytes)
+}
+
+/// 描画本文は元入力から、白の確認用Resourceは検証済み展開metadataから借用する。
+fn extract_graphics_with_resources(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    resource_source: &[u8],
 ) -> Vec<ParsedGraphicElement> {
     let mut segments = Vec::new();
     let streams = extract_page_content_streams_with_page(decode_budget, bytes);
@@ -799,10 +811,38 @@ fn extract_graphics_from_pdf_bytes(
     if stroked_rectangles::append(decode_budget, bytes, &streams, &mut segments).is_none() {
         return Vec::new();
     }
-    for (page, stream) in streams {
-        if graphics_draws::append(decode_budget, page, &stream, &mut segments).is_none() {
+    let mut proof_page = None;
+    let mut proof = None;
+    let mut offset = 0_usize;
+    for (page, stream) in &streams {
+        if proof_page != Some(*page) {
+            proof_page = Some(*page);
+            proof = None;
+            offset = 0;
+        }
+        let mut confirmed_white = |position| {
+            let positions = proof.get_or_insert_with(|| {
+                white_fill_rules::positions(decode_budget, resource_source, *page, &streams)
+            });
+            positions
+                .as_ref()
+                .is_some_and(|positions| positions.binary_search(&(offset + position)).is_ok())
+        };
+        if graphics_draws::append_filtered(
+            decode_budget,
+            *page,
+            stream,
+            &mut segments,
+            &mut confirmed_white,
+        )
+        .is_none()
+        {
             return Vec::new();
         }
+        offset = match offset.checked_add(stream.len()) {
+            Some(offset) => offset,
+            None => return Vec::new(),
+        };
     }
     if decode_budget.is_stopped() {
         return Vec::new();

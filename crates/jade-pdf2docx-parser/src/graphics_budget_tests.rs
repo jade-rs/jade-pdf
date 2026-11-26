@@ -46,13 +46,14 @@ fn graphics_rectangles_require_capacity() {
     }
 }
 
-/// q保存は行列と線幅の全容量を確保前に数える。
+/// q保存は行列・線幅・色状態の全容量を確保前に数える。
 #[test]
 fn graphics_saved_state_requires_capacity() {
-    for limit in [111, 112] {
+    let total = 4 * graphics_draws::SAVED_STATE_BYTES as u64;
+    for limit in [total - 1, total] {
         let (budget, result) = extract(limit, b"q Q");
         assert!(result.is_empty());
-        assert_eq!(budget.check().is_ok(), limit == 112);
+        assert_eq!(budget.check().is_ok(), limit == total);
     }
 }
 
@@ -173,7 +174,7 @@ proptest! {
         let mut slots = 4usize;
         let mut capacity = 4usize;
         while capacity < count { capacity *= 2; slots += capacity; }
-        let total = (slots * if saved { 7 * size_of::<f32>() } else { size_of::<ParsedBounds>() }) as u64;
+        let total = (slots * if saved { graphics_draws::SAVED_STATE_BYTES } else { size_of::<ParsedBounds>() }) as u64;
         for limit in [total - 1, total] {
             let (budget, result) = extract(limit, source.as_bytes());
             prop_assert!(result.is_empty());

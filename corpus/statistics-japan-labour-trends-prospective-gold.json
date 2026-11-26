@@ -1,0 +1,35 @@
+{
+  "id": "Statistics-Japan-Labour-Recent-Trends-2026-09",
+  "source_sha256": "2b9acc64f36b88d49763696a06c8bce0785a2e1bab05b66675ae529d29077f10",
+  "source_bytes": 171159,
+  "source_pages": 2,
+  "source_title": "（参考資料）調査結果の最近の動向等",
+  "source_nonwhite_chars": 1164,
+  "source_page_nonwhite_chars": [
+    491,
+    673
+  ],
+  "source_page2_rotation": 90,
+  "source_page2_display": [
+    842.0,
+    595.22
+  ],
+  "rights": {
+    "terms_url": "https://www.stat.go.jp/info/riyou.html",
+    "content_terms": "PDL1.0 with attribution and modified-work notice; not CC0.",
+    "attribution": "出典：労働力調査（基本集計）2026年９月分 参考資料（総務省統計局） https://www.stat.go.jp/data/roudou/sokuhou/tsuki/pdf/recent_trends.pdf",
+    "modified_notice": "統計局の原本を用いたjade-pdfによる変換・評価。政府が作成したWord成果物ではない。",
+    "exceptions": "Statistics Bureau logo on source page2 is outside PDL1.0. Source PDF, logo and font programs remain local evaluation evidence and are not redistributed or added to tracked fixtures. No third-party photographs observed.",
+    "font_programs": "All declared/program weights400; Century OS2 fsType0, MS subsets fsType8 editable embedding. These technical embedding flags do not relicense the font programs as PDL1.0; existing font-permission checks remain required.",
+    "privacy": "Both source pages contain aggregate official statistics and historical annotations; no filled personal forms, private credentials or confidential data observed."
+  },
+  "url": "https://www.stat.go.jp/data/roudou/sokuhou/tsuki/pdf/recent_trends.pdf",
+  "official_page": "https://www.stat.go.jp/data/roudou/sokuhou/tsuki/index.html",
+  "source_only_gold_criteria": 57,
+  "source_gold_manifest_sha256": "10458a37bd1ec9dc40a2c0be285afbf6755563a5254fb0b10aeea5dc65bf6b63",
+  "independent_source_character_inventories_exact": true,
+  "all2_source_pages_individually_reviewed_before_product": true,
+  "first_product_not_yet_used_at_registration": true,
+  "fixture_PDF_NOT_added": true,
+  "production_ready": false
+}
