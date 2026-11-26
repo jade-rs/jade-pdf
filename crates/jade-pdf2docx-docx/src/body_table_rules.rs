@@ -168,6 +168,15 @@ mod tests {
         assert!(!closed(0, tiny, &frame(0, tiny)));
     }
 
+    /// min/maxでNaNが有限な相方へ消えても、元の未知座標を実辺として使わない。
+    #[test]
+    fn raw_nonfinite_coordinates_cannot_be_hidden_by_normalization() {
+        let b = bounds();
+        let mut source = frame(0, b);
+        source[1].bounds.y0 = f32::NAN;
+        assert!(!closed(0, b, &source));
+    }
+
     proptest! {
         #![proptest_config(ProptestConfig::with_cases(32))]
         /// 表の移動・size・ページ番号を変えても、四辺と独立線の役割は変わらない。
