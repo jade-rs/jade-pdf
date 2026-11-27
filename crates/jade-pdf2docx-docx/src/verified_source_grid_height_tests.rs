@@ -6,7 +6,7 @@ use super::*;
 fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
     let mut parsed = source_grid_selection_tests::source();
     parsed.graphics.clear();
-    for (x0, x1, y0, y1) in [(0., 160., 0., 80.), (10., 150., 10., 70.)] {
+    for (x0, x1, y0, y1) in [(0., 400., 0., 80.), (10., 390., 10., 70.)] {
         for (x0, x1, y0, y1) in [
             (x0, x0, y0, y1),
             (x1, x1, y0, y1),
@@ -20,15 +20,26 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
             });
         }
     }
+    parsed.graphics.push(ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds {
+            x0: 200.,
+            x1: 200.,
+            y0: 10.,
+            y1: 70.,
+        },
+        stroke_width: 0.5,
+    });
+    parsed.pages[0].width = 440.;
     let template = parsed.text_elements[0].clone();
-    parsed.text_elements = [55., 40.]
+    parsed.text_elements = [(20., 55.), (210., 55.), (20., 40.), (210., 40.)]
         .into_iter()
-        .map(|baseline| {
+        .map(|(x, baseline)| {
             let mut text = template.clone();
             text.baseline_y = Some(baseline);
             text.bounds = ParsedBounds {
-                x0: 20.,
-                x1: 50.,
+                x0: x,
+                x1: x + 30.,
                 y0: baseline,
                 y1: baseline + 10.,
             };
@@ -43,7 +54,7 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
         parent.bounds,
         ParsedBounds {
             x0: 0.,
-            x1: 160.,
+            x1: 400.,
             y0: 0.,
             y1: 80.
         }
