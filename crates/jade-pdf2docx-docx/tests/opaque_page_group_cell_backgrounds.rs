@@ -55,7 +55,7 @@ fn opaque_rgb_group_keeps_editable_blue_bold_header_cells() {
         let cell = cell.split("</w:tc>").next().unwrap();
         let header = cell.contains(">H1</w:t>") || cell.contains(">H2</w:t>");
         assert_eq!(cell.contains("w:fill=\"8DB3E2\""), header);
-        assert_eq!(cell.contains("<w:b/>"), header);
+        assert_eq!(cell.contains("<w:b/>") || cell.contains("<w:b />"), header);
     }
 }
 
