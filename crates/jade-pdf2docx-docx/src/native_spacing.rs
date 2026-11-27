@@ -1,6 +1,29 @@
 //! 可視本文の間に独立して描かれた空白を、行復元とOCR照合で共有する。
 use super::*;
 
+/// 行の空白復元へ渡す候補をページごとの原本描画順で保持する。
+#[derive(Default)]
+pub(super) struct PageSpaces<'a> {
+    /// 各ページで独立して描かれた可視空白。
+    pages: BTreeMap<usize, Vec<&'a ParsedTextElement>>,
+}
+
+impl<'a> PageSpaces<'a> {
+    /// 文書を一度走査し、空白だけを複製せず登録する。
+    pub(super) fn new(elements: &'a [ParsedTextElement]) -> Self {
+        let mut pages = BTreeMap::<_, Vec<_>>::new();
+        for element in elements.iter().filter(|element| is_space(element)) {
+            pages.entry(element.page).or_default().push(element);
+        }
+        Self { pages }
+    }
+
+    /// 指定ページに属する候補だけを返す。
+    pub(super) fn for_page(&self, page: usize) -> &[&'a ParsedTextElement] {
+        self.pages.get(&page).map_or(&[], Vec::as_slice)
+    }
+}
+
 /// 同一baselineの本文断片に挟まれ、連続する空白だけを行へ戻す。
 pub(super) fn with_interior_spaces<'a>(
     elements: impl IntoIterator<Item = &'a ParsedTextElement>,
@@ -112,6 +135,24 @@ pub(super) fn is_space(text: &ParsedTextElement) -> bool {
 mod tests {
     use super::*;
     use proptest::prelude::*;
+
+    /// 罫線表の行を処理するたびに他ページや可視文字を調べず、元の描画順を保つ。
+    #[test]
+    fn page_lookup_keeps_only_visible_spaces_in_source_order() {
+        let mut other = fragment(" ", 10., 2.);
+        other.page = 7;
+        let elements = [
+            other,
+            fragment(" ", 24., 2.),
+            fragment("Visible", 10., 10.),
+            fragment("\t", 9., 2.),
+            fragment("\u{3000}", 13., 2.),
+        ];
+        let spaces = PageSpaces::new(&elements);
+        assert_eq!(spaces.for_page(0), [&elements[1], &elements[4]]);
+        assert_eq!(spaces.for_page(7), [&elements[0]]);
+        assert!(spaces.for_page(8).is_empty());
+    }
 
     /// 検証用に正立した文字矩形を作る。
     fn fragment(text: &str, x: f32, width: f32) -> ParsedTextElement {

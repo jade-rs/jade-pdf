@@ -4,11 +4,23 @@ use super::*;
 /// 閉じた枠の角を比較する座標誤差。本文の近接や欠けた辺の補完には使わない。
 const EDGE_EPSILON: f32 = 0.01;
 
-/// 元の各辺が完全な黒い長方形だけを、同じ列配置が反復する一つの表として復元する。
+/// 独立した枠を検査するテストでも、実変換と同じ空白候補を使う。
+#[cfg(test)]
 pub(super) fn infer(
     parsed: &ParsedDocument,
     page: usize,
     graphics: &[ParsedGraphicElement],
+) -> Option<PositionedTable> {
+    let spaces = native_spacing::PageSpaces::new(&parsed.text_elements);
+    infer_with_spaces(parsed, page, graphics, &spaces)
+}
+
+/// 元の各辺が完全な黒い長方形だけを、同じ列配置が反復する一つの表として復元する。
+pub(super) fn infer_with_spaces(
+    parsed: &ParsedDocument,
+    page: usize,
+    graphics: &[ParsedGraphicElement],
+    spaces: &native_spacing::PageSpaces<'_>,
 ) -> Option<PositionedTable> {
     if !(24..=4096).contains(&graphics.len()) {
         return None;
@@ -157,7 +169,7 @@ pub(super) fn infer(
             })
             .collect(),
     };
-    let native_cells = native_table_text::boxed_cells(parsed, &xs, &ys, &texts, &model);
+    let native_cells = native_table_text::boxed_cells(parsed, spaces, &xs, &ys, &texts, &model);
     let fonts = texts
         .iter()
         .flatten()
