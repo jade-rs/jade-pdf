@@ -15,6 +15,7 @@ fn grid_graphics(
         for (col, on) in edges.iter().enumerate() {
             if *on {
                 out.push(ParsedGraphicElement {
+                    dashed: false,
                     page: 0,
                     stroke_width: 0.5,
                     bounds: ParsedBounds {
@@ -32,6 +33,7 @@ fn grid_graphics(
         for (col, on) in cells.iter().enumerate() {
             if *on {
                 out.push(ParsedGraphicElement {
+                    dashed: false,
                     page: 0,
                     stroke_width: 0.5,
                     bounds: ParsedBounds {

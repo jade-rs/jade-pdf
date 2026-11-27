@@ -4395,6 +4395,7 @@ startxref\n\
     fn merge_axis_aligned_segments_keeps_disjoint_same_axis_segments_separate() {
         let graphics = merge_axis_aligned_segments(vec![
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 20.0,
@@ -4405,6 +4406,7 @@ startxref\n\
                 stroke_width: 1.0,
             },
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 20.0,
@@ -4415,6 +4417,7 @@ startxref\n\
                 stroke_width: 1.0,
             },
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 20.0,

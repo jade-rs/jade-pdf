@@ -68,6 +68,7 @@ fn source() -> ParsedDocument {
     let mut graphics = Vec::new();
     for x in [0., 80., 160.] {
         graphics.push(ParsedGraphicElement {
+            dashed: false,
             page: 0,
             bounds: ParsedBounds {
                 x0: x,
@@ -80,6 +81,7 @@ fn source() -> ParsedDocument {
     }
     for y in [0., 40., 80.] {
         graphics.push(ParsedGraphicElement {
+            dashed: false,
             page: 0,
             bounds: ParsedBounds {
                 x0: 0.,

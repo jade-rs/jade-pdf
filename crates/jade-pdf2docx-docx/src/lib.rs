@@ -3079,6 +3079,8 @@ struct DocxCellBorders {
     size_eighths_pt: usize,
     /// 原本coverageを確認した上・左・下・右の個別線幅。未確認は代表幅を使う。
     source_side_sizes: [Option<usize>; 4],
+    /// 原本で確認した上・左・下・右の破線。
+    source_side_dashes: [bool; 4],
 }
 
 impl DocxCellBorders {
@@ -3098,6 +3100,7 @@ impl DocxCellBorders {
             diagonal_tr2bl: None,
             size_eighths_pt,
             source_side_sizes: [None; 4],
+            source_side_dashes: [false; 4],
         }
     }
 }
@@ -3801,26 +3804,26 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
 /// セル罫線フラグを DOCX の `w:tcBorders` へ変換する。
 fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
     let mut out = TableCellBorders::with_empty();
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Top,
-        borders.top,
-        borders.source_side_sizes[0].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Left,
-        borders.left,
-        borders.source_side_sizes[1].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Bottom,
-        borders.bottom,
-        borders.source_side_sizes[2].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Right,
-        borders.right,
-        borders.source_side_sizes[3].unwrap_or(borders.size_eighths_pt),
-    ));
+    for (index, (position, present)) in [
+        (TableCellBorderPosition::Top, borders.top),
+        (TableCellBorderPosition::Left, borders.left),
+        (TableCellBorderPosition::Bottom, borders.bottom),
+        (TableCellBorderPosition::Right, borders.right),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let border = table_cell_border_with_size(
+            position,
+            present,
+            borders.source_side_sizes[index].unwrap_or(borders.size_eighths_pt),
+        );
+        out = out.set(if present && borders.source_side_dashes[index] {
+            border.border_type(BorderType::Dashed)
+        } else {
+            border
+        });
+    }
     if let Some(size) = borders.diagonal_tl2br {
         out = out.set(
             TableCellBorder::new(TableCellBorderPosition::Tl2br)
@@ -4331,6 +4334,7 @@ fn add_clipped_component_edges(
             is_vertical_line(&bounds) && (bounds.x0 - x).abs() <= 1.5
         }) {
             child_graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: component.first().map(|graphic| graphic.page).unwrap_or(0),
                 bounds: ParsedBounds {
                     x0: x,
@@ -4348,6 +4352,7 @@ fn add_clipped_component_edges(
             is_horizontal_line(&bounds) && (bounds.y0 - y).abs() <= 1.5
         }) {
             child_graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: component.first().map(|graphic| graphic.page).unwrap_or(0),
                 bounds: ParsedBounds {
                     x0: child_bounds.x0,

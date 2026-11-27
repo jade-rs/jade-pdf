@@ -69,6 +69,7 @@ pub(super) fn merge(mut lines: Vec<ParsedGraphicElement>) -> Vec<ParsedGraphicEl
                 } else {
                     previous.bounds.x1 = old_end.max(end);
                 }
+                previous.dashed &= current.dashed;
                 continue;
             }
         }

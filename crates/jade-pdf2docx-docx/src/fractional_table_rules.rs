@@ -153,6 +153,7 @@ mod tests {
         let mut graphics = Vec::new();
         for x in [20.25, 60.75, 100.25] {
             graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: x,
@@ -165,6 +166,7 @@ mod tests {
         }
         for y in [30.25, 60.75, 90.25] {
             graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 20.25,
@@ -248,6 +250,7 @@ mod tests {
     #[test]
     fn sub_twip_or_unresolved_grid_uses_fallback() {
         let line = |x| ParsedGraphicElement {
+            dashed: false,
             page: 0,
             bounds: ParsedBounds {
                 x0: x,
@@ -260,6 +263,7 @@ mod tests {
         let mut graphics = vec![line(0.4999), line(0.5001)];
         for y in [10., 20.] {
             graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 0.,
