@@ -30,6 +30,7 @@ mod column_frame;
 mod conversion_cancellation_tests;
 mod conversion_control;
 mod prepared_docx;
+mod rotated_body_digit;
 mod rotated_text_fallback;
 mod source_cell_background;
 mod visible_source_content;
@@ -1990,7 +1991,9 @@ fn is_pdf_page_number_line(
         return false;
     };
     let footer_limit = height * 0.12;
-    line.top_y <= footer_limit && is_page_number_text(&line.text)
+    line.top_y <= footer_limit
+        && is_page_number_text(&line.text)
+        && !rotated_body_digit::is_between_body_glyphs(parsed, page, line)
 }
 
 /// ページ番号として無視してよい文字列か判定する。

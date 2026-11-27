@@ -635,6 +635,16 @@ fn normalize_elements_to_page_viewports(
     });
     text_elements.retain_mut(|text| {
         let keep = normalize_bounds_for_page(text.page, &mut text.bounds, viewports);
+        if let Some(viewport) = viewports
+            .iter()
+            .find(|viewport| viewport.page.page_number == text.page)
+        {
+            text.baseline_y = crate::text_baseline::in_viewport(
+                text.baseline_y,
+                viewport.origin_y,
+                viewport.page.rotation,
+            );
+        }
         if let Some(background) = text.source_background.as_mut() {
             if !normalize_bounds_for_page(text.page, &mut background.bounds, viewports) {
                 text.source_background = None;
