@@ -179,6 +179,7 @@ pub(super) fn infer(
             texts.iter().flatten().flatten().map(|t| t.font_size),
         ),
         column_widths_twips: table_column_widths_twips(&xs),
+        source_rule_grid: None,
         row_heights_twips: native_table_rows::heights(&ys, 0.),
         table: OcrTable::new(cells),
         cell_underlines: vec![vec![false; width]; height],

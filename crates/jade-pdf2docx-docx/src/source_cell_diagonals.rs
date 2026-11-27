@@ -26,10 +26,17 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
         let Some(ys) = row_edges(table) else {
             continue;
         };
-        let mut xs = vec![table.bounds.x0];
-        for w in &table.column_widths_twips {
-            xs.push(xs.last().copied().unwrap() + *w as f32 / 20.);
-        }
+        let xs = if let Some(grid) = &table.source_rule_grid
+            && grid.xs.len() == table.column_widths_twips.len() + 1
+        {
+            grid.xs.clone()
+        } else {
+            let mut xs = vec![table.bounds.x0];
+            for w in &table.column_widths_twips {
+                xs.push(xs.last().copied().unwrap() + *w as f32 / 20.);
+            }
+            xs
+        };
         if !xs.iter().all(|x| x.is_finite())
             || (xs.last().copied().unwrap() - table.bounds.x1).abs() > 1.
         {
@@ -107,6 +114,12 @@ pub(super) fn apply(parsed: &ParsedDocument, tables: &mut [PositionedTable]) {
 
 /// 各元行のtwip累積から順序付き境界を作り、表高との一致も確認する。
 fn row_edges(table: &PositionedTable) -> Option<Vec<f32>> {
+    if let Some(grid) = &table.source_rule_grid
+        && grid.ys.len() == table.row_heights_twips.len() + 1
+    {
+        // Wordの薄罫線補正を原本の空セルの高さへ加えない。
+        return Some(grid.ys.iter().copied().rev().collect());
+    }
     let mut ys = vec![table.bounds.y1];
     for h in &table.row_heights_twips {
         if !h.is_finite() || *h <= 0. {

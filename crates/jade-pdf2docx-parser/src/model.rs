@@ -61,7 +61,7 @@ pub struct ParsedPage {
 pub struct ParsedGraphicElement {
     /// 対象ページ番号。
     pub page: usize,
-    /// 線分の外接 bounds。
+    /// 線分の外接bounds。小数ptの原本座標を保持し、表推定用の整数キーへ丸めない。
     pub bounds: ParsedBounds,
     /// stroke 幅。filled rectangle 由来の場合は推定幅。
     pub stroke_width: f32,

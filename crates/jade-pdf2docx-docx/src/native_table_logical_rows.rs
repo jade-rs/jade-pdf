@@ -79,6 +79,8 @@ pub(super) fn refine(mut table: PositionedTable) -> PositionedTable {
     table.docx_table = Some(model);
     table.native_cells = cells;
     table.row_heights_twips = heights;
+    // 元の物理gridは表全体の寸法・列位置として残す。
+    // 分割後の行indexには使わず、対角線側も行数が同じ場合だけ元の行境界を照合する。
     table
 }
 

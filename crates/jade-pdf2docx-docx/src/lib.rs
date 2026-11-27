@@ -65,6 +65,7 @@ mod text_grid_cell_styles;
 
 mod bare_page_footers;
 mod cell_line_rounding;
+mod fractional_table_rules;
 mod html_table;
 mod image_anchor;
 mod inline_baseline;
@@ -87,6 +88,7 @@ mod section_chrome_package;
 mod separated_box_table;
 mod source_image_rows;
 mod source_prose_columns;
+mod table_rule_topology;
 mod text_column_gutter;
 mod text_grid_ownership;
 mod text_row_segments;
@@ -1039,9 +1041,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
         .iter()
         .filter(|table| table.page == page.page)
     {
-        let top_y = table.bounds.y1;
+        let flow_top_y = table.bounds.y1;
+        let top_y = positioned_table_layout_bounds(table).y1;
         blocks.push(StructuredBlock::Table {
-            order_index: block_insertion_order_index(&page.lines, top_y),
+            order_index: block_insertion_order_index(&page.lines, flow_top_y),
             top_y,
             table: table.clone(),
         });
@@ -1071,7 +1074,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             .iter()
             .find(|source| source.page_number == page.page),
         text_column_layout.is_some(),
-        &parsed.graphics,
+        &table_rule_topology::page(parsed, page.page),
     );
     let block_count = blocks.len();
     if block_count == 0 {
@@ -1221,11 +1224,11 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
             StructuredBlock::Table { table, .. } => {
                 previous_line = None;
                 let placement = adjacent_tables[block_index];
-                previous_nonparagraph_bottom_y = Some(
-                    placement
-                        .map(|p| p.bottom)
-                        .unwrap_or(table.bounds.y0.min(table.bounds.y1)),
-                );
+                previous_nonparagraph_bottom_y =
+                    Some(placement.map(|p| p.bottom).unwrap_or_else(|| {
+                        let bounds = positioned_table_layout_bounds(&table);
+                        bounds.y0.min(bounds.y1)
+                    }));
                 table
                     .table
                     .validate()
@@ -1533,10 +1536,8 @@ fn structured_page_left_x(
                 .map(|image| image.bounds.x0),
         )
         .chain(
-            parsed
-                .graphics
+            table_rule_topology::page(parsed, page.page)
                 .iter()
-                .filter(|graphic| graphic.page == page.page)
                 .map(|graphic| graphic.bounds.x0.min(graphic.bounds.x1)),
         )
         .filter(|value| value.is_finite() && *value >= 0.0)
@@ -1575,7 +1576,7 @@ fn structured_page_layout(
         positioned_tables
             .iter()
             .filter(|table| table.page == page.page)
-            .map(|table| table.bounds.y1)
+            .map(|table| positioned_table_layout_bounds(table).y1)
             .chain(page.lines.iter().map(|line| line.top_y))
             .chain(
                 parsed
@@ -1668,10 +1669,8 @@ fn parsed_page_display_size_points(page: &ParsedPage) -> (f32, f32) {
 
 /// 上端の細い罫線が raster bbox に含まれる分を DOCX 上余白から差し引く。
 fn top_margin_graphic_stroke_adjustment(parsed: &ParsedDocument, page: usize) -> f32 {
-    parsed
-        .graphics
+    table_rule_topology::page(parsed, page)
         .iter()
-        .filter(|graphic| graphic.page == page)
         .map(|graphic| graphic.stroke_width)
         .filter(|width| width.is_finite() && *width > 0.0 && *width < 0.75)
         .fold(0.0f32, f32::max)
@@ -1816,12 +1815,7 @@ fn text_lines_by_page_from_pdf_text_elements(
                     .then(a.bounds.x0.total_cmp(&b.bounds.x0))
             });
             let page_width = page_width_for_layout(parsed, page, &texts);
-            let mut page_graphics = parsed
-                .graphics
-                .iter()
-                .filter(|graphic| graphic.page == page)
-                .cloned()
-                .collect::<Vec<_>>();
+            let mut page_graphics = table_rule_topology::page(parsed, page);
             body_table_rules::remove_outer_frames(&mut page_graphics, positioned_tables);
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
@@ -2990,7 +2984,7 @@ fn block_insertion_order_index(lines: &[StructuredTextLine], top_y: f32) -> usiz
 struct PositionedTable {
     /// PDF page 番号。
     page: usize,
-    /// 表全体の bounds。
+    /// 表推定・本文挿入順の互換矩形。精密なWord寸法はsource_rule_gridを使う。
     bounds: ParsedBounds,
     /// gridへの原本本文割当で使ったY反転の判断を、本文の除外にもそのまま使う。
     allow_top_origin_text_y: bool,
@@ -3006,6 +3000,8 @@ struct PositionedTable {
     font_size: Option<f32>,
     /// DOCX 出力用の列幅（twips）。
     column_widths_twips: Vec<usize>,
+    /// 寸法・セル配置へ渡した原本の物理grid。論理行分割後の行indexとは区別する。
+    source_rule_grid: Option<fractional_table_rules::Grid>,
     /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
     row_heights_twips: Vec<f32>,
     /// 表セル。
@@ -3022,6 +3018,15 @@ struct PositionedTable {
     source_cell_runs: Vec<Vec<text_grid_cell_styles::Cell>>,
     /// 外側セル内に含まれる子表。
     nested_tables: Vec<PositionedTable>,
+}
+
+/// 本文の挿入順を変えず、Wordの実際の位置・寸法だけへ確認済み原本境界を返す。
+fn positioned_table_layout_bounds(table: &PositionedTable) -> ParsedBounds {
+    table
+        .source_rule_grid
+        .as_ref()
+        .map(|grid| grid.bounds())
+        .unwrap_or(table.bounds)
 }
 
 /// DOCX 出力用の表モデル。
@@ -3495,7 +3500,8 @@ fn apply_positioned_table_layout(
     table: &PositionedTable,
     origin_x: f32,
 ) -> Table {
-    let width = (table.bounds.x1 - table.bounds.x0).abs();
+    let bounds = positioned_table_layout_bounds(table);
+    let width = (bounds.x1 - bounds.x0).abs();
     let top_cell_margin = positioned_table_top_cell_margin_twips(table);
     let horizontal_cell_margin = table
         .font_name
@@ -3515,12 +3521,16 @@ fn apply_positioned_table_layout(
     if !table.column_widths_twips.is_empty() {
         docx_table = docx_table.set_grid(table.column_widths_twips.clone());
     }
-    if let Some(width_twips) = pdf_points_to_twips(width)
+    if let Some(width_twips) = table
+        .source_rule_grid
+        .as_ref()
+        .map(|_| table.column_widths_twips.iter().sum())
+        .or_else(|| pdf_points_to_twips(width))
         && width_twips > 0
     {
         docx_table = docx_table.width(width_twips, WidthType::Dxa);
     }
-    if let Some(indent) = pdf_points_to_indent_twips((table.bounds.x0 - origin_x).max(0.0))
+    if let Some(indent) = pdf_points_to_indent_twips((bounds.x0 - origin_x).max(0.0))
         && indent > 0
     {
         docx_table = docx_table.indent(indent);
@@ -4104,12 +4114,7 @@ fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
 ) -> Vec<PositionedTable> {
-    let page_graphics = parsed
-        .graphics
-        .iter()
-        .filter(|graphic| graphic.page == page)
-        .cloned()
-        .collect::<Vec<_>>();
+    let page_graphics = table_rule_topology::page(parsed, page);
     if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
         return vec![table];
     }
@@ -4361,6 +4366,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         embedded_face: None,
         font_size: None,
         column_widths_twips: width_twips,
+        source_rule_grid: None,
         row_heights_twips: Vec::new(),
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
@@ -4766,15 +4772,32 @@ fn infer_positioned_table_from_graphics(
     } else {
         OcrTable::new(cells)
     };
-    let native_cells = native_table_text::cells(
+    let mut geometry = (!text_augmented_columns && !allow_top_origin_text_y)
+        .then(|| fractional_table_rules::grid(&parsed.graphics, &xs, &ys, Some(page)))
+        .flatten();
+    let model = docx_table
+        .clone()
+        .unwrap_or_else(|| docx_table_model_from_ocr_table(&table));
+    let mut native_cells = native_table_text::cells_with_geometry(
         parsed,
         &xs,
         &ys,
         &cell_source_texts,
-        &docx_table
-            .clone()
-            .unwrap_or_else(|| docx_table_model_from_ocr_table(&table)),
+        &model,
+        geometry.as_ref(),
     );
+    if geometry.is_some() && !native_table_text::fractional_geometry_is_safe(&native_cells, &model)
+    {
+        geometry = None;
+        native_cells = native_table_text::cells_with_geometry(
+            parsed,
+            &xs,
+            &ys,
+            &cell_source_texts,
+            &model,
+            None,
+        );
+    }
     let font_name = common_usable_pdf_font_name(assigned_font_names.iter().map(String::as_str));
     let embedded_font = font_name.as_deref().and_then(|name| {
         parsed
@@ -4798,11 +4821,30 @@ fn infer_positioned_table_from_graphics(
         font_embedded,
         embedded_face,
         font_size: common_usable_pdf_font_size(assigned_font_sizes),
-        column_widths_twips: table_column_widths_twips(&xs),
-        row_heights_twips: native_table_rows::heights(
-            &ys,
-            thin_table_rule_height_adjustment(table_rule_stroke_width(&page_graphics, &xs, &ys)),
-        ),
+        column_widths_twips: geometry
+            .as_ref()
+            .map(|g| g.widths())
+            .unwrap_or_else(|| table_column_widths_twips(&xs)),
+        row_heights_twips: geometry
+            .as_ref()
+            .and_then(|g| {
+                g.heights(thin_table_rule_height_adjustment(table_rule_stroke_width(
+                    page_graphics,
+                    &xs,
+                    &ys,
+                )))
+            })
+            .unwrap_or_else(|| {
+                native_table_rows::heights(
+                    &ys,
+                    thin_table_rule_height_adjustment(table_rule_stroke_width(
+                        page_graphics,
+                        &xs,
+                        &ys,
+                    )),
+                )
+            }),
+        source_rule_grid: geometry,
         table,
         cell_underlines,
         cell_alignments,
@@ -5368,7 +5410,7 @@ fn infer_positioned_table_from_text_grid_page(
         .iter()
         .filter(|text| text.page == page && !text.text.trim().is_empty())
         .collect::<Vec<_>>();
-    let has_page_graphics = parsed.graphics.iter().any(|graphic| graphic.page == page);
+    let has_page_graphics = !table_rule_topology::page(parsed, page).is_empty();
     let min_texts = if has_page_graphics { 4 } else { 6 };
     let min_rows = if has_page_graphics { 2 } else { 3 };
     if page_texts.len() < min_texts {
@@ -5505,6 +5547,7 @@ fn infer_positioned_table_from_text_grid_page(
         embedded_face: None,
         font_size: None,
         column_widths_twips,
+        source_rule_grid: None,
         row_heights_twips,
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),

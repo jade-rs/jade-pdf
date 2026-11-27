@@ -24,7 +24,8 @@ pub(super) struct Cell {
     logical_row_right_anchor: Option<bool>,
 }
 
-/// gridの表示順と結合セル範囲に従い、本文の欠落がないセルだけを復元する。
+/// 従来の整数gridを用いるprivate結合回帰の入口を保持する。
+#[cfg(test)]
 pub(super) fn cells(
     parsed: &ParsedDocument,
     xs: &[i32],
@@ -32,7 +33,68 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false)
+    cells_impl(parsed, xs, ys, texts, model, false, None)
+}
+
+/// セル所有は既存整数gridで固定し、確認済み原本境界だけを行内配置へ渡す。
+pub(super) fn cells_with_geometry(
+    parsed: &ParsedDocument,
+    xs: &[i32],
+    ys: &[i32],
+    texts: &[Vec<Vec<ParsedTextElement>>],
+    model: &DocxTableModel,
+    geometry: Option<&fractional_table_rules::Grid>,
+) -> Vec<Vec<Option<Cell>>> {
+    cells_impl(parsed, xs, ys, texts, model, false, geometry)
+}
+
+/// 全非空セルの本文とfontを確認し、未確認の代替字幅を原本の狭い寸法へ押し込まない。
+pub(super) fn fractional_geometry_is_safe(
+    cells: &[Vec<Option<Cell>>],
+    model: &DocxTableModel,
+) -> bool {
+    cells.len() == model.rows.len()
+        && cells.iter().zip(&model.rows).all(|(cells, row)| {
+            cells.len() == row.len()
+                && cells.iter().zip(row).all(|(cell, source)| {
+                    if source.text.trim().is_empty()
+                        || source.vertical_merge == Some(DocxVerticalMerge::Continue)
+                    {
+                        return true;
+                    }
+                    let Some(cell) = cell else { return false };
+                    !cell.lines.is_empty()
+                        && line_spacings(cell)
+                            .is_some_and(|mut spacings| spacings.all(|s| s.is_some()))
+                        && cell.lines.iter().all(|line| {
+                            line.runs.iter().all(|run| {
+                                run.text.trim().is_empty()
+                                    || (run.style.font_embedded
+                                        && run.style.embedded_face.is_some())
+                                    || compatible_ascii_metrics(run, line, cell)
+                            })
+                        })
+                })
+        })
+}
+
+/// Standard14 Helveticaの単純ASCII・無変換の文字高だけを既知の代替経路として許す。
+fn compatible_ascii_metrics(
+    run: &StructuredTextRun,
+    line: &StructuredTextLine,
+    cell: &Cell,
+) -> bool {
+    let style = &run.style;
+    style.font_name.as_deref() == Some("Helvetica")
+        && !style.font_embedded
+        && style.fill_stroke_width.is_none()
+        && style.font_weight.is_none_or(|weight| weight <= 500)
+        && style.font_size.is_finite()
+        && style.font_size > 0.
+        && (style.font_size * 2.).fract() == 0.
+        && run.text.bytes().all(|c| (b' '..=b'~').contains(&c))
+        && line.left_x >= cell.left
+        && line.right_x <= cell.right
 }
 
 /// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
@@ -43,7 +105,7 @@ pub(super) fn boxed_cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, true)
+    cells_impl(parsed, xs, ys, texts, model, true, None)
 }
 
 /// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
@@ -54,13 +116,23 @@ fn cells_impl(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
     closed_boxes: bool,
+    geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    let page = texts
+        .iter()
+        .flatten()
+        .flatten()
+        .next()
+        .map(|text| text.page);
+    let legacy_graphics = page
+        .map(|page| table_rule_topology::page(parsed, page))
+        .unwrap_or_default();
     // 添字復元を許す呼出元は全graphicが閉じた枠と確認済みであり、枠の下辺は文字下線ではない。
     let styling_graphics = if closed_boxes {
         &[][..]
     } else {
-        parsed.graphics.as_slice()
+        legacy_graphics.as_slice()
     };
     // 一行・複数行・旧配置のいずれも、確認済みgridと同じ端点・高さの線を文字下線にしない。
     let text_graphics = styling_graphics
@@ -68,14 +140,7 @@ fn cells_impl(
         .filter(|graphic| !is_grid_border(graphic, xs, ys))
         .cloned()
         .collect::<Vec<_>>();
-    let page = texts
-        .iter()
-        .flatten()
-        .flatten()
-        .next()
-        .map(|text| text.page);
-    let edge_width = parsed
-        .graphics
+    let edge_width = legacy_graphics
         .iter()
         .filter(|g| {
             Some(g.page) == page
@@ -114,10 +179,11 @@ fn cells_impl(
                     let bottom_band = ys
                         .len()
                         .checked_sub(row_index.checked_add(row_span)?.checked_add(1)?)?;
-                    let top = *ys.get(band + 1)? as f32;
-                    let bottom = *ys.get(bottom_band)? as f32;
-                    let left = *xs.get(start)? as f32;
-                    let right = *xs.get(col)? as f32;
+                    let top = geometry.map_or(*ys.get(band + 1)? as f32, |g| g.ys[band + 1]);
+                    let bottom =
+                        geometry.map_or(*ys.get(bottom_band)? as f32, |g| g.ys[bottom_band]);
+                    let left = geometry.map_or(*xs.get(start)? as f32, |g| g.xs[start]);
+                    let right = geometry.map_or(*xs.get(col)? as f32, |g| g.xs[col]);
                     let selected = texts
                         .get(row_index..row_index.checked_add(row_span)?)?
                         .iter()
