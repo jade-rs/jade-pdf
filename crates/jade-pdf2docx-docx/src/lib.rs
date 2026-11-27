@@ -3024,6 +3024,8 @@ struct PositionedTable {
     cell_underlines: Vec<Vec<bool>>,
     /// PDF座標から推定したセル内テキストの水平配置。
     cell_alignments: Vec<Vec<ParagraphAlignment>>,
+    /// 全辺を確認した、結合も欠損辺もない原本の罫線grid。
+    plain_source_grid: bool,
     /// DOCX 出力用のセル結合情報。
     docx_table: Option<DocxTableModel>,
     /// 原本と文字照合できたセルの位置・行・run style。
@@ -3939,12 +3941,12 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         })
         .collect::<Vec<_>>();
     verified_source_grid_heights::finish_nested(&mut tables);
+    source_cell_diagonals::apply(parsed, &mut tables);
+    source_cell_rule_widths::apply(parsed, &mut tables);
     let mut tables = tables
         .into_iter()
         .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
-    source_cell_diagonals::apply(parsed, &mut tables);
-    source_cell_rule_widths::apply(parsed, &mut tables);
     tables.sort_by(|a, b| {
         a.page
             .cmp(&b.page)
@@ -4449,6 +4451,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
+        plain_source_grid: false,
         docx_table: None,
         native_cells: Vec::new(),
         source_cell_runs: Vec::new(),
@@ -4857,12 +4860,12 @@ fn infer_positioned_table_from_graphics_with_table_text(
         })
         .collect::<Vec<_>>();
     // 行は既に正規PDF座標の上から下へ割り当て済みであり、paint順や数値で反転しない。
-    let docx_table = if text_augmented_columns {
-        None
-    } else {
-        docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines)
-            .filter(|model| model_preserves_grid_cell_texts(model, &cells))
-    };
+    let modeled_grid = (!text_augmented_columns)
+        .then(|| docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines))
+        .flatten();
+    let plain_source_grid =
+        !text_augmented_columns && modeled_grid.is_none() && !allow_top_origin_text_y;
+    let docx_table = modeled_grid.filter(|model| model_preserves_grid_cell_texts(model, &cells));
     let table = if let Some(model) = docx_table.as_ref() {
         OcrTable::with_spans(cells, ocr_spans_from_docx_table_model(model, rows, cols))
     } else {
@@ -4945,6 +4948,7 @@ fn infer_positioned_table_from_graphics_with_table_text(
         table,
         cell_underlines,
         cell_alignments,
+        plain_source_grid,
         docx_table,
         native_cells,
         source_cell_runs: Vec::new(),
@@ -5703,6 +5707,7 @@ fn infer_positioned_table_from_text_grid_page(
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
+        plain_source_grid: false,
         docx_table: None,
         native_cells: Vec::new(),
         source_cell_runs,

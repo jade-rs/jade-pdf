@@ -36,6 +36,7 @@ fn positioned_table(page: usize) -> PositionedTable {
         ),
         cell_underlines: vec![vec![false; 2]; 2],
         cell_alignments: vec![vec![ParagraphAlignment::Left; 2]; 2],
+        plain_source_grid: false,
         docx_table: None,
         native_cells: vec![vec![None; 2]; 2],
         source_cell_runs: Vec::new(),

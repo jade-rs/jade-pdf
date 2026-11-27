@@ -760,7 +760,7 @@ fn table_inference_selects_the_space_family_once() {
 #[path = "native_table_logical_rows.rs"]
 mod logical_rows;
 
-/// 横結合した見出しを維持し、確認できた本文の反復行だけを編集可能なWord行へ分ける。
+/// 原本の罫線を維持し、確認できた本文の反復行だけを編集可能なWord行へ分ける。
 pub(super) fn refine_logical_rows(table: PositionedTable) -> PositionedTable {
     logical_rows::refine(table)
 }
