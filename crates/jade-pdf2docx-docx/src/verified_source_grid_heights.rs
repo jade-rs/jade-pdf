@@ -1,14 +1,17 @@
 //! 確認済みvector gridでは、raster bboxの薄罫線余白を原本行間へ重ねない。
 use super::*;
 
-/// 原本軸・全非空セル・font・新しい行容量がそろう非結合表だけを精密化する。
+/// 原本軸・全非空セル・font・新しい行容量がそろう非結合の二次元gridだけを精密化する。
 pub(super) fn apply(
     table: &mut PositionedTable,
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
     ys: &[i32],
 ) {
-    if !source_grid_selection::verified(table)
+    // 単一の質問枠や一方向の帯は、原本行数とWordの実際の折返し行数が一致するとは限らない。
+    if table.table.row_count() < 2
+        || table.table.col_count().is_none_or(|cols| cols < 2)
+        || !source_grid_selection::verified(table)
         || table.docx_table.as_ref().is_some_and(|model| {
             model.rows.iter().flatten().any(|cell| {
                 cell.grid_span != 1
