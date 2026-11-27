@@ -69,6 +69,7 @@ mod table_opening;
 mod text_grid_cell_styles;
 #[cfg(test)]
 mod verified_source_grid_height_tests;
+mod verified_source_grid_heights;
 
 mod bare_page_footers;
 mod cell_line_rounding;
@@ -4821,7 +4822,7 @@ fn infer_positioned_table_from_graphics(
     });
     let font_embedded = embedded_font.is_some();
     let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
-    Some(PositionedTable {
+    let mut positioned = PositionedTable {
         page,
         bounds: ParsedBounds {
             x0: *xs.first().expect("xs is not empty") as f32,
@@ -4866,7 +4867,9 @@ fn infer_positioned_table_from_graphics(
         native_cells,
         source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
-    })
+    };
+    verified_source_grid_heights::apply(&mut positioned, page_graphics, &xs, &ys);
+    Some(positioned)
 }
 
 /// text bbox が grid 座標へ直接入るか判定する。

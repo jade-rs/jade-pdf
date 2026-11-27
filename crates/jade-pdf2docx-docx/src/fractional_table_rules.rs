@@ -17,6 +17,22 @@ pub(super) fn grid(
     ys: &[i32],
     page: Option<usize>,
 ) -> Option<Grid> {
+    let grid = physical_grid(graphics, xs, ys, page)?;
+    if grid.xs.iter().zip(xs).all(|(a, b)| *a == *b as f32)
+        && grid.ys.iter().zip(ys).all(|(a, b)| *a == *b as f32)
+    {
+        return None;
+    }
+    Some(grid)
+}
+
+/// 整数座標も含め、原本の罫線中心を一意に確認したgridを返す。
+pub(super) fn physical_grid(
+    graphics: &[ParsedGraphicElement],
+    xs: &[i32],
+    ys: &[i32],
+    page: Option<usize>,
+) -> Option<Grid> {
     let x = edges(graphics, xs, ys, true, page)?;
     let y = edges(graphics, ys, xs, false, page)?;
     for axis in [&x, &y] {
@@ -29,11 +45,6 @@ pub(super) fn grid(
         {
             return None;
         }
-    }
-    if x.iter().zip(xs).all(|(a, b)| *a == *b as f32)
-        && y.iter().zip(ys).all(|(a, b)| *a == *b as f32)
-    {
-        return None;
     }
     Some(Grid { xs: x, ys: y })
 }
