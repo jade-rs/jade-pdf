@@ -67,6 +67,8 @@ mod source_table_pagination_tests;
 mod source_typography_tests;
 mod table_opening;
 mod text_grid_cell_styles;
+#[cfg(test)]
+mod verified_source_grid_height_tests;
 
 mod bare_page_footers;
 mod cell_line_rounding;
