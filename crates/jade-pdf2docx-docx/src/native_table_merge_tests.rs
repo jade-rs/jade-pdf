@@ -107,7 +107,7 @@ fn restart_cell_retains_all_source_rows_and_run_styles() {
     );
     assert!(result[1][0].is_none());
     let paragraph =
-        table_cell(root).expect("the original two line boxes fit the merged source height");
+        table_cell(root, None).expect("the original two line boxes fit the merged source height");
     use docx_rs::BuildXML;
     let xml = String::from_utf8(paragraph.build()).unwrap();
     assert!(xml.contains("w:sz w:val=\"26\"") && xml.contains("w:sz w:val=\"18\""));

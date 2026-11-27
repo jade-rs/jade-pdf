@@ -3608,6 +3608,10 @@ fn docx_table_from_model_with_row_height_and_nested(
         .iter()
         .enumerate()
         .map(|(row_index, row)| {
+            let native_row = parent.and_then(|table| table.native_cells.get(row_index));
+            let row_anchor = parent
+                .filter(|table| table.nested_tables.is_empty())
+                .and_then(|_| native_table_text::multiline_row_anchor(native_row?));
             let mut grid_col = 0usize;
             let cells = row
                 .iter()
@@ -3619,8 +3623,7 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
-                    let source_cell = parent
-                        .and_then(|table| table.native_cells.get(row_index))
+                    let source_cell = native_row
                         .and_then(|row| row.get(cell_index))
                         .and_then(Option::as_ref);
                     let nested_paragraphs = match (source_cell, nested_tables.as_slice()) {
@@ -3715,7 +3718,10 @@ fn docx_table_from_model_with_row_height_and_nested(
                             .margin_left(0, WidthType::Dxa)
                             .margin_right(0, WidthType::Dxa);
                     }
-                    if let Some(native) = native_cell.and_then(native_table_text::table_cell) {
+                    let anchor = row_anchor.filter(|_| cell.vertical_merge.is_none());
+                    if let Some(native) =
+                        native_cell.and_then(|cell| native_table_text::table_cell(cell, anchor))
+                    {
                         table_cell = native;
                     }
                     if let Some(rgb) = native_cell.and_then(native_table_text::background) {

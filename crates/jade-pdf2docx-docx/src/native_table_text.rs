@@ -576,12 +576,39 @@ fn characters(text: &str) -> BTreeMap<char, usize> {
     counts
 }
 
+/// 同じ物理行にある単一行セルの補正に、実際に配置できる複数行セルを使う。
+pub(super) fn multiline_row_anchor(row: &[Option<Cell>]) -> Option<&Cell> {
+    row.iter().flatten().find(|cell| {
+        cell.lines.len() > 1
+            && line_spacings(cell).is_some_and(|mut spacings| spacings.all(|s| s.is_some()))
+    })
+}
+
+/// 同じ行帯内で、単一行の字面とem高が複数行セルの一つの表示行に対応するか照合する。
+fn shares_display_line(cell: &Cell, anchor: &Cell) -> bool {
+    let [line] = cell.lines.as_slice() else {
+        return false;
+    };
+    let line_height = structured_line_max_font_size(line);
+    !cell.single_line_runs.is_empty()
+        && cell.top == anchor.top
+        && cell.bottom == anchor.bottom
+        && line.top_y <= cell.top
+        && line.left_x >= cell.left
+        && line.right_x <= cell.right
+        && anchor.lines.iter().any(|other| {
+            (line.top_y - other.top_y).abs() <= 0.25
+                && line_height == structured_line_max_font_size(other)
+        })
+}
+
 /// セル既定の余白と中央寄せを重ねず、原本の各表示行を編集可能な段落にする。
-pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
+pub(super) fn table_cell(cell: &Cell, row_anchor: Option<&Cell>) -> Option<TableCell> {
     if cell.lines.is_empty()
         || (cell.lines.len() < 2
             && cell.logical_row_right_anchor.is_none()
-            && cell.source_tabs.is_none())
+            && cell.source_tabs.is_none()
+            && !row_anchor.is_some_and(|anchor| shares_display_line(cell, anchor)))
     {
         return None;
     }
