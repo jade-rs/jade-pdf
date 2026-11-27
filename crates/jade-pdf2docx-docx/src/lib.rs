@@ -96,6 +96,7 @@ mod section_chrome_package;
 mod separated_box_table;
 mod source_image_rows;
 mod source_prose_columns;
+mod table_monospace_spacing;
 mod table_rule_topology;
 mod text_column_gutter;
 mod text_grid_ownership;
@@ -2155,10 +2156,13 @@ fn structured_text_runs_from_row(
             continue;
         }
         if index > 0 {
+            let previous = row[index - 1];
             let gap = text.bounds.x0 - right;
             let avg_height = height_sum / index as f32;
             if (gap > avg_height * 0.8
-                || numeric_word_gap::needs_separator(row[index - 1], text, gap))
+                || numeric_word_gap::needs_separator(previous, text, gap)
+                || table_monospace_spacing::between(previous, text)
+                    == Some(table_monospace_spacing::Spacing::OneSpace))
                 && !value.starts_with(char::is_whitespace)
                 && !runs
                     .last()
@@ -4817,10 +4821,21 @@ fn infer_positioned_table_from_graphics_with_table_text(
         else {
             continue;
         };
-        append_cell_fragment(&mut cells[row][col], text.text.trim());
+        let directly_owned = row_index_for_y(center_y, &ys) == Some(row);
+        let source_texts = &mut cell_source_texts[row][col];
+        if directly_owned
+            && source_texts.last().is_some_and(|previous| {
+                table_monospace_spacing::between(previous, text)
+                    == Some(table_monospace_spacing::Spacing::Adjacent)
+            })
+        {
+            cells[row][col].push_str(&text.text);
+        } else {
+            append_cell_fragment(&mut cells[row][col], text.text.trim());
+        }
         // 上原点の互換補正が必要な本文は原本座標の復元に混ぜず、従来出力へ戻す。
-        if row_index_for_y(center_y, &ys) == Some(row) {
-            cell_source_texts[row][col].push(text.clone());
+        if directly_owned {
+            source_texts.push(text.clone());
         }
         cell_underlines[row][col] |= parsed_text_has_underline(text, &page_graphics);
         let bounds = normalized_bounds(text.bounds);
