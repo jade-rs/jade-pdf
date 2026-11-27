@@ -26,6 +26,57 @@ pub(super) struct Cell {
     source_tabs: Option<Vec<Option<usize>>>,
 }
 
+/// 子表の上下で位置を確認した親セル本文を分ける。
+/// 子表と重なる文字は、子表の本文とすべて照合できた場合だけ子表へ委譲する。
+pub(super) fn paragraphs_around_nested_table(
+    cell: &Cell,
+    child: &PositionedTable,
+) -> Option<(Vec<Paragraph>, Vec<Paragraph>)> {
+    let child_bounds = normalized_bounds(child.bounds);
+    let mut above = Vec::new();
+    let mut inside = String::new();
+    let mut below = Vec::new();
+    for line in &cell.lines {
+        let line_bottom = line.top_y - structured_line_max_font_size(line);
+        if line_bottom >= child_bounds.y1 - 1.0 {
+            above.push(line);
+        } else if line.top_y <= child_bounds.y0 + 1.0 {
+            below.push(line);
+        } else if line.left_x >= child_bounds.x0 - 1.0
+            && line.right_x <= child_bounds.x1 + 1.0
+            && line.top_y <= child_bounds.y1 + 1.0
+            && line_bottom >= child_bounds.y0 - 1.0
+        {
+            inside.push_str(&line.text);
+        } else {
+            return None;
+        }
+    }
+    if above.is_empty() || below.is_empty() {
+        return None;
+    }
+    let child_text: String = child
+        .table
+        .rows
+        .iter()
+        .flatten()
+        .map(String::as_str)
+        .collect();
+    if characters(&inside) != characters(&child_text) {
+        return None;
+    }
+    let paragraphs = |lines: Vec<&StructuredTextLine>| {
+        lines
+            .into_iter()
+            .map(|line| {
+                paragraph_from_structured_line(line, cell.left, None, None)
+                    .line_spacing(LineSpacing::new().before(0).after(0))
+            })
+            .collect()
+    };
+    Some((paragraphs(above), paragraphs(below)))
+}
+
 /// 従来の整数gridを用いるprivate結合回帰の入口を保持する。
 #[cfg(test)]
 pub(super) fn cells(

@@ -3615,11 +3615,17 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
-                    let native_cell = parent
-                        .filter(|_| !has_nested_tables)
+                    let source_cell = parent
                         .and_then(|table| table.native_cells.get(row_index))
                         .and_then(|row| row.get(cell_index))
                         .and_then(Option::as_ref);
+                    let nested_paragraphs = match (source_cell, nested_tables.as_slice()) {
+                        (Some(cell), [child]) => {
+                            native_table_text::paragraphs_around_nested_table(cell, child)
+                        }
+                        _ => None,
+                    };
+                    let native_cell = source_cell.filter(|_| !has_nested_tables);
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
                     let mut run = text_run(text.as_str());
                     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
@@ -3677,7 +3683,15 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if parent.is_some() && !has_native_paragraph {
                         paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
                     }
-                    let mut table_cell = TableCell::new().add_paragraph(paragraph);
+                    let (mut table_cell, after_nested) = match nested_paragraphs {
+                        Some((before, after)) => (
+                            before
+                                .into_iter()
+                                .fold(TableCell::new(), TableCell::add_paragraph),
+                            Some(after),
+                        ),
+                        None => (TableCell::new().add_paragraph(paragraph), None),
+                    };
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(
                             if has_nested_tables
@@ -3712,7 +3726,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                             nested_table.bounds.x0,
                         ));
                     }
-                    if has_nested_tables {
+                    if let Some(after) = after_nested {
+                        for paragraph in after {
+                            table_cell = table_cell.add_paragraph(paragraph);
+                        }
+                    } else if has_nested_tables {
                         table_cell = table_cell.add_paragraph(Paragraph::new());
                     }
                     if cell.grid_span > 1 {
