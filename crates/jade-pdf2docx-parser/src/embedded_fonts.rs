@@ -5,6 +5,18 @@ use super::{
     sfnt_font_signature_is_supported,
 };
 
+/// 最初に確認したdescriptorとの対応を、修復を行う最終段階まで保持する。
+struct Candidate {
+    /// PDFのFontName。
+    name: String,
+    /// 原本のFontFile2 program。
+    bytes: Vec<u8>,
+    /// 当該descriptorへ対応したToUnicode。
+    mapping: ToUnicodeCMap,
+    /// 原本のFontDescriptor object番号。
+    descriptor: u32,
+}
+
 /// 候補は入力順の初出を選び、完成出力は旧mapと同じ名前順にする。
 #[cfg(test)]
 pub(super) fn build(
@@ -41,7 +53,7 @@ fn collect(
     if budget.is_stopped() {
         return None;
     }
-    let mut candidates: Vec<(String, Vec<u8>, ToUnicodeCMap)> = Vec::new();
+    let mut candidates: Vec<Candidate> = Vec::new();
     for descriptor in crate::metadata::objects(source, None)
         .filter(|object| crate::metadata::has_type(object.body, b"FontDescriptor"))
     {
@@ -55,7 +67,7 @@ fn collect(
             continue;
         };
         let (name, bytes) = if let Some(name) = name {
-            if candidates.iter().any(|entry| entry.0 == name) {
+            if candidates.iter().any(|entry| entry.name == name) {
                 continue;
             }
             let bytes = payload(file);
@@ -81,7 +93,7 @@ fn collect(
             let Some((name, bytes)) = recovered else {
                 continue;
             };
-            if candidates.iter().any(|entry| entry.0 == name) {
+            if candidates.iter().any(|entry| entry.name == name) {
                 continue;
             }
             (name, bytes)
@@ -102,15 +114,26 @@ fn collect(
         if budget.is_stopped() {
             return None;
         }
-        candidates.push((name, bytes, mappings));
+        candidates.push(Candidate {
+            name,
+            bytes,
+            mapping: mappings,
+            descriptor: descriptor.number,
+        });
         if candidates.len() == MAX_EMBEDDED_FONT_COUNT {
             break;
         }
     }
-    candidates.sort_unstable_by(|left, right| left.0.cmp(&right.0));
+    candidates.sort_unstable_by(|left, right| left.name.cmp(&right.name));
     let mut fonts = budget.metadata_vector(candidates.len())?;
-    for (name, bytes, mapping) in candidates {
-        let bytes = reusable(budget, &name, bytes, &mapping);
+    for Candidate {
+        name,
+        bytes,
+        mapping,
+        descriptor,
+    } in candidates
+    {
+        let bytes = reusable(budget, &name, bytes, &mapping, source, descriptor);
         if budget.is_stopped() {
             return None;
         }
@@ -124,19 +147,23 @@ fn collect(
     Some(fonts)
 }
 
-/// 既存の埋め込み許可・subset検査・ToUnicode修復条件を維持する。
+/// 既存の許可・subset検査を保ち、確認済みsymbolic Macだけ明示Unicode対応を復元する。
 fn reusable(
     budget: &DecodeBudget,
     name: &str,
     bytes: Vec<u8>,
     mapping: &ToUnicodeCMap,
+    source: &[u8],
+    descriptor: u32,
 ) -> Option<Vec<u8>> {
     match sfnt_embedding_permission(&bytes) {
         SfntEmbeddingPermission::Allowed => {
             if name.as_bytes().get(6) == Some(&b'+')
                 && !crate::font_validation::subset_unicode_cmap_is_complete(&bytes)
             {
-                return None;
+                return crate::font_repair::repair_symbolic_mac_unicode_cmap(
+                    budget, source, descriptor, &bytes, mapping,
+                );
             }
             Some(bytes)
         }
