@@ -19,9 +19,6 @@ pub(crate) fn repair(
     let mut glyphs = budget.font_vector::<Glyph>(mapping.bmp_scalar_iter().count())?;
     for (source, unicode) in mapping.bmp_scalar_iter() {
         let id = codes.glyph(source)?;
-        if id == 0 {
-            continue;
-        }
         if glyphs
             .iter()
             .any(|glyph| glyph.unicode == unicode && glyph.id != id)
@@ -36,6 +33,7 @@ pub(crate) fn repair(
     }
     glyphs.sort_unstable_by_key(|glyph| glyph.unicode);
     glyphs.dedup_by_key(|glyph| glyph.unicode);
+    glyphs.retain(|glyph| glyph.id != 0);
     if glyphs.is_empty() || budget.is_stopped() {
         return None;
     }

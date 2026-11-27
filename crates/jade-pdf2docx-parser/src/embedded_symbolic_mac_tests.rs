@@ -172,3 +172,185 @@ fn notdef_and_visible_glyph_cannot_alias_the_same_unicode() {
     let mapping = b"1 begincodespacerange <00> <FF> endcodespacerange\n2 beginbfchar <00> <0041> <01> <0041> endbfchar";
     assert!(reuse(&font, source.as_bytes(), mapping).is_empty());
 }
+
+/// 未確認のFont種別・flag・encoding・共有参照を既存fallbackから昇格させない。
+#[test]
+fn ambiguous_pdf_font_contexts_keep_fallback() {
+    let original = String::from_utf8(SOURCE.to_vec()).unwrap();
+    let mut cases = Vec::new();
+    for (before, after) in [
+        ("/Flags 4", "/Flags 32"),
+        ("/Flags 4", "/Flags 36"),
+        ("/Flags 4", ""),
+        ("/Flags 4", "/Flags 4 /#46lags 4"),
+        ("/TrueType", "/Type1"),
+        ("/TrueType", "/CIDFontType2"),
+        (
+            "/Subtype /TrueType",
+            "/Subtype /TrueType /Subtype /TrueType",
+        ),
+        ("/FontDescriptor 2 0 R", "/FontDescriptor 2 1 R"),
+        ("/ToUnicode 4 0 R", "/ToUnicode 4 1 R"),
+        ("/ToUnicode 4 0 R", ""),
+        ("/FirstChar 1", "/Encoding /WinAnsiEncoding /FirstChar 1"),
+        ("/FirstChar 1", "/Encoding /MacRomanEncoding /FirstChar 1"),
+        ("/FirstChar 1", "/Encoding null /FirstChar 1"),
+    ] {
+        cases.push(original.replace(before, after));
+    }
+    cases.push(format!("{original}\n5 0 obj << /Type /Font /Subtype /TrueType /FontDescriptor 2 0 R /ToUnicode 4 0 R /FirstChar 1 /LastChar 1 /Widths [1000] >> endobj"));
+    cases.push(format!("{original}\n2 0 obj << /Type /FontDescriptor /FontName /ABCDEF+OwnedMac /Flags 4 /FontFile2 3 0 R >> endobj"));
+    let font = owned_mac_font();
+    for source in cases {
+        assert_ne!(source.as_bytes(), SOURCE);
+        assert!(
+            reuse(&font, source.as_bytes(), MAPPING).is_empty(),
+            "{source}"
+        );
+    }
+}
+
+/// PDF幅の形式・個数・実際のadvanceが合わなければ字形を公開しない。
+#[test]
+fn unverified_pdf_width_arrays_keep_fallback() {
+    let original = String::from_utf8(SOURCE.to_vec()).unwrap();
+    let font = owned_mac_font();
+    for widths in [
+        "[]",
+        "[1000 1000]",
+        "[999]",
+        "[-1000]",
+        "[NaN]",
+        "[inf]",
+        "[1e3]",
+        "[.]",
+        "3 0 R",
+    ] {
+        let source = original.replace("[1000]", widths);
+        assert!(
+            reuse(&font, source.as_bytes(), MAPPING).is_empty(),
+            "{widths}"
+        );
+    }
+    for widths in ["[+1000]", "[1000.]", "[1000.0005]"] {
+        let source = original.replace("[1000]", widths);
+        assert_eq!(
+            reuse(&font, source.as_bytes(), MAPPING).len(),
+            1,
+            "{widths}"
+        );
+    }
+}
+
+/// 多文字・非BMP・code space外を一部だけ採用したfontを作らない。
+#[test]
+fn incomplete_or_non_byte_unicode_mappings_keep_fallback() {
+    let font = owned_mac_font();
+    for mapping in [
+        "0 beginbfchar endbfchar",
+        "1 beginbfchar <01> <00410042> endbfchar",
+        "1 beginbfchar <01> <D83DDE00> endbfchar",
+        "1 beginbfchar <01> <FFFF> endbfchar",
+        "1 beginbfchar <01> <FFFE> endbfchar",
+        "1 begincodespacerange <0000> <00FF> endcodespacerange 1 beginbfchar <0001> <0041> endbfchar",
+        "1 begincodespacerange <02> <FF> endcodespacerange 1 beginbfchar <01> <0041> endbfchar",
+        "2 beginbfchar <01> <0041> <02> <D83DDE00> endbfchar",
+    ] {
+        assert!(
+            reuse(&font, SOURCE, mapping.as_bytes()).is_empty(),
+            "{mapping}"
+        );
+    }
+}
+
+/// 単一Mac Roman format6と確認できない入力をUnicode fontへ修復しない。
+#[test]
+fn unsupported_cmaps_and_corrupt_programs_keep_fallback() {
+    for (at, value) in [
+        (4, 3u16),
+        (6, 1),
+        (12, 4),
+        (14, 10),
+        (16, 1),
+        (18, 256),
+        (20, 0),
+    ] {
+        let mut font = owned_mac_font();
+        let cmap = table_offset(&font, b"cmap");
+        font[cmap + at..cmap + at + 2].copy_from_slice(&value.to_be_bytes());
+        checksums(&mut font);
+        assert!(
+            reuse(&font, SOURCE, MAPPING).is_empty(),
+            "offset={at},value={value}"
+        );
+    }
+    let mut font = owned_mac_font();
+    let glyf = table_offset(&font, b"glyf");
+    font[glyf + 3] ^= 1;
+    assert!(reuse(&font, SOURCE, MAPPING).is_empty());
+    let mut font = owned_mac_font();
+    let os2 = table_offset(&font, b"OS/2");
+    font[os2 + 8..os2 + 10].copy_from_slice(&2u16.to_be_bytes());
+    checksums(&mut font);
+    assert!(reuse(&font, SOURCE, MAPPING).is_empty());
+}
+
+/// font保存容量ゼロは型付きエラーを残し、完成していないfontを公開しない。
+#[test]
+fn repair_font_budget_failure_is_atomic() {
+    let target = DecodeBudget::new(&crate::ParseLimits {
+        max_total_embedded_font_bytes: 0,
+        ..Default::default()
+    });
+    let cmap = text::parse_tounicode_body(&DecodeBudget::default(), MAPPING);
+    let font = owned_mac_font();
+    assert!(
+        embedded_fonts::build(&target, SOURCE, |_| Some(font.clone()), |_| cmap.clone()).is_empty()
+    );
+    assert!(matches!(
+        target.check(),
+        Err(crate::ParseError::ResourceLimit {
+            resource: "embedded font bytes",
+            ..
+        })
+    ));
+}
+
+/// Unicode format4の単一glyph対応を、修復関数に依存せず読む。
+fn unicode_glyph(bytes: &[u8], unicode: u16) -> Option<u16> {
+    let cmap = table_offset(bytes, b"cmap");
+    let sub = cmap + u32::from_be_bytes(bytes[cmap + 8..cmap + 12].try_into().unwrap()) as usize;
+    let word = |at| u16::from_be_bytes(bytes[sub + at..sub + at + 2].try_into().unwrap());
+    assert_eq!(word(0), 4);
+    let count = usize::from(word(6)) / 2;
+    for index in 0..count {
+        let end = word(14 + index * 2);
+        let start = word(16 + count * 2 + index * 2);
+        if (start..=end).contains(&unicode) {
+            assert_eq!(word(16 + count * 6 + index * 2), 0);
+            return Some(unicode.wrapping_add(word(16 + count * 4 + index * 2)));
+        }
+    }
+    None
+}
+
+use proptest::prelude::*;
+proptest! {
+    #![proptest_config(ProptestConfig::with_cases(32))]
+    /// source codeとUnicodeを別々に変えても、元のgidと全体checksumを保持する。
+    #[test]
+    fn byte_code_and_unicode_are_composed_without_identity_assumption(code in 0u8..=255, unicode in 65u16..=90) {
+        let mut font = owned_mac_font();
+        let cmap = table_offset(&font,b"cmap");
+        font[cmap+18..cmap+20].copy_from_slice(&u16::from(code).to_be_bytes());
+        checksums(&mut font);
+        let source=String::from_utf8(SOURCE.to_vec()).unwrap().replace("/FirstChar 1",&format!("/FirstChar {code}")).replace("/LastChar 1",&format!("/LastChar {code}"));
+        let mapping=format!("1 begincodespacerange <00> <FF> endcodespacerange 1 beginbfchar <{code:02X}> <{unicode:04X}> endbfchar");
+        let fonts=reuse(&font,source.as_bytes(),mapping.as_bytes());
+        prop_assert_eq!(fonts.len(),1);
+        prop_assert_eq!(unicode_glyph(&fonts[0].bytes,unicode),Some(1));
+        prop_assert_eq!(checksum(&fonts[0].bytes),0xb1b0afba);
+        let original=table_offset(&font,b"glyf");let restored=table_offset(&fonts[0].bytes,b"glyf");
+        prop_assert_eq!(&font[original..original+24],&fonts[0].bytes[restored..restored+24]);
+    }
+}
