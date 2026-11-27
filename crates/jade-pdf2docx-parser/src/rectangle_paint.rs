@@ -3,7 +3,7 @@ use crate::{metadata, text_draws::Operand};
 
 /// q/Qで保持するstroke色・alpha・dashの確認状態。
 #[derive(Clone, Copy)]
-pub(super) struct Paint {
+pub(in crate::parser) struct Paint {
     /// Device色空間の成分数。未対応の空間ではNone。
     components: Option<usize>,
     /// Wordの黒罫線へ対応できる色か。
@@ -28,7 +28,7 @@ impl Default for Paint {
 
 impl Paint {
     /// 未解決gsの効果は保持し、確認済みCAだけを現在値へ反映する。
-    pub(super) fn state(&mut self, parameters: Option<Option<f64>>) {
+    pub(in crate::parser) fn state(&mut self, parameters: Option<Option<f64>>) {
         match parameters {
             Some(Some(alpha)) if self.opacity.is_some() => self.opacity = Some(alpha),
             None => self.opacity = None,
@@ -37,7 +37,7 @@ impl Paint {
     }
 
     /// strokeだけの色とdashを解釈し、fill色には影響されない。
-    pub(super) fn apply(&mut self, word: &[u8], args: &[Operand<'_>]) {
+    pub(in crate::parser) fn apply(&mut self, word: &[u8], args: &[Operand<'_>]) {
         match word {
             b"G" | b"RG" | b"K" => {
                 self.components = Some(match word {
@@ -109,12 +109,12 @@ impl Paint {
     }
 
     /// 現在のDevice色空間を、既定置換の検査へ渡す。
-    pub(super) fn components(self) -> Option<usize> {
+    pub(in crate::parser) fn components(self) -> Option<usize> {
         self.components
     }
 
     /// 通常の黒い実線を、色や透明度を推測せずに使えるかを返す。
-    pub(super) fn supported(self) -> bool {
+    pub(in crate::parser) fn supported(self) -> bool {
         self.black && self.solid && self.opacity == Some(1.)
     }
 }

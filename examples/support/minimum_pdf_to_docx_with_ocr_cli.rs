@@ -524,6 +524,7 @@ mod tests {
     #[test]
     fn auto_ocr_runs_for_image_only_pdf_shape() {
         let parsed = jade_pdf2docx_parser::ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "scan.pdf".into(),
             byte_len: 1,
@@ -557,6 +558,7 @@ mod tests {
     #[test]
     fn auto_ocr_skips_digital_text_pdf_shape() {
         let parsed = jade_pdf2docx_parser::ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "digital.pdf".into(),
             byte_len: 1,
@@ -606,6 +608,7 @@ mod tests {
     #[test]
     fn auto_ocr_targets_only_pages_without_text_layer() {
         let parsed = jade_pdf2docx_parser::ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "mixed.pdf".into(),
             byte_len: 1,

@@ -2,7 +2,7 @@
 use crate::{decode::DecodeBudget, metadata, resource_resolver::ResourceResolver};
 
 /// 完全かつ一意なgs辞書の、stroke alpha差分だけを返す。
-pub(super) fn resolve<'a>(
+pub(in crate::parser) fn resolve<'a>(
     budget: &DecodeBudget,
     resolver: &mut ResourceResolver<'_, 'a>,
     resources: Option<&'a [u8]>,

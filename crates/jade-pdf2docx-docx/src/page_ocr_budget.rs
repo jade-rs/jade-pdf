@@ -123,6 +123,7 @@ mod tests {
     /// 寸法計算だけを検証できる最小解析結果を作る。
     fn document(pages: Vec<ParsedPage>) -> ParsedDocument {
         ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: QualityReport::default(),
             path: PathBuf::new(),
             byte_len: 0,

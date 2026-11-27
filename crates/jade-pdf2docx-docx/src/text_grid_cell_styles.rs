@@ -136,6 +136,7 @@ mod tests {
     /// 外部assetを含まない原本断片二つを、文字列対応の拒否条件に使用する。
     fn parsed() -> ParsedDocument {
         ParsedDocument {
+            source_diagonals: Vec::new(),
             quality: Default::default(),
             path: "owned-style-identity.pdf".into(),
             byte_len: 1,

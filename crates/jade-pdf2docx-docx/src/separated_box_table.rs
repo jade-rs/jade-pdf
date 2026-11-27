@@ -286,6 +286,8 @@ fn borders(cell: ParsedBounds, graphics: &[ParsedGraphicElement], stroke: f32) -
         })
     };
     DocxCellBorders {
+        diagonal_tl2br: None,
+        diagonal_tr2bl: None,
         top: horizontal(cell.y1),
         left: vertical(cell.x0),
         bottom: horizontal(cell.y0),

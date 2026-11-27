@@ -35,6 +35,7 @@ mod separated_boxes;
 fn source(page_count: usize, image_pages: &[usize]) -> ParsedDocument {
     assert!((2..=5).contains(&page_count));
     let mut parsed = ParsedDocument {
+        source_diagonals: Vec::new(),
         quality: Default::default(),
         path: "owned-page-columns.pdf".into(),
         byte_len: 1,

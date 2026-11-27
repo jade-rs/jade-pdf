@@ -38,6 +38,8 @@ mod graphics_budget_tests;
 mod graphics_draws;
 #[path = "graphics_merge.rs"]
 mod graphics_merge;
+#[path = "source_diagonals.rs"]
+mod source_diagonals;
 #[path = "stroked_rectangles.rs"]
 mod stroked_rectangles;
 #[path = "text_background.rs"]
@@ -377,7 +379,8 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     decode_budget.check()?;
     let mut quality = QualityReport::default();
     crate::page_geometry_diagnostics::collect(decode_budget, page_count, &pages, &mut quality)?;
-    let mut graphics = extract_graphics_with_resources(decode_budget, &bytes, &tree_source);
+    let (mut graphics, mut source_diagonals) =
+        extract_graphics_and_diagonals_with_resources(decode_budget, &bytes, &tree_source);
     decode_budget.check()?;
     let mut text_elements =
         extract_text_elements_with_paint_resources(decode_budget, &bytes, &tree_source);
@@ -397,6 +400,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         &mut text_elements,
         &mut image_elements,
     );
+    source_diagonals::in_viewports(&mut source_diagonals, &page_viewports);
     let mut embedded_fonts = extract_embedded_truetype_fonts(decode_budget, &bytes);
     let mut outlines = decode_budget.with_type1_output(|cache| cache.take_fonts(&text_elements));
     if !outlines.is_empty() {
@@ -425,6 +429,7 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
         page_count,
         pages,
         graphics,
+        source_diagonals,
         text_elements,
         image_elements,
         embedded_fonts,
@@ -815,23 +820,38 @@ fn extract_graphics_from_pdf_bytes(
 }
 
 /// 描画本文は元入力から、白の確認用Resourceは検証済み展開metadataから借用する。
+#[cfg(test)]
 fn extract_graphics_with_resources(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
     resource_source: &[u8],
 ) -> Vec<ParsedGraphicElement> {
+    extract_graphics_and_diagonals_with_resources(decode_budget, bytes, resource_source).0
+}
+
+/// 既存の軸平行罫線と原本の対角線を、同じ展開済みContentsから別々に抽出する。
+fn extract_graphics_and_diagonals_with_resources(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    resource_source: &[u8],
+) -> (Vec<ParsedGraphicElement>, Vec<crate::ParsedSourceDiagonal>) {
     let mut segments = Vec::new();
     let streams = extract_page_content_streams_with_page(decode_budget, bytes);
     let streams = if streams.is_empty() && !decode_budget.has_page_tree() {
         if has_more_than_image_xobject_streams(decode_budget, bytes, 20) {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
         extract_flate_streams(decode_budget, bytes)
     } else {
         streams
     };
     if stroked_rectangles::append(decode_budget, bytes, &streams, &mut segments).is_none() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
+    }
+    let mut diagonals = Vec::new();
+    if source_diagonals::append(decode_budget, resource_source, &streams, &mut diagonals).is_none()
+    {
+        return (Vec::new(), Vec::new());
     }
     let mut proof_page = None;
     let mut proof = None;
@@ -859,17 +879,17 @@ fn extract_graphics_with_resources(
         )
         .is_none()
         {
-            return Vec::new();
+            return (Vec::new(), Vec::new());
         }
         offset = match offset.checked_add(stream.len()) {
             Some(offset) => offset,
-            None => return Vec::new(),
+            None => return (Vec::new(), Vec::new()),
         };
     }
     if decode_budget.is_stopped() {
-        return Vec::new();
+        return (Vec::new(), Vec::new());
     }
-    merge_axis_aligned_segments(segments)
+    (merge_axis_aligned_segments(segments), diagonals)
 }
 
 /// PDFの座標付き本文を抽出し、空のページFont対応も全体fallbackより優先する。
