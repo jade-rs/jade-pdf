@@ -88,6 +88,27 @@ fn insufficient_new_capacity_keeps_all_previous_heights() {
     assert_eq!(table.row_heights_twips, vec![810., 810.]);
 }
 
+/// 行boxが罫線中心まで使い切るときは、Word罫線の内側へ押し込まない。
+#[test]
+fn full_line_box_at_border_keeps_legacy_height_allowance() {
+    let mut parsed = source_grid_selection_tests::source();
+    for text in &mut parsed.text_elements {
+        if matches!(text.baseline_y, Some(45. | 5.)) {
+            let baseline = text.baseline_y.unwrap() - 5.;
+            text.baseline_y = Some(baseline);
+            text.bounds.y0 = baseline;
+            text.bounds.y1 = baseline + text.font_size;
+        }
+    }
+    let table = infer_positioned_table_from_graphics(&parsed, 0, &parsed.graphics).unwrap();
+    assert!(source_grid_selection::verified(&table));
+    assert_eq!(
+        table.row_heights_twips,
+        vec![810., 810.],
+        "full source line boxes need the existing border allowance"
+    );
+}
+
 use proptest::prelude::*;
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
