@@ -3,7 +3,7 @@ use super::*;
 
 /// 同一baselineの本文断片に挟まれ、連続する空白だけを行へ戻す。
 pub(super) fn with_interior_spaces<'a>(
-    elements: &'a [ParsedTextElement],
+    elements: impl IntoIterator<Item = &'a ParsedTextElement>,
     mut row: Vec<&'a ParsedTextElement>,
 ) -> Vec<&'a ParsedTextElement> {
     if row.len() < 2 {
@@ -32,7 +32,7 @@ pub(super) fn with_interior_spaces<'a>(
         Vec::new()
     };
     local.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
-    row.extend(elements.iter().filter(|text| {
+    row.extend(elements.into_iter().filter(|text| {
         let b = text.bounds;
         let baseline = native_baseline::line_y(text);
         text.page == page
@@ -100,7 +100,7 @@ fn spacing_height(text: &ParsedTextElement) -> Option<f32> {
 }
 
 /// 制御文字や空文字を含まない、表示上の空白だけの断片か判定する。
-fn is_space(text: &ParsedTextElement) -> bool {
+pub(super) fn is_space(text: &ParsedTextElement) -> bool {
     !text.text.is_empty()
         && text
             .text
