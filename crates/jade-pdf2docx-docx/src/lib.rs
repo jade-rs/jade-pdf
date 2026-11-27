@@ -5580,7 +5580,8 @@ fn infer_positioned_table_from_text_grid_page(
         .iter()
         .filter(|text| text.page == page && !text.text.trim().is_empty())
         .collect::<Vec<_>>();
-    let has_page_graphics = !table_rule_topology::page(parsed, page).is_empty();
+    let page_graphics = table_rule_topology::page(parsed, page);
+    let has_page_graphics = !page_graphics.is_empty();
     let min_texts = if has_page_graphics { 4 } else { 6 };
     let min_rows = if has_page_graphics { 2 } else { 3 };
     if page_texts.len() < min_texts {
@@ -5670,7 +5671,7 @@ fn infer_positioned_table_from_text_grid_page(
                         .iter()
                         .zip(&row)
                         .map(|(texts, value)| {
-                            text_grid_cell_styles::cell(parsed, texts, value, top)
+                            text_grid_cell_styles::cell(parsed, &page_graphics, texts, value, top)
                         })
                         .collect::<Option<Vec<_>>>()?,
                 );

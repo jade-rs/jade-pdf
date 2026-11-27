@@ -1,5 +1,6 @@
 //! 多数の機械的な識別子と説明が対応する反復列だけを、通常の二段組から区別する。
 use super::*;
+use std::cell::OnceCell;
 
 /// 同じ二列の原点から組み直し、原本の文字を一対ずつ引き取った行。
 struct Row {
@@ -26,6 +27,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
             .collect(),
         false,
     );
+    let page_graphics = OnceCell::new();
     let mut anchors = Vec::<(f32, f32, usize)>::new();
     for row in &rows {
         let visible = row
@@ -37,7 +39,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
         else {
             continue;
         };
-        if self::row(parsed, row, cells[0].x0, cells[1].x0).is_none() {
+        if self::row(parsed, &page_graphics, row, cells[0].x0, cells[1].x0).is_none() {
             continue;
         }
         if let Some(anchor) = anchors.iter_mut().find(|(left, right, _)| {
@@ -55,7 +57,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
     let mut groups = Vec::<Vec<Row>>::new();
     let mut current = Vec::<Row>::new();
     for source in &rows {
-        let candidate = row(parsed, source, left, right);
+        let candidate = row(parsed, &page_graphics, source, left, right);
         let continues = candidate.as_ref().is_some_and(|next| {
             current.last().is_none_or(|previous| {
                 let pitch = previous.bounds.y1 - next.bounds.y1;
@@ -131,6 +133,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
 /// 二つの列原点と非交差の字面を確認し、各セルの文字を原本の字間で復元する。
 fn row(
     parsed: &ParsedDocument,
+    page_graphics: &OnceCell<Vec<ParsedGraphicElement>>,
     source: &[&ParsedTextElement],
     left: f32,
     right: f32,
@@ -158,10 +161,12 @@ fn row(
     if !height.is_finite() || height <= 0.0 {
         return None;
     }
+    let page_graphics =
+        page_graphics.get_or_init(|| table_rule_topology::page(parsed, source[0].page));
     let (key, key_cell) =
-        text_grid_cell_styles::source_cell(parsed, source[..split].to_vec(), top)?;
+        text_grid_cell_styles::source_cell(parsed, page_graphics, source[..split].to_vec(), top)?;
     let (value, value_cell) =
-        text_grid_cell_styles::source_cell(parsed, source[split..].to_vec(), top)?;
+        text_grid_cell_styles::source_cell(parsed, page_graphics, source[split..].to_vec(), top)?;
     if !identifier(&key) || !description(&value) {
         return None;
     }
