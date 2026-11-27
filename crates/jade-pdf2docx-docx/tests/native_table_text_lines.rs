@@ -134,6 +134,32 @@ fn authored_cell_edge_spaces_are_not_trimmed() {
     assert_eq!(p[0].0, "    Alpha  ");
 }
 
+/// 複数行セルと同じ原本行にある単一行セルは、共通する段落基線を保つ。
+#[test]
+fn single_line_cell_keeps_its_shared_source_baseline() {
+    let aligned = source(24, 10);
+    let staggered = String::from_utf8(aligned.clone())
+        .unwrap()
+        .replace("182 680 Td", "182 674 Td");
+    for (source, shared) in [(aligned.as_slice(), true), (staggered.as_bytes(), false)] {
+        let bytes =
+            convert_minimum_pdf_bytes_to_docx_bytes("owned-mixed-cell-lines.pdf", source).unwrap();
+        let xml = document_xml(bytes);
+        let control = xml
+            .split("<w:tc>")
+            .nth(2)
+            .unwrap()
+            .split("</w:tc>")
+            .next()
+            .unwrap();
+        let line = &paragraphs(control)[0];
+        assert_eq!(line.0, "Control");
+        assert_eq!(line.1, 200);
+        assert_eq!(line.2, if shared { 200 } else { 0 });
+        assert_eq!(control.contains(r#"<w:vAlign w:val="top""#), shared);
+    }
+}
+
 proptest! {
     #![proptest_config(ProptestConfig {
         cases: 16,
