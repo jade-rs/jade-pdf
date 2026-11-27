@@ -3680,7 +3680,9 @@ fn docx_table_from_model_with_row_height_and_nested(
                     let mut table_cell = TableCell::new().add_paragraph(paragraph);
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(
-                            if parent.is_some_and(|table| !table.source_cell_runs.is_empty()) {
+                            if has_nested_tables
+                                || parent.is_some_and(|table| !table.source_cell_runs.is_empty())
+                            {
                                 VAlignType::Top
                             } else {
                                 VAlignType::Center
