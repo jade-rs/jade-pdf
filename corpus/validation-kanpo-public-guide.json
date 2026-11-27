@@ -1,0 +1,163 @@
+{
+  "time_utc": "2026-11-26T09:53:14.041682+00:00",
+  "head": "dd0808697aa5d4d105a0ab9a6e628d85f95e9214",
+  "source_tree": "6fffd9db7d4d57d268e16030350657f667082063",
+  "Rust_files": 807,
+  "full_default": {
+    "passed": 2722,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 169,
+    "log_sha256": "7ea476548fe96e5192038b697b418688e74dc9929d62b7e91477bb7e02ebe6f2",
+    "label": "kanpo-public-guide-CI-default-full-v1"
+  },
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "owned_parser_public_tests": 4,
+  "owned_Word_public_tests": 11,
+  "private_clip_tests": 2,
+  "clip_intersection_PBT_cases": 32,
+  "ruled_grid_transform_PBT_cases": 32,
+  "short_number_PBT_cases": 32,
+  "TDD_Reds": [
+    {
+      "label": "rectangular-background-clip-public-Red",
+      "head": "ff22a0ac9a29c6882c3b4da984b676b8263612b3",
+      "Rust_files": 803,
+      "all_Rust_bytes_match_actual_Red_receipt": true,
+      "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification/real-Red-source-proof/rectangular-background-clip-public-Red.tar",
+      "source_archive_sha256": "05e427111368e8d2f6d24b6b840d887558b6b20141e2016d10d2b9ec49017202",
+      "actual_Red_log_sha256": "e1e8b8cf504cc5c6cc937d251d381f47d0c42dcd162213bfd2b27c2edc37f8d2",
+      "actual_exit": 101,
+      "failed_groups_counts": [
+        [
+          2,
+          2,
+          0
+        ]
+      ],
+      "reconstructed_from_exact_committed_Red_head_without_rerunning_tests": true
+    },
+    {
+      "label": "authoritative-ruled-columns-public-Red",
+      "head": "eb7def691b78d3fca3244a2eedacc0b99ef69ed2",
+      "Rust_files": 806,
+      "all_Rust_bytes_match_actual_Red_receipt": true,
+      "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification/real-Red-source-proof/authoritative-ruled-columns-public-Red.tar",
+      "source_archive_sha256": "b9dba8c637532c02f952abb8bbbe4d144696a1e7235957cd14d94e8db602edc1",
+      "actual_Red_log_sha256": "cf826b1c1bb2637df241355f8db54c4b988e211c49089abaa98d4036afd375aa",
+      "actual_exit": 101,
+      "failed_groups_counts": [
+        [
+          0,
+          1,
+          0
+        ]
+      ],
+      "reconstructed_from_exact_committed_Red_head_without_rerunning_tests": true
+    },
+    {
+      "label": "short-unconfirmed-bare-numbers-public-Red",
+      "head": "94d1562fe3f2fdf87ff24efc293f81635783e1ff",
+      "Rust_files": 807,
+      "all_Rust_bytes_match_actual_Red_receipt": true,
+      "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification/real-Red-source-proof/short-unconfirmed-bare-numbers-public-Red.tar",
+      "source_archive_sha256": "af764ed8f954f0044363de83a0fb18fe598d29dc4ceacf4bc4fc51b94dcd925b",
+      "actual_Red_log_sha256": "3d61b7a998390e3229c61dbe6daa01eaa42f4315eac8d044eb1c92424e1139bf",
+      "actual_exit": 101,
+      "failed_groups_counts": [
+        [
+          1,
+          1,
+          0
+        ]
+      ],
+      "reconstructed_from_exact_committed_Red_head_without_rerunning_tests": true
+    }
+  ],
+  "TDD_executed_Rust_sources_reconstructable_byte_exact": true,
+  "prior_compatibility_outcomes": 694,
+  "original_followup_outcomes": 6,
+  "total_outcomes": 700,
+  "all700_statuses_exact_parent_or_initial": true,
+  "statuses_NOT_an_accuracy_rate": true,
+  "RAW_payloads_unchanged": 693,
+  "payload_changes": 7,
+  "native_outcomes": 228,
+  "native_success": 198,
+  "native_rejected": 30,
+  "browser_outcomes": 472,
+  "browser_each_success": 200,
+  "browser_each_rejected": 36,
+  "qualified_native_pool": "qualified-native228/receipt.json",
+  "qualified_browser_pool_template": "qualified-browser118-{engine}/receipt.json",
+  "cross_engine236_payloads118_inspections_exact": true,
+  "all_prior_fixed_input_groups_and_histories_preserved": true,
+  "known_digit_case_all6_payloads_identical": true,
+  "changed_digit_case_no_footer_role_invented": true,
+  "all_changed_payloads_bound_to_individually_reviewed_pages": true,
+  "prior_runtime_specific_renderings_inherited_by_RAW_identity": true,
+  "source_and_gold_manifest_bindings": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification/parent-original-gold-binding-before-qualified-runtime-v1.json",
+  "parent_original_gold_manifest_count": 82,
+  "parent_original_gold_file_checks": 70300,
+  "all_original_golds_unchanged": true,
+  "original52_audit": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification/original52-initial-and-complete-v3-audit/receipt.json",
+  "original52_audit_sha256": "f55c5cf2a22cdf6976fa4c672753ee971271e58c7c8923283c5a922ae4e42ca1",
+  "Kanpo_native_initial32_of52_to_followup38_of52": true,
+  "Kanpo_original52_unverified_NOT_counted_as_pass": true,
+  "Kanpo_original_source_chars": 1622,
+  "Kanpo_editable_native_DOCX_chars": 1622,
+  "Kanpo_rendered_chars": 1599,
+  "Kanpo_visible_missing_chars": 23,
+  "Kanpo_three_table_shapes": [
+    [
+      21,
+      3
+    ],
+    [
+      2,
+      3
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "Kanpo_gray_header_cells": 9,
+  "Kanpo_browser_original_encryption_still_rejected": true,
+  "Kanpo_native_strict_original_curve_loss_still_rejected": true,
+  "labour_each36pass21unmet_inherited_by_RAW_identity": true,
+  "CPI_each26pass81unmet_inherited_by_runtime_specific_RAW_identity": true,
+  "audits": {
+    "labour": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-graphic-table-free-end-boundaries/jade-pdf/corpus/wasm-runtime/graphic-table-free-end-boundaries-qualification/known-original57-followup-asof-14eb446/receipt.json",
+      "sha256": "e1b352c7aa4e3680057bafec467e29254aeb29146d3ebf44e9ca79576e9bef4e"
+    },
+    "CPI": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-image-decoding/jade-pdf/corpus/wasm-runtime/source-image-normal-print-defaults-qualification/known-original107-followup-asof-73c76fa/receipt.json",
+      "sha256": "1f700c20da30f6467a1fb3c42ee06c78fb5d74b7eb7a5c7ec967ce2fa531bc31"
+    }
+  },
+  "aggregate_parent_audit_key_error_retained_and_resumed_without_rerunning_runtime": true,
+  "native_binary_sha256": "31cede1663265107781f55be1b404837644e11d19a9540b358dbccca07fee3ff",
+  "raw_release_WASM_sha256": "503a85314ccc0573567f2f9896b708d23195cc1f3648f21be5b1e6f24bb75a9a",
+  "browser_generated_WASM_sha256": "4f05e96405803c29100c0e2248bc2f6ea254490fdd2d2803a14b4c41b54711fc",
+  "no_new_public_fields_CLI_parameters_or_dependencies": true,
+  "no_payload_geometry_text_style_normalization": true,
+  "component_qualified": true,
+  "component_scope": "Retain opaque source table fills under verified single axis-aligned rectangular W/W* clipping with bounded intersections and q/Q state; prefer a complete actual ruled grid over wrapped-text column augmentation; preserve bare digits in one/two-page body text without assigning footer roles. Native Kanpo original review improves table owners/header fills/editable digits while retaining all documented original fidelity failures.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Cell clipping/proportional fallback font metrics and source line geometry.",
+    "Exact footer anchors/fonts, four cell diagonals, curved brace, extra underline.",
+    "Browser encrypted original support and native curved-path strict rejection.",
+    "Previously recorded Labour/CPI/NAOJ/Census/SF94/prose and rotated-glyph fidelity failures."
+  ],
+  "qualification_receipt_sha256": "d2d6c49c14222f4d18edeec00ec7574781bcc738502575925de0068408acda23",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-kanpo-public-guide-holdout/jade-pdf/corpus/wasm-runtime/kanpo-public-guide-holdout-qualification",
+  "source_URL": "https://www.kanpo.go.jp/pdf/target_article.pdf",
+  "rights_URL": "https://www.kanpo.go.jp/guidance.html",
+  "source_sha256": "70d9b514d2d24aa18d4d6707b3ed91b990d11ae477086f430010cf3123400d77"
+}
