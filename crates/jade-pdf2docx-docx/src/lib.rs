@@ -4698,9 +4698,14 @@ fn infer_positioned_table_from_graphics(
     xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
     xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
     ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    let side_framed_top = side_framed_table_top(&xs, &ys, &vertical, &horizontal);
+    if let Some(top) = side_framed_top {
+        ys.push(top);
+    }
     let mut text_augmented_columns = false;
     if xs.len() >= 2
         && ys.len() >= 2
+        && side_framed_top.is_none()
         // 内側罫線が全行を分ける完成グリッドは、セル内の折返しアンカーで置き換えない。
         && !(xs.len() > 2 && has_grid_lines(&page_graphics, &xs, &ys))
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
@@ -4718,6 +4723,7 @@ fn infer_positioned_table_from_graphics(
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
+            && side_framed_top.is_none()
     {
         return None;
     }
@@ -5229,6 +5235,57 @@ fn augment_ys_from_partial_horizontals(
     augmented.sort();
     augmented.dedup();
     augmented
+}
+
+/// 左右の縦罫線が、幅の大半を覆う行罫線の上で同じ高さまで伸びる表の上端を返す。
+fn side_framed_table_top(
+    xs: &[i32],
+    ys: &[i32],
+    vertical: &[ParsedBounds],
+    horizontal: &[ParsedBounds],
+) -> Option<i32> {
+    if xs.len() < 3 || ys.len() < 3 {
+        return None;
+    }
+    let left = *xs.first()? as f32;
+    let right = *xs.last()? as f32;
+    let bottom = *ys.first()? as f32;
+    let last_row = *ys.last()? as f32;
+    let tolerance = TABLE_RULE_JOIN_TOLERANCE_PT as f32;
+    let side_ends = |x: f32| {
+        vertical.iter().filter_map(move |line| {
+            ((line.x0 - x).abs() <= 1.
+                && (line.y0 - bottom).abs() <= tolerance
+                && line.y1.is_finite()
+                && line.y1 > last_row + tolerance)
+                .then_some(line.y1)
+        })
+    };
+    let top = side_ends(left).find_map(|left_top| {
+        side_ends(right)
+            .find(|right_top| (left_top - right_top).abs() <= 1.)
+            .map(|right_top| left_top.min(right_top))
+    })?;
+
+    let full_width = |y: f32| {
+        horizontal.iter().any(|line| {
+            (line.y0 - y).abs() <= 1.
+                && (line.x0 - left).abs() <= tolerance
+                && (line.x1 - right).abs() <= tolerance
+        })
+    };
+    if !full_width(bottom) || full_width(last_row) {
+        return None;
+    }
+    let rows_are_ruled = ys[1..].iter().all(|&y| {
+        horizontal.iter().any(|line| {
+            (line.y0 - y as f32).abs() <= 1.
+                && line.x0 >= left - tolerance
+                && (line.x1 - right).abs() <= tolerance
+                && line.x1 - line.x0 >= (right - left) * 0.8
+        })
+    });
+    rows_are_ruled.then_some(top.round() as i32)
 }
 
 /// 部分的な縦罫線を column 境界候補へ補完する。
