@@ -1,0 +1,116 @@
+{
+  "time_utc": "2026-11-26T23:51:24.645957+00:00",
+  "head": "cfea46b6659522e778c3086282873304447b50a1",
+  "parent": "d27e3bb4a46eb97fbd29c6b15dc5ebde1232a455",
+  "component_qualified": true,
+  "component_scope": "Keep a complete source graphic grid when every nonempty cell has matching text, fitting source line capacity and verified embedded or compatible Helvetica ASCII metrics; retain existing fallback for empty, missing-cell or unverified-font candidates.",
+  "Rust_files": 827,
+  "full_default_counts": [
+    2800,
+    0,
+    42
+  ],
+  "full_groups": 177,
+  "full_log_sha256": "3405f4cbbd272e78f7cf413e5198c1e63d37384f36af94cf7aff19f70dadd2d1",
+  "checks": [
+    {
+      "label": "grid-backport-Red-v1",
+      "head": "c11dafa1e9d29ec17bc10d226de606472c997a24",
+      "Rust_files": 826,
+      "receipt_sha256": "78807a66b796ac5145551ad7cfbbf6c408e02a2812e42e81a0bd3a0a8430bbc8",
+      "log_sha256": "67703d686195d057c3ccf0a0774b8f495a0be86477bfbdde3be4449aa751fff5"
+    },
+    {
+      "label": "grid-backport-Green-controls-v1",
+      "head": "d03a0fb6c1b1493a08ad52933d71be2dc9cbac08",
+      "Rust_files": 827,
+      "receipt_sha256": "28fb2682c54ff391803c644481cb572496db94a760f126d78eadb3824bdd8aae",
+      "log_sha256": "de00e66adeb3531b4c2b88ccf89f237a12ebaea762bee1c5fcf94679fd4e00b7"
+    },
+    {
+      "label": "grid-backport-CI-default-full-v1",
+      "head": "cfea46b6659522e778c3086282873304447b50a1",
+      "Rust_files": 827,
+      "receipt_sha256": "4f5629cf1d4ce0cfbded6ae4ab9ed7bb719a3c1bcb372107c5579482e734d6f3",
+      "log_sha256": "3405f4cbbd272e78f7cf413e5198c1e63d37384f36af94cf7aff19f70dadd2d1"
+    },
+    {
+      "label": "grid-backport-format-v1",
+      "head": "cfea46b6659522e778c3086282873304447b50a1",
+      "Rust_files": 827,
+      "receipt_sha256": "c0df1433763f0f28d8860b4e0465671a5b1d7484b15cdfe9acd4055a9486a154",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "grid-backport-fixture-hygiene-v1",
+      "head": "cfea46b6659522e778c3086282873304447b50a1",
+      "Rust_files": 827,
+      "receipt_sha256": "01ed204fb49ceeb3e5a49e587d95970f49db16ec9acc59f0de5321b1a0cae2d5",
+      "log_sha256": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658"
+    },
+    {
+      "label": "grid-backport-post-full-native-build-v1",
+      "head": "cfea46b6659522e778c3086282873304447b50a1",
+      "Rust_files": 827,
+      "receipt_sha256": "68f8e2a0cda596092e104f18ce9dea377ba912b8d2fd6c98639c445162a5722f",
+      "log_sha256": "ee106138fe24489192c0ce694ba04c089d9fac6d3926b5666559dd27429be579"
+    },
+    {
+      "label": "grid-backport-post-full-WASM-build-v1",
+      "head": "cfea46b6659522e778c3086282873304447b50a1",
+      "Rust_files": 827,
+      "receipt_sha256": "cf7f0560f9a929597764c8257e772bac4cc274ad9c343bedbd9b03ba7e1f8ff6",
+      "log_sha256": "e7364df866b99a38ff29bd95dcb4bcffe40cf2be6cb084f89c2197905147fcc5"
+    }
+  ],
+  "actual_Red_selected_rows": 4,
+  "actual_Red_expected_rows": 2,
+  "Green_controls": 4,
+  "translation_property_cases": 32,
+  "owned_test_font_uses_no_NTA_glyph_or_advance_variant_features": true,
+  "NTA_production_source_changes_NOT_backported": true,
+  "base_qualified_manifest_sha256": "3c0e4dfabd7abcd042aedd2fab725f9fe6e044afaab698e1b77eb5d831152891",
+  "source_archive_sha256": "59074f788ea1ef503f66d63a55e2b942da7a19198b2005cabd9a0560a3738e42",
+  "prior_original_gold_manifests": 90,
+  "prior_original_gold_file_checks": 94063,
+  "unique_prior_files_rehashed": 93285,
+  "NTA_original16files_rehashed": true,
+  "owned_original_source_gold_sets": 2,
+  "total_outcomes": 772,
+  "successful_outputs": 666,
+  "expected_rejections": 106,
+  "statuses_preserved": 772,
+  "RAW_exact_parent": 766,
+  "prior760_RAW_exact_parent": true,
+  "Mac_negative6_RAW_exact_parent": true,
+  "Mac_negative_control_NOT_font_fidelity_accepted": true,
+  "changed_outputs": 6,
+  "unique_changed_DOCX_pairs": 1,
+  "owned_original2x2_source_grid_restored_on_all4pages": true,
+  "all96_owned_source_glyphs_and9_12pt_sizes_retained": true,
+  "full_owned_source_font_programs_RAW_retained": true,
+  "current4_rendered_pages_RAW_equal_individually_reviewed_prototype": true,
+  "owned_source_baseline_tolerance_pt": 0.05,
+  "owned_source_baseline_tolerance_NOT_met_or_loosened": true,
+  "owned_signed_baseline_error_range_pt": [
+    1.406,
+    2.506
+  ],
+  "qualified_parent_NTA_original62_verified": 6,
+  "qualified_parent_NTA_original62_unmet": 56,
+  "first_genuine_unseen_results_NOT_relabelled": true,
+  "known_owned_controls_NOT_internet_or_unseen_holdouts": true,
+  "reviewed_runtime_proof_sha256": "86d4aec8bc5cc0af6b2ab2c336053286b16c916d2e13ced6de3b13d8f71c5a8a",
+  "original_gold_gate_sha256": "408036c6931aca82d87745bbc047f4e1b572aeb982b60491151f120c54848c84",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "limitations": [
+    "Owned baseline deviations remain outside the original0.05pt tolerance; grid/font preservation is the qualified scope.",
+    "Unsupported Mac format6 subset fonts retain fallback and are not font-fidelity accepted.",
+    "Kanpo40/52,CPI26/107,Labour36/57 and qualified-parent NTA6/62 remain unchanged by RAW payload identity.",
+    "Separate NTA font/advance/background changes remain outside this scoped snapshot and are not promoted to acceptance.",
+    "Visual evidence uses LibreOfficeDev26.8.0.0.alpha0 (2c87e51eeaa2b413ff4ae097b2705eea1995d8e5); Microsoft Word is unverified.",
+    "No public API, CLI, dependency or tracked PDF/font fixture added."
+  ],
+  "guide": "docs/verified_source_grid_selection.md"
+}

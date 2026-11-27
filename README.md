@@ -41,7 +41,7 @@ Repeated boundary text keeps its per-page header/footer style and source anchor 
 
 Strict mode rejects detected quality loss instead of publishing the output. OCR is opt-in and requires the `ocr-onnx` feature, external model files, and `pdftoppm`; see the [OCR setup guide](docs/ocr_runtime.md).
 
-Separated groups inside eligible single-line native cells now retain their source origins through verified Word tabs. The [cell-position guide](docs/source_cell_tab_stops.md) records 2,796 passing Rust tests, all754 prior statuses and748 RAW-identical outputs. Six MHLW followups retain the original69 criteria and pass five separately frozen spacing criteria. Unsupported fonts keep their compatible layout; whole-document readiness remains unaccepted. A new eight-page NTA source has62 prospective criteria and remains unconverted.
+Separated groups inside eligible single-line native cells now retain their source origins through verified Word tabs. The [cell-position guide](docs/source_cell_tab_stops.md) records 2,796 passing Rust tests, all754 prior statuses and748 RAW-identical outputs. Six MHLW followups retain the original69 criteria and pass five separately frozen spacing criteria. Unsupported fonts keep their compatible layout; whole-document readiness remains unaccepted. The NTA followup retains its first6/62 source result; its separate ongoing font and layout changes are outside this snapshot.
 
 Physical source rule fragments now retain gaps and distinct widths. Eligible simple tables preserve per-side editable borders and row centers without reducing text capacity. The [source-width guide](docs/source_cell_rule_widths.md) records 2,791 passing Rust tests and 754 known runtime outcomes:748 stay RAW exact, while six identical MHLW followups meet the original69 criteria. The first genuine unseen68/69 remains archived. A separate0.12pt horizontal-rule condition is still unmet, and whole-document production readiness remains unaccepted.
 
@@ -197,6 +197,8 @@ Verified small-glyph baseline differences are retained as signed DOCX run positi
 
 長方形の罫線を扱う条件と、元の表の所属・色・改ページに残る課題は、[長方形からの罫線抽出](docs/stroked_rectangles.md)を参照してください。
 PDF由来の太字・通常体と表の先頭行の改ページについては、[書体と表の先頭行](docs/source_typography_and_table_opening.md)を参照してください。
+
+確認済みの罫線表は、セル内の複数行を別セルと数えた推測表に置換せず、元のセルと書式を保持します。条件と残る表示上の課題は[原本セルの選択](docs/verified_source_grid_selection.md)を参照してください。
 
 部分clip付きの短い文字objectが多いnative解析では、一意な所属の共有索引で既定のmetadata予算内の処理を改善しています。曖昧な所属の扱いと検証範囲は、[native clipの文字索引](docs/native_clip_workspace.md)を参照してください。
 
