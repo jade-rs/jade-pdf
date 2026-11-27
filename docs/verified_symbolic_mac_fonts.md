@@ -14,4 +14,11 @@ Unicode cmapとheadのchecksum adjustmentを更新し、元のglyph・metrics・
 
 既知の所有PDFを通常・strictで追試し、同一のDOCXへ一致した。4ページすべてで原本2×2セル、96字、9/12ptを復元する。埋め込まれた二つのfontは、cmapとhead adjustment以外の表全バイトが原本と一致する。現在の4ページPNGも、個別に目視済みのUnicode controlとRAW一致する。これは新たなinternet PDFやgenuine unseenの精度値ではない。
 
-元のbaseline許容誤差0.05ptは維持する。符号付き誤差は+1.406〜+2.506ptで未達であり、選択とfont再利用の修正で解消したことにはしない。Microsoft Word表示は未検証。全体テストと772結果の再検証はこの試作段階では未完了で、`component_qualified=false`、`whole_document_accepted=false`、`production_ready=false`を維持する。別のNTA向けglyph・字幅・背景実装はこのsnapshotへ含めない。
+元のbaseline許容誤差0.05ptは維持する。符号付き誤差は+1.406〜+2.506ptで未達であり、選択とfont再利用の修正で解消したことにはしない。Microsoft Word表示は未検証。全体検査は2,809成功・失敗0・42ignored、177グループ。829個のRustファイルは全検査・native/WASM build・772結果の追試の前後で一致する。別のNTA向けglyph・字幅・背景実装はこのsnapshotへ含めない。
+
+
+native252、Chromium260、WebKit260の合計772結果は、666成功出力・106想定どおりの拒否。既存760結果とUnicode control6出力はRAW一致する。変わったMac control6出力は全経路・通常/strictで同一DOCXへ一致し、原本セル・字形・サイズを保持する。両ブラウザの解析結果はこのMac controlの行数4→2、非空セル8→4だけが変わる。これらの実行状態は精度率として扱わない。
+
+原本90 manifestの94,063項目・93,285個の一意なファイル、NTA原本16ファイル、二つの所有原本セットを再hashした。元の0.05ptを含む条件、最初のMac font欠落、NTAのgenuine unseen6/62を再ラベルしない。官報40/52、CPI26/107、労働力調査36/57などの既存の未達も維持する。
+
+検証のhashと範囲は[`corpus/validation-verified-symbolic-mac-fonts.json`](../corpus/validation-verified-symbolic-mac-fonts.json)へ記録する。`component_qualified=true`は確認済みのMac font再利用の範囲であり、`whole_document_accepted=false`、`production_ready=false`を維持する。
