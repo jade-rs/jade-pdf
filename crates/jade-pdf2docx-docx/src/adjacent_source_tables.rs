@@ -107,9 +107,82 @@ fn framed(table: &PositionedTable, graphics: &[ParsedGraphicElement]) -> bool {
     })
 }
 
+/// 独立した罫線表の間を、両表の高さを覆う実線で分けた段か確認する。
+fn has_column_rule(
+    left: &PositionedTable,
+    right: &PositionedTable,
+    graphics: &[ParsedGraphicElement],
+) -> bool {
+    let a = left.bounds;
+    let b = right.bounds;
+    graphics.iter().any(|graphic| {
+        let line = graphic.bounds;
+        let inset = graphic.stroke_width * 0.5 + 1.0;
+        graphic.page == left.page
+            && graphic.stroke_width.is_finite()
+            && graphic.stroke_width > 0.0
+            && !graphic.dashed
+            && (line.x0 - line.x1).abs() <= 0.01
+            && line.x0 >= a.x1 + inset
+            && line.x1 <= b.x0 - inset
+            && line.y0 <= a.y0.min(b.y0) + 1.0
+            && line.y1 >= a.y1.max(b.y1) - 1.0
+    })
+}
+
+/// 同じ高さの範囲を共有する表専用ページで、明示の段境界と各外枠を確認して浮動配置する。
+fn staggered_column_placements(
+    blocks: &mut [StructuredBlock],
+    page: &ParsedPage,
+    graphics: &[ParsedGraphicElement],
+) -> Option<Vec<Option<Placement>>> {
+    if blocks.len() < 2 {
+        return None;
+    }
+    let mut tables: Vec<_> = blocks
+        .iter()
+        .map(|block| candidate(block, page))
+        .collect::<Option<_>>()?;
+    let tops = tables.iter().map(|table| table.bounds.y1);
+    let top = tops.clone().fold(f32::NEG_INFINITY, f32::max);
+    let lowest_top = tops.fold(f32::INFINITY, f32::min);
+    let bottoms = tables.iter().map(|table| table.bounds.y0);
+    let bottom = bottoms.clone().fold(f32::INFINITY, f32::min);
+    let highest_bottom = bottoms.fold(f32::NEG_INFINITY, f32::max);
+    if top - lowest_top <= 0.25 || lowest_top <= highest_bottom {
+        return None;
+    }
+    tables.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
+    if !tables
+        .windows(2)
+        .all(|pair| has_column_rule(pair[0], pair[1], graphics))
+        || !tables.iter().all(|table| framed(table, graphics))
+    {
+        return None;
+    }
+    let height = twips(top - bottom).filter(|height| *height > 0)?;
+    let placements = tables
+        .iter()
+        .enumerate()
+        .map(|(index, table)| {
+            Some(Some(Placement {
+                x: twips(table.bounds.x0)?,
+                y: twips(page.height - table.bounds.y1)?,
+                bottom,
+                reserve: (index + 1 == tables.len()).then_some(height),
+            }))
+        })
+        .collect::<Option<Vec<_>>>()?;
+    blocks.sort_by(|a, b| {
+        let x = |block| candidate(block, page).map(|table| table.bounds.x0);
+        x(a).unwrap_or(0.0).total_cmp(&x(b).unwrap_or(0.0))
+    });
+    Some(placements)
+}
+
 /// 段組み・回転・交差する本文や画像を避け、横に離れた連続表の組だけを選ぶ。
 pub(super) fn select(
-    blocks: &[StructuredBlock],
+    blocks: &mut [StructuredBlock],
     page: Option<&ParsedPage>,
     columned: bool,
     graphics: &[ParsedGraphicElement],
@@ -125,6 +198,9 @@ pub(super) fn select(
     }) else {
         return result;
     };
+    if let Some(placements) = staggered_column_placements(blocks, page, graphics) {
+        return placements;
+    }
     let mut start = 0;
     while start < blocks.len() {
         let Some(first) = candidate(&blocks[start], page) else {
