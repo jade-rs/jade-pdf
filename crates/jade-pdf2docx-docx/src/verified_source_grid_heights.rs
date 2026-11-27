@@ -35,6 +35,8 @@ pub(super) fn apply(
     let Some(heights) = grid.heights(0.) else {
         return;
     };
+    // 上下のWord罫線の半幅ずつを予約し、center間隔の全高を文字の内側容量にしない。
+    let border_twips = table_border_size_for_pdf_rule(table.stroke_width) as f32 * 2.5;
     if heights.len() == table.native_cells.len()
         && heights
             .iter()
@@ -42,7 +44,7 @@ pub(super) fn apply(
             .all(|(height, row)| {
                 row.iter()
                     .flatten()
-                    .all(|cell| native_table_text::fits_height_twips(cell, *height))
+                    .all(|cell| native_table_text::fits_height_twips(cell, *height - border_twips))
             })
     {
         table.row_heights_twips = heights;
