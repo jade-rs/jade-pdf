@@ -1,5 +1,5 @@
 //! 複数の本文行が共有する狭い空白帯を、通常の単語間隔と区別する。
-use jade_pdf2docx_parser::ParsedTextElement;
+use jade_pdf2docx_parser::{ParsedGraphicElement, ParsedTextElement};
 
 /// 十分な左右本文幅を持つ一行で、段間候補となる水平空白を表す。
 struct Gap {
@@ -24,6 +24,8 @@ pub(super) struct Gutter {
     top: f32,
     /// 既存の推定が成立する場合だけ、従来どおり本文範囲外の行も分割する。
     cut_outside_body: bool,
+    /// 反復する左右の組に唯一の縦罫線を確認できた場合は、その位置を優先する。
+    pub(super) source_rule: bool,
 }
 
 impl Gutter {
@@ -36,6 +38,48 @@ impl Gutter {
     pub(super) fn cuts_row(self, text: &ParsedTextElement) -> bool {
         self.cut_outside_body || self.contains(text)
     }
+}
+
+/// 左右それぞれで、項目名と独立した数値に対応する根拠を確認する。
+fn has_label_and_value(row: &[&ParsedTextElement]) -> bool {
+    row.first().zip(row.last()).is_some_and(|(first, last)| {
+        first.text.chars().any(char::is_alphabetic)
+            && super::text_row_segments::numeric_fragment(&last.text)
+            && first.bounds.x1 < last.bounds.x0
+    })
+}
+
+/// 横罫線を持たない単独の縦罫線で、二組の項目が四行以上並ぶ範囲を段間にする。
+pub(super) fn from_rule(
+    rows: &[Vec<&ParsedTextElement>],
+    width: f32,
+    graphics: &[ParsedGraphicElement],
+) -> Option<Gutter> {
+    let [rule] = graphics else { return None };
+    let b = rule.bounds;
+    if b.x0 != b.x1 || b.y0 >= b.y1 || !(width * 0.3..=width * 0.7).contains(&b.x0) {
+        return None;
+    }
+    let mut paired = 0;
+    for row in rows {
+        let Some(first) = row.first() else { continue };
+        if !(b.y0..=b.y1).contains(&super::native_baseline::line_y(first)) {
+            continue;
+        }
+        let split = row.partition_point(|text| text.bounds.x0 < b.x0);
+        let (left, right) = row.split_at(split);
+        if left.iter().any(|text| text.bounds.x1 > b.x0) {
+            return None;
+        }
+        paired += usize::from(has_label_and_value(left) && has_label_and_value(right));
+    }
+    (paired >= 4).then_some(Gutter {
+        x: b.x0,
+        bottom: b.y0,
+        top: b.y1,
+        cut_outside_body: false,
+        source_rule: true,
+    })
 }
 
 /// 四行以上が共有する候補が一帯だけあり、本文区間を他の文字が横断しない場合だけ返す。
@@ -105,6 +149,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
             bottom,
             top,
             cut_outside_body: true,
+            source_rule: false,
         });
     }
     let cut = supported_cut(&gaps, width, true)?;
@@ -114,6 +159,7 @@ pub(super) fn infer(rows: &[Vec<&ParsedTextElement>], width: f32) -> Option<Gutt
         bottom,
         top,
         cut_outside_body: false,
+        source_rule: false,
     })
 }
 

@@ -94,6 +94,7 @@ mod page_chrome_anchor;
 mod paragraph_anchor;
 mod section_chrome_package;
 mod separated_box_table;
+mod source_column_tabs;
 mod source_image_rows;
 mod source_prose_columns;
 mod table_rule_topology;
@@ -1131,11 +1132,10 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                 mut line,
                 ..
             } => {
-                let text_columns = text_column_layout
-                    .filter(|layout| layout.contains_column_line(flow_index))
-                    .map(|layout| layout.columns.as_slice());
-                let column_index = text_columns
-                    .map(|columns| column_index_for_line(&line, columns))
+                let column_layout =
+                    text_column_layout.filter(|layout| layout.contains_column_line(flow_index));
+                let column_index = column_layout
+                    .map(|layout| layout.column_index(&line))
                     .unwrap_or(0);
                 let starts_new_column = column_index > previous_column_index;
                 if starts_new_column {
@@ -1143,17 +1143,27 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
                     previous_nonparagraph_bottom_y = None;
                 }
                 previous_column_index = column_index;
-                let column_origin_twips =
-                    text_columns.zip(page_width).and_then(|(_, page_width)| {
-                        text_column_layout?.frame.origin(page_width, column_index)
-                    });
+                let column_origin_twips = column_layout
+                    .zip(page_width)
+                    .and_then(|(layout, page_width)| layout.frame.origin(page_width, column_index));
                 let paragraph_origin_x = column_origin_twips
                     .map(|origin| (origin / 20.0) as f32)
                     .unwrap_or(origin_x);
-                if text_columns.is_some() {
+                if column_layout.is_some() {
                     line.alignment = ParagraphAlignment::Left;
                 }
-                let mut paragraph = paragraph_from_structured_line(
+                let source_tabs = column_layout
+                    .filter(|layout| layout.column_rule_x.is_some())
+                    .zip(column_origin_twips)
+                    .and_then(|(layout, origin)| {
+                        source_column_tabs::paragraph(
+                            &line,
+                            origin,
+                            layout.frame.right_edge_twips(column_index)?,
+                        )
+                    });
+                let mut paragraph = position_structured_paragraph(
+                    source_tabs.unwrap_or_else(|| structured_line_runs(&line)),
                     &line,
                     paragraph_origin_x,
                     page_width,
@@ -1427,8 +1437,8 @@ fn detected_text_columns_for_page(
         .iter()
         .find(|parsed_page| parsed_page.page_number == page.page)
         .map(|parsed_page| parsed_page_display_size_points(parsed_page).0)?;
-    let columns =
-        infer_text_columns(&page.lines, page_width).filter(|columns| columns.len() == 2)?;
+    let columns = layout_column_starts(&page.lines, page_width, page.column_rule_x)
+        .filter(|columns| columns.len() == 2)?;
     let leading_single_column_line_count = leading_single_column_line_count(&page.lines);
     let trailing_single_column_line_count = trailing_single_column_line_count(&page.lines);
     let column_line_count = page
@@ -1442,7 +1452,7 @@ fn detected_text_columns_for_page(
         .skip(leading_single_column_line_count)
         .take(column_line_count)
         .any(|line| {
-            let column = column_index_for_line(line, &columns);
+            let column = layout_column_index(line, &columns, page.column_rule_x);
             columns
                 .get(column + 1)
                 .is_some_and(|next_left| line.right_x > *next_left)
@@ -1456,10 +1466,12 @@ fn detected_text_columns_for_page(
         &page.lines[leading_single_column_line_count
             ..leading_single_column_line_count + column_line_count],
         &columns,
+        page.column_rule_x,
     )?;
     Some(DetectedTextColumnLayout {
         frame,
         columns,
+        column_rule_x: page.column_rule_x,
         leading_single_column_line_count,
         column_line_count,
         trailing_single_column_line_count,
@@ -1851,8 +1863,14 @@ fn text_lines_by_page_from_pdf_text_elements(
                 row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
             }
             let gutter = (!has_tables && !has_images)
-                .then(|| text_column_gutter::infer(&rows, page_width))
+                .then(|| {
+                    text_column_gutter::from_rule(&rows, page_width, &page_graphics)
+                        .or_else(|| text_column_gutter::infer(&rows, page_width))
+                })
                 .flatten();
+            let column_rule_x = gutter
+                .filter(|gutter| gutter.source_rule)
+                .map(|gutter| gutter.x);
             let cuts = rows
                 .iter()
                 .map(|row| text_row_segments::cuts(row, gutter))
@@ -1890,10 +1908,13 @@ fn text_lines_by_page_from_pdf_text_elements(
             let lines = if has_tables {
                 lines
             } else {
-                order_text_lines_for_layout(parsed, page, lines)
+                order_text_lines_for_layout(parsed, page, lines, column_rule_x)
             };
-            (!lines.is_empty() || has_tables || has_images)
-                .then_some(StructuredTextPage { page, lines })
+            (!lines.is_empty() || has_tables || has_images).then_some(StructuredTextPage {
+                page,
+                lines,
+                column_rule_x,
+            })
         })
         .collect()
 }
@@ -2057,10 +2078,20 @@ fn paragraph_from_structured_line(
     page_width: Option<f32>,
     section_origin_x: Option<f32>,
 ) -> Paragraph {
-    let paragraph = line.runs.iter().fold(Paragraph::new(), |paragraph, run| {
+    position_structured_paragraph(
+        structured_line_runs(line),
+        line,
+        origin_x,
+        page_width,
+        section_origin_x,
+    )
+}
+
+/// 位置補正に渡す前に、本文行のrunを通常どおり直列化する。
+fn structured_line_runs(line: &StructuredTextLine) -> Paragraph {
+    line.runs.iter().fold(Paragraph::new(), |paragraph, run| {
         paragraph.add_run(docx_run_from_structured_run(run))
-    });
-    position_structured_paragraph(paragraph, line, origin_x, page_width, section_origin_x)
+    })
 }
 
 /// runを再構築せず、原本行の寄せと相対原点を既存段落へ適用する。
@@ -2471,6 +2502,7 @@ fn order_text_lines_for_layout(
     parsed: &ParsedDocument,
     page: usize,
     lines: Vec<StructuredTextLine>,
+    column_rule_x: Option<f32>,
 ) -> Vec<StructuredTextLine> {
     if lines.is_empty() {
         return lines;
@@ -2502,7 +2534,7 @@ fn order_text_lines_for_layout(
                 .map(|line| line.right_x)
                 .fold(f32::NEG_INFINITY, f32::max)
         });
-    let Some(columns) = infer_text_columns(&lines, page_width) else {
+    let Some(columns) = layout_column_starts(&lines, page_width, column_rule_x) else {
         return lines;
     };
     let mut leading_lines = Vec::new();
@@ -2523,8 +2555,8 @@ fn order_text_lines_for_layout(
             .then(a.left_x.total_cmp(&b.left_x))
     });
     column_lines.sort_by(|a, b| {
-        column_index_for_line(a, &columns)
-            .cmp(&column_index_for_line(b, &columns))
+        layout_column_index(a, &columns, column_rule_x)
+            .cmp(&layout_column_index(b, &columns, column_rule_x))
             .then(b.top_y.total_cmp(&a.top_y))
             .then(a.left_x.total_cmp(&b.left_x))
     });
@@ -2622,6 +2654,38 @@ fn column_index_for_line(line: &StructuredTextLine, columns: &[f32]) -> usize {
         .unwrap_or(0)
 }
 
+/// 原本の縦罫線があるときは、各側の最も左にある本文行を段原点にする。
+fn layout_column_starts(
+    lines: &[StructuredTextLine],
+    page_width: f32,
+    column_rule_x: Option<f32>,
+) -> Option<Vec<f32>> {
+    let Some(x) = column_rule_x else {
+        return infer_text_columns(lines, page_width);
+    };
+    let mut starts = [f32::INFINITY; 2];
+    for line in lines.iter().filter(|line| line.split_from_row) {
+        let side = usize::from(line.left_x >= x);
+        starts[side] = starts[side].min(line.left_x);
+    }
+    starts
+        .iter()
+        .all(|x| x.is_finite())
+        .then(|| starts.to_vec())
+}
+
+/// 縦罫線のあるページでは、行の字下げにかかわらず罫線を段の境界にする。
+fn layout_column_index(
+    line: &StructuredTextLine,
+    columns: &[f32],
+    column_rule_x: Option<f32>,
+) -> usize {
+    column_rule_x.map_or_else(
+        || column_index_for_line(line, columns),
+        |x| usize::from(line.left_x >= x),
+    )
+}
+
 /// 大きな水平ギャップで分割した text row segment。
 struct TextRowSegment<'a> {
     /// segment 内の text element。
@@ -2637,6 +2701,8 @@ struct StructuredTextPage {
     page: usize,
     /// page 内の上から下へ並ぶ段落行。
     lines: Vec<StructuredTextLine>,
+    /// 左右の本文を分ける原本の独立した縦罫線の横位置。
+    column_rule_x: Option<f32>,
 }
 
 /// 単一ページ内で検出した段組本文と、その前後にある全幅行を表す。
@@ -2646,6 +2712,8 @@ struct DetectedTextColumnLayout {
     frame: column_frame::Frame,
     /// 段組本文の各 column 左端（pt）。
     columns: Vec<f32>,
+    /// 採用した原本の縦罫線の横位置。
+    column_rule_x: Option<f32>,
     /// 段組本文より前に置く1段行の数。
     leading_single_column_line_count: usize,
     /// 段組本文として出力する行数。
@@ -2676,6 +2744,11 @@ struct StructuredPageSectionRefs<'a> {
 }
 
 impl DetectedTextColumnLayout {
+    /// 確認した段境界を使い、行が属する段を求める。
+    fn column_index(&self, line: &StructuredTextLine) -> usize {
+        layout_column_index(line, &self.columns, self.column_rule_x)
+    }
+
     /// 段組本文が始まる flow index を返す。
     fn column_start_index(&self) -> usize {
         self.leading_single_column_line_count
@@ -3920,7 +3993,9 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
             !graphic_tables
                 .iter()
                 .any(|(number, tables)| *number == page.page && !tables.is_empty())
-                && (source_prose_columns::has_two_dense_columns(parsed, page)
+                && ((page.column_rule_x.is_some()
+                    && detected_text_columns_for_page(parsed, page, &[]).is_some())
+                    || source_prose_columns::has_two_dense_columns(parsed, page)
                     || (has_graphic_tables && has_dense_body_columns(parsed, page)))
         })
         .map(|page| page.page)
@@ -4017,7 +4092,7 @@ fn has_dense_body_columns(parsed: &ParsedDocument, page: &StructuredTextPage) ->
         if !size.is_finite() || size <= 0.0 || line.right_x - line.left_x < size * 8.0 {
             return false;
         }
-        count[column_index_for_line(line, &layout.columns)] += 1;
+        count[layout.column_index(line)] += 1;
     }
     count.into_iter().all(|count| count >= 8)
 }

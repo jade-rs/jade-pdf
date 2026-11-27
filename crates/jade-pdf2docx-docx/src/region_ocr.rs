@@ -202,6 +202,7 @@ pub(super) fn merge_lines(
                     StructuredTextPage {
                         page,
                         lines: Vec::new(),
+                        column_rule_x: None,
                     },
                 );
                 index
