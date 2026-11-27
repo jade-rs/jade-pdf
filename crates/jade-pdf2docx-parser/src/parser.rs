@@ -177,6 +177,9 @@ mod image_sample_decode;
 mod compressed_objects;
 #[path = "embedded_fonts.rs"]
 mod embedded_fonts;
+#[cfg(test)]
+#[path = "embedded_symbolic_mac_tests.rs"]
+mod embedded_symbolic_mac_tests;
 #[path = "font_descriptor_cmaps.rs"]
 mod font_descriptor_cmaps;
 #[path = "type1_fonts.rs"]

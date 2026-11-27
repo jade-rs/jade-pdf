@@ -79,6 +79,6 @@ fn embedded_font_candidates_require_metadata_capacity() {
 /// 候補と名前の容量ちょうどでは最終出力配列を保存できない。
 #[test]
 fn embedded_font_results_require_metadata_capacity() {
-    let slots = 4 * std::mem::size_of::<(String, Vec<u8>, ToUnicodeCMap)>();
+    let slots = 4 * std::mem::size_of::<(String, Vec<u8>, ToUnicodeCMap, u32)>();
     assert_rejected(("TestFont".len() + slots) as u64);
 }

@@ -43,7 +43,7 @@ fn slots(count: usize) -> usize {
     [4, 8, 16, 32]
         .into_iter()
         .filter(|&capacity| count > capacity / 2 || capacity == 4 && count > 0)
-        .map(|capacity| capacity * std::mem::size_of::<(String, Vec<u8>, ToUnicodeCMap)>())
+        .map(|capacity| capacity * std::mem::size_of::<(String, Vec<u8>, ToUnicodeCMap, u32)>())
         .sum()
 }
 

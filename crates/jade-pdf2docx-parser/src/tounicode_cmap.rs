@@ -158,6 +158,20 @@ impl ToUnicodeCMap {
         })
     }
 
+    /// 明示map全体が許可済み単byteと単一BMP scalarだけか確認し、部分修復を防ぐ。
+    pub(crate) fn is_complete_byte_bmp_mapping(&self) -> bool {
+        self.registered.is_none()
+            && !self.mappings.is_empty()
+            && self.mappings.entries.len() <= 256
+            && self.mappings.iter().all(|(key, value)| {
+                let mut chars = value.chars();
+                key.len() == 2
+                    && self.key_is_allowed(key)
+                    && chars.next().is_some_and(|ch| u32::from(ch) < 0xfffe)
+                    && chars.next().is_none()
+            })
+    }
+
     /// テスト比較用の単一 BMP 対応を返す。
     #[cfg(test)]
     pub(crate) fn bmp_scalar_mappings(&self) -> Vec<(u16, u16)> {

@@ -200,6 +200,8 @@ PDF由来の太字・通常体と表の先頭行の改ページについては�
 
 確認済みの罫線表は、セル内の複数行を別セルと数えた推測表に置換せず、元のセルと書式を保持します。条件と残る表示上の課題は[原本セルの選択](docs/verified_source_grid_selection.md)を参照してください。
 
+明示ToUnicodeと元の字形・字幅が一致するsymbolic Mac fontの再利用は、[条件と検証範囲](docs/verified_symbolic_mac_fonts.md)を参照してください。
+
 部分clip付きの短い文字objectが多いnative解析では、一意な所属の共有索引で既定のmetadata予算内の処理を改善しています。曖昧な所属の扱いと検証範囲は、[native clipの文字索引](docs/native_clip_workspace.md)を参照してください。
 
 原本で一行の表セルは、確認できた水平原点へ既定の左右余白を重ねずに配置します。適用条件と残る表示上の問題は、[一行セルの水平位置](docs/native_single_line_cell_origin.md)を参照してください。

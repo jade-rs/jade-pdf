@@ -1,6 +1,10 @@
 //! 埋め込み sfnt を借用し、予算内の配列だけで Unicode cmap を修復する。
 use crate::decode::DecodeBudget;
 
+#[path = "font_repair_symbolic_mac.rs"]
+mod symbolic_mac;
+pub(crate) use symbolic_mac::repair as repair_symbolic_mac_unicode_cmap;
+
 /// 同じ Unicode へ複数 source が対応する場合の先勝ち順序を保持する。
 #[derive(Clone, Copy)]
 struct Glyph {

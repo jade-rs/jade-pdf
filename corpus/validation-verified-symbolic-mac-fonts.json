@@ -1,0 +1,179 @@
+{
+  "time_utc": "2026-11-27T00:26:17.902819+00:00",
+  "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+  "parent": "213de03b096cb256f8a05de01f1cf19cda19bf7b",
+  "component_qualified": true,
+  "component_scope": "Verified installable/editable symbolic simple TrueType subsets with one Mac(1,0) format6 cmap, unambiguous single-font descriptor ownership, complete explicit single-byte BMP ToUnicode, and matching PDF/hmtx widths; preserve outlines and existing fallback outside this proof.",
+  "Rust_files": 829,
+  "full_default_counts": [
+    2809,
+    0,
+    42
+  ],
+  "full_groups": 177,
+  "full_log_sha256": "9baeb210f66d69ae2f855144d022f5caaf15dc7df0dcf33606430f76b33b915d",
+  "checks": [
+    {
+      "label": "symbolic-Mac-Green-controls-v1",
+      "head": "9296c6a6cdb2135baae67e496551a9ea149a01c2",
+      "Rust_files": 829,
+      "receipt_sha256": "06de54934b7d7d57595a4349a9d5d81cd07e496dcabdac193b3af25c0859b181",
+      "log_sha256": "ece8887a4c72e74d74543f32ae11a14ca06606757c8352c603893872bec8ecab"
+    },
+    {
+      "label": "symbolic-Mac-parser-lib-controls-v1",
+      "head": "9296c6a6cdb2135baae67e496551a9ea149a01c2",
+      "Rust_files": 829,
+      "receipt_sha256": "502ce099fc27925f62d7c35f3156ad0c887bf7e70d20839c1e74204759f9ff7d",
+      "log_sha256": "eacd381d6b74c2eda6f2f4583926aebcddb8f607221516bb7e008f93b42e5ee9"
+    },
+    {
+      "label": "symbolic-Mac-CI-default-full-v1",
+      "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+      "Rust_files": 829,
+      "receipt_sha256": "6e586208d4bf9c4743dd3828987c78ae669529a205c061ca2ca21c4e94301b31",
+      "log_sha256": "9baeb210f66d69ae2f855144d022f5caaf15dc7df0dcf33606430f76b33b915d"
+    },
+    {
+      "label": "symbolic-Mac-format-v1",
+      "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+      "Rust_files": 829,
+      "receipt_sha256": "47a3b141e1dd9744692a809e5a8c239a13811a97270d76f92def513e07db60f4",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "symbolic-Mac-fixture-hygiene-v1",
+      "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+      "Rust_files": 829,
+      "receipt_sha256": "5a5b46648e7241702e1c6a6ff8f761525663936c99574613977bd712558fc9d1",
+      "log_sha256": "fe008aab760eb03ccac7578e2b84665b1b50b0d7f855b17a0c7a8d039435b658"
+    },
+    {
+      "label": "symbolic-Mac-post-full-native-build-v1",
+      "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+      "Rust_files": 829,
+      "receipt_sha256": "48d65566e4f51c24a23516e841a8caab8efee6f6d25d96c4bc605deeafc6cd79",
+      "log_sha256": "011771dd571ada07ed80fe7e0054c0ba127e9c0274f025da51534244200201c7"
+    },
+    {
+      "label": "symbolic-Mac-post-full-WASM-build-v1",
+      "head": "157482e60f16b31fadec9d4f9dd4a45051efcefd",
+      "Rust_files": 829,
+      "receipt_sha256": "a5f7f0bc884338d3b4e789ba15bdf8f381599e8123e8a55414ad426468c92a03",
+      "log_sha256": "bff2b68df091c72d098698278dc4931cbfdc504faa92213a142b28dba5c05554"
+    }
+  ],
+  "actual_runtime_Reds": [
+    {
+      "label": "symbolic-Mac-Red-v1",
+      "head": "41e0f1170e88a28233bb70011bc92a52d1da1acc",
+      "Rust_files": 828,
+      "receipt_sha256": "994a50853618322a429ba8548a1b116693ed1365c604e142bd7bc1b7bb0400c5",
+      "log_sha256": "6f97e494ee30567628ea9550a6c2fe1f214101edc2e5dcb3d07fa32a576d75aa",
+      "source_archive_proof_sha256": "3cd4ebb5a26f7568d256454d82a53c2e844758888ad821ee2065fc3dfdf1a0e9"
+    },
+    {
+      "label": "symbolic-Mac-width-syntax-Red-v1",
+      "head": "618c6bb459e14ab672c73014d97f4b7ef8e1bfc2",
+      "Rust_files": 829,
+      "receipt_sha256": "23d494be6f8fe43a7aec5016ae17e6eea833bad31097dbf00e3de1cbf9f20829",
+      "log_sha256": "0589b57346e17cda4068c1555f6fe9cac4a837199df3bd78561c16f115a30265",
+      "source_archive_proof_sha256": "ff214298c56e170e36ba15420c80f8ef451709d86789bbbc5e0ae2c0595a3ece"
+    },
+    {
+      "label": "symbolic-Mac-notdef-alias-Red-v1",
+      "head": "5f5a80abf6cd0ac728e611f45a0290d817771aeb",
+      "Rust_files": 829,
+      "receipt_sha256": "101a925b564be4a7d6bc6bc5323bde2bb3b658e5dd780a1b03788a5e35889587",
+      "log_sha256": "3e082f770c473bbe282942a0e44ae14a2d7c060ff6e91fb1a7c6b05780a6040a",
+      "source_archive_proof_sha256": "81011ba8f64f34eed7fd799f78254eb8d958ec1b42dbaba682d9389d1508caf5"
+    }
+  ],
+  "Green_control_tests": 9,
+  "byte_code_and_Unicode_property_cases": 32,
+  "parser_lib_pass": 1105,
+  "parser_lib_ignored": 27,
+  "source_archive_sha256": "cee05d01917a697589bb9ea31d3c43687d710eb850c9a51006055a47130063f7",
+  "base_qualified_manifest_sha256": "a6da0f28ce22c303c7800a6b56a797555a04d4ccf9971b1c0d66a42ca1bebfc0",
+  "base_all3261_files_rehashed": true,
+  "prior_original_gold_manifests": 90,
+  "prior_original_gold_file_checks": 94063,
+  "unique_prior_files_rehashed": 93285,
+  "NTA_original16files_rehashed": true,
+  "owned_original_gold_sets": 2,
+  "total_outcomes": 772,
+  "successful_outputs": 666,
+  "expected_rejections": 106,
+  "statuses_preserved": 772,
+  "RAW_exact_parent": 766,
+  "prior760_RAW_exact": true,
+  "Unicode_positive_control6_RAW_exact": true,
+  "changed_Mac_outputs": 6,
+  "unique_changed_DOCX_pairs": 1,
+  "all6_changed_Mac_outputs_RAW_identical_and_review_bound": true,
+  "browser_Mac_inspection_only_rows4_to2_and_nonempty_cells8_to4": true,
+  "owned_Mac_all4_source2x2_grids_restored": true,
+  "owned_Mac_all96_glyphs_and9_12pt_sizes_retained": true,
+  "source_font_outline_metric_name_rights_hint_tables_RAW_preserved": true,
+  "only_cmap_and_head_checksum_adjustment_changed": true,
+  "source_font_programs": [
+    {
+      "name": "AAAAAA+JadeOwnedBaseline800V1",
+      "original_subset_font_sha256": "a9e73e4d29a3e238576a9e021e374fa8a02f7964d761be78b07569f88bfd64a3",
+      "embedded_reencoded_font_sha256": "9d60b95b2fc2a425348f53863cdb408c44a0f40ba4f82d32ccf500fb15bd20aa",
+      "all_non_cmap_non_adjustment_bytes_RAW_preserved": true,
+      "unchanged_tables": [
+        "OS/2",
+        "glyf",
+        "hhea",
+        "hmtx",
+        "loca",
+        "maxp",
+        "name",
+        "post"
+      ],
+      "Unicode_A_maps_to_original_gid1": true
+    },
+    {
+      "name": "AAAAAA+JadeOwnedBaseline900V1",
+      "original_subset_font_sha256": "1a47be2da11aa5497a34cffbbf491ccacca17c31fa60fd694d81da37488b5187",
+      "embedded_reencoded_font_sha256": "2b192b9f7764a3e26c642e3bbc5bc163aca20c7491f0ceebfc86fb0e7a94bb25",
+      "all_non_cmap_non_adjustment_bytes_RAW_preserved": true,
+      "unchanged_tables": [
+        "OS/2",
+        "glyf",
+        "hhea",
+        "hmtx",
+        "loca",
+        "maxp",
+        "name",
+        "post"
+      ],
+      "Unicode_A_maps_to_original_gid1": true
+    }
+  ],
+  "all4_changed_page_PNGs_RAW_equal_individually_reviewed_Unicode_control": true,
+  "source_baseline_tolerance_pt": 0.05,
+  "source_baseline_tolerance_NOT_met_or_loosened": true,
+  "signed_baseline_error_range_pt": [
+    1.406,
+    2.506
+  ],
+  "prior_Mac_font_loss_and_NTA_first6of62_NOT_relabelled": true,
+  "known_owned_control_NOT_internet_or_unseen_holdout": true,
+  "separate_NTA_glyph_advance_background_changes_NOT_included": true,
+  "reviewed_runtime_proof_sha256": "419a393c7e89572a1beedd2c0c05cd15892d2d67a457d7a13b2647f2cf38b4e5",
+  "original_gold_gate_sha256": "2b2db418dece9321a08c334649170849a38c05a6ae2513d56686769fad9839fb",
+  "prototype_reviewed_proof_sha256": "dcf5fff4d9ba7148f92ee01b5b8b60a603e8bb5e9c3d80459b7bf152d9128f31",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "limitations": [
+    "Owned baseline errors+1.406..+2.506pt remain outside the original0.05pt tolerance.",
+    "Only one symbolic simple TrueType resource/descriptor at generation0, no Encoding, one Mac(1,0) format6 cmap and complete single-byte BMP ToUnicode are eligible.",
+    "PDF widths must match source hmtx within0.001/1000em; complex shaping, variations, color/bitmap and signed programs retain fallback.",
+    "Kanpo40/52,CPI26/107,Labour36/57 and qualified-parent NTA6/62 remain unchanged by RAW payload identity.",
+    "Microsoft Word rendering is unverified; visual evidence uses LibreOfficeDev26.8.0.0.alpha0 at2c87e51eeaa2b413ff4ae097b2705eea1995d8e5.",
+    "No public API, CLI, dependency or tracked PDF/font fixture added."
+  ],
+  "guide": "docs/verified_symbolic_mac_fonts.md"
+}
