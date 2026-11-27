@@ -11,6 +11,8 @@ mod allocation;
 
 /// Option を返す既存 extractor に、上限超過と検査済み境界を共有する解析ローカルの状態。
 pub(crate) struct DecodeBudget {
+    /// Wordへ書き出す場合に、通常の白い紙と同じ画像を省けるか。
+    pub(crate) omit_white_page_images: bool,
     /// 解析中の既存停止点で検査する、clone間で共有した停止要求。
     cancellation: Option<crate::ParseCancellation>,
     /// 実効バージョンがPDF 2.0以降かを抽出・診断へ共有する。
@@ -112,6 +114,7 @@ impl DecodeBudget {
     /// 呼び出し元の解析上限から空の予算を作る。
     pub(crate) fn new(limits: &ParseLimits) -> Self {
         Self {
+            omit_white_page_images: false,
             cancellation: None,
             pdf20: Cell::new(false),
             ccitt_repaired_rows: Cell::new(0),

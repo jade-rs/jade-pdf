@@ -105,7 +105,7 @@ fn newly_supported_print_settings<'a>(
 }
 
 /// Device色の既定置換・重複Resourceを未確認へ戻し、通常設定から色変換を推測しない。
-fn unmodified_device_spaces<'a>(
+pub(crate) fn unmodified_device_spaces<'a>(
     budget: &DecodeBudget,
     resolver: &mut ResourceResolver<'_, 'a>,
     resources: &'a [u8],

@@ -132,8 +132,9 @@ pub use model::{
     PdfVersion,
 };
 pub use parser::{
-    parse_pdf, parse_pdf_bytes, parse_pdf_bytes_with_limits, parse_pdf_bytes_with_options,
-    parse_pdf_with_limits, parse_pdf_with_options,
+    parse_pdf, parse_pdf_bytes, parse_pdf_bytes_for_word, parse_pdf_bytes_with_limits,
+    parse_pdf_bytes_with_options, parse_pdf_for_word, parse_pdf_with_limits,
+    parse_pdf_with_options,
 };
 pub use quality::{
     ImageReplacementReason, ParseOptions, QualityIssue, QualityReport, UnsupportedFontReason,

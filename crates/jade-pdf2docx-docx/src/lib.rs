@@ -15,8 +15,8 @@ use docx_rs::{
 };
 use jade_pdf2docx_parser::{
     ParseLimits, ParsedBounds, ParsedDocument, ParsedEmbeddedFont, ParsedGraphicElement,
-    ParsedImageElement, ParsedPage, ParsedTextElement, QualityReport, parse_pdf_bytes_with_options,
-    parse_pdf_with_options,
+    ParsedImageElement, ParsedPage, ParsedTextElement, QualityReport, parse_pdf_bytes_for_word,
+    parse_pdf_for_word, parse_pdf_with_options,
 };
 
 pub use jade_pdf2docx_ocr::{
@@ -390,7 +390,11 @@ fn convert_pdf_file_with_check(
     use conversion_control::Stage;
     check(Stage::Start)?;
     output::validate_distinct_paths(&request.input_pdf_path, &request.output_docx_path)?;
-    let mut parsed = parse_pdf_with_options(&request.input_pdf_path, options)?;
+    let mut parsed = if request.clean_output {
+        parse_pdf_for_word(&request.input_pdf_path, options)?
+    } else {
+        parse_pdf_with_options(&request.input_pdf_path, options)?
+    };
     let source_content_removed =
         request.clean_output && visible_source_content::retain(&mut parsed);
     word_page_fit::assess(&mut parsed, options.strict)?;
@@ -506,7 +510,7 @@ fn convert_pdf_bytes_with_check(
 ) -> Result<Vec<u8>, ConvertError> {
     use conversion_control::Stage;
     check(Stage::Start)?;
-    let mut parsed = parse_pdf_bytes_with_options(source_name.clone(), pdf_bytes, options)?;
+    let mut parsed = parse_pdf_bytes_for_word(source_name.clone(), pdf_bytes, options)?;
     let source_content_removed = visible_source_content::retain(&mut parsed);
     word_page_fit::assess(&mut parsed, options.strict)?;
     check(Stage::Parsed)?;
