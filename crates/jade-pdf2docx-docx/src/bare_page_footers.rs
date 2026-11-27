@@ -226,6 +226,7 @@ mod tests {
             let text = format!("Body{page}");
             pages.push(StructuredTextPage {
                 page,
+                column_rule_x: None,
                 lines: vec![StructuredTextLine {
                     top_y: 712.0,
                     left_x: 72.0,

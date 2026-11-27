@@ -40,12 +40,22 @@ fn source_with_columns(rows: usize, size: u16, codes: bool, columns: usize) -> (
             expected.push_str(text);
         }
     }
+    (pdf(&content, "612 792", "Helvetica"), expected)
+}
+
+/// 用紙サイズと標準fontを指定して、所有の内容を一ページPDFにする。
+fn pdf(content: &str, size: &str, font: &str) -> Vec<u8> {
     let objects = [
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".to_string(),
-        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_string(),
+        format!(
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {size}] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+        ),
+        format!(
+            "<< /Length {} >>\nstream\n{content}\nendstream",
+            content.len()
+        ),
+        format!("<< /Type /Font /Subtype /Type1 /BaseFont /{font} /Encoding /WinAnsiEncoding >>"),
     ];
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
@@ -61,7 +71,7 @@ fn source_with_columns(rows: usize, size: u16, codes: bool, columns: usize) -> (
     bytes.extend_from_slice(
         format!("trailer << /Size 6 /Root 1 0 R >>\nstartxref\n{xref}\n%%EOF\n").as_bytes(),
     );
-    (bytes, expected)
+    bytes
 }
 
 /// 公開byte APIの実際のWord本文XMLを取り出す。
@@ -110,6 +120,66 @@ fn inventory(text: &str) -> BTreeMap<char, usize> {
         *result.entry(c).or_default() += 1;
     }
     result
+}
+
+/// 見出し・末尾注記の間に、値を含む独立した二段を配置する。
+fn short_columns(rules: &str) -> Vec<u8> {
+    let mut content = format!("{rules} BT /F1 10 Tf 20 240 Td (Heading above both columns) Tj ET");
+    for (row, y) in [180, 168, 156, 144, 132, 120].into_iter().enumerate() {
+        for (x, value) in [
+            (20, format!("Left{row}")),
+            (100, format!("{row}11")),
+            (160, format!("Right{row}")),
+            (250, format!("{row}22")),
+        ] {
+            content.push_str(&format!(" BT /F1 10 Tf {x} {y} Td ({value}) Tj ET"));
+        }
+    }
+    content.push_str(" BT /F1 10 Tf 20 40 Td (Closing note across columns) Tj ET");
+    pdf(&content, "300 260", "Courier")
+}
+
+/// 部分的な縦罫線の両側を独立した実段にし、本文の読順と全幅行を保つ。
+#[test]
+fn partial_height_rule_preserves_the_two_column_reading_order() {
+    let xml = document(&short_columns("0.5 w 150 100 m 150 195 l S"));
+    let (tables, _, columns, text) = properties(&xml);
+    assert_eq!(tables, 0, "a standalone divider must not form a table");
+    assert!(columns, "the editable section must have two columns");
+    assert!(
+        xml.contains(r#"w:sep="1""#),
+        "the source divider must stay visible"
+    );
+    assert_eq!(xml.matches("<w:tab />").count(), 12);
+    for position in [1600, 1800] {
+        assert_eq!(
+            xml.matches(&format!(r#"w:pos="{position}""#)).count(),
+            6,
+            "values must stay at their source x coordinates"
+        );
+    }
+    let compact: String = text.chars().filter(|c| !c.is_whitespace()).collect();
+    let mut expected = String::from("Headingabovebothcolumns");
+    for (side, value) in [("Left", "11"), ("Right", "22")] {
+        for row in 0..6 {
+            expected.push_str(&format!("{side}{row}{row}{value}"));
+        }
+    }
+    expected.push_str("Closingnoteacrosscolumns");
+    assert_eq!(compact, expected);
+}
+
+/// 一行だけの縦線と横罫線付きの格子では、既存の編集可能な表を保つ。
+#[test]
+fn short_divider_or_table_rules_keep_the_existing_table() {
+    for rules in [
+        "",
+        "0.5 w 150 174 m 150 185 l S",
+        "0.5 w 150 100 m 150 195 l S 18 185 m 280 185 l S",
+    ] {
+        let (tables, rows, columns, _) = properties(&document(&short_columns(rules)));
+        assert_eq!((tables, rows, columns), (1, 6, false), "{rules}");
+    }
 }
 
 /// 原本に罫線のない独立した散文二列は、表を発明せず実際の二段組で保持する。

@@ -9,6 +9,13 @@ pub(super) fn cuts(
     let Some(first) = row.first() else {
         return Vec::new();
     };
+    if let Some(rule) = gutter.filter(|gutter| gutter.source_rule) {
+        return if rule.contains(first) {
+            vec![rule.x]
+        } else {
+            Vec::new()
+        };
+    }
     let avg_height = row
         .iter()
         .map(|text| (text.bounds.y1 - text.bounds.y0).abs().max(1.0))
@@ -41,7 +48,7 @@ pub(super) fn numeric_row(row: &[&ParsedTextElement]) -> bool {
 }
 
 /// 値の妥当性は推測せず、数字を含む短い非散文の表記だけを確認する。
-fn numeric_fragment(text: &str) -> bool {
+pub(super) fn numeric_fragment(text: &str) -> bool {
     text.len() <= 128
         && text.bytes().any(|c| c.is_ascii_digit())
         && text.chars().all(|c| {
