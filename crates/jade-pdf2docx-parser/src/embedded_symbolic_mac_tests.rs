@@ -5,6 +5,22 @@ use crate::text;
 #[path = "../../jade-pdf2docx-docx/src/layout_space/writer.rs"]
 mod owned_writer;
 
+/// 単一symbolic fontの所有関係が明示された最小PDF metadata。
+const SOURCE: &[u8] = b"1 0 obj << /Type /Font /Subtype /TrueType /BaseFont /ABCDEF+OwnedMac /FontDescriptor 2 0 R /ToUnicode 4 0 R /FirstChar 1 /LastChar 1 /Widths [1000] >> endobj\n2 0 obj << /Type /FontDescriptor /FontName /ABCDEF+OwnedMac /Flags 4 /FontFile2 3 0 R >> endobj";
+
+/// 単byte1をAにする、明示code space付きのToUnicode。
+const MAPPING: &[u8] =
+    b"1 begincodespacerange <00> <FF> endcodespacerange\n1 beginbfchar <01> <0041> endbfchar";
+
+/// 公開処理が使うfont collectorを、指定した独立fontとPDF metadataで呼ぶ。
+fn reuse(bytes: &[u8], source: &[u8], mapping: &[u8]) -> Vec<crate::ParsedEmbeddedFont> {
+    let cmap = text::parse_tounicode_body(&DecodeBudget::default(), mapping);
+    let budget = DecodeBudget::default();
+    let fonts = embedded_fonts::build(&budget, source, |_| Some(bytes.to_vec()), |_| cmap.clone());
+    budget.check().unwrap();
+    fonts
+}
+
 /// 所有する矩形をgid1へ移し、PDFの単byte1だけを対応させる。
 fn owned_mac_font() -> Vec<u8> {
     let mut bytes = owned_writer::encode("OwnedMac");
@@ -85,7 +101,7 @@ fn allowed_symbolic_mac_subset_retains_its_verified_source_glyph() {
     assert_eq!(&bytes[loca..loca + 6], &[0, 0, 0, 0, 0, 12]);
     let glyf = table_offset(&bytes, b"glyf");
     assert_eq!(&bytes[glyf..glyf + 2], &[0, 1]);
-    let source = b"1 0 obj << /Type /Font /Subtype /TrueType /BaseFont /ABCDEF+OwnedMac /FontDescriptor 2 0 R /ToUnicode 4 0 R /FirstChar 1 /LastChar 1 /Widths [1000] >> endobj\n2 0 obj << /Type /FontDescriptor /FontName /ABCDEF+OwnedMac /Flags 4 /FontFile2 3 0 R >> endobj";
+    let source = SOURCE;
     let cmap = text::parse_tounicode_body(
         &DecodeBudget::default(),
         b"1 begincodespacerange <00> <FF> endcodespacerange\n1 beginbfchar <01> <0041> endbfchar",
@@ -122,4 +138,13 @@ fn allowed_symbolic_mac_subset_retains_its_verified_source_glyph() {
         &restored[restored_glyf..restored_glyf + 24],
         &bytes[glyf..glyf + 24]
     );
+}
+
+/// f64が受理してもPDF realではない指数表記を、確認済みの字幅として扱わない。
+#[test]
+fn scientific_notation_is_not_a_verified_pdf_width() {
+    let source = String::from_utf8(SOURCE.to_vec())
+        .unwrap()
+        .replace("[1000]", "[1e3]");
+    assert!(reuse(&owned_mac_font(), source.as_bytes(), MAPPING).is_empty());
 }
