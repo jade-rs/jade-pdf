@@ -73,9 +73,9 @@ fn source_with_group(
     ])
 }
 
-/// 未確認のpage合成groupの色を、そのままWordのセル色へ断定しない。
+/// 不透明な既定RGBページGroupでは、原本どおり青い見出し二セルを保持する。
 #[test]
-fn page_transparency_group_does_not_confirm_cell_background() {
+fn default_rgb_page_transparency_group_keeps_confirmed_cell_background() {
     let input = source_with_group(
         ".2 .4 .6 rg 30 330 100 30 re f",
         "",
@@ -84,7 +84,28 @@ fn page_transparency_group_does_not_confirm_cell_background() {
         ["A0", "A1", "A2", "A3"],
         "/Group << /S /Transparency /CS /DeviceRGB >>",
     );
-    assert!(!xml(&input).contains("<w:shd"));
+    assert_eq!(xml(&input).matches("w:fill=\"336699\"").count(), 2);
+}
+
+/// 未対応の合成属性や色空間を持つページGroupでは、従来どおり色を断定しない。
+#[test]
+fn unsupported_page_transparency_group_does_not_confirm_cell_background() {
+    for group in [
+        "/Group << /S /Transparency /CS /DeviceRGB /K true >>",
+        "/Group << /S /Transparency /CS /DeviceRGB /I true >>",
+        "/Group << /S /Transparency /CS /DeviceCMYK >>",
+        "/Group << /S /Transparency >>",
+    ] {
+        let input = source_with_group(
+            ".2 .4 .6 rg 30 330 100 30 re f",
+            "",
+            "",
+            1.,
+            ["A0", "A1", "A2", "A3"],
+            group,
+        );
+        assert!(!xml(&input).contains("<w:shd"));
+    }
 }
 
 /// 未選択のfontや独自glyph programの幾何から、背景とセルの所有を推測しない。
