@@ -1,6 +1,6 @@
 # 原本の対角線をIRとWordセル罫線へ保存する
 
-官報の公開ガイドの四つの斜線は、元の空セルで編集可能なWord対角罫線として保持できるようになった。この追試で検証した範囲は、原本の方向・線幅を持つ中間表現とWordprocessingMLへの保存である。この環境のLibreOffice描画では斜線は表示されない。Microsoft Wordは未導入で実表示を確認していないため、原本の四つの斜線条件を合格へ変更しない。
+官報の公開ガイドの四つの斜線を、元の空セルに編集可能なWord対角罫線として保存する。Mac版WordのPDF出力でも、原本と同じページに同じ方向の斜線を確認した。先行検証で使ったLibreOfficeでは斜線が表示されなかった。
 
 ## 公開Rust APIと適用範囲
 
@@ -36,12 +36,20 @@ native・Chromium・WebKitの通常/strictの追加48結果は、セル文字・
 
 追加8入力では各6出力がRAW一致し、48出力を独立描画した8つのDOCXの8ページへ結び付けた。全ページを個別に確認し、全セル文字は描画にも揃った。官報2ページを合わせ、計10ページを確認した。対角罫線を持つ4つの自作正例と官報の四つの斜線は、この環境のLibreOffice描画では表示されない。
 
+## Mac版Wordでの確認
+
+2026年11月27日、Mac版Word 16.115.2で、変換したDOCXと本文XMLから四つの `w:tr2bl` 要素だけを外した対照を開いた。両方を「印刷に最適」でPDFへ書き出した。他のDOCX内ZIP部品はbyte単位で一致した。
+
+両出力は2ページで、用紙座標と抽出テキストが一致した。変換したDOCXにだけ、1ページ目に3本、2ページ目に1本、右上から左下への黒い直線が現れた。4本とも線幅はPDF原本と同じ0.48ptだった。原本とWord出力の端点の絶対差は最大で横1.20pt、縦0.84ptだった。
+
+入力は官報の公開ガイド。変換にはjade-pdf #85、#89〜#92を含むローカル統合ツリー `f41bde87c6f60b19f98ea75a1159c435ab6e6664` を使った。入力、対照、出力のSHA-256は検証記録に残す。[官報の公開ガイド](https://www.kanpo.go.jp/pdf/target_article.pdf)
+
 ## 原本評価と残る問題
 
-官報は原本ページごとの1,121/501文字、計1,622文字を編集・描画で保持する。52条件は40確認済み合格・9未達・3未確認のままとし、対角線がXMLにあることを表示の合格へ置き換えない。Wordでの実表示、LibreOfficeとの表示互換性、曲線の括弧、原本font metrics、厳密なfooter/heading anchorは残る。
+先行検証では官報の原本ページごとの1,121/501文字、計1,622文字を編集・描画で保持し、52条件のうち40合格・9未達・3未確認だった。今回のWord検証は4本の斜線を対象とした。LibreOfficeでの斜線表示、曲線の括弧、原本font metrics、厳密なfooter/heading anchorは残る。
 
 CPI各26/107、労働力調査各36/57、国税庁印紙税額一覧の選択30セルは、RAW一致で前段の評価を継承する。別資料の賞与税率表30条件と混同しない。CPIのgraph・文字切れ・原本12→Word16ページ、労働力調査のvector graph欠落・2→3ページ、印紙税表の印刷ページ番号35/36の欠落は未達である。元の暗号化された官報・印紙税PDFはbrowserで拒否し、native strictも既知の品質損失を拒否する。
 
 85個の既存原本・gold・初回・保留manifest、延べ77,183ファイルを再照合した。自作入力の二版のsource/gold manifest各10ファイルも保持する。外部PDF・font・logoと評価入力はtracked assetへ追加しない。kanpo-parser/kanpo-docxの原本構造に沿う考え方を[固定した参照](source_typography_and_table_opening.md#参照)として使い、custom licenseのコード・依存は取り込んでいない。
 
-hashと検証範囲は[`corpus/validation-source-cell-diagonals.json`](../corpus/validation-source-cell-diagonals.json)へ記録する。`component_qualified=true`はこのIR/OOXML保存の範囲だけであり、`whole_document_accepted=false`、`production_ready=false`を維持する。
+検証記録に、IRとOOXMLへの保存、Mac版Wordでの官報4本の斜線表示、文書全体の判定を記載した。[`corpus/validation-source-cell-diagonals.json`](../corpus/validation-source-cell-diagonals.json)

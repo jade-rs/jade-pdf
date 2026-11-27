@@ -1076,7 +1076,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     }
     blocks.sort_by(compare_structured_blocks);
     let adjacent_tables = adjacent_source_tables::select(
-        &blocks,
+        &mut blocks,
         parsed
             .pages
             .iter()
@@ -1789,32 +1789,38 @@ fn text_lines_by_page_from_pdf_text_elements(
     positioned_tables: &[PositionedTable],
 ) -> Vec<StructuredTextPage> {
     let space_family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
-    let page_numbers = parsed
-        .text_elements
+    let mut texts_by_page = BTreeMap::<usize, Vec<&ParsedTextElement>>::new();
+    for text in &parsed.text_elements {
+        texts_by_page.entry(text.page).or_default().push(text);
+    }
+    for page in positioned_tables
         .iter()
-        .map(|text| text.page)
-        .chain(positioned_tables.iter().map(|table| table.page))
+        .map(|table| table.page)
         .chain(parsed.image_elements.iter().map(|image| image.page))
-        .collect::<BTreeSet<_>>();
+    {
+        texts_by_page.entry(page).or_default();
+    }
 
-    page_numbers
+    texts_by_page
         .into_iter()
-        .filter_map(|page| {
-            let mut texts = parsed
-                .text_elements
-                .iter()
-                .filter(|text| {
-                    text.page == page
-                        && !text.text.trim().is_empty()
-                        && !positioned_tables
-                            .iter()
-                            .any(|table| text_element_is_in_table(parsed, text, table))
-                })
-                .collect::<Vec<_>>();
-            if texts.is_empty()
-                && !positioned_tables.iter().any(|table| table.page == page)
-                && !parsed.image_elements.iter().any(|image| image.page == page)
-            {
+        .filter_map(|(page, page_texts)| {
+            let has_tables = positioned_tables.iter().any(|table| table.page == page);
+            let has_images = parsed.image_elements.iter().any(|image| image.page == page);
+            let mut texts = Vec::new();
+            let mut spaces = Vec::new();
+            for text in page_texts {
+                if text.text.trim().is_empty() {
+                    if native_spacing::is_space(text) {
+                        spaces.push(text);
+                    }
+                } else if !positioned_tables
+                    .iter()
+                    .any(|table| text_element_is_in_table(parsed, text, table))
+                {
+                    texts.push(text);
+                }
+            }
+            if texts.is_empty() && !has_tables && !has_images {
                 return None;
             }
             texts.sort_by(|a, b| {
@@ -1827,7 +1833,8 @@ fn text_lines_by_page_from_pdf_text_elements(
             body_table_rules::remove_outer_frames(&mut page_graphics, positioned_tables);
             let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
             for text in texts {
-                if let Some(row) = rows.iter_mut().find(|row| {
+                // baseline の降順では、新しい行に達した後に前の行の許容範囲へ戻らない。
+                if let Some(row) = rows.last_mut().filter(|row| {
                     (native_baseline::line_y(row[0]) - native_baseline::line_y(text)).abs()
                         <= TEXT_ROW_Y_TOLERANCE_PT
                 }) {
@@ -1838,15 +1845,14 @@ fn text_lines_by_page_from_pdf_text_elements(
             }
             for row in &mut rows {
                 *row = native_spacing::with_interior_spaces(
-                    &parsed.text_elements,
+                    spaces.iter().copied(),
                     std::mem::take(row),
                 );
                 row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
             }
-            let gutter = (!positioned_tables.iter().any(|table| table.page == page)
-                && !parsed.image_elements.iter().any(|image| image.page == page))
-            .then(|| text_column_gutter::infer(&rows, page_width))
-            .flatten();
+            let gutter = (!has_tables && !has_images)
+                .then(|| text_column_gutter::infer(&rows, page_width))
+                .flatten();
             let cuts = rows
                 .iter()
                 .map(|row| text_row_segments::cuts(row, gutter))
@@ -1855,7 +1861,7 @@ fn text_lines_by_page_from_pdf_text_elements(
             for (row, changed) in rows.iter_mut().zip(changed) {
                 if changed {
                     *row = native_spacing::with_interior_spaces(
-                        &parsed.text_elements,
+                        spaces.iter().copied(),
                         std::mem::take(row),
                     );
                     row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
@@ -1881,15 +1887,13 @@ fn text_lines_by_page_from_pdf_text_elements(
                 })
                 .filter(|line| !is_pdf_page_number_line(parsed, page, line))
                 .collect::<Vec<_>>();
-            let lines = if positioned_tables.iter().any(|table| table.page == page) {
+            let lines = if has_tables {
                 lines
             } else {
                 order_text_lines_for_layout(parsed, page, lines)
             };
-            (!lines.is_empty()
-                || positioned_tables.iter().any(|table| table.page == page)
-                || parsed.image_elements.iter().any(|image| image.page == page))
-            .then_some(StructuredTextPage { page, lines })
+            (!lines.is_empty() || has_tables || has_images)
+                .then_some(StructuredTextPage { page, lines })
         })
         .collect()
 }
@@ -3084,6 +3088,8 @@ struct DocxCellBorders {
     size_eighths_pt: usize,
     /// 原本coverageを確認した上・左・下・右の個別線幅。未確認は代表幅を使う。
     source_side_sizes: [Option<usize>; 4],
+    /// 原本で確認した上・左・下・右の破線。
+    source_side_dashes: [bool; 4],
 }
 
 impl DocxCellBorders {
@@ -3103,6 +3109,7 @@ impl DocxCellBorders {
             diagonal_tr2bl: None,
             size_eighths_pt,
             source_side_sizes: [None; 4],
+            source_side_dashes: [false; 4],
         }
     }
 }
@@ -3612,11 +3619,17 @@ fn docx_table_from_model_with_row_height_and_nested(
                         })
                         .unwrap_or_default();
                     let has_nested_tables = !nested_tables.is_empty();
-                    let native_cell = parent
-                        .filter(|_| !has_nested_tables)
+                    let source_cell = parent
                         .and_then(|table| table.native_cells.get(row_index))
                         .and_then(|row| row.get(cell_index))
                         .and_then(Option::as_ref);
+                    let nested_paragraphs = match (source_cell, nested_tables.as_slice()) {
+                        (Some(cell), [child]) => {
+                            native_table_text::paragraphs_around_nested_table(cell, child)
+                        }
+                        _ => None,
+                    };
+                    let native_cell = source_cell.filter(|_| !has_nested_tables);
                     let text = cell_text_without_nested_tables(cell.text.as_str(), &nested_tables);
                     let mut run = text_run(text.as_str());
                     if let Some(font_name) = parent.and_then(|table| table.font_name.as_deref()) {
@@ -3674,10 +3687,20 @@ fn docx_table_from_model_with_row_height_and_nested(
                     if parent.is_some() && !has_native_paragraph {
                         paragraph = paragraph.line_spacing(LineSpacing::new().before(0).after(0));
                     }
-                    let mut table_cell = TableCell::new().add_paragraph(paragraph);
+                    let (mut table_cell, after_nested) = match nested_paragraphs {
+                        Some((before, after)) => (
+                            before
+                                .into_iter()
+                                .fold(TableCell::new(), TableCell::add_paragraph),
+                            Some(after),
+                        ),
+                        None => (TableCell::new().add_paragraph(paragraph), None),
+                    };
                     if parent.is_some() {
                         table_cell = table_cell.vertical_align(
-                            if parent.is_some_and(|table| !table.source_cell_runs.is_empty()) {
+                            if has_nested_tables
+                                || parent.is_some_and(|table| !table.source_cell_runs.is_empty())
+                            {
                                 VAlignType::Top
                             } else {
                                 VAlignType::Center
@@ -3707,7 +3730,11 @@ fn docx_table_from_model_with_row_height_and_nested(
                             nested_table.bounds.x0,
                         ));
                     }
-                    if has_nested_tables {
+                    if let Some(after) = after_nested {
+                        for paragraph in after {
+                            table_cell = table_cell.add_paragraph(paragraph);
+                        }
+                    } else if has_nested_tables {
                         table_cell = table_cell.add_paragraph(Paragraph::new());
                     }
                     if cell.grid_span > 1 {
@@ -3806,26 +3833,26 @@ fn cell_text_without_nested_tables(text: &str, nested_tables: &[&PositionedTable
 /// セル罫線フラグを DOCX の `w:tcBorders` へ変換する。
 fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
     let mut out = TableCellBorders::with_empty();
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Top,
-        borders.top,
-        borders.source_side_sizes[0].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Left,
-        borders.left,
-        borders.source_side_sizes[1].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Bottom,
-        borders.bottom,
-        borders.source_side_sizes[2].unwrap_or(borders.size_eighths_pt),
-    ));
-    out = out.set(table_cell_border_with_size(
-        TableCellBorderPosition::Right,
-        borders.right,
-        borders.source_side_sizes[3].unwrap_or(borders.size_eighths_pt),
-    ));
+    for (index, (position, present)) in [
+        (TableCellBorderPosition::Top, borders.top),
+        (TableCellBorderPosition::Left, borders.left),
+        (TableCellBorderPosition::Bottom, borders.bottom),
+        (TableCellBorderPosition::Right, borders.right),
+    ]
+    .into_iter()
+    .enumerate()
+    {
+        let border = table_cell_border_with_size(
+            position,
+            present,
+            borders.source_side_sizes[index].unwrap_or(borders.size_eighths_pt),
+        );
+        out = out.set(if present && borders.source_side_dashes[index] {
+            border.border_type(BorderType::Dashed)
+        } else {
+            border
+        });
+    }
     if let Some(size) = borders.diagonal_tl2br {
         out = out.set(
             TableCellBorder::new(TableCellBorderPosition::Tl2br)
@@ -3870,6 +3897,7 @@ fn table_border_size_for_pdf_rule(stroke_width: f32) -> usize {
 
 /// PDF から抽出した要素を位置付き `OcrTable` 群へ変換する。
 fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<PositionedTable> {
+    let table_text = native_table_text::TableTextSource::new(parsed);
     let pages = parsed
         .graphics
         .iter()
@@ -3881,7 +3909,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         .map(|page| {
             (
                 page,
-                infer_positioned_tables_from_pdf_graphics_page(parsed, page),
+                infer_positioned_tables_from_pdf_graphics_page(parsed, page, &table_text),
             )
         })
         .collect::<Vec<_>>();
@@ -4134,15 +4162,28 @@ pub fn infer_ocr_table_from_pdf_graphics(parsed: &ParsedDocument) -> Option<OcrT
 fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     let page_graphics = table_rule_topology::page(parsed, page);
-    if let Some(table) = separated_box_table::infer(parsed, page, &page_graphics) {
+    if let Some(table) =
+        separated_box_table::infer_with_table_text(parsed, page, &page_graphics, table_text)
+    {
         return vec![table];
     }
-    let loose_component_candidates =
-        positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 2.0);
-    let strict_component_candidates =
-        positioned_table_candidates_from_graphic_components(parsed, page, &page_graphics, 0.0);
+    let loose_component_candidates = positioned_table_candidates_from_graphic_components(
+        parsed,
+        page,
+        &page_graphics,
+        2.0,
+        table_text,
+    );
+    let strict_component_candidates = positioned_table_candidates_from_graphic_components(
+        parsed,
+        page,
+        &page_graphics,
+        0.0,
+        table_text,
+    );
     let loose_nested_component_tables =
         component_tables_with_nested_parents(&loose_component_candidates);
     let strict_nested_component_tables =
@@ -4166,8 +4207,12 @@ fn infer_positioned_tables_from_pdf_graphics_page(
         .collect::<Vec<_>>();
     let nested_component_tables = component_tables_with_nested_parents(&component_candidates);
     let has_nested_component_parent = nested_component_tables.len() > component_tables.len();
-    if let Some(page_table) = infer_positioned_table_from_graphics(parsed, page, &page_graphics)
-        && positioned_table_is_supported_graphic_table(&page_table)
+    if let Some(page_table) = infer_positioned_table_from_graphics_with_table_text(
+        parsed,
+        page,
+        &page_graphics,
+        table_text,
+    ) && positioned_table_is_supported_graphic_table(&page_table)
     {
         let page_cols = page_table.table.col_count().unwrap_or(0);
         let max_component_cols = component_tables
@@ -4199,11 +4244,13 @@ fn positioned_table_candidates_from_graphic_components(
     page: usize,
     page_graphics: &[ParsedGraphicElement],
     tolerance: f32,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     let mut candidates = Vec::new();
     for component in split_graphics_into_components_with_tolerance(page_graphics, tolerance) {
-        let Some(component_table) = infer_positioned_table_from_graphics(parsed, page, &component)
-        else {
+        let Some(component_table) = infer_positioned_table_from_graphics_with_table_text(
+            parsed, page, &component, table_text,
+        ) else {
             continue;
         };
         let component_table =
@@ -4214,6 +4261,7 @@ fn positioned_table_candidates_from_graphic_components(
             &component_table,
             &component,
             page_graphics,
+            table_text,
         );
         if edge_nested_tables.is_empty() {
             candidates.push(component_table);
@@ -4246,6 +4294,7 @@ fn infer_edge_aligned_nested_tables_from_component(
     component_table: &PositionedTable,
     component: &[ParsedGraphicElement],
     page_graphics: &[ParsedGraphicElement],
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     if component_table.table.row_count() > 3 || component_table.table.col_count().unwrap_or(0) > 4 {
         return Vec::new();
@@ -4295,9 +4344,14 @@ fn infer_edge_aligned_nested_tables_from_component(
             }
             let mut child_graphics = inner_component;
             add_clipped_component_edges(&mut child_graphics, component, inner_bounds);
-            infer_positioned_table_from_graphics(parsed, page, &child_graphics)
-                .filter(positioned_table_is_supported_graphic_table)
-                .map(|table| positioned_table_with_cell_underlines(parsed, table, page_graphics))
+            infer_positioned_table_from_graphics_with_table_text(
+                parsed,
+                page,
+                &child_graphics,
+                table_text,
+            )
+            .filter(positioned_table_is_supported_graphic_table)
+            .map(|table| positioned_table_with_cell_underlines(parsed, table, page_graphics))
         })
         .collect()
 }
@@ -4340,6 +4394,7 @@ fn add_clipped_component_edges(
             is_vertical_line(&bounds) && (bounds.x0 - x).abs() <= 1.5
         }) {
             child_graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: component.first().map(|graphic| graphic.page).unwrap_or(0),
                 bounds: ParsedBounds {
                     x0: x,
@@ -4357,6 +4412,7 @@ fn add_clipped_component_edges(
             is_horizontal_line(&bounds) && (bounds.y0 - y).abs() <= 1.5
         }) {
             child_graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: component.first().map(|graphic| graphic.page).unwrap_or(0),
                 bounds: ParsedBounds {
                     x0: child_bounds.x0,
@@ -4626,11 +4682,23 @@ fn bounds_overlap_with_tolerance(a: ParsedBounds, b: ParsedBounds, tolerance: f3
         && a.y1 + tolerance >= b.y0
 }
 
-/// 指定 graphics 群を位置付き `OcrTable` へ変換する。
+/// 個別の罫線表を検査するテストでも、実変換と同じ空白候補を使う。
+#[cfg(test)]
 fn infer_positioned_table_from_graphics(
     parsed: &ParsedDocument,
     page: usize,
     page_graphics: &[ParsedGraphicElement],
+) -> Option<PositionedTable> {
+    let table_text = native_table_text::TableTextSource::new(parsed);
+    infer_positioned_table_from_graphics_with_table_text(parsed, page, page_graphics, &table_text)
+}
+
+/// 指定 graphics 群を位置付き `OcrTable` へ変換する。
+fn infer_positioned_table_from_graphics_with_table_text(
+    parsed: &ParsedDocument,
+    page: usize,
+    page_graphics: &[ParsedGraphicElement],
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Option<PositionedTable> {
     let horizontal = page_graphics
         .iter()
@@ -4691,9 +4759,14 @@ fn infer_positioned_table_from_graphics(
     xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
     xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
     ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    let side_framed_top = side_framed_table_top(&xs, &ys, &vertical, &horizontal);
+    if let Some(top) = side_framed_top {
+        ys.push(top);
+    }
     let mut text_augmented_columns = false;
     if xs.len() >= 2
         && ys.len() >= 2
+        && side_framed_top.is_none()
         // 内側罫線が全行を分ける完成グリッドは、セル内の折返しアンカーで置き換えない。
         && !(xs.len() > 2 && has_grid_lines(&page_graphics, &xs, &ys))
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
@@ -4711,6 +4784,7 @@ fn infer_positioned_table_from_graphics(
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
+            && side_framed_top.is_none()
     {
         return None;
     }
@@ -4801,7 +4875,7 @@ fn infer_positioned_table_from_graphics(
         .clone()
         .unwrap_or_else(|| docx_table_model_from_ocr_table(&table));
     let mut native_cells = native_table_text::cells_with_geometry(
-        parsed,
+        table_text,
         &xs,
         &ys,
         &cell_source_texts,
@@ -4812,7 +4886,7 @@ fn infer_positioned_table_from_graphics(
     {
         geometry = None;
         native_cells = native_table_text::cells_with_geometry(
-            parsed,
+            table_text,
             &xs,
             &ys,
             &cell_source_texts,
@@ -5222,6 +5296,57 @@ fn augment_ys_from_partial_horizontals(
     augmented.sort();
     augmented.dedup();
     augmented
+}
+
+/// 左右の縦罫線が、幅の大半を覆う行罫線の上で同じ高さまで伸びる表の上端を返す。
+fn side_framed_table_top(
+    xs: &[i32],
+    ys: &[i32],
+    vertical: &[ParsedBounds],
+    horizontal: &[ParsedBounds],
+) -> Option<i32> {
+    if xs.len() < 3 || ys.len() < 3 {
+        return None;
+    }
+    let left = *xs.first()? as f32;
+    let right = *xs.last()? as f32;
+    let bottom = *ys.first()? as f32;
+    let last_row = *ys.last()? as f32;
+    let tolerance = TABLE_RULE_JOIN_TOLERANCE_PT as f32;
+    let side_ends = |x: f32| {
+        vertical.iter().filter_map(move |line| {
+            ((line.x0 - x).abs() <= 1.
+                && (line.y0 - bottom).abs() <= tolerance
+                && line.y1.is_finite()
+                && line.y1 > last_row + tolerance)
+                .then_some(line.y1)
+        })
+    };
+    let top = side_ends(left).find_map(|left_top| {
+        side_ends(right)
+            .find(|right_top| (left_top - right_top).abs() <= 1.)
+            .map(|right_top| left_top.min(right_top))
+    })?;
+
+    let full_width = |y: f32| {
+        horizontal.iter().any(|line| {
+            (line.y0 - y).abs() <= 1.
+                && (line.x0 - left).abs() <= tolerance
+                && (line.x1 - right).abs() <= tolerance
+        })
+    };
+    if !full_width(bottom) || full_width(last_row) {
+        return None;
+    }
+    let rows_are_ruled = ys[1..].iter().all(|&y| {
+        horizontal.iter().any(|line| {
+            (line.y0 - y as f32).abs() <= 1.
+                && line.x0 >= left - tolerance
+                && (line.x1 - right).abs() <= tolerance
+                && line.x1 - line.x0 >= (right - left) * 0.8
+        })
+    });
+    rows_are_ruled.then_some(top.round() as i32)
 }
 
 /// 部分的な縦罫線を column 境界候補へ補完する。

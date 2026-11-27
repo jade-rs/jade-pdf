@@ -19,6 +19,7 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
             (x0, x1, y1, y1),
         ] {
             parsed.graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds { x0, x1, y0, y1 },
                 stroke_width: 0.5,
@@ -39,6 +40,7 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
             },
         ] {
             parsed.graphics.push(ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds,
                 stroke_width: 0.5,
@@ -164,6 +166,7 @@ fn missing_cell_proof_keeps_legacy_height_allowance() {
 fn ambiguous_physical_rule_centers_keep_legacy_height_allowance() {
     let mut parsed = source_grid_selection_tests::source();
     parsed.graphics.push(ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: 0.,

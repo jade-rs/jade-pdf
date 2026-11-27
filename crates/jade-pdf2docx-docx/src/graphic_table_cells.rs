@@ -19,6 +19,7 @@ pub(super) fn model(
         return None;
     }
     let size = table_border_size_for_pdf_rule(table_rule_stroke_width(graphics, xs, ys));
+    let has_dashes = graphics.iter().any(|graphic| graphic.dashed);
     let mut needed = false;
     let mut rows = Vec::with_capacity(cells.len());
     for (ri, row) in cells.iter().enumerate() {
@@ -69,9 +70,23 @@ pub(super) fn model(
                 right: has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top),
                 size_eighths_pt: size,
                 source_side_sizes: [None; 4],
+                source_side_dashes: if has_dashes {
+                    [
+                        dashed_edge(graphics, false, top, xs[col], xs[col + span]),
+                        dashed_edge(graphics, true, xs[col], bottom, top),
+                        dashed_edge(graphics, false, bottom, xs[col], xs[col + span]),
+                        dashed_edge(graphics, true, xs[col + span], bottom, top),
+                    ]
+                } else {
+                    [false; 4]
+                },
             };
-            needed |=
-                span > 1 || !borders.top || !borders.bottom || !borders.left || !borders.right;
+            needed |= span > 1
+                || !borders.top
+                || !borders.bottom
+                || !borders.left
+                || !borders.right
+                || borders.source_side_dashes.iter().any(|dashed| *dashed);
             output.push(DocxTableCellModel {
                 text,
                 underlined,
@@ -110,10 +125,7 @@ pub(super) fn model(
             let owner = if let Some((root, cell)) = owner {
                 let text = std::mem::take(&mut rows[ri][ci].text);
                 let underlined = rows[ri][ci].underlined;
-                let bottom = rows[ri][ci]
-                    .borders
-                    .expect("source borders assigned")
-                    .bottom;
+                let continuation_borders = rows[ri][ci].borders.expect("source borders assigned");
                 rows[ri][ci].vertical_merge = Some(DocxVerticalMerge::Continue);
                 let restart = &mut rows[root][cell];
                 if !text.is_empty() {
@@ -124,11 +136,11 @@ pub(super) fn model(
                 }
                 restart.underlined |= underlined;
                 restart.vertical_merge = Some(DocxVerticalMerge::Restart);
-                restart
-                    .borders
-                    .as_mut()
-                    .expect("source borders assigned")
-                    .bottom = bottom;
+                let borders = restart.borders.as_mut().expect("source borders assigned");
+                borders.bottom = continuation_borders.bottom;
+                borders.source_side_dashes[1] &= continuation_borders.source_side_dashes[1];
+                borders.source_side_dashes[2] = continuation_borders.source_side_dashes[2];
+                borders.source_side_dashes[3] &= continuation_borders.source_side_dashes[3];
                 needed = true;
                 (root, cell)
             } else {
@@ -140,6 +152,35 @@ pub(super) fn model(
         previous = current;
     }
     needed.then_some(DocxTableModel { rows })
+}
+
+/// 全辺を覆う破線があり、同じ辺の内部に実線が重ならない場合だけ破線にする。
+fn dashed_edge(
+    graphics: &[ParsedGraphicElement],
+    vertical: bool,
+    fixed: i32,
+    start: i32,
+    end: i32,
+) -> bool {
+    let mut covered = false;
+    for graphic in graphics {
+        let b = normalized_bounds(graphic.bounds);
+        let (axis, fixed_at, from, to) = if vertical {
+            (is_vertical_line(&b), b.x0, b.y0, b.y1)
+        } else {
+            (is_horizontal_line(&b), b.y0, b.x0, b.x1)
+        };
+        let (from, to) = (from.round() as i32, to.round() as i32);
+        if !axis || (fixed_at.round() as i32).abs_diff(fixed) > 1 || from >= end || to <= start {
+            continue;
+        }
+        if !graphic.dashed {
+            return false;
+        }
+        covered |= from <= start.saturating_add(TABLE_RULE_JOIN_TOLERANCE_PT)
+            && to >= end.saturating_sub(TABLE_RULE_JOIN_TOLERANCE_PT);
+    }
+    covered
 }
 
 /// 結合後の辺に部分罫線を隠さないよう、元の各小区間の有無が同じことを確認する。

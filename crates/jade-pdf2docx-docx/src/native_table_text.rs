@@ -1,6 +1,47 @@
 //! 原本gridへ割り当てた本文を、セルごとの表示行とstyle付き段落へ戻す。
 use super::*;
 
+#[cfg(test)]
+thread_local! {
+    /// 罫線表を比較する際に、文書全体の空白font名を選んだ回数。
+    static SPACE_FAMILY_SELECTIONS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// 同じ文書の罫線表候補で、空白候補と選択済みの空白用フォント名を共有する。
+pub(super) struct TableTextSource<'a> {
+    /// セルの配置と書式を取り出す原本。
+    parsed: &'a ParsedDocument,
+    /// 描画順を維持したページごとの空白候補。
+    spaces: native_spacing::PageSpaces<'a>,
+    /// セル復元が必要になった時点で選ぶ、文書全体で衝突しないフォント名。
+    space_family: std::cell::OnceCell<String>,
+}
+
+impl<'a> TableTextSource<'a> {
+    /// 罫線候補を含む原本の空白を、ページごとに一度だけ索引化する。
+    pub(super) fn new(parsed: &'a ParsedDocument) -> Self {
+        let spaces = if parsed.graphics.is_empty() {
+            native_spacing::PageSpaces::default()
+        } else {
+            native_spacing::PageSpaces::new(&parsed.text_elements)
+        };
+        Self {
+            parsed,
+            spaces,
+            space_family: std::cell::OnceCell::new(),
+        }
+    }
+
+    /// 原本のフォント名と照合し、すべての表候補に同じ空白用フォント名を返す。
+    fn space_family(&self) -> &str {
+        self.space_family.get_or_init(|| {
+            #[cfg(test)]
+            SPACE_FAMILY_SELECTIONS.with(|count| count.set(count.get() + 1));
+            layout_space::family(&self.parsed.embedded_fonts, &self.parsed.text_elements)
+        })
+    }
+}
+
 /// 結合後の一セルについて、原本の原点と表示行を保持する。
 #[derive(Debug, Clone, PartialEq)]
 pub(super) struct Cell {
@@ -26,6 +67,57 @@ pub(super) struct Cell {
     source_tabs: Option<Vec<Option<usize>>>,
 }
 
+/// 子表の上下で位置を確認した親セル本文を分ける。
+/// 子表と重なる文字は、子表の本文とすべて照合できた場合だけ子表へ委譲する。
+pub(super) fn paragraphs_around_nested_table(
+    cell: &Cell,
+    child: &PositionedTable,
+) -> Option<(Vec<Paragraph>, Vec<Paragraph>)> {
+    let child_bounds = normalized_bounds(child.bounds);
+    let mut above = Vec::new();
+    let mut inside = String::new();
+    let mut below = Vec::new();
+    for line in &cell.lines {
+        let line_bottom = line.top_y - structured_line_max_font_size(line);
+        if line_bottom >= child_bounds.y1 - 1.0 {
+            above.push(line);
+        } else if line.top_y <= child_bounds.y0 + 1.0 {
+            below.push(line);
+        } else if line.left_x >= child_bounds.x0 - 1.0
+            && line.right_x <= child_bounds.x1 + 1.0
+            && line.top_y <= child_bounds.y1 + 1.0
+            && line_bottom >= child_bounds.y0 - 1.0
+        {
+            inside.push_str(&line.text);
+        } else {
+            return None;
+        }
+    }
+    if above.is_empty() || below.is_empty() {
+        return None;
+    }
+    let child_text: String = child
+        .table
+        .rows
+        .iter()
+        .flatten()
+        .map(String::as_str)
+        .collect();
+    if characters(&inside) != characters(&child_text) {
+        return None;
+    }
+    let paragraphs = |lines: Vec<&StructuredTextLine>| {
+        lines
+            .into_iter()
+            .map(|line| {
+                paragraph_from_structured_line(line, cell.left, None, None)
+                    .line_spacing(LineSpacing::new().before(0).after(0))
+            })
+            .collect()
+    };
+    Some((paragraphs(above), paragraphs(below)))
+}
+
 /// 従来の整数gridを用いるprivate結合回帰の入口を保持する。
 #[cfg(test)]
 pub(super) fn cells(
@@ -35,19 +127,20 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false, None)
+    let source = TableTextSource::new(parsed);
+    cells_with_geometry(&source, xs, ys, texts, model, None)
 }
 
 /// セル所有は既存整数gridで固定し、確認済み原本境界だけを行内配置へ渡す。
 pub(super) fn cells_with_geometry(
-    parsed: &ParsedDocument,
+    source: &TableTextSource<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
     geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false, geometry)
+    cells_impl(source, xs, ys, texts, model, GridKind::Ruled(geometry))
 }
 
 /// 全非空セルの本文とfontを確認し、未確認の代替字幅を原本の狭い寸法へ押し込まない。
@@ -101,26 +194,38 @@ fn compatible_ascii_metrics(
 
 /// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
 pub(super) fn boxed_cells(
-    parsed: &ParsedDocument,
+    source: &TableTextSource<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, true, None)
+    cells_impl(source, xs, ys, texts, model, GridKind::ClosedBoxes)
+}
+
+/// 原本の枠の種類と、罫線gridでのみ確認できる端数座標。
+enum GridKind<'a> {
+    /// 共通の罫線を持つgrid。計測できた場合は端数座標を用いる。
+    Ruled(Option<&'a fractional_table_rules::Grid>),
+    /// 独立した閉じた枠の反復。
+    ClosedBoxes,
 }
 
 /// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
 fn cells_impl(
-    parsed: &ParsedDocument,
+    source: &TableTextSource<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
-    closed_boxes: bool,
-    geometry: Option<&fractional_table_rules::Grid>,
+    grid: GridKind<'_>,
 ) -> Vec<Vec<Option<Cell>>> {
-    let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
+    let (closed_boxes, geometry) = match grid {
+        GridKind::Ruled(geometry) => (false, geometry),
+        GridKind::ClosedBoxes => (true, None),
+    };
+    let parsed = source.parsed;
+    let family = source.space_family();
     let page = texts
         .iter()
         .flatten()
@@ -252,13 +357,16 @@ fn cells_impl(
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
-                            let mut row =
-                                native_spacing::with_interior_spaces(&parsed.text_elements, row);
+                            let candidates = source.spaces.for_page(row.first()?.page);
+                            let mut row = native_spacing::with_interior_spaces(
+                                candidates.iter().copied(),
+                                row,
+                            );
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
                             let mut line =
                                 source_line(row.clone(), &text_graphics, *xs.last()? as f32)?;
                             line.alignment = ParagraphAlignment::Left;
-                            mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, &family);
+                            mark_embedded_fonts_in_line(&mut line, &parsed.embedded_fonts, family);
                             if single_physical_line && !closed_boxes {
                                 source_tabs = source_cell_tab_stops::positions(
                                     &row,
@@ -637,6 +745,17 @@ pub(super) fn single_line_horizontal_indent(cell: &Cell) -> Option<i32> {
 #[cfg(test)]
 #[path = "native_table_merge_tests.rs"]
 mod merged_tests;
+
+/// 同じ原本の全体・部分候補で共通の空白font名を選び直さない。
+#[cfg(test)]
+#[test]
+fn table_inference_selects_the_space_family_once() {
+    let parsed = source_grid_selection_tests::source();
+    SPACE_FAMILY_SELECTIONS.with(|count| count.set(0));
+    let tables = infer_positioned_tables_from_pdf_graphics(&parsed);
+    assert_eq!(tables.len(), 1);
+    assert_eq!(SPACE_FAMILY_SELECTIONS.with(std::cell::Cell::get), 1);
+}
 
 #[path = "native_table_logical_rows.rs"]
 mod logical_rows;

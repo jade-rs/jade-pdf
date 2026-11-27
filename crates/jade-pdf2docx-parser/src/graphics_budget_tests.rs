@@ -88,10 +88,30 @@ fn graphics_restore_stroke_width() {
     assert_eq!(result[0].stroke_width, 2.0);
 }
 
+/// dash配列はq/Qで復元し、同じ位置の実線との結合時は実線を優先する。
+#[test]
+fn graphics_preserve_verified_dash_gaps_and_restore_state() {
+    let (_, rules) = extract(
+        4096,
+        b"[2 2] 0 d 0 0 m 20 0 l S q [] 0 d 0 1 m 20 1 l S Q
+          0 2 m 20 2 l S [3 0] 0 d 0 3 m 20 3 l S
+          [3] 0 d 0 4 m 20 4 l S [1 -2] 0 d 0 5 m 20 5 l S",
+    );
+    assert_eq!(
+        rules.iter().map(|line| line.dashed).collect::<Vec<_>>(),
+        [true, false, true, false, true, false]
+    );
+    let (_, rules) = extract(4096, b"[2 2] 0 d 0 0 m 20 0 l S [] 0 d 5 0 m 10 0 l S");
+    let merged = merge_axis_aligned_segments(rules);
+    assert_eq!(merged.len(), 1);
+    assert!(!merged[0].dashed);
+}
+
 /// 区間端がi32上限へ丸められても隣接判定はoverflowしない。
 #[test]
 fn graphics_merge_handles_extreme_endpoints() {
     let line = ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: 0.0,
@@ -118,6 +138,7 @@ fn zero_axis_signs_do_not_fragment_width_groups() {
     ]
     .into_iter()
     .map(|(y, width, start, end)| ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: start,
@@ -227,6 +248,7 @@ proptest! {
     #[test]
     fn graphics_merge_preserves_physical_coverage_and_widths(intervals in prop::collection::vec((0i32..32, 1i32..8, 1u8..5), 1..40)) {
         let lines: Vec<_> = intervals.iter().map(|&(start, length, width)| ParsedGraphicElement {
+            dashed: false,
             page: 2,
             bounds: ParsedBounds { x0: start as f32, y0: 3.0, x1: (start + length) as f32, y1: 3.0 },
             stroke_width: f32::from(width),

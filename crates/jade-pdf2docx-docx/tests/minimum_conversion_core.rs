@@ -536,6 +536,65 @@ fn byte_conversion_infers_table_when_outer_border_is_missing() {
     let _ = fs::remove_file(output_docx);
 }
 
+/// 上罫線がなくても、側枠内の先頭行を編集可能な表に残す。
+/// 上罫線がなく、左端のセルが縦結合する表の先頭行も編集可能なセルに残す。
+#[test]
+fn byte_conversion_keeps_the_top_row_in_a_side_framed_table() {
+    let content = b"
+        0.36 w
+        83 359 m 83 549 l S 115 359 m 115 549 l S 411 359 m 411 549 l S
+        83 359 m 411 359 l S
+        115 377 m 411 377 l S 115 421 m 411 421 l S 115 439 m 411 439 l S
+        115 482 m 411 482 l S 115 500 m 411 500 l S
+        BT /F1 10 Tf 1 0 0 1 89 453 Tm (Group) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 525 Tm (Top label) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 525 Tm (Top value) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 487 Tm (Label B) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 487 Tm (Value B) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 455 Tm (Label C) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 455 Tm (Value C) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 425 Tm (Label D) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 425 Tm (Value D) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 396 Tm (Label E) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 396 Tm (Value E) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 364 Tm (Label F) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 364 Tm (Value F) Tj ET
+    ";
+    let pdf_bytes = flate_pdf_with_page_contents_base_fonts_and_page_sizes(
+        &[content],
+        &[("F1", "Helvetica")],
+        &[(612, 792)],
+    );
+    let docx_bytes = convert_minimum_pdf_bytes_to_docx_bytes("side-framed-table.pdf", &pdf_bytes)
+        .expect("byte conversion must succeed");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx_bytes)).unwrap();
+    let mut xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    let table_xml = xml
+        .split_once("<w:tbl>")
+        .expect("expected an editable table")
+        .1
+        .split_once("</w:tbl>")
+        .unwrap()
+        .0;
+    let mut rows = table_xml.split("<w:tr>").skip(1);
+    let first_row = rows.next().expect("expected a top row");
+    let cells: Vec<_> = first_row.split("<w:tc>").skip(1).collect();
+    assert_eq!(cells.len(), 2, "{first_row}");
+    assert!(
+        cells[0].contains(r#"<w:vMerge w:val="restart""#),
+        "{first_row}"
+    );
+    assert!(cells[1].contains("Top label"), "{first_row}");
+    assert!(cells[1].contains("Top value"), "{first_row}");
+    assert!(cells[1].contains(r#"<w:top w:val="nil""#), "{first_row}");
+    assert_eq!(rows.count(), 5);
+}
+
 #[test]
 fn byte_conversion_infers_table_from_nearly_axis_aligned_thin_rules() {
     let content = [
@@ -2561,6 +2620,7 @@ fn inferred_table_exposes_spans_from_missing_graphic_rules() {
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2614,6 +2674,7 @@ fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2668,6 +2729,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2678,6 +2740,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                 stroke_width: 0.5,
             },
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2752,12 +2815,54 @@ fn byte_conversion_preserves_nested_tables_inside_outer_cells() {
         doc_xml.contains(">Right note</w:t>") && doc_xml.contains(">R1</w:t>"),
         "right inner table text must be preserved inside the outer right cell: {doc_xml}"
     );
+    for caption in [">Left note</w:t>", ">Right note</w:t>"] {
+        let outer_cell = doc_xml
+            .split("<w:tc>")
+            .find(|cell| cell.contains(caption))
+            .expect("outer cell containing the caption");
+        let cell_properties = outer_cell.split("</w:tcPr>").next().unwrap();
+        assert!(
+            cell_properties.contains("<w:vAlign w:val=\"top\""),
+            "the outer cell containing {caption} must be top-aligned: {cell_properties}"
+        );
+    }
     assert!(
         !doc_xml.contains("</w:tbl></w:tc>"),
         "Word repairs DOCX cells that end immediately after a nested table; emit a trailing paragraph after nested tables: {doc_xml}"
     );
 
     let _ = fs::remove_file(output_docx);
+}
+
+/// 子表の上と下の本文を、そのセル内で原本と同じ順序に保つ。
+#[test]
+fn byte_conversion_orders_outer_cell_text_around_a_nested_table() {
+    let content = b"0 180 m 280 180 l S 0 100 m 280 100 l S 0 0 m 280 0 l S
+        0 0 m 0 180 l S 140 0 m 140 180 l S 280 0 m 280 180 l S
+        BT /F1 10 Tf 1 0 0 1 52 150 Tm (Before) Tj ET
+        BT /F1 10 Tf 1 0 0 1 192 150 Tm (After) Tj ET
+        BT /F1 10 Tf 1 0 0 1 12 84 Tm (Left note) Tj ET
+        BT /F1 10 Tf 1 0 0 1 152 84 Tm (Right note) Tj ET
+        10 74 m 130 74 l S 10 52 m 130 52 l S 10 30 m 130 30 l S
+        10 30 m 10 74 l S 70 30 m 70 74 l S 130 30 m 130 74 l S
+        BT /F1 10 Tf 1 0 0 1 22 60 Tm (L1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 82 60 Tm (L2) Tj ET
+        BT /F1 10 Tf 1 0 0 1 12 12 Tm (Below) Tj ET
+        150 74 m 270 74 l S 150 52 m 270 52 l S 150 30 m 270 30 l S
+        150 30 m 150 74 l S 210 30 m 210 74 l S 270 30 m 270 74 l S
+        BT /F1 10 Tf 1 0 0 1 162 60 Tm (R1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 222 60 Tm (R2) Tj ET";
+    let pdf = flate_pdf_with_page_contents(&[content]);
+    let docx = convert_minimum_pdf_bytes_to_docx_bytes("nested-order.pdf", &pdf).unwrap();
+    let output = temp_file_path("minimum_conversion_nested_order", "docx");
+    fs::write(&output, docx).unwrap();
+    let xml = read_document_xml(&output);
+    let _ = fs::remove_file(output);
+    assert_eq!(xml.matches("L1</w:t>").count(), 1, "{xml}");
+    let above = xml.find("Left note").expect("caption");
+    let table = xml.find(">L1</w:t>").expect("nested table content");
+    let below = xml.find(">Below</w:t>").expect("paragraph below the table");
+    assert!(above < table && table < below, "{xml}");
 }
 
 /// 装飾線がある長文ページも、列位置の反復だけで巨大な表にしない。
@@ -2814,6 +2919,7 @@ fn inferred_table_exposes_rowspans_from_missing_horizontal_rules() {
         graphics: vec![
             horizontal(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -3713,6 +3819,7 @@ fn flate_pdf_with_page_contents_base_fonts_page_sizes_rotations_and_crop_boxes(
 
 fn horizontal(y: f32) -> ParsedGraphicElement {
     ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: 0.0,
@@ -3726,6 +3833,7 @@ fn horizontal(y: f32) -> ParsedGraphicElement {
 
 fn vertical(x: f32) -> ParsedGraphicElement {
     ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: x,
