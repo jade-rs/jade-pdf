@@ -13,11 +13,12 @@ pub(super) struct Cell {
 /// セルの文字・書式を照合し、行全体ではなくそのセルの元の上端を保持する。
 pub(super) fn cell(
     parsed: &ParsedDocument,
+    page_graphics: &[ParsedGraphicElement],
     texts: &[&ParsedTextElement],
     expected: &str,
     row_top: f32,
 ) -> Option<Cell> {
-    let runs = runs(parsed, texts, expected)?;
+    let runs = runs(parsed, page_graphics, texts, expected)?;
     let top = texts.iter().try_fold(f32::NEG_INFINITY, |top, text| {
         text.bounds
             .y1
@@ -35,6 +36,7 @@ pub(super) fn cell(
 /// 新しいコード説明表では原本の字間から本文を組み、同じrunと上端をセルへ渡す。
 pub(super) fn source_cell(
     parsed: &ParsedDocument,
+    page_graphics: &[ParsedGraphicElement],
     texts: Vec<&ParsedTextElement>,
     row_top: f32,
 ) -> Option<(String, Cell)> {
@@ -66,7 +68,7 @@ pub(super) fn source_cell(
             texts,
             split_from_row: false,
         },
-        &table_rule_topology::page(parsed, page),
+        page_graphics,
         width,
     )?;
     let before_twips = u32::try_from(pdf_points_to_twips((row_top - line.top_y).max(0.0))?).ok()?;
@@ -88,8 +90,9 @@ pub(super) fn cell_paragraph(cell: &Cell) -> Option<Paragraph> {
 }
 
 /// 元セルと区切り空白まで一致する場合だけ、色・font・サイズを持つrunを返す。
-pub(super) fn runs(
+fn runs(
     parsed: &ParsedDocument,
+    page_graphics: &[ParsedGraphicElement],
     texts: &[&ParsedTextElement],
     expected: &str,
 ) -> Option<Vec<StructuredTextRun>> {
@@ -106,7 +109,7 @@ pub(super) fn runs(
         parsed,
         texts.iter().copied(),
         expected,
-        &table_rule_topology::page(parsed, texts.first()?.page),
+        page_graphics,
         &offsets,
     );
     (!runs.is_empty()).then_some(runs)
@@ -178,12 +181,15 @@ mod tests {
     fn source_run_mapping_requires_exact_cell_text_and_spaces() {
         let parsed = parsed();
         let texts = parsed.text_elements.iter().collect::<Vec<_>>();
-        assert!(runs(&parsed, &texts, "Alpha Beta").is_some());
+        assert!(runs(&parsed, &[], &texts, "Alpha Beta").is_some());
         for expected in ["AlphaBeta", "Beta Alpha", "Alpha", "Alpha  Beta", ""] {
-            assert!(runs(&parsed, &texts, expected).is_none(), "{expected:?}");
+            assert!(
+                runs(&parsed, &[], &texts, expected).is_none(),
+                "{expected:?}"
+            );
         }
-        assert_eq!(runs(&parsed, &[], ""), Some(Vec::new()));
-        assert!(runs(&parsed, &[], "Alpha").is_none());
+        assert_eq!(runs(&parsed, &[], &[], ""), Some(Vec::new()));
+        assert!(runs(&parsed, &[], &[], "Alpha").is_none());
     }
 
     /// 空・未確認のem高をWordの既定値に置き換えず、書式段落への変換を拒否する。
@@ -205,5 +211,49 @@ mod tests {
             style: Default::default(),
         };
         assert!(paragraph(&[run], 0).is_some());
+    }
+
+    /// 同一座標に本文がある二ページでも、原本の下線を別ページのセルへ渡さない。
+    #[test]
+    fn inferred_cells_only_receive_underlines_on_their_own_page() {
+        let mut parsed = parsed();
+        let prototype = parsed.text_elements[0].clone();
+        parsed.page_count = 2;
+        parsed.text_elements.clear();
+        parsed.graphics.push(ParsedGraphicElement {
+            page: 1,
+            dashed: false,
+            bounds: ParsedBounds {
+                x0: 20.,
+                x1: 45.,
+                y0: 698.,
+                y1: 698.,
+            },
+            stroke_width: 0.5,
+        });
+        for page in 0..2 {
+            for row in 0..3 {
+                for column in 0..2 {
+                    let mut text = prototype.clone();
+                    text.page = page;
+                    let x = 20. + column as f32 * 90.;
+                    let y = 700. - row as f32 * 20.;
+                    text.baseline_y = Some(y);
+                    text.bounds = ParsedBounds {
+                        x0: x,
+                        x1: x + 25.,
+                        y0: y,
+                        y1: y + 10.,
+                    };
+                    text.text = format!("R{row}C{column}");
+                    parsed.text_elements.push(text);
+                }
+            }
+            let table = infer_positioned_table_from_text_grid_page(&parsed, page, true).unwrap();
+            let cell = &table.source_cell_runs[0][0];
+            assert_eq!(cell.runs[0].text, "R0C0");
+            assert_eq!(cell.runs[0].style.underlined, page == 1);
+            assert!(!table.source_cell_runs[0][1].runs[0].style.underlined);
+        }
     }
 }
