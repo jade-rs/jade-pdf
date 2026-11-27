@@ -6,7 +6,12 @@ use super::*;
 fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
     let mut parsed = source_grid_selection_tests::source();
     parsed.graphics.clear();
-    for (x0, x1, y0, y1) in [(0., 400., 0., 80.), (10., 390., 10., 70.)] {
+    for (xs, ys) in [
+        ([0., 400., 800.], [0., 80., 160.]),
+        ([10., 200., 390.], [90., 120., 150.]),
+    ] {
+        let [x0, _, x1] = xs;
+        let [y0, _, y1] = ys;
         for (x0, x1, y0, y1) in [
             (x0, x0, y0, y1),
             (x1, x1, y0, y1),
@@ -19,33 +24,55 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
                 stroke_width: 0.5,
             });
         }
+        for bounds in [
+            ParsedBounds {
+                x0: xs[1],
+                x1: xs[1],
+                y0,
+                y1,
+            },
+            ParsedBounds {
+                x0,
+                x1,
+                y0: ys[1],
+                y1: ys[1],
+            },
+        ] {
+            parsed.graphics.push(ParsedGraphicElement {
+                page: 0,
+                bounds,
+                stroke_width: 0.5,
+            });
+        }
     }
-    parsed.graphics.push(ParsedGraphicElement {
-        page: 0,
-        bounds: ParsedBounds {
-            x0: 200.,
-            x1: 200.,
-            y0: 10.,
-            y1: 70.,
-        },
-        stroke_width: 0.5,
-    });
-    parsed.pages[0].width = 440.;
+    parsed.pages[0].width = 840.;
+    parsed.pages[0].height = 200.;
     let template = parsed.text_elements[0].clone();
-    parsed.text_elements = [(20., 55.), (210., 55.), (20., 40.), (210., 40.)]
-        .into_iter()
-        .map(|(x, baseline)| {
-            let mut text = template.clone();
-            text.baseline_y = Some(baseline);
-            text.bounds = ParsedBounds {
-                x0: x,
-                x1: x + 30.,
-                y0: baseline,
-                y1: baseline + 10.,
-            };
-            text
-        })
-        .collect();
+    parsed.text_elements = [
+        (20., 135.),
+        (210., 135.),
+        (20., 105.),
+        (210., 105.),
+        (420., 135.),
+        (420., 105.),
+        (20., 55.),
+        (20., 25.),
+        (420., 55.),
+        (420., 25.),
+    ]
+    .into_iter()
+    .map(|(x, baseline)| {
+        let mut text = template.clone();
+        text.baseline_y = Some(baseline);
+        text.bounds = ParsedBounds {
+            x0: x,
+            x1: x + 30.,
+            y0: baseline,
+            y1: baseline + 10.,
+        };
+        text
+    })
+    .collect();
     let tables = infer_positioned_tables_from_pdf_graphics(&parsed);
     assert_eq!(tables.len(), 1);
     let parent = &tables[0];
@@ -54,19 +81,41 @@ fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
         parent.bounds,
         ParsedBounds {
             x0: 0.,
-            x1: 400.,
+            x1: 800.,
             y0: 0.,
-            y1: 80.
+            y1: 160.
         }
     );
     let leaf = &parent.nested_tables[0];
     assert!(source_grid_selection::verified(leaf));
-    assert_eq!(leaf.row_heights_twips, vec![1200.]);
+    assert_eq!(leaf.row_heights_twips, vec![600., 600.]);
     assert_eq!(
         parent.row_heights_twips,
-        vec![1620.],
+        vec![1610., 1610.],
         "parent replacement includes an unmeasured nested table"
     );
+}
+
+/// 単一枠や一方向だけの帯は、Wordの折返し容量を証明した二次元gridとして扱わない。
+#[test]
+fn standalone_frames_and_single_axis_bands_keep_legacy_capacity() {
+    for (remove_x, remove_y, expected) in [
+        (true, true, vec![1620.]),
+        (true, false, vec![810., 810.]),
+        (false, true, vec![1620.]),
+    ] {
+        let mut parsed = source_grid_selection_tests::source();
+        parsed.graphics.retain(|g| {
+            !(remove_x && g.bounds.x0 == 80. && g.bounds.x1 == 80.
+                || remove_y && g.bounds.y0 == 40. && g.bounds.y1 == 40.)
+        });
+        let table = infer_positioned_table_from_graphics(&parsed, 0, &parsed.graphics).unwrap();
+        assert!(source_grid_selection::verified(&table));
+        assert_eq!(
+            table.row_heights_twips, expected,
+            "standalone/frame profile remove_x={remove_x} remove_y={remove_y}"
+        );
+    }
 }
 
 /// fontとセル内の行容量を確認済みなら、40ptの原本行を40.5ptへ伸ばさない。
