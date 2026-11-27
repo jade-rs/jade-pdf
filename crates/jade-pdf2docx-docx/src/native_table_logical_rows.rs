@@ -13,11 +13,28 @@ struct Split {
 
 /// 原本との対応が完全な罫線表だけを対象に、本文行を局所的に細分する。
 pub(super) fn refine(mut table: PositionedTable) -> PositionedTable {
-    if !table.nested_tables.is_empty() || !table.source_cell_runs.is_empty() {
+    if !table.nested_tables.is_empty()
+        || !table.source_cell_runs.is_empty()
+        || !table.native_cells.iter().any(|row| {
+            row.iter()
+                .flatten()
+                .filter(|cell| cell.lines.len() >= 3)
+                .nth(1)
+                .is_some()
+        })
+    {
         return table;
     }
-    let Some(model) = table.docx_table.as_ref() else {
-        return table;
+    let fallback;
+    let model = match table.docx_table.as_ref() {
+        Some(model) => model,
+        None if table.plain_source_grid => {
+            let model = docx_table_model_from_ocr_table(&table.table);
+            let model = docx_table_model_with_cell_underlines(&model, &table.cell_underlines);
+            fallback = docx_table_model_with_cell_alignments(&model, &table.cell_alignments);
+            &fallback
+        }
+        None => return table,
     };
     if model.rows.len() != table.native_cells.len()
         || model.rows.len() != table.row_heights_twips.len()
@@ -37,7 +54,7 @@ pub(super) fn refine(mut table: PositionedTable) -> PositionedTable {
         .zip(&table.native_cells)
         .zip(&table.row_heights_twips)
     {
-        if let Some(split) = split(row, native, *height) {
+        if let Some(split) = split(row, native, *height, table.plain_source_grid) {
             rows.extend(split.rows);
             cells.extend(split.cells);
             heights.extend(split.heights);
@@ -85,9 +102,22 @@ pub(super) fn refine(mut table: PositionedTable) -> PositionedTable {
 }
 
 /// 三行以上の同期した本文と、任意の小さい単位行が原本の帯に収まる場合だけ分割する。
-fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Option<Split> {
+fn split(
+    row: &[DocxTableCellModel],
+    native: &[Option<Cell>],
+    height: f32,
+    plain_grid: bool,
+) -> Option<Split> {
     if row.len() != native.len()
-        || row.iter().any(|cell| cell.vertical_merge.is_some())
+        || row.iter().any(|cell| {
+            cell.vertical_merge.is_some()
+                || cell.borders.is_some_and(|b| {
+                    b.diagonal_tl2br.is_some()
+                        || b.diagonal_tr2bl.is_some()
+                        || b.source_side_sizes[0].is_some()
+                        || b.source_side_sizes[2].is_some()
+                })
+        })
         || !height.is_finite()
         || height <= 0.0
     {
@@ -100,6 +130,9 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         .map(|(_, cell)| cell.as_ref())
         .collect::<Option<Vec<_>>>()?;
     if occupied.len() < 2 {
+        return None;
+    }
+    if plain_grid && !has_item_columns(&occupied) {
         return None;
     }
     let first = occupied[0];
@@ -137,6 +170,13 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         }
     }
     edges.push(first.bottom);
+    // 原本行の薄罫線補正は、上辺のある最初の論理行から後続の位置へ持ち越す。
+    let leading_extra = if plain_grid && row.iter().all(|cell| cell.borders.is_some_and(|b| b.top))
+    {
+        (height - ((first.top - first.bottom) * 20.0).round()).max(0.0)
+    } else {
+        0.0
+    };
     let mut rows = Vec::new();
     let mut cells = Vec::new();
     let mut heights = Vec::new();
@@ -153,7 +193,7 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         let row_height = if index + 1 == count {
             height - used
         } else {
-            let cumulative = ((first.top - edges[index + 1]) * 20.0).round();
+            let cumulative = ((first.top - edges[index + 1]) * 20.0).round() + leading_extra;
             cumulative - used
         };
         if !row_height.is_finite() || row_height <= 0.0 {
@@ -163,7 +203,10 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         let mut next_row = Vec::new();
         let mut next_cells = Vec::new();
         for ((model, original), anchors) in row.iter().zip(native).zip(&anchors) {
-            let mut model = model.clone();
+            let mut model = DocxTableCellModel {
+                text: String::new(),
+                ..*model
+            };
             if let Some(borders) = model.borders.as_mut() {
                 borders.top &= index == 0;
                 borders.bottom &= index + 1 == count;
@@ -173,14 +216,19 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 .and_then(|cell| line_at(cell, index, count));
             let cell = if let Some(line) = line {
                 let original = original.as_ref()?;
-                let mut cell = original.clone();
-                cell.top = edges[index];
-                cell.bottom = edges[index + 1];
-                cell.lines = vec![line.clone()];
-                cell.single_line_runs = line.runs.clone();
-                cell.fallback_runs.clear();
                 let source_index = index.checked_sub(count.checked_sub(original.lines.len())?)?;
-                cell.logical_row_right_anchor = Some(*anchors.as_ref()?.get(source_index)?);
+                let cell = Cell {
+                    background: original.background,
+                    left: original.left,
+                    right: original.right,
+                    top: edges[index],
+                    bottom: edges[index + 1],
+                    lines: vec![line.clone()],
+                    single_line_runs: line.runs.clone(),
+                    fallback_runs: Vec::new(),
+                    logical_row_right_anchor: Some(*anchors.as_ref()?.get(source_index)?),
+                    source_tabs: None,
+                };
                 // 本番と同じ容量・丸め規則を使い、検査で段落IDを生成しない。
                 if !line_spacings(&cell)?.all(|spacing| spacing.is_some()) {
                     return None;
@@ -188,9 +236,11 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
                 model.text = line.text.clone();
                 Some(cell)
             } else {
-                model.text.clear();
                 model.underlined = false;
-                None
+                original
+                    .as_ref()
+                    .filter(|cell| cell.lines.is_empty())
+                    .cloned()
             };
             next_row.push(model);
             next_cells.push(cell);
@@ -204,6 +254,29 @@ fn split(row: &[DocxTableCellModel], native: &[Option<Cell>], height: f32) -> Op
         cells,
         heights,
     })
+}
+
+/// 通常の閉じたセルでは、名称列、数値列、セル内に収まる文字位置を照合する。
+fn has_item_columns(cells: &[&Cell]) -> bool {
+    let mut labels = false;
+    let mut values = false;
+    for cell in cells {
+        if cell
+            .lines
+            .iter()
+            .any(|line| line.left_x < cell.left || line.right_x > cell.right)
+        {
+            return false;
+        }
+        let numbers = cell
+            .lines
+            .iter()
+            .filter(|line| native_numeric_alignment::numeric_token(&line.text))
+            .count();
+        labels |= numbers == 0;
+        values |= numbers == cell.lines.len();
+    }
+    labels && values
 }
 
 /// 単位行を持たない列を先頭の空セルで揃え、本文の各行を一度だけ参照する。

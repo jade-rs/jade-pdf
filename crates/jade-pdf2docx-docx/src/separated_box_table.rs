@@ -197,6 +197,7 @@ pub(super) fn infer_with_table_text(
         table: OcrTable::new(cells),
         cell_underlines: vec![vec![false; width]; height],
         cell_alignments: vec![vec![ParagraphAlignment::Left; width]; height],
+        plain_source_grid: false,
         docx_table: Some(model),
         native_cells,
         source_cell_runs: Vec::new(),

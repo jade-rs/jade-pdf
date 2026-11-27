@@ -56,7 +56,7 @@ pub(super) fn right_anchors(lines: &[StructuredTextLine], left: f32, right: f32)
 }
 
 /// 本文を正規化せず、少なくとも一桁を含む短いASCII数値・符号・区切りだけを対象にする。
-fn numeric_token(text: &str) -> bool {
+pub(super) fn numeric_token(text: &str) -> bool {
     let text = text.trim();
     !text.is_empty()
         && text.bytes().any(|b| b.is_ascii_digit())

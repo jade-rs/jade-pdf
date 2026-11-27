@@ -120,6 +120,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
         table: OcrTable::new(rows.iter().map(|row| row.text.clone()).collect()),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
+        plain_source_grid: false,
         docx_table: None,
         native_cells: Vec::new(),
         source_cell_runs: rows.into_iter().map(|row| row.cells).collect(),

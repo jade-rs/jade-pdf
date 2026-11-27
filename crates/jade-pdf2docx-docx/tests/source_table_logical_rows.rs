@@ -41,12 +41,22 @@ fn source_with_units(
 
 /// 内容streamから既存と同じobject順・xref形式を生成し、所有対照のbyteを保つ。
 fn owned_pdf_content(content: &str) -> Vec<u8> {
+    owned_pdf_with_layout(content, "612 792", "Helvetica")
+}
+
+/// 原本のページ寸法とType 1 fontを指定してPDFを組み立てる。
+fn owned_pdf_with_layout(content: &str, page_size: &str, font: &str) -> Vec<u8> {
     let objects = [
         "<< /Type /Catalog /Pages 2 0 R >>".to_string(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_string(),
-        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>".to_string(),
-        format!("<< /Length {} >>\nstream\n{content}\nendstream", content.len()),
-        "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>".to_string(),
+        format!(
+            "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 {page_size}] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>"
+        ),
+        format!(
+            "<< /Length {} >>\nstream\n{content}\nendstream",
+            content.len()
+        ),
+        format!("<< /Type /Font /Subtype /Type1 /BaseFont /{font} /Encoding /WinAnsiEncoding >>"),
     ];
     let mut bytes = b"%PDF-1.7\n".to_vec();
     let mut offsets = Vec::new();
@@ -175,6 +185,71 @@ fn unruled_body_lines_retain_unambiguous_row_association() {
         table_rows(&source(3, 25, false, true)),
         expected(3),
         "each original label must share a distinct Word row with its own value"
+    );
+}
+
+/// 各列の罫線が見出しと本文を貫く、二列の所有PDF。
+fn framed_source(items: &[(&str, &str)]) -> Vec<u8> {
+    let mut content = String::from(
+        "0.5 w 20 180 m 220 180 l S 20 165 m 220 165 l S 20 80 m 220 80 l S
+         20 80 m 20 180 l S 120 80 m 120 180 l S 220 80 m 220 180 l S
+         BT /F1 10 Tf 25 169 Td (Item) Tj ET BT /F1 10 Tf 125 169 Td (Amount) Tj ET",
+    );
+    for (index, (label, amount)) in items.iter().enumerate() {
+        let y = 150 - 18 * index as i32;
+        content.push_str(&format!(
+            " BT /F1 10 Tf 25 {y} Td ({label}) Tj ET BT /F1 10 Tf 160 {y} Td ({amount}) Tj ET"
+        ));
+    }
+    owned_pdf_with_layout(&content, "300 200", "Courier")
+}
+
+/// 狭い外枠でも明細を各行で編集でき、上下辺と原本の高さが保たれる。
+#[test]
+fn framed_body_preserves_editable_item_rows() {
+    let items = [
+        ("Cash", "9,000"),
+        ("Loans", "7,000"),
+        ("Bonds", "5,000"),
+        ("Other", "3,000"),
+    ];
+    let source = framed_source(&items);
+    let expected = [("Item", "Amount")]
+        .into_iter()
+        .chain(items)
+        .map(|(label, amount)| vec![label.to_owned(), amount.to_owned()])
+        .collect::<Vec<_>>();
+    assert_eq!(table_rows(&source), expected);
+    let rows = geometry(&document_xml(&source));
+    assert_eq!(rows.len(), expected.len());
+    assert_eq!(
+        rows.iter().map(|row| row.0).collect::<Vec<_>>(),
+        [310, 470, 360, 360, 520]
+    );
+    assert_eq!(rows[0].1, [(true, true); 2]);
+    assert_eq!(rows[1].1, [(true, false); 2]);
+    assert_eq!(rows[2].1, [(false, false); 2]);
+    assert_eq!(rows[3].1, [(false, false); 2]);
+    assert_eq!(rows[4].1, [(false, true); 2]);
+}
+
+/// 二列の本文の改行位置が揃っても、数値列の根拠がない場合はセルを保つ。
+#[test]
+fn framed_body_keeps_synchronized_prose_in_original_cells() {
+    let paragraphs = [
+        ("The first", "Another"),
+        ("paragraph", "paragraph"),
+        ("continues", "wraps here"),
+        ("here.", "as well."),
+    ];
+    let rows = table_rows(&framed_source(&paragraphs));
+    assert_eq!(rows.len(), 2);
+    assert_eq!(
+        rows[1],
+        [
+            "The firstparagraphcontinueshere.",
+            "Anotherparagraphwraps hereas well."
+        ]
     );
 }
 
