@@ -18,7 +18,22 @@ fn prepare_package(prepared: PreparedDocx) -> Result<docx_rs::XMLDocx, ConvertEr
     crate::inline_baseline::apply(&mut package)?;
     crate::normal_weight_package::apply(&mut package)?;
     crate::word_page_fit::fit(&mut package)?;
+    preserve_source_script_spacing(&mut package.styles)?;
     Ok(package)
+}
+
+/// PDFの字位置から復元した行に、Wordの和文と欧文・数字の自動字間を加えない。
+fn preserve_source_script_spacing(styles: &mut Vec<u8>) -> Result<(), ConvertError> {
+    // docx-rsの段落既定値には自動字間の設定APIがない。生成した書式へ補う。
+    const DEFAULT_PROPERTIES: &[u8] = b"<w:pPrDefault><w:pPr>";
+    const DISABLE_SPACING: &[u8] = br#"<w:autoSpaceDE w:val="0" /><w:autoSpaceDN w:val="0" />"#;
+    let at = styles
+        .windows(DEFAULT_PROPERTIES.len())
+        .position(|bytes| bytes == DEFAULT_PROPERTIES)
+        .ok_or_else(|| ConvertError::Pack("missing generated paragraph defaults".into()))?
+        + DEFAULT_PROPERTIES.len();
+    styles.splice(at..at, DISABLE_SPACING.iter().copied());
+    Ok(())
 }
 
 /// Docx オブジェクトをPDF埋め込みfontとともにバイト列へ保存する。
