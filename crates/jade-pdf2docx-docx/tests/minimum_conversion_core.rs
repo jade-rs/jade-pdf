@@ -2752,6 +2752,17 @@ fn byte_conversion_preserves_nested_tables_inside_outer_cells() {
         doc_xml.contains(">Right note</w:t>") && doc_xml.contains(">R1</w:t>"),
         "right inner table text must be preserved inside the outer right cell: {doc_xml}"
     );
+    for caption in [">Left note</w:t>", ">Right note</w:t>"] {
+        let outer_cell = doc_xml
+            .split("<w:tc>")
+            .find(|cell| cell.contains(caption))
+            .expect("outer cell containing the caption");
+        let cell_properties = outer_cell.split("</w:tcPr>").next().unwrap();
+        assert!(
+            cell_properties.contains("<w:vAlign w:val=\"top\""),
+            "the outer cell containing {caption} must be top-aligned: {cell_properties}"
+        );
+    }
     assert!(
         !doc_xml.contains("</w:tbl></w:tc>"),
         "Word repairs DOCX cells that end immediately after a nested table; emit a trailing paragraph after nested tables: {doc_xml}"
