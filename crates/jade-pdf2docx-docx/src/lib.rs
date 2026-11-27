@@ -3988,8 +3988,7 @@ fn infer_positioned_tables_for_page(
                 && !has_verified_graphic_cells
                 && best_text_cols <= max_graphic_cols
                 && text_gain > 2
-                && (!preserve_source_text
-                    || text_grid_ownership::preserves(parsed, &best_text_table))
+                && text_grid_ownership::covers_text_of(parsed, &best_text_table, &graphic_tables[0])
             {
                 return vec![best_text_table];
             }
@@ -4002,7 +4001,6 @@ fn infer_positioned_tables_for_page(
     infer_positioned_table_from_text_grid_page(parsed, page, preserve_source_text)
         .or_else(|| identifier_description_tables::infer(parsed, page))
         .into_iter()
-        .filter(|table| !preserve_source_text || text_grid_ownership::preserves(parsed, table))
         .collect()
 }
 
@@ -5618,24 +5616,25 @@ fn infer_positioned_table_from_text_grid_page(
     if anchors.len() < 2 {
         return None;
     }
-    let bounds = text_grid_cells_bounds(&row_cells)?;
-
+    let mut table_bounds = None;
     let mut table_rows = Vec::new();
     let mut source_cell_runs = Vec::new();
     let mut source_row_bounds = Vec::new();
     for cells in row_cells {
         let mut row = vec![String::new(); anchors.len()];
         let mut source_texts = vec![Vec::new(); anchors.len()];
-        let top = cells
-            .iter()
-            .map(|cell| cell.y1)
-            .fold(f32::NEG_INFINITY, f32::max);
-        let bottom = cells
-            .iter()
-            .map(|cell| cell.y0)
-            .fold(f32::INFINITY, f32::min);
+        let mut row_bounds = None;
         for cell in cells {
             if let Some(index) = nearest_column_anchor(cell.x0, &anchors) {
+                row_bounds = Some(extend_text_grid_bounds(
+                    row_bounds,
+                    ParsedBounds {
+                        x0: cell.x0,
+                        y0: cell.y0,
+                        x1: cell.x1,
+                        y1: cell.y1,
+                    },
+                ));
                 if !row[index].is_empty() {
                     row[index].push(' ');
                 }
@@ -5644,17 +5643,19 @@ fn infer_positioned_table_from_text_grid_page(
             }
         }
         if row.iter().filter(|value| !value.trim().is_empty()).count() >= 2 {
+            let row_bounds = row_bounds?;
+            table_bounds = Some(extend_text_grid_bounds(table_bounds, row_bounds));
             if preserve_source_layout {
                 source_cell_runs.push(
                     source_texts
                         .iter()
                         .zip(&row)
                         .map(|(texts, value)| {
-                            text_grid_cell_styles::cell(parsed, texts, value, top)
+                            text_grid_cell_styles::cell(parsed, texts, value, row_bounds.y1)
                         })
                         .collect::<Option<Vec<_>>>()?,
                 );
-                source_row_bounds.push((top, bottom));
+                source_row_bounds.push((row_bounds.y1, row_bounds.y0));
             }
             table_rows.push(row);
         }
@@ -5663,6 +5664,7 @@ fn infer_positioned_table_from_text_grid_page(
     if table_rows.len() < min_rows {
         return None;
     }
+    let bounds = table_bounds?;
     let column_widths_twips = if preserve_source_layout {
         anchors
             .iter()
@@ -5687,7 +5689,7 @@ fn infer_positioned_table_from_text_grid_page(
             .filter(|height| *height > 0.)
         })
         .collect::<Option<Vec<_>>>()?;
-    Some(PositionedTable {
+    let table = PositionedTable {
         page,
         bounds,
         allow_top_origin_text_y: false,
@@ -5707,7 +5709,8 @@ fn infer_positioned_table_from_text_grid_page(
         native_cells: Vec::new(),
         source_cell_runs,
         nested_tables: Vec::new(),
-    })
+    };
+    text_grid_ownership::preserves(parsed, &table).then_some(table)
 }
 
 /// 装飾線の有無によらず長文ページを反復列だけで巨大表に誤分類しないガード。
@@ -5769,23 +5772,14 @@ fn merge_text_row_into_cells<'a>(row: &[&'a ParsedTextElement]) -> Option<Vec<Te
     (cells.len() >= 2).then_some(cells)
 }
 
-/// text grid cell 群の外接 bounds を返す。
-fn text_grid_cells_bounds(rows: &[Vec<TextGridCell<'_>>]) -> Option<ParsedBounds> {
-    let mut cells = rows.iter().flatten();
-    let first = cells.next()?;
-    let mut bounds = ParsedBounds {
-        x0: first.x0,
-        y0: first.y0,
-        x1: first.x1,
-        y1: first.y1,
-    };
-    for cell in cells {
-        bounds.x0 = bounds.x0.min(cell.x0);
-        bounds.y0 = bounds.y0.min(cell.y0);
-        bounds.x1 = bounds.x1.max(cell.x1);
-        bounds.y1 = bounds.y1.max(cell.y1);
-    }
-    Some(bounds)
+/// 採用したセルや行の範囲を既存の外接矩形に追加する。
+fn extend_text_grid_bounds(bounds: Option<ParsedBounds>, next: ParsedBounds) -> ParsedBounds {
+    bounds.map_or(next, |bounds| ParsedBounds {
+        x0: bounds.x0.min(next.x0),
+        y0: bounds.y0.min(next.y0),
+        x1: bounds.x1.max(next.x1),
+        y1: bounds.y1.max(next.y1),
+    })
 }
 
 /// 複数行に繰り返し現れる列 x 座標を抽出する。

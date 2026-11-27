@@ -4,6 +4,13 @@ use proptest::prelude::*;
 use quick_xml::{Reader, events::Event};
 use std::io::{Cursor, Read};
 
+#[path = "support/pdf_builders.rs"]
+mod pdf_builders;
+
+#[allow(dead_code)]
+#[path = "../../jade-pdf2docx-parser/tests/support/page_attribute_pdf.rs"]
+mod page_attribute_pdf;
+
 #[path = "support/page_local_source_style_cases.rs"]
 mod source_style_cases;
 
@@ -254,6 +261,91 @@ fn a_new_borderless_table_must_not_drop_an_interleaved_body_note() {
             assert_eq!(xml.matches(&format!("GRID-R{row}C{col}")).count(), 1);
         }
     }
+}
+
+/// 罫線のない短い表を置き、位置の異なる注記を追加できる原本を作る。
+fn borderless_table_with_note(note: &str) -> String {
+    pdf_builders::pdf(
+        &format!(
+            "BT /F1 10 Tf 18 155 Td (R0C0) Tj ET\n\
+             BT /F1 10 Tf 153 155 Td (R0C1) Tj ET\n\
+             BT /F1 10 Tf 18 120 Td (R1C0) Tj ET\n\
+             BT /F1 10 Tf 153 120 Td (R1C1) Tj ET\n\
+             BT /F1 10 Tf 18 85 Td (R2C0) Tj ET\n\
+             BT /F1 10 Tf 153 85 Td (R2C1) Tj ET\n{note}"
+        ),
+        true,
+    )
+}
+
+/// 列位置が一致しない表の直後の注記を、編集可能な表と一緒に残す。
+#[test]
+fn borderless_table_keeps_trailing_notes_in_the_body() {
+    let source = borderless_table_with_note(
+        "BT /F1 10 Tf 18 55 Td (Notes) Tj ET\n\
+         BT /F1 10 Tf 84 55 Td (See below) Tj ET",
+    );
+    let xml = document_xml(source.as_bytes());
+    assert_eq!(xml.matches("Notes").count(), 1);
+    assert_eq!(xml.matches("See below").count(), 1);
+    assert_eq!(
+        tables_in_xml(&xml),
+        vec![vec![
+            vec!["R0C0", "R0C1"],
+            vec!["R1C0", "R1C1"],
+            vec!["R2C0", "R2C1"]
+        ]],
+    );
+    assert!(xml.find("</w:tbl>").unwrap() < xml.find("Notes").unwrap());
+}
+
+/// 表の範囲内に列へ割り当てられない注記があれば、全断片を本文として残す。
+#[test]
+fn borderless_table_keeps_interleaved_notes_in_the_body() {
+    let source = borderless_table_with_note("BT /F1 10 Tf 18 135 Td (Between rows) Tj ET");
+    let xml = document_xml(source.as_bytes());
+    assert!(tables_in_xml(&xml).is_empty());
+    assert_eq!(xml.matches("Between rows").count(), 1);
+    for row in 0..3 {
+        for col in 0..2 {
+            assert_eq!(xml.matches(&format!("R{row}C{col}")).count(), 1);
+        }
+    }
+}
+
+/// 枠内の見出しを置き去りにする反復列候補で、原本の罫線表を上書きしない。
+#[test]
+fn a_text_grid_cannot_replace_a_frame_by_leaving_its_header_outside() {
+    let mut content = String::from(
+        "0.5 w 20 180 m 220 180 l S 20 165 m 220 165 l S 20 80 m 220 80 l S \
+         20 80 m 20 180 l S 120 80 m 120 180 l S 220 80 m 220 180 l S \
+         BT /F1 10 Tf 25 169 Td (Item) Tj ET BT /F1 10 Tf 125 169 Td (Amount) Tj ET",
+    );
+    for (y, label, amount) in [
+        (150, "Cash", "9,000"),
+        (132, "Loans", "7,000"),
+        (114, "Bonds", "5,000"),
+        (96, "Other", "3,000"),
+    ] {
+        content.push_str(&format!(
+            " BT /F1 10 Tf 25 {y} Td ({label}) Tj ET BT /F1 10 Tf 160 {y} Td ({amount}) Tj ET"
+        ));
+    }
+    let pdf = page_attribute_pdf::pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".into(),
+        page_attribute_pdf::stream(&content),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".into(),
+    ]);
+    let xml = document_xml(&pdf);
+    let tables = tables_in_xml(&xml);
+    assert_eq!(tables.len(), 1);
+    assert_eq!(tables[0][0], ["Item", "Amount"]);
+    assert!(tables[0][1][0].contains("Cash"));
+    assert!(tables[0][1][0].contains("Other"));
+    assert_eq!(xml.matches(">Item</w:t>").count(), 1);
+    assert!(xml.contains(r#"<w:top w:val="single""#));
 }
 
 proptest! {

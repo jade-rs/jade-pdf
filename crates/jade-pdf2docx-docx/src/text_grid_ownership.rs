@@ -1,4 +1,4 @@
-//! 新しい混在ページの反復列表が、本文から引き取る文字を欠落・重複させない契約。
+//! 反復列表が本文から引き取る文字を欠落・重複させない契約。
 use super::{ParsedDocument, PositionedTable, text_element_is_in_table};
 use std::collections::BTreeMap;
 
@@ -11,6 +11,19 @@ pub(super) fn preserves(parsed: &ParsedDocument, table: &PositionedTable) -> boo
         .map(|text| text.text.as_str());
     let output = table.table.rows.iter().flatten().map(String::as_str);
     characters(source) == characters(output)
+}
+
+/// 罫線表を置き換える際は、罫線表が所有していた文字を全て候補の範囲に含める。
+pub(super) fn covers_text_of(
+    parsed: &ParsedDocument,
+    replacement: &PositionedTable,
+    original: &PositionedTable,
+) -> bool {
+    parsed.text_elements.iter().all(|text| {
+        text.text.trim().is_empty()
+            || !text_element_is_in_table(parsed, text, original)
+            || text_element_is_in_table(parsed, text, replacement)
+    })
 }
 
 /// 断片間の空白補間だけを許し、文字の種類・個数を正規化せず照合する。
