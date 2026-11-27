@@ -11,16 +11,16 @@ pub(super) fn infer(
     page: usize,
     graphics: &[ParsedGraphicElement],
 ) -> Option<PositionedTable> {
-    let spaces = native_spacing::PageSpaces::new(&parsed.text_elements);
-    infer_with_spaces(parsed, page, graphics, &spaces)
+    let table_text = native_table_text::TableTextSource::new(parsed);
+    infer_with_table_text(parsed, page, graphics, &table_text)
 }
 
 /// 元の各辺が完全な黒い長方形だけを、同じ列配置が反復する一つの表として復元する。
-pub(super) fn infer_with_spaces(
+pub(super) fn infer_with_table_text(
     parsed: &ParsedDocument,
     page: usize,
     graphics: &[ParsedGraphicElement],
-    spaces: &native_spacing::PageSpaces<'_>,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Option<PositionedTable> {
     if !(24..=4096).contains(&graphics.len()) {
         return None;
@@ -169,7 +169,7 @@ pub(super) fn infer_with_spaces(
             })
             .collect(),
     };
-    let native_cells = native_table_text::boxed_cells(parsed, spaces, &xs, &ys, &texts, &model);
+    let native_cells = native_table_text::boxed_cells(table_text, &xs, &ys, &texts, &model);
     let fonts = texts
         .iter()
         .flatten()

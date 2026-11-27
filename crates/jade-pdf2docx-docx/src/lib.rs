@@ -3897,11 +3897,7 @@ fn table_border_size_for_pdf_rule(stroke_width: f32) -> usize {
 
 /// PDF から抽出した要素を位置付き `OcrTable` 群へ変換する。
 fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<PositionedTable> {
-    let spaces = if parsed.graphics.is_empty() {
-        native_spacing::PageSpaces::default()
-    } else {
-        native_spacing::PageSpaces::new(&parsed.text_elements)
-    };
+    let table_text = native_table_text::TableTextSource::new(parsed);
     let pages = parsed
         .graphics
         .iter()
@@ -3913,7 +3909,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         .map(|page| {
             (
                 page,
-                infer_positioned_tables_from_pdf_graphics_page(parsed, page, &spaces),
+                infer_positioned_tables_from_pdf_graphics_page(parsed, page, &table_text),
             )
         })
         .collect::<Vec<_>>();
@@ -4166,11 +4162,11 @@ pub fn infer_ocr_table_from_pdf_graphics(parsed: &ParsedDocument) -> Option<OcrT
 fn infer_positioned_tables_from_pdf_graphics_page(
     parsed: &ParsedDocument,
     page: usize,
-    spaces: &native_spacing::PageSpaces<'_>,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     let page_graphics = table_rule_topology::page(parsed, page);
     if let Some(table) =
-        separated_box_table::infer_with_spaces(parsed, page, &page_graphics, spaces)
+        separated_box_table::infer_with_table_text(parsed, page, &page_graphics, table_text)
     {
         return vec![table];
     }
@@ -4179,14 +4175,14 @@ fn infer_positioned_tables_from_pdf_graphics_page(
         page,
         &page_graphics,
         2.0,
-        spaces,
+        table_text,
     );
     let strict_component_candidates = positioned_table_candidates_from_graphic_components(
         parsed,
         page,
         &page_graphics,
         0.0,
-        spaces,
+        table_text,
     );
     let loose_nested_component_tables =
         component_tables_with_nested_parents(&loose_component_candidates);
@@ -4211,9 +4207,12 @@ fn infer_positioned_tables_from_pdf_graphics_page(
         .collect::<Vec<_>>();
     let nested_component_tables = component_tables_with_nested_parents(&component_candidates);
     let has_nested_component_parent = nested_component_tables.len() > component_tables.len();
-    if let Some(page_table) =
-        infer_positioned_table_from_graphics_with_spaces(parsed, page, &page_graphics, spaces)
-        && positioned_table_is_supported_graphic_table(&page_table)
+    if let Some(page_table) = infer_positioned_table_from_graphics_with_table_text(
+        parsed,
+        page,
+        &page_graphics,
+        table_text,
+    ) && positioned_table_is_supported_graphic_table(&page_table)
     {
         let page_cols = page_table.table.col_count().unwrap_or(0);
         let max_component_cols = component_tables
@@ -4245,13 +4244,13 @@ fn positioned_table_candidates_from_graphic_components(
     page: usize,
     page_graphics: &[ParsedGraphicElement],
     tolerance: f32,
-    spaces: &native_spacing::PageSpaces<'_>,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     let mut candidates = Vec::new();
     for component in split_graphics_into_components_with_tolerance(page_graphics, tolerance) {
-        let Some(component_table) =
-            infer_positioned_table_from_graphics_with_spaces(parsed, page, &component, spaces)
-        else {
+        let Some(component_table) = infer_positioned_table_from_graphics_with_table_text(
+            parsed, page, &component, table_text,
+        ) else {
             continue;
         };
         let component_table =
@@ -4262,7 +4261,7 @@ fn positioned_table_candidates_from_graphic_components(
             &component_table,
             &component,
             page_graphics,
-            spaces,
+            table_text,
         );
         if edge_nested_tables.is_empty() {
             candidates.push(component_table);
@@ -4295,7 +4294,7 @@ fn infer_edge_aligned_nested_tables_from_component(
     component_table: &PositionedTable,
     component: &[ParsedGraphicElement],
     page_graphics: &[ParsedGraphicElement],
-    spaces: &native_spacing::PageSpaces<'_>,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Vec<PositionedTable> {
     if component_table.table.row_count() > 3 || component_table.table.col_count().unwrap_or(0) > 4 {
         return Vec::new();
@@ -4345,9 +4344,14 @@ fn infer_edge_aligned_nested_tables_from_component(
             }
             let mut child_graphics = inner_component;
             add_clipped_component_edges(&mut child_graphics, component, inner_bounds);
-            infer_positioned_table_from_graphics_with_spaces(parsed, page, &child_graphics, spaces)
-                .filter(positioned_table_is_supported_graphic_table)
-                .map(|table| positioned_table_with_cell_underlines(parsed, table, page_graphics))
+            infer_positioned_table_from_graphics_with_table_text(
+                parsed,
+                page,
+                &child_graphics,
+                table_text,
+            )
+            .filter(positioned_table_is_supported_graphic_table)
+            .map(|table| positioned_table_with_cell_underlines(parsed, table, page_graphics))
         })
         .collect()
 }
@@ -4685,16 +4689,16 @@ fn infer_positioned_table_from_graphics(
     page: usize,
     page_graphics: &[ParsedGraphicElement],
 ) -> Option<PositionedTable> {
-    let spaces = native_spacing::PageSpaces::new(&parsed.text_elements);
-    infer_positioned_table_from_graphics_with_spaces(parsed, page, page_graphics, &spaces)
+    let table_text = native_table_text::TableTextSource::new(parsed);
+    infer_positioned_table_from_graphics_with_table_text(parsed, page, page_graphics, &table_text)
 }
 
 /// 指定 graphics 群を位置付き `OcrTable` へ変換する。
-fn infer_positioned_table_from_graphics_with_spaces(
+fn infer_positioned_table_from_graphics_with_table_text(
     parsed: &ParsedDocument,
     page: usize,
     page_graphics: &[ParsedGraphicElement],
-    spaces: &native_spacing::PageSpaces<'_>,
+    table_text: &native_table_text::TableTextSource<'_>,
 ) -> Option<PositionedTable> {
     let horizontal = page_graphics
         .iter()
@@ -4871,8 +4875,7 @@ fn infer_positioned_table_from_graphics_with_spaces(
         .clone()
         .unwrap_or_else(|| docx_table_model_from_ocr_table(&table));
     let mut native_cells = native_table_text::cells_with_geometry(
-        parsed,
-        spaces,
+        table_text,
         &xs,
         &ys,
         &cell_source_texts,
@@ -4883,8 +4886,7 @@ fn infer_positioned_table_from_graphics_with_spaces(
     {
         geometry = None;
         native_cells = native_table_text::cells_with_geometry(
-            parsed,
-            spaces,
+            table_text,
             &xs,
             &ys,
             &cell_source_texts,
