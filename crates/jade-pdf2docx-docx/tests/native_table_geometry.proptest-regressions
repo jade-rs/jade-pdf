@@ -5,3 +5,4 @@
 # It is recommended to check this file in to source control so that
 # everyone who runs the test benefits from these saved cases.
 cc 6ad5479e62b1055af84715f1a2d91acd170b5babfc1b29e29cfcdd2f5c564ad3 # shrinks to top = 32, bottom = 100
+cc 81c4e386235b761c4445f967fca5ca5476057745bd423de308bab4fb6f265e70 # shrinks to top = 32, bottom = 161
