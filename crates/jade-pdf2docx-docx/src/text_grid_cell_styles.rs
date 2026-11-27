@@ -8,6 +8,17 @@ pub(super) struct Cell {
     runs: Vec<StructuredTextRun>,
     /// 行上端より下へ置く余白。元の座標差だけをtwipsに丸める。
     before_twips: u32,
+    /// 原本の開始位置と、分離した符号の後に置く編集用タブ。
+    position: Option<Position>,
+}
+
+/// 罫線のない金額表で確認したセルの水平位置。
+#[derive(Debug, Clone, PartialEq)]
+struct Position {
+    /// セル左端から最初のrunまでの距離。
+    indent: i32,
+    /// 符号の直後に置く、セル左端からのタブ位置。
+    tab: Option<usize>,
 }
 
 /// セルの文字・書式を照合し、行全体ではなくそのセルの元の上端を保持する。
@@ -29,9 +40,34 @@ pub(super) fn cell(
     } else {
         u32::try_from(pdf_points_to_twips((row_top - top).max(0.0))?).ok()?
     };
-    Some(Cell { runs, before_twips })
+    Some(Cell {
+        runs,
+        before_twips,
+        position: None,
+    })
 }
 
+/// 元のセル原点を基準に、符号から金額への距離を独立したタブへ渡す。
+pub(super) fn aligned_accounting_cell(
+    parsed: &ParsedDocument,
+    texts: &[&ParsedTextElement],
+    expected: &str,
+    row_top: f32,
+    left: f32,
+    amount_x: Option<f32>,
+) -> Option<Cell> {
+    let mut cell = cell(parsed, texts, expected, row_top)?;
+    if amount_x.is_some() && cell.runs.len() != 2 {
+        return None;
+    }
+    let indent = pdf_points_to_indent_twips(texts.first()?.bounds.x0 - left)?;
+    let tab = match amount_x {
+        Some(x) => Some(pdf_points_to_twips(x - left)?),
+        None => None,
+    };
+    cell.position = Some(Position { indent, tab });
+    Some(cell)
+}
 /// 新しいコード説明表では原本の字間から本文を組み、同じrunと上端をセルへ渡す。
 pub(super) fn source_cell(
     parsed: &ParsedDocument,
@@ -79,12 +115,19 @@ pub(super) fn source_cell(
                 .any(|font| font.font_name == name)
         });
     }
-    Some((line.text, Cell { runs, before_twips }))
+    Some((
+        line.text,
+        Cell {
+            runs,
+            before_twips,
+            position: None,
+        },
+    ))
 }
 
 /// 行内の原本上端までの空きを付けて照合済みセルを出力する。
 pub(super) fn cell_paragraph(cell: &Cell) -> Option<Paragraph> {
-    paragraph(&cell.runs, cell.before_twips)
+    paragraph(&cell.runs, cell.before_twips, cell.position.as_ref())
 }
 
 /// 元セルと区切り空白まで一致する場合だけ、色・font・サイズを持つrunを返す。
@@ -113,7 +156,11 @@ pub(super) fn runs(
 }
 
 /// 位置を推測せず、照合済みのセル本文を原本の各書式と最大em高で出力する。
-fn paragraph(runs: &[StructuredTextRun], before_twips: u32) -> Option<Paragraph> {
+fn paragraph(
+    runs: &[StructuredTextRun],
+    before_twips: u32,
+    position: Option<&Position>,
+) -> Option<Paragraph> {
     if runs.is_empty() {
         return None;
     }
@@ -121,13 +168,17 @@ fn paragraph(runs: &[StructuredTextRun], before_twips: u32) -> Option<Paragraph>
         pdf_font_size_to_half_points(run.style.font_size)?;
         Some(height.max(run.style.font_size))
     })?;
-    Some(
-        runs.iter()
-            .fold(Paragraph::new(), |paragraph, run| {
-                paragraph.add_run(docx_run_from_structured_run(run))
-            })
-            .line_spacing(native_line_pitch::spacing(height, before_twips, 0)?),
-    )
+    let mut paragraph = if let Some(tab) = position.and_then(|position| position.tab) {
+        source_cell_tab_stops::paragraph(runs, &[None, Some(tab)])
+    } else {
+        runs.iter().fold(Paragraph::new(), |paragraph, run| {
+            paragraph.add_run(docx_run_from_structured_run(run))
+        })
+    };
+    if let Some(position) = position.filter(|position| position.indent > 0) {
+        paragraph = paragraph.indent(Some(position.indent), None, None, None);
+    }
+    Some(paragraph.line_spacing(native_line_pitch::spacing(height, before_twips, 0)?))
 }
 
 #[cfg(test)]
@@ -189,7 +240,7 @@ mod tests {
     /// 空・未確認のem高をWordの既定値に置き換えず、書式段落への変換を拒否する。
     #[test]
     fn empty_and_nonfinite_styles_do_not_get_a_default_paragraph() {
-        assert!(paragraph(&[], 0).is_none());
+        assert!(paragraph(&[], 0, None).is_none());
         for size in [0., -1., f32::NAN, f32::INFINITY] {
             let run = StructuredTextRun {
                 text: "Owned".into(),
@@ -198,12 +249,12 @@ mod tests {
                     ..Default::default()
                 },
             };
-            assert!(paragraph(&[run], 0).is_none());
+            assert!(paragraph(&[run], 0, None).is_none());
         }
         let run = StructuredTextRun {
             text: "Owned".into(),
             style: Default::default(),
         };
-        assert!(paragraph(&[run], 0).is_some());
+        assert!(paragraph(&[run], 0, None).is_some());
     }
 }

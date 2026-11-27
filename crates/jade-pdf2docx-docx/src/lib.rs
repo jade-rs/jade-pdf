@@ -38,6 +38,7 @@ mod source_cell_rule_widths;
 mod source_cell_tab_stops;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
+mod accounting_text_grid;
 mod adjacent_source_tables;
 mod body_table_rules;
 mod embedded_face;
@@ -5615,6 +5616,10 @@ fn infer_positioned_table_from_text_grid_page(
     }
 
     let anchors = repeated_column_anchors(&row_cells);
+    if !has_page_graphics && let Some(table) = accounting_text_grid::infer(parsed, page, &row_cells)
+    {
+        return Some(table);
+    }
     if anchors.len() < 2 {
         return None;
     }
