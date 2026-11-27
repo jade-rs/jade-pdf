@@ -98,6 +98,7 @@ mod source_image_rows;
 mod source_prose_columns;
 mod table_rule_topology;
 mod text_column_gutter;
+mod text_grid_limits;
 mod text_grid_ownership;
 mod text_row_segments;
 #[cfg(not(target_arch = "wasm32"))]
@@ -5553,18 +5554,18 @@ fn infer_positioned_table_from_text_grid_page(
     page: usize,
     preserve_source_layout: bool,
 ) -> Option<PositionedTable> {
-    let mut page_texts = parsed
-        .text_elements
-        .iter()
-        .filter(|text| text.page == page && !text.text.trim().is_empty())
-        .collect::<Vec<_>>();
+    let mut page_texts = text_grid_limits::fragments(
+        parsed
+            .text_elements
+            .iter()
+            .filter(|text| text.page == page && !text.text.trim().is_empty()),
+    )?;
     let has_page_graphics = !table_rule_topology::page(parsed, page).is_empty();
     let min_texts = if has_page_graphics { 4 } else { 6 };
     let min_rows = if has_page_graphics { 2 } else { 3 };
     if page_texts.len() < min_texts {
         return None;
     }
-    let page_text_count = page_texts.len();
     let y_increases_in_content_order = page_texts
         .first()
         .zip(page_texts.last())
@@ -5586,18 +5587,7 @@ fn infer_positioned_table_from_text_grid_page(
         });
     }
 
-    let mut rows: Vec<Vec<&ParsedTextElement>> = Vec::new();
-    for text in page_texts {
-        if let Some(row) = rows
-            .iter_mut()
-            .find(|row| (row[0].bounds.y0 - text.bounds.y0).abs() <= 4.0)
-        {
-            row.push(text);
-        } else {
-            rows.push(vec![text]);
-        }
-    }
-
+    let mut rows = text_grid_limits::sorted_rows(page_texts)?;
     let row_cells = rows
         .iter_mut()
         .filter_map(|row| {
@@ -5608,10 +5598,6 @@ fn infer_positioned_table_from_text_grid_page(
     if row_cells.len() < min_rows {
         return None;
     }
-    if text_grid_page_is_dense_article_like(page_text_count, row_cells.len()) {
-        return None;
-    }
-
     let anchors = repeated_column_anchors(&row_cells);
     if anchors.len() < 2 {
         return None;
@@ -5706,11 +5692,6 @@ fn infer_positioned_table_from_text_grid_page(
         source_cell_runs,
         nested_tables: Vec::new(),
     })
-}
-
-/// 装飾線の有無によらず長文ページを反復列だけで巨大表に誤分類しないガード。
-fn text_grid_page_is_dense_article_like(text_count: usize, row_count: usize) -> bool {
-    text_count >= 120 || row_count >= 25
 }
 
 /// 1 行分の text element を大きな x gap でセル候補にまとめる。
@@ -6196,12 +6177,5 @@ mod tests {
             common_usable_pdf_font_name(["YuMincho-Regular", "YuGothic-Regular"]),
             None
         );
-    }
-
-    #[test]
-    fn text_grid_page_guard_rejects_dense_article_like_pages() {
-        assert!(text_grid_page_is_dense_article_like(120, 3));
-        assert!(text_grid_page_is_dense_article_like(10, 25));
-        assert!(!text_grid_page_is_dense_article_like(7, 3));
     }
 }
