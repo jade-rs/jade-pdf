@@ -86,19 +86,29 @@ pub(super) fn cells(
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false, None)
+    let spaces = native_spacing::PageSpaces::new(&parsed.text_elements);
+    cells_with_geometry(parsed, &spaces, xs, ys, texts, model, None)
 }
 
 /// セル所有は既存整数gridで固定し、確認済み原本境界だけを行内配置へ渡す。
 pub(super) fn cells_with_geometry(
     parsed: &ParsedDocument,
+    spaces: &native_spacing::PageSpaces<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
     geometry: Option<&fractional_table_rules::Grid>,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, false, geometry)
+    cells_impl(
+        parsed,
+        spaces,
+        xs,
+        ys,
+        texts,
+        model,
+        GridKind::Ruled(geometry),
+    )
 }
 
 /// 全非空セルの本文とfontを確認し、未確認の代替字幅を原本の狭い寸法へ押し込まない。
@@ -153,24 +163,37 @@ fn compatible_ascii_metrics(
 /// 全罫線が独立した閉じた枠と確認済みのセルでは、枠を下線とせず小さい添字行を復元する。
 pub(super) fn boxed_cells(
     parsed: &ParsedDocument,
+    spaces: &native_spacing::PageSpaces<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
 ) -> Vec<Vec<Option<Cell>>> {
-    cells_impl(parsed, xs, ys, texts, model, true, None)
+    cells_impl(parsed, spaces, xs, ys, texts, model, GridKind::ClosedBoxes)
+}
+
+/// 原本の枠の種類と、罫線gridでのみ確認できる端数座標。
+enum GridKind<'a> {
+    /// 共通の罫線を持つgrid。計測できた場合は端数座標を用いる。
+    Ruled(Option<&'a fractional_table_rules::Grid>),
+    /// 独立した閉じた枠の反復。
+    ClosedBoxes,
 }
 
 /// 元のgridに従うセル復元を共有し、添字の復元は呼出側の確認済み範囲に限定する。
 fn cells_impl(
     parsed: &ParsedDocument,
+    spaces: &native_spacing::PageSpaces<'_>,
     xs: &[i32],
     ys: &[i32],
     texts: &[Vec<Vec<ParsedTextElement>>],
     model: &DocxTableModel,
-    closed_boxes: bool,
-    geometry: Option<&fractional_table_rules::Grid>,
+    grid: GridKind<'_>,
 ) -> Vec<Vec<Option<Cell>>> {
+    let (closed_boxes, geometry) = match grid {
+        GridKind::Ruled(geometry) => (false, geometry),
+        GridKind::ClosedBoxes => (true, None),
+    };
     let family = layout_space::family(&parsed.embedded_fonts, &parsed.text_elements);
     let page = texts
         .iter()
@@ -303,8 +326,11 @@ fn cells_impl(
                     let lines = rows
                         .into_iter()
                         .filter_map(|row| {
-                            let mut row =
-                                native_spacing::with_interior_spaces(&parsed.text_elements, row);
+                            let candidates = spaces.for_page(row.first()?.page);
+                            let mut row = native_spacing::with_interior_spaces(
+                                candidates.iter().copied(),
+                                row,
+                            );
                             row.sort_by(|a, b| a.bounds.x0.total_cmp(&b.bounds.x0));
                             let mut line =
                                 source_line(row.clone(), &text_graphics, *xs.last()? as f32)?;
