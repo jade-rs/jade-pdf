@@ -415,9 +415,23 @@ pub(super) fn legacy_runs<'a>(
 ) -> Vec<StructuredTextRun> {
     let mut text = String::new();
     let mut runs = Vec::new();
+    let mut previous = None;
     for element in selected {
         let start = text.len();
-        append_cell_fragment(&mut text, element.text.trim());
+        let fragment = element.text.trim();
+        if expected
+            .get(start..)
+            .is_some_and(|remaining| remaining.starts_with(fragment))
+            && previous.is_some_and(|previous| {
+                table_monospace_spacing::between(previous, element)
+                    == Some(table_monospace_spacing::Spacing::Adjacent)
+            })
+        {
+            text.push_str(fragment);
+        } else {
+            append_cell_fragment(&mut text, fragment);
+        }
+        previous = Some(element);
         if text.len() == start {
             continue;
         }
