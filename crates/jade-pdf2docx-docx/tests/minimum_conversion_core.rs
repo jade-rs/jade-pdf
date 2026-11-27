@@ -536,6 +536,65 @@ fn byte_conversion_infers_table_when_outer_border_is_missing() {
     let _ = fs::remove_file(output_docx);
 }
 
+/// 上罫線がなくても、側枠内の先頭行を編集可能な表に残す。
+/// 上罫線がなく、左端のセルが縦結合する表の先頭行も編集可能なセルに残す。
+#[test]
+fn byte_conversion_keeps_the_top_row_in_a_side_framed_table() {
+    let content = b"
+        0.36 w
+        83 359 m 83 549 l S 115 359 m 115 549 l S 411 359 m 411 549 l S
+        83 359 m 411 359 l S
+        115 377 m 411 377 l S 115 421 m 411 421 l S 115 439 m 411 439 l S
+        115 482 m 411 482 l S 115 500 m 411 500 l S
+        BT /F1 10 Tf 1 0 0 1 89 453 Tm (Group) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 525 Tm (Top label) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 525 Tm (Top value) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 487 Tm (Label B) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 487 Tm (Value B) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 455 Tm (Label C) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 455 Tm (Value C) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 425 Tm (Label D) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 425 Tm (Value D) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 396 Tm (Label E) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 396 Tm (Value E) Tj ET
+        BT /F1 10 Tf 1 0 0 1 126 364 Tm (Label F) Tj ET
+        BT /F1 10 Tf 1 0 0 1 195 364 Tm (Value F) Tj ET
+    ";
+    let pdf_bytes = flate_pdf_with_page_contents_base_fonts_and_page_sizes(
+        &[content],
+        &[("F1", "Helvetica")],
+        &[(612, 792)],
+    );
+    let docx_bytes = convert_minimum_pdf_bytes_to_docx_bytes("side-framed-table.pdf", &pdf_bytes)
+        .expect("byte conversion must succeed");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx_bytes)).unwrap();
+    let mut xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    let table_xml = xml
+        .split_once("<w:tbl>")
+        .expect("expected an editable table")
+        .1
+        .split_once("</w:tbl>")
+        .unwrap()
+        .0;
+    let mut rows = table_xml.split("<w:tr>").skip(1);
+    let first_row = rows.next().expect("expected a top row");
+    let cells: Vec<_> = first_row.split("<w:tc>").skip(1).collect();
+    assert_eq!(cells.len(), 2, "{first_row}");
+    assert!(
+        cells[0].contains(r#"<w:vMerge w:val="restart""#),
+        "{first_row}"
+    );
+    assert!(cells[1].contains("Top label"), "{first_row}");
+    assert!(cells[1].contains("Top value"), "{first_row}");
+    assert!(cells[1].contains(r#"<w:top w:val="nil""#), "{first_row}");
+    assert_eq!(rows.count(), 5);
+}
+
 #[test]
 fn byte_conversion_infers_table_from_nearly_axis_aligned_thin_rules() {
     let content = [
