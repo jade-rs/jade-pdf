@@ -1076,7 +1076,7 @@ fn add_structured_page_blocks<C: StructuredPageContainer>(
     }
     blocks.sort_by(compare_structured_blocks);
     let adjacent_tables = adjacent_source_tables::select(
-        &blocks,
+        &mut blocks,
         parsed
             .pages
             .iter()

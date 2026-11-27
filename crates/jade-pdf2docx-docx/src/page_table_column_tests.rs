@@ -293,3 +293,69 @@ proptest! {
         }
     }
 }
+
+/// 表の上端がずれていても、両側を覆う原本の段境界があれば左段を先に読み出す。
+#[test]
+fn staggered_tables_follow_a_verified_column_rule() {
+    let mut parsed = source(2, &[]);
+    parsed.text_elements.clear();
+    let mut left = positioned_table(0);
+    left.table = OcrTable::new(vec![
+        vec!["LEFT FIRST".into(), "Left 2".into()],
+        vec!["Left 3".into(), "Left 4".into()],
+    ]);
+    let mut right = positioned_table(0);
+    right.bounds = ParsedBounds {
+        x0: 320.,
+        y0: 540.,
+        x1: 520.,
+        y1: 600.,
+    };
+    right.table = OcrTable::new(vec![
+        vec!["RIGHT FIRST".into(), "Right 2".into()],
+        vec!["Right 3".into(), "Right 4".into()],
+    ]);
+    let tables = [right, left];
+    for table in &tables {
+        let ParsedBounds { x0, y0, x1, y1 } = table.bounds;
+        for (x0, y0, x1, y1) in [
+            (x0, y0, x1, y0),
+            (x0, y1, x1, y1),
+            (x0, y0, x0, y1),
+            (x1, y0, x1, y1),
+        ] {
+            parsed.graphics.push(ParsedGraphicElement {
+                page: 0,
+                bounds: ParsedBounds { x0, y0, x1, y1 },
+                stroke_width: 0.5,
+                dashed: false,
+            });
+        }
+    }
+    let xml = packaged(parsed.clone(), &tables);
+    assert!(xml.find("RIGHT FIRST").unwrap() < xml.find("LEFT FIRST").unwrap());
+    assert!(!xml.contains("<w:tblpPr"));
+
+    parsed.graphics.push(ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds {
+            x0: 285.,
+            y0: 480.,
+            x1: 285.,
+            y1: 630.,
+        },
+        stroke_width: 0.5,
+        dashed: false,
+    });
+    let height = parsed.pages[0].height;
+    let xml = packaged(parsed, &tables);
+    assert_eq!(xml.matches("<w:tbl>").count(), 2);
+    assert!(xml.find("LEFT FIRST").unwrap() < xml.find("RIGHT FIRST").unwrap());
+    assert_eq!(xml.matches("<w:tblpPr").count(), 2);
+    for table in &tables {
+        let x = table.bounds.x0 * 20.;
+        let y = (height - table.bounds.y1) * 20.;
+        assert!(xml.contains(&format!(r#"w:tblpX="{x:.0}""#)));
+        assert!(xml.contains(&format!(r#"w:tblpY="{y:.0}""#)));
+    }
+}
