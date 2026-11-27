@@ -197,3 +197,18 @@ fn cell_clipped_source_diagonal_survives_black_border_overpaint() {
     assert_eq!(s.matches("<w:tl2br ").count(), 1);
     assert_eq!(s.matches("<w:tr2bl ").count(), 0);
 }
+
+/// 二本が角の許容範囲に入っても、描画順で最後の原本線幅を方向ごとに選ぶ。
+#[test]
+fn diagonal_index_keeps_source_paint_order_for_overlapping_candidates() {
+    let lines = "0.5 w 172 650 m 272 620 l S 1 w 272 620.4 m 172 649.5 l S                  0.75 w 172 620 m 272 650 l S 1.25 w 272 649.5 m 172 620.4 l S";
+    let s = xml(convert_minimum_pdf_bytes_to_docx_bytes(
+        "owned-overlapping-cell-diagonals.pdf",
+        &controlled(lines, "", false, 0., 0., 1.),
+    )
+    .unwrap());
+    assert_eq!(s.matches("<w:tl2br ").count(), 1);
+    assert_eq!(s.matches("<w:tr2bl ").count(), 1);
+    assert!(s.contains(r#"<w:tl2br w:val="single" w:sz="8""#));
+    assert!(s.contains(r#"<w:tr2bl w:val="single" w:sz="10""#));
+}
