@@ -595,6 +595,71 @@ fn byte_conversion_keeps_the_top_row_in_a_side_framed_table() {
     assert_eq!(rows.count(), 5);
 }
 
+/// 両端が開いた表は縦罫線の端で行を区切り、原本にない上下の横罫線を足さない。
+#[test]
+fn byte_conversion_keeps_both_open_horizontal_table_edges() {
+    let content = b"
+        0.5 w 20 60 m 20 160 l S 120 60 m 120 160 l S 220 60 m 220 160 l S
+        20 110 m 220 110 l S
+        BT /F1 10 Tf 1 0 0 1 25 140 Tm (A1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 125 140 Tm (B1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 25 80 Tm (A2) Tj ET
+        BT /F1 10 Tf 1 0 0 1 125 80 Tm (B2) Tj ET
+    ";
+    let pdf_bytes = flate_pdf_with_page_contents_base_fonts_and_page_sizes(
+        &[content],
+        &[("F1", "Helvetica")],
+        &[(300, 200)],
+    );
+    let docx_bytes = convert_minimum_pdf_bytes_to_docx_bytes("open-table-edges.pdf", &pdf_bytes)
+        .expect("byte conversion must succeed");
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(docx_bytes)).unwrap();
+    let mut xml = String::new();
+    archive
+        .by_name("word/document.xml")
+        .unwrap()
+        .read_to_string(&mut xml)
+        .unwrap();
+    assert_eq!(xml.matches("<w:tbl>").count(), 1);
+    let rows: Vec<_> = xml
+        .split("<w:tr>")
+        .skip(1)
+        .map(|row| row.split_once("</w:tr>").unwrap().0)
+        .collect();
+    assert_eq!(rows.len(), 2);
+    for (row, expected_text) in rows.iter().zip([["A1", "B1"], ["A2", "B2"]]) {
+        let cells: Vec<_> = row.split("<w:tc>").skip(1).collect();
+        assert_eq!(cells.len(), 2);
+        for (cell, label) in cells.iter().zip(expected_text) {
+            assert!(cell.contains(&format!(">{label}<")), "{cell}");
+        }
+    }
+    assert_eq!(
+        rows[0].matches(r#"<w:top w:val="nil""#).count(),
+        2,
+        "{}",
+        rows[0]
+    );
+    assert_eq!(
+        rows[0].matches(r#"<w:bottom w:val="single""#).count(),
+        2,
+        "{}",
+        rows[0]
+    );
+    assert_eq!(
+        rows[1].matches(r#"<w:top w:val="single""#).count(),
+        2,
+        "{}",
+        rows[1]
+    );
+    assert_eq!(
+        rows[1].matches(r#"<w:bottom w:val="nil""#).count(),
+        2,
+        "{}",
+        rows[1]
+    );
+}
+
 #[test]
 fn byte_conversion_infers_table_from_nearly_axis_aligned_thin_rules() {
     let content = [

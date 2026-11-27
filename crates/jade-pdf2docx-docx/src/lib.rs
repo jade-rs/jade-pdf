@@ -4750,7 +4750,11 @@ fn infer_positioned_table_from_graphics_with_table_text(
     {
         xs = augmented_xs;
     }
-    if ys.len() < 2
+    let open_edge_rows =
+        graphic_table_outer_edges::open_horizontal_rows(&xs, &ys, &vertical, &horizontal);
+    if let Some(rows) = open_edge_rows {
+        ys = rows.into();
+    } else if ys.len() < 2
         && let Some(augmented_ys) =
             synthesize_ys_from_text_rows_and_graphics(parsed, page, &page_graphics)
     {
@@ -4763,10 +4767,11 @@ fn infer_positioned_table_from_graphics_with_table_text(
     if let Some(top) = side_framed_top {
         ys.push(top);
     }
+    let has_side_framed_rows = open_edge_rows.is_some() || side_framed_top.is_some();
     let mut text_augmented_columns = false;
     if xs.len() >= 2
         && ys.len() >= 2
-        && side_framed_top.is_none()
+        && !has_side_framed_rows
         // 内側罫線が全行を分ける完成グリッドは、セル内の折返しアンカーで置き換えない。
         && !(xs.len() > 2 && has_grid_lines(&page_graphics, &xs, &ys))
         && let Some(augmented_xs) = augment_xs_from_text_columns(parsed, page, &xs, &ys)
@@ -4784,7 +4789,7 @@ fn infer_positioned_table_from_graphics_with_table_text(
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_borderless_grid_lines(&page_graphics, &xs, &ys)
-            && side_framed_top.is_none()
+            && !has_side_framed_rows
     {
         return None;
     }
