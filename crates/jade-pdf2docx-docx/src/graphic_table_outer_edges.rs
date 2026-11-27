@@ -1,4 +1,5 @@
-//! 上下の横罫線の端と、実際に行帯を覆う縦罫線が一致する場合だけ、短い外辺をgridへ戻す。
+//! 原本の横罫線と縦罫線から、表の外辺と行帯が確認できる場合だけgridへ戻す。
+use super::TABLE_RULE_JOIN_TOLERANCE_PT;
 use jade_pdf2docx_parser::ParsedBounds;
 
 /// 長い縦罫線から得た範囲の外側へ、両端の根拠がある部分外辺だけを追加する。
@@ -49,6 +50,45 @@ pub(super) fn augment(
     out
 }
 
+/// 全列の縦罫線が一つの全幅の行罫線を横切り、上下端がそろう場合の二行を返す。
+pub(super) fn open_horizontal_rows(
+    xs: &[i32],
+    ys: &[i32],
+    vertical: &[ParsedBounds],
+    horizontal: &[ParsedBounds],
+) -> Option<[i32; 3]> {
+    let [left, _, .., right] = xs else {
+        return None;
+    };
+    let [separator] = ys else {
+        return None;
+    };
+    let tolerance = TABLE_RULE_JOIN_TOLERANCE_PT as f32;
+    if !horizontal.iter().any(|line| {
+        line.y0 == *separator as f32
+            && (line.x0 - *left as f32).abs() <= tolerance
+            && (line.x1 - *right as f32).abs() <= tolerance
+    }) {
+        return None;
+    }
+
+    vertical
+        .iter()
+        .filter(|line| {
+            line.x0 == *left as f32
+                && line.y0 + tolerance < *separator as f32
+                && line.y1 - tolerance > *separator as f32
+        })
+        .find(|outer| {
+            xs.iter().all(|&x| {
+                vertical
+                    .iter()
+                    .any(|line| line.x0 == x as f32 && line.y0 == outer.y0 && line.y1 == outer.y1)
+            })
+        })
+        .map(|outer| [outer.y0 as i32, *separator, outer.y1 as i32])
+}
+
 /// 座標不明の罫線を、floatから整数への飽和castで有効な外辺とみなさない。
 fn finite(bounds: &ParsedBounds) -> bool {
     [bounds.x0, bounds.y0, bounds.x1, bounds.y1]
@@ -63,6 +103,32 @@ mod tests {
     /// 所有する罫線座標を、上下左右が正規化されたboundsへする。
     fn b(x0: f32, y0: f32, x1: f32, y1: f32) -> ParsedBounds {
         ParsedBounds { x0, y0, x1, y1 }
+    }
+
+    /// 上下端のずれた縦罫線や途中で切れた行罫線から行帯を推測しない。
+    #[test]
+    fn open_horizontal_rows_require_aligned_columns_and_a_full_width_separator() {
+        let xs = [20, 120, 220];
+        let ys = [110];
+        let mut vertical = [
+            b(20., 60., 20., 160.),
+            b(120., 60., 120., 160.),
+            b(220., 60., 220., 160.),
+        ];
+        let full_width_rule = [b(20., 110., 220., 110.)];
+        assert_eq!(
+            open_horizontal_rows(&xs, &ys, &vertical, &full_width_rule),
+            Some([60, 110, 160])
+        );
+        assert_eq!(
+            open_horizontal_rows(&xs, &ys, &vertical, &[b(20., 110., 200., 110.)]),
+            None
+        );
+        vertical[1].y1 -= 10.;
+        assert_eq!(
+            open_horizontal_rows(&xs, &ys, &vertical, &full_width_rule),
+            None
+        );
     }
 
     /// 片側の外辺が全高の75%でも、上下の実線と行帯で確かめた外辺だけを追加する。
