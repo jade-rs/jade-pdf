@@ -75,10 +75,10 @@ class FetchTests(unittest.TestCase):
         self.assertEqual(opening.call_count, 2)
         self.assertEqual(list(self.root.iterdir()), [])
 
-    def test_non_timeout_errors_are_not_retried(self):
+    def test_permanent_http_and_certificate_errors_are_not_retried(self):
         errors = [
             urllib.error.HTTPError(self.entry['url'], 404, 'Not found', {}, None),
-            urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, None),
+            urllib.error.HTTPError(self.entry['url'], 403, 'Forbidden', {}, None),
             urllib.error.URLError(ssl.SSLCertVerificationError('certificate verification failed')),
         ]
         for error in errors:
@@ -88,6 +88,37 @@ class FetchTests(unittest.TestCase):
                 self.assertIs(raised.exception, error)
                 self.assertEqual(opening.call_count, 1)
                 self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_http_503_retries_once_and_installs_verified_bytes(self):
+        body = io.BytesIO(b'Service unavailable')
+        error = urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, body)
+        with patch('urllib.request.urlopen', side_effect=[error, io.BytesIO(self.data)]) as opening, \
+                patch('pdf_corpus.time.sleep') as delay:
+            fetch(self.entry, self.root)
+        self.assertEqual(opening.call_count, 2)
+        delay.assert_called_once_with(1)
+        self.assertTrue(body.closed)
+        self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
+
+    def test_repeated_http_503_reports_the_final_error(self):
+        first = urllib.error.HTTPError(self.entry['url'], 503, 'Initial failure', {}, None)
+        final = urllib.error.HTTPError(self.entry['url'], 503, 'Final failure', {}, None)
+        with patch('urllib.request.urlopen', side_effect=[first, final]) as opening, \
+                patch('pdf_corpus.time.sleep'):
+            with self.assertRaises(urllib.error.HTTPError) as raised:
+                fetch(self.entry, self.root)
+        self.assertIs(raised.exception, final)
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_changed_source_after_http_503_is_not_installed(self):
+        error = urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, None)
+        changed = self.data.replace(b'test', b'fail')
+        with patch('urllib.request.urlopen', side_effect=[error, io.BytesIO(changed)]), \
+                patch('pdf_corpus.time.sleep'):
+            with self.assertRaisesRegex(ValueError, 'unexpected PDF'):
+                fetch(self.entry, self.root)
+        self.assertEqual(list(self.root.iterdir()), [])
 
     def test_changed_source_after_timeout_is_not_installed(self):
         error = urllib.error.URLError(TimeoutError('handshake timed out'))
