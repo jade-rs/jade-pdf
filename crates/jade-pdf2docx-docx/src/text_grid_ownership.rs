@@ -1,4 +1,4 @@
-//! 新しい混在ページの反復列表が、本文から引き取る文字を欠落・重複させない契約。
+//! 反復列表が本文から引き取る文字を欠落・重複させない契約。
 use super::{ParsedDocument, PositionedTable, text_element_is_in_table};
 use std::collections::BTreeMap;
 
