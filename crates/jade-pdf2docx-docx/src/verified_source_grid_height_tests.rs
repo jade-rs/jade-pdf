@@ -1,6 +1,63 @@
 //! 原本のvector罫線中心の間隔へ、raster bbox由来の余白を足さない回帰。
 use super::*;
 
+/// 子表の罫線と終端段落の容量を未確認の親表は、元の行高へ戻す。
+#[test]
+fn nested_parent_keeps_legacy_height_but_verified_leaf_keeps_source_pitch() {
+    let mut parsed = source_grid_selection_tests::source();
+    parsed.graphics.clear();
+    for (x0, x1, y0, y1) in [(0., 160., 0., 80.), (10., 150., 10., 70.)] {
+        for (x0, x1, y0, y1) in [
+            (x0, x0, y0, y1),
+            (x1, x1, y0, y1),
+            (x0, x1, y0, y0),
+            (x0, x1, y1, y1),
+        ] {
+            parsed.graphics.push(ParsedGraphicElement {
+                page: 0,
+                bounds: ParsedBounds { x0, x1, y0, y1 },
+                stroke_width: 0.5,
+            });
+        }
+    }
+    let template = parsed.text_elements[0].clone();
+    parsed.text_elements = [55., 40.]
+        .into_iter()
+        .map(|baseline| {
+            let mut text = template.clone();
+            text.baseline_y = Some(baseline);
+            text.bounds = ParsedBounds {
+                x0: 20.,
+                x1: 50.,
+                y0: baseline,
+                y1: baseline + 10.,
+            };
+            text
+        })
+        .collect();
+    let tables = infer_positioned_tables_from_pdf_graphics(&parsed);
+    assert_eq!(tables.len(), 1);
+    let parent = &tables[0];
+    assert_eq!(parent.nested_tables.len(), 1);
+    assert_eq!(
+        parent.bounds,
+        ParsedBounds {
+            x0: 0.,
+            x1: 160.,
+            y0: 0.,
+            y1: 80.
+        }
+    );
+    let leaf = &parent.nested_tables[0];
+    assert!(source_grid_selection::verified(leaf));
+    assert_eq!(leaf.row_heights_twips, vec![1200.]);
+    assert_eq!(
+        parent.row_heights_twips,
+        vec![1620.],
+        "parent replacement includes an unmeasured nested table"
+    );
+}
+
 /// fontとセル内の行容量を確認済みなら、40ptの原本行を40.5ptへ伸ばさない。
 #[test]
 fn verified_native_grid_rows_do_not_add_raster_bbox_padding() {
