@@ -38,6 +38,8 @@ mod graphics_budget_tests;
 mod graphics_draws;
 #[path = "graphics_merge.rs"]
 mod graphics_merge;
+#[path = "page_background_group.rs"]
+mod page_background_group;
 #[path = "source_diagonals.rs"]
 mod source_diagonals;
 #[path = "stroked_rectangles.rs"]
@@ -997,15 +999,7 @@ fn extract_text_elements_with_paint_resources(
             },
         );
         if texts.iter().any(|t| t.source_background.is_some())
-            && !decode_budget
-                .page_dictionaries(resource_source)
-                .get(page)
-                .and_then(|raw| crate::metadata::entries(raw))
-                .is_some_and(|mut entries| {
-                    !entries.any(|(key, _)| {
-                        crate::metadata_names::resource_name_order(key, "Group").is_eq()
-                    })
-                })
+            && !page_background_group::supported(decode_budget, resource_source, page)
         {
             for text in &mut texts {
                 text.source_background = None;
