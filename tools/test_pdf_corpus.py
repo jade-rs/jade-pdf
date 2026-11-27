@@ -75,10 +75,36 @@ class FetchTests(unittest.TestCase):
         self.assertEqual(opening.call_count, 2)
         self.assertEqual(list(self.root.iterdir()), [])
 
-    def test_non_timeout_errors_are_not_retried(self):
+    def test_service_unavailable_retries_with_hash_verification(self):
+        body = io.BytesIO(b'Service unavailable')
+        error = urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, body)
+        with (
+            patch('urllib.request.urlopen', side_effect=[error, io.BytesIO(self.data)]) as opening,
+            patch('pdf_corpus.time.sleep') as delay,
+        ):
+            fetch(self.entry, self.root)
+        self.assertTrue(body.closed)
+        delay.assert_called_once_with(1)
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual((self.root / 'fixture.pdf').read_bytes(), self.data)
+
+    def test_repeated_service_unavailability_preserves_final_error(self):
+        first = urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, io.BytesIO())
+        error = urllib.error.HTTPError(self.entry['url'], 503, 'Still unavailable', {}, io.BytesIO())
+        with (
+            patch('urllib.request.urlopen', side_effect=[first, error]) as opening,
+            patch('pdf_corpus.time.sleep') as delay,
+        ):
+            with self.assertRaises(urllib.error.HTTPError) as raised:
+                fetch(self.entry, self.root)
+        delay.assert_called_once_with(1)
+        self.assertIs(raised.exception, error)
+        self.assertEqual(opening.call_count, 2)
+        self.assertEqual(list(self.root.iterdir()), [])
+
+    def test_permanent_request_errors_are_not_retried(self):
         errors = [
             urllib.error.HTTPError(self.entry['url'], 404, 'Not found', {}, None),
-            urllib.error.HTTPError(self.entry['url'], 503, 'Unavailable', {}, None),
             urllib.error.URLError(ssl.SSLCertVerificationError('certificate verification failed')),
         ]
         for error in errors:

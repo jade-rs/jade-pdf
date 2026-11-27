@@ -7,6 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 import sys
+import time
 import urllib.error
 import urllib.request
 
@@ -38,6 +39,11 @@ def fetch(entry, destination, offline=False):
             with urllib.request.urlopen(request, timeout=45) as response:
                 data = response.read(MAX_BYTES + 1)
             break
+        except urllib.error.HTTPError as error:
+            if attempt == 1 or error.code != 503:
+                raise
+            error.close()
+            time.sleep(1)
         except (TimeoutError, urllib.error.URLError) as error:
             reason = error.reason if isinstance(error, urllib.error.URLError) else error
             if attempt == 1 or not isinstance(reason, TimeoutError):
@@ -75,14 +81,14 @@ def main():
     failures = []
     with ThreadPoolExecutor(max_workers=4) as pool:
         futures = [
-            pool.submit(fetch, entry, args.destination, args.offline)
+            (entry["id"], pool.submit(fetch, entry, args.destination, args.offline))
             for entry in sources(manifest)
         ]
-        for future in futures:
+        for identifier, future in futures:
             try:
                 print(future.result(), flush=True)
             except Exception as error:
-                failures.append(str(error))
+                failures.append(f"{identifier}: {error}")
     for failure in failures:
         print(failure, file=sys.stderr)
     return bool(failures)
