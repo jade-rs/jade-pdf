@@ -326,9 +326,7 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     Some(
         cell.single_line_runs
             .iter()
-            .fold(Paragraph::new(), |p, run| {
-                p.add_run(docx_run_from_structured_run(run))
-            })
+            .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
             .line_spacing(spacing),
     )
 }
@@ -349,9 +347,7 @@ pub(super) fn fallback_paragraph(cell: &Cell) -> Option<Paragraph> {
     Some(
         cell.fallback_runs
             .iter()
-            .fold(Paragraph::new(), |p, run| {
-                p.add_run(docx_run_from_structured_run(run))
-            })
+            .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
             .line_spacing(spacing),
     )
 }
@@ -410,8 +406,12 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         });
     for (index, (line, spacing)) in cell.lines.iter().zip(spacings).enumerate() {
         let spacing = spacing?;
-        let mut paragraph =
-            paragraph_from_structured_line(line, cell.left, None, None).line_spacing(spacing);
+        let paragraph = line
+            .runs
+            .iter()
+            .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)));
+        let mut paragraph = position_structured_paragraph(paragraph, line, cell.left, None, None)
+            .line_spacing(spacing);
         if right_anchors[index] {
             let right = pdf_points_to_indent_twips(cell.right - line.right_x)?;
             paragraph =
@@ -422,6 +422,75 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
         out = out.add_paragraph(paragraph);
     }
     Some(out)
+}
+
+/// 原本セルでも既存の代替字幅を使い、埋め込みfontと確定した字形配置は上書きしない。
+fn cell_run(source: &StructuredTextRun) -> Run {
+    let mut run = docx_run_from_structured_run(source);
+    if !source.style.font_embedded
+        && source.style.placement.is_none()
+        && let Some(stretch) = source
+            .style
+            .font_name
+            .as_deref()
+            .and_then(docx_font_stretch_from_pdf_font_name)
+    {
+        run = run.stretch(stretch);
+    }
+    run
+}
+
+#[cfg(test)]
+mod fallback_width_tests {
+    use super::*;
+    use std::io::{Cursor, Read};
+
+    /// 共通run builderを実際のWord XMLへ通し、幅の重複・上書きを検査する。
+    fn output(embedded: bool, placement: Option<positioned_type1::Placement>) -> String {
+        let source = StructuredTextRun {
+            text: "Owned".into(),
+            style: StructuredTextStyle {
+                font_name: Some("MS-PGothic".into()),
+                font_embedded: embedded,
+                placement,
+                ..StructuredTextStyle::default()
+            },
+        };
+        let bytes = pack_docx_to_bytes(
+            Docx::new().add_paragraph(Paragraph::new().add_run(cell_run(&source))),
+            &[],
+        )
+        .unwrap();
+        let mut zip = zip::ZipArchive::new(Cursor::new(bytes)).unwrap();
+        let mut text = String::new();
+        zip.by_name("word/document.xml")
+            .unwrap()
+            .read_to_string(&mut text)
+            .unwrap();
+        text
+    }
+
+    /// 確認済み埋め込みfontには、代替family用の補正を適用しない。
+    #[test]
+    fn embedded_source_font_does_not_gain_fallback_stretch() {
+        assert!(!output(true, None).contains("<w:w "));
+    }
+
+    /// 明示のglyph幅・字間は代替字幅の92%で上書きしない。
+    #[test]
+    fn verified_glyph_placement_is_not_overwritten() {
+        let xml = output(
+            false,
+            Some(positioned_type1::Placement {
+                stretch: 83,
+                spacing: 7,
+                logical_space: false,
+            }),
+        );
+        assert!(xml.contains("<w:w w:val=\"83\""));
+        assert!(!xml.contains("<w:w w:val=\"92\""));
+        assert!(xml.contains("<w:spacing w:val=\"7\""));
+    }
 }
 
 /// 原本と全文照合したセルの背景色を、Wordセルの最終構築へ渡す。
