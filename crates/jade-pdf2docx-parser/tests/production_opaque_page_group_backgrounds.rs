@@ -106,6 +106,35 @@ fn group_does_not_override_existing_paint_and_color_guards() {
     }
 }
 
+/// 隣のページのGroupの可否を流用せず、それぞれの所属ページだけで背景を確認する。
+#[test]
+fn page_group_verification_stays_with_its_own_page() {
+    for reverse in [false, true] {
+        let groups = if reverse {
+            ["/DeviceCMYK", "/DeviceRGB"]
+        } else {
+            ["/DeviceRGB", "/DeviceCMYK"]
+        };
+        let source = fixture::pdf(&[
+            "<< /Type /Catalog /Pages 2 0 R >>".into(),
+            "<< /Type /Pages /Count 2 /Kids [3 0 R 4 0 R] /MediaBox [0 0 200 300] /Resources << /Font << /F 7 0 R >> >> >>".into(),
+            format!("<< /Type /Page /Parent 2 0 R /Group << /S /Transparency /CS {} >> /Contents 5 0 R >>",groups[0]),
+            format!("<< /Type /Page /Parent 2 0 R /Group << /S /Transparency /CS {} >> /Contents 6 0 R >>",groups[1]),
+            fixture::stream(".553 .702 .886 rg 10 100 180 30 re f 0 g BT /F 12 Tf 20 110 Td (A) Tj ET"),
+            fixture::stream(".553 .702 .886 rg 10 100 180 30 re f 0 g BT /F 12 Tf 20 110 Td (B) Tj ET"),
+            "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>".into(),
+        ]);
+        let parsed = parse_pdf_bytes("owned-two-page-groups.pdf", &source).unwrap();
+        assert_eq!(parsed.text_elements.len(), 2);
+        for text in &parsed.text_elements {
+            assert_eq!(
+                text.source_background.is_some(),
+                groups[text.page] == "/DeviceRGB"
+            );
+        }
+    }
+}
+
 proptest! {
     #![proptest_config(ProptestConfig::with_cases(32))]
     /// 不透明な既定Groupの有無と属性順は、原本矩形の色・範囲を変更しない。
