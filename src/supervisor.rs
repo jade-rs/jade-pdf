@@ -67,6 +67,16 @@ pub(crate) fn run(
     request: &Request,
     cancellation: &ParseCancellation,
 ) -> Result<(), WorkerError> {
+    run_with_elapsed(executable, request, cancellation, Instant::elapsed)
+}
+
+/// 時計を分離し、実プロセスの停止試験で保存I/Oの観測後に期限を進められるようにする。
+pub(crate) fn run_with_elapsed(
+    executable: &Path,
+    request: &Request,
+    cancellation: &ParseCancellation,
+    elapsed_since: impl Fn(&Instant) -> Duration,
+) -> Result<(), WorkerError> {
     let started = Instant::now();
     worker::check_interruption(cancellation)?;
     // 対応外OS・未委譲・controller不足は一時領域とworkerを作る前に拒否する。
@@ -101,7 +111,7 @@ pub(crate) fn run(
     }
     request.append_conversion_args(&mut command);
     worker::check_interruption(cancellation)?;
-    if started.elapsed() >= request.timeout {
+    if elapsed_since(&started) >= request.timeout {
         return Err(WorkerError::Timeout {
             timeout: request.timeout,
         });
@@ -169,7 +179,7 @@ pub(crate) fn run(
             }
             return Err(unpublished_exit(status, cancellation.is_cancelled(), None));
         }
-        let elapsed = started.elapsed();
+        let elapsed = elapsed_since(&started);
         if elapsed >= request.timeout {
             supervisor.child.stdin.take();
             let status = process_group::terminate_and_reap(&mut supervisor.child)?;
@@ -201,10 +211,10 @@ pub(crate) fn run(
             commit_owner.poll()?;
             // 親のI/O待ち中に届いた停止・期限を、置換より前にもう一度確認する。
             if !cancellation.is_cancelled()
-                && started.elapsed() < request.timeout
+                && elapsed_since(&started) < request.timeout
                 && commit_owner.publish_prepared(|| {
                     !cancellation.is_cancelled()
-                        && started.elapsed() < request.timeout
+                        && elapsed_since(&started) < request.timeout
                         && supervisor
                             .memory
                             .as_ref()

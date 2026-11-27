@@ -74,17 +74,12 @@ fn process_fixture() {
     };
     let cancellation = ParseCancellation::new();
     if std::env::var("JADE_PDF2DOCX_TEST_COMMIT_ROLE").is_ok_and(|role| role == "parent") {
-        if std::env::var_os("JADE_PDF2DOCX_TEST_COMMIT_CANCEL_AFTER_PARTIAL").is_some() {
-            let observed = cancellation.clone();
-            let observed_input = input.clone();
-            std::thread::spawn(move || {
-                while !has_commit_partial(&observed_input) {
-                    std::thread::sleep(Duration::from_millis(10));
-                }
-                observed.cancel();
-            });
-        }
-        let result = crate::supervisor::run(Path::new(&executable), &request, &cancellation);
+        let result = if std::env::var_os("JADE_PDF2DOCX_TEST_COMMIT_CANCEL_AFTER_PARTIAL").is_some()
+        {
+            run_cancelling_fixture(Path::new(&executable), &request, &cancellation)
+        } else {
+            crate::supervisor::run(Path::new(&executable), &request, &cancellation)
+        };
         let outcome = match &result {
             Ok(()) => "success",
             Err(crate::worker::WorkerError::Timeout { .. }) => "timeout",
@@ -128,6 +123,31 @@ fn process_fixture() {
         fs::write(input.with_extension("cancelled"), b"").unwrap();
     }
     result.unwrap();
+}
+
+/// 保存コピーへの到達とlease切断を確認してから、親が監督を回収する期限へ進める。
+fn run_cancelling_fixture(
+    executable: &Path,
+    request: &Request,
+    cancellation: &ParseCancellation,
+) -> Result<(), crate::worker::WorkerError> {
+    let observed = cancellation.clone();
+    let input = request.input.clone();
+    std::thread::spawn(move || {
+        while !has_commit_partial(&input) {
+            std::thread::sleep(Duration::from_millis(10));
+        }
+        fs::write(input.with_extension("partial-observed"), b"").unwrap();
+        observed.cancel();
+    });
+    let cancelled = request.input.with_extension("cancelled");
+    crate::supervisor::run_with_elapsed(executable, request, cancellation, |started| {
+        if cancellation.is_cancelled() && cancelled.exists() {
+            request.timeout
+        } else {
+            started.elapsed()
+        }
+    })
 }
 
 /// 外側の通知fileを除外し、所有済みworkspace内の保存領域だけを観測する。
@@ -359,11 +379,12 @@ exit 0
     if shutdown == Shutdown::PublicationCancelled {
         command.env("JADE_PDF2DOCX_TEST_CANCEL_AFTER_PUBLICATION", "1");
     }
-    if deadline_shutdown {
-        command.env("JADE_PDF2DOCX_TEST_COMMIT_TIMEOUT_MS", "2000");
-    }
     if shutdown == Shutdown::CancelledDeadline {
-        command.env("JADE_PDF2DOCX_TEST_COMMIT_CANCEL_AFTER_PARTIAL", "1");
+        command
+            .env("JADE_PDF2DOCX_TEST_COMMIT_TIMEOUT_MS", "8000")
+            .env("JADE_PDF2DOCX_TEST_COMMIT_CANCEL_AFTER_PARTIAL", "1");
+    } else if deadline_shutdown {
+        command.env("JADE_PDF2DOCX_TEST_COMMIT_TIMEOUT_MS", "2000");
     }
     if shutdown == Shutdown::SuspendedWriterDeadline {
         command.env("JADE_PDF2DOCX_TEST_SUSPEND_FIFO_WRITER", "1");
@@ -378,6 +399,8 @@ exit 0
             fs::read(&output).is_ok_and(|bytes| bytes == b"partial")
         } else if before_grant {
             checkpoint.exists()
+        } else if shutdown == Shutdown::CancelledDeadline {
+            input.with_extension("partial-observed").exists()
         } else {
             has_commit_partial(&input)
         }
@@ -418,7 +441,8 @@ exit 0
         }
         std::thread::sleep(Duration::from_millis(10));
     };
-    let mut observed_cancellation = true;
+    let mut observed_cancellation =
+        shutdown != Shutdown::CancelledDeadline || input.with_extension("cancelled").exists();
     if kill_parent {
         let deadline = Instant::now() + Duration::from_secs(5);
         while !input.with_extension("cancelled").exists() && Instant::now() < deadline {
