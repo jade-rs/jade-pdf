@@ -1,0 +1,133 @@
+{
+  "time_utc": "2026-11-26T10:53:43.936340+00:00",
+  "head": "ee44f66b6b585de081f9f67bdd1caea8f37b1894",
+  "source_tree": "f530cfdc2a062d536dd82f8a0927b8321e20008c",
+  "Rust_files": 810,
+  "full_default": {
+    "passed": 2739,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 171,
+    "log_sha256": "9b799232e3c2b9d31293c02df3021b90e4309292937ee30d8295dda2ba507b92",
+    "label": "body-grid-underline-CI-default-full-v1"
+  },
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "owned_Word_public_tests": 5,
+  "private_frame_guard_tests": 5,
+  "public_transform_PBT_cases": 32,
+  "private_frame_PBT_cases": 32,
+  "TDD_Reds": {
+    "time_utc": "2026-11-26T10:30:03.322924+00:00",
+    "rows": [
+      {
+        "label": "body-heading-grid-frame-public-Red",
+        "head": "824812b247b3895d92acc805974e575b9ea11aff",
+        "Rust_files": 809,
+        "actual_exit": 101,
+        "failed": 1,
+        "all_executed_Rust_source_bytes_exact_committed_Red": true,
+        "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/two-real-Red-source-proof/body-heading-grid-frame-public-Red.tar",
+        "source_archive_sha256": "01f8f116878bfabd3a241aacbd8819f4e80208d10e61a557d67869e3a7d8904f",
+        "actual_Red_log_sha256": "08ecaddbf217665f70f05e3eb2dbd431e6deb94702974acfe5065eda5f524428",
+        "no_tests_rerun_for_source_reconstruction": true
+      },
+      {
+        "label": "body-grid-frame-raw-coordinate-private-Red",
+        "head": "71239e79d6126626a8726379ae66f67c5693db94",
+        "Rust_files": 810,
+        "actual_exit": 101,
+        "failed": 1,
+        "all_executed_Rust_source_bytes_exact_committed_Red": true,
+        "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/two-real-Red-source-proof/body-grid-frame-raw-coordinate-private-Red.tar",
+        "source_archive_sha256": "6e9a9dff01324aba5fe3fb045e50fffc760d8b1c43fbdf401c5ebb02ff591966",
+        "actual_Red_log_sha256": "ff94be3ed65629eacfc914e451ce6f36d04cdf7d9ae1b4ea5e73ba0c1380cd1b",
+        "no_tests_rerun_for_source_reconstruction": true
+      }
+    ],
+    "initial_optional_merge_model_guard_failed_Green_log_retained": true,
+    "production_ready": false
+  },
+  "TDD_Red_executed_sources_reconstructable_byte_exact": true,
+  "initial_optional_model_guard_failed_Green": {
+    "time_utc": "2026-11-26T10:32:10.975600+00:00",
+    "actual_exit": 101,
+    "not_accepted_as_Green": true,
+    "source_Rust_files": 810,
+    "all_executed_Rust_bytes_reconstructed_exact": true,
+    "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/initial-optional-model-guard-failed-Green-source-proof/source.tar",
+    "source_archive_sha256": "7b1f5f36454ab8e62ffe207d4aec485bf5f2e387dd10d4d1e2643b181dd82d86",
+    "actual_failure_log_sha256": "8f770df836a7b978c0890461cf0e6ef461a81ac64f2933d0bbb36c38fb8758c0",
+    "reason": "An optional merged-cell model was incorrectly required even for ordinary complete regular grids. Final code requires verified native cell ownership and actual four source frame edges instead.",
+    "no_runtime_or_test_rerun": true,
+    "production_ready": false
+  },
+  "total_outcomes": 700,
+  "all700_statuses_exact_parent": true,
+  "statuses_NOT_an_accuracy_rate": true,
+  "RAW_payloads_unchanged": 695,
+  "payload_changes": 5,
+  "native_outcomes": 228,
+  "native_success": 198,
+  "native_rejected": 30,
+  "browser_outcomes": 472,
+  "browser_each_success": 200,
+  "browser_each_rejected": 36,
+  "qualified_native_pool": "qualified-native228-v1/receipt.json",
+  "qualified_browser_pool_template": "qualified-browser118-v1-{engine}/receipt.json",
+  "cross_engine236_payloads118_inspections_exact": true,
+  "all_prior_fixed_input_groups_and_histories_preserved": true,
+  "all5_changed_payloads_bound_to_native20_and_distinct_browser16_reviewed_pages": true,
+  "all3_changed_native_defaults_RAW_exact_reviewed_prototypes": true,
+  "all_changed_XML_diff_only_w_u": true,
+  "all_other_ZIP_parts_RAW_exact_parent": true,
+  "source_and_gold_manifest_bindings": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/parent-original-gold-binding-before-qualified-runtime-v1.json",
+  "parent_original_gold_manifest_count": 84,
+  "parent_original_gold_file_checks": 74952,
+  "all_original_golds_unchanged": true,
+  "Kanpo_native_original52_verified_pass": 40,
+  "Kanpo_native_original52_unmet": 9,
+  "Kanpo_native_original52_unverified": 3,
+  "Kanpo_three_extra_section_heading_underlines_removed": true,
+  "Kanpo_all1622_source_characters_visible_on_original_pages_preserved": true,
+  "NTA_stamp_selected30_cell_associations_preserved": true,
+  "NTA_bonus_separate_original30_inherited_by_RAW_identity": true,
+  "labour_each36pass21unmet_inherited_by_RAW_identity": true,
+  "CPI_each26pass81unmet": true,
+  "no_original_criterion_promoted_by_underline_removal": true,
+  "audits": {
+    "Kanpo": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/known-original-Kanpo-followup-asof-ee44f66/receipt.json",
+      "sha256": "48bfd69003653b0b03923625ec91387c02a35d4614193a6dfa594f98c732ee48"
+    },
+    "NTA-stamp": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/known-original-NTA-stamp-followup-asof-ee44f66/receipt.json",
+      "sha256": "703fa867fee6e9c580f09226095c889602dd18edcb9ef8c652796a2e5634073e"
+    },
+    "CPI": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification/known-original-CPI-followup-asof-ee44f66/receipt.json",
+      "sha256": "2d2bae8af5faf3e72ddca5e37d1986c07a5e6953622f9050251184fe30a2ce1d"
+    },
+    "labour": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-positioned-cell-fallback-stretch/jade-pdf/corpus/wasm-runtime/positioned-cell-fallback-stretch-qualification/known-original-labour-followup-asof-260335a/receipt.json",
+      "sha256": "ead1db96e399fb5891dbb61fcda8e7dec1f9762d1022576db441a4764db552a7"
+    }
+  },
+  "native_binary_sha256": "b7c44a0b943b2fb1bec6d016fdf67f36ba73b14fcd2f43fe6dca1ba4be95bc8f",
+  "raw_release_WASM_sha256": "d4864b4be49c154ad6c5c380668a6b8efdb0c01049475b63fda9a6a9f90611e9",
+  "browser_generated_WASM_sha256": "ead5abdba244f148715667b738ab9d4c460ecb81cf641661344c53d3614c1dd4",
+  "no_new_public_fields_CLI_parameters_or_dependencies": true,
+  "no_payload_geometry_text_style_normalization": true,
+  "component_qualified": true,
+  "component_scope": "Before body underline styling, remove only full-width horizontal outer edges of a source-owned table whose actual four finite positive-stroke edges are verified on the same page. Preserve independent underlines and incomplete/partial frames; leave original graphics, table inference and table/cell styling unchanged.",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "Four Kanpo diagonals, curved brace, source font metrics and exact footer/heading anchors remain unaccepted.",
+    "Original encrypted Kanpo/NTA stamp browser rejection and native strict quality rejection remain.",
+    "Labour vector plot absent and2-to-3 pagination; CPI vector plots, clipping,12-to-16 pagination and other prior NAOJ/Census/SF94/prose/rotation limitations remain."
+  ],
+  "qualification_receipt_sha256": "6fac20a50cdf4bce31cd9234c87b4e227f63ec9d46562da7686b6b53817dbcba",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-body-heading-grid-underline/jade-pdf/corpus/wasm-runtime/body-heading-grid-underline-qualification"
+}
