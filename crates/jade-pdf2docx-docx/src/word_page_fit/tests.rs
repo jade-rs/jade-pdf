@@ -49,6 +49,15 @@ fn omitted_complex_script_size_inherits_explicit_run_size() {
     assert!(out.contains(r#"<w:szCs w:val="32"/>"#), "{out}");
 }
 
+/// 原本の挿入幅をページと同じ割合で縮め、fitTextの識別子は維持する。
+#[test]
+fn fitted_run_width_scales_with_the_page() {
+    let out = scaled(
+        r#"<w:hdr><w:p><w:r><w:rPr><w:fitText w:val="1000" w:id="42"/></w:rPr><w:t>様A第5号</w:t></w:r></w:p></w:hdr>"#,
+    );
+    assert!(out.contains(r#"<w:fitText w:val="792" w:id="42""#), "{out}");
+}
+
 /// section属性を持つ段落の本文も前sectionに属し、次段落から倍率を変える。
 #[test]
 fn section_boundary_preserves_paragraph_ownership_and_order() {

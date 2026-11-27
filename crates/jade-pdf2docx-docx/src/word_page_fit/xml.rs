@@ -216,7 +216,7 @@ fn length_attribute(
                 None
             }
         }
-        b"w:sz" | b"w:szCs" | b"w:kern" => (key == b"w:val").then_some(true),
+        b"w:sz" | b"w:szCs" | b"w:kern" | b"w:fitText" => (key == b"w:val").then_some(true),
         b"w:position" => (key == b"w:val").then_some(false),
         b"w:tab" => (key == b"w:pos").then_some(false),
         b"w:cols" | b"w:col" => matches!(key, b"w:w" | b"w:space").then_some(false),

@@ -24,6 +24,8 @@ pub(super) struct Cell {
     logical_row_right_anchor: Option<bool>,
     /// 一行の独立した文字群へだけ設定する、セル左端からの確認済みタブ位置。
     source_tabs: Option<Vec<Option<usize>>>,
+    /// 原本の右辺近くに収まる、代替fontを使う混植一行の前進幅。
+    fitted_source_width: Option<usize>,
 }
 
 /// 子表の上下で位置を確認した親セル本文を分ける。
@@ -269,6 +271,7 @@ fn cells_impl(
                             fallback_runs: Vec::new(),
                             logical_row_right_anchor: None,
                             source_tabs: None,
+                            fitted_source_width: None,
                         });
                     }
                     if elements.is_empty() {
@@ -337,6 +340,11 @@ fn cells_impl(
                     .then(|| Cell {
                         background,
                         logical_row_right_anchor: None,
+                        fitted_source_width: if single_physical_line && source_tabs.is_none() {
+                            fitted_mixed_run_width(&lines[0], left, right)
+                        } else {
+                            None
+                        },
                         source_tabs,
                         left,
                         right,
@@ -447,6 +455,38 @@ pub(super) fn legacy_runs<'a>(
     if text == expected { runs } else { Vec::new() }
 }
 
+/// 固定幅セルで右の空きが1/4em以下なら、確認済み混植runの原本前進幅を保持する。
+fn fitted_mixed_run_width(line: &StructuredTextLine, left: f32, right: f32) -> Option<usize> {
+    let [run] = line.runs.as_slice() else {
+        return None;
+    };
+    let bounds = run.style.source_bounds?;
+    if run.style.font_embedded
+        || run.style.font_name.is_none()
+        || bounds.x0 != line.left_x
+        || bounds.x1 != line.right_x
+        || bounds.x0 < left
+        || !(0.0..=run.style.font_size * 0.25).contains(&(right - bounds.x1))
+        || run.text.trim() != run.text
+        || !contains_cjk(&run.text)
+        || !run.text.bytes().any(|byte| byte.is_ascii_alphanumeric())
+    {
+        return None;
+    }
+    pdf_points_to_twips(bounds.x1 - bounds.x0).filter(|width| *width > 0)
+}
+
+/// 前進幅を確認した一行だけを整形し、その他のrunには既存の書式を使う。
+fn cell_line_paragraph(runs: &[StructuredTextRun], fitted_width: Option<usize>) -> Paragraph {
+    if let (Some(width), [source]) = (fitted_width, runs) {
+        let mut run = docx_run_from_structured_run(source);
+        run.run_property = run.run_property.fit_text(width, None);
+        return Paragraph::new().add_run(run);
+    }
+    runs.iter()
+        .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
+}
+
 /// 単一行の文字列と配置を保ち、各runのstyleと原本emの行boxを使う。
 pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     if cell.single_line_runs.is_empty() {
@@ -458,10 +498,7 @@ pub(super) fn single_line_paragraph(cell: &Cell) -> Option<Paragraph> {
     }
     let spacing = native_line_pitch::spacing(height, 0, 0)?;
     Some(
-        cell.single_line_runs
-            .iter()
-            .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
-            .line_spacing(spacing),
+        cell_line_paragraph(&cell.single_line_runs, cell.fitted_source_width).line_spacing(spacing),
     )
 }
 
@@ -548,9 +585,7 @@ pub(super) fn table_cell(cell: &Cell) -> Option<TableCell> {
             if let Some(tabs) = cell.source_tabs.as_ref().filter(|_| cell.lines.len() == 1) {
                 source_cell_tab_stops::paragraph(&line.runs, tabs)
             } else {
-                line.runs
-                    .iter()
-                    .fold(Paragraph::new(), |p, run| p.add_run(cell_run(run)))
+                cell_line_paragraph(&line.runs, cell.fitted_source_width)
             };
         let mut paragraph = position_structured_paragraph(paragraph, line, cell.left, None, None)
             .line_spacing(spacing);
