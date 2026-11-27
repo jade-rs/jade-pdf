@@ -35,6 +35,7 @@ mod rotated_text_fallback;
 mod source_cell_background;
 mod source_cell_diagonals;
 mod source_cell_rule_widths;
+mod source_cell_tab_stops;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;

@@ -49,3 +49,7 @@ CLI・依存・tracked公開PDF fixtureの追加はない。
 88個の原本・gold・初回・保留manifest、延べ89,441ファイルを再照合した。官報40/52、CPI各26/107、労働力調査各36/57、印紙税額一覧の選択30セルと別の賞与税率表30条件は、RAW一致で前段の合格と未達を継承する。graph・文字切れ・paginationや官報の対角線表示、正確なfont/anchorは未解決である。
 
 hashと範囲は[`corpus/validation-source-cell-rule-widths.json`](../corpus/validation-source-cell-rule-widths.json)へ記録する。`component_qualified=true`は原本の物理区間と条件付きの各辺幅・行境界・文字容量の保持の範囲であり、`whole_document_accepted=false`、`production_ready=false`を維持する。次の固定再実行poolはnative246/browser127のv2集約receiptである。
+
+## 後続のセル内位置追試
+
+この版で残した新旧金額の間隔は、[独立した文字群のタブ位置](source_cell_tab_stops.md)で別の原本条件を固定して追試する。この罫線版の検証履歴と最初の未知入力の結果は変更しない。
