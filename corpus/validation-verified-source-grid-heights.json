@@ -1,0 +1,141 @@
+{
+  "time_utc": "2026-11-27T01:33:25.787386+00:00",
+  "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+  "parent": "38267763a231190df5819ffc947cbece572ff232",
+  "component_qualified": true,
+  "component_scope": "Verified unique physical axes and complete source/font/inner-capacity proof in unmerged multirow/multicolumn grids; retain standalone frames, single-axis bands, nested parents, ambiguous/unknown/insufficient-capacity fallback.",
+  "Rust_files": 831,
+  "full_default_counts": [
+    2819,
+    0,
+    42
+  ],
+  "full_groups": 177,
+  "full_log_sha256": "1bd5d2b41bae48f6ed272c6c4deacebecf048e5ff5f33b347fb84100449ba2f2",
+  "checks": [
+    {
+      "label": "source-grid-height-Green-controls-v4",
+      "head": "81b935834aadf91fe77966bc21725783f2fbf1af",
+      "receipt_sha256": "7e606f646c07c7cfaba6d29228cb544d152916436e91bf5736613d4e9a88e3c3",
+      "log_sha256": "4d810ec2e098480d4cfc9dc08cbd6bf65f06566fe5c9d309fb1a9eef385cf1c3"
+    },
+    {
+      "label": "source-grid-height-CI-default-full-v2",
+      "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+      "receipt_sha256": "7933d6e67419fdfd6eeb8f6d72c7282995df6cea8d3184f3048dbb1df5513d89",
+      "log_sha256": "1bd5d2b41bae48f6ed272c6c4deacebecf048e5ff5f33b347fb84100449ba2f2"
+    },
+    {
+      "label": "source-grid-height-format-v1",
+      "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+      "receipt_sha256": "0e9a81619038b7ce8947b9116fad3f744c189ea5be215e7cbdacb864dcf142fb",
+      "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "label": "source-grid-height-fixture-hygiene-v1",
+      "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+      "receipt_sha256": "cd4ce932fc1bb9c286d0171b7101b9bfd663bb59aa955c8c76cbc5856990dc02",
+      "log_sha256": "6f283ee6225d2cef4c0127d95456a6f954c45141c92b97dd89016cb1c630e8f4"
+    },
+    {
+      "label": "source-grid-height-post-full-native-build-v4",
+      "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+      "receipt_sha256": "fc87cb74355205a4ca8b8f7234521c2467bb369af206849a27a73650bef90c3a",
+      "log_sha256": "03b92e2e835d64f199b3508af25aed576c0a95c9e04bf32196012656246f657a"
+    },
+    {
+      "label": "source-grid-height-post-full-WASM-build-v2",
+      "head": "b4677adb6336390c032894d36a4d1a3d8505584d",
+      "receipt_sha256": "fbc9b113872716a598de0d513d978cf724d48d6faec3ea78aa57d203e3c4bf03",
+      "log_sha256": "bc8253fe04dda792faaab62ae1effccaeaa62770307efe2fed81058dd25ecdb4"
+    }
+  ],
+  "actual_runtime_Reds": [
+    {
+      "label": "source-grid-height-Red-v1",
+      "head": "104383f8f31f961676ce61a8e6b6883b0706f828",
+      "Rust_files": 830,
+      "receipt_sha256": "31f511af3b804be54c6101cb7461256be62bdffadce4e304fed4e2fb14e8c9a6",
+      "log_sha256": "82a0958cf55bb9c265c1955b67be5b7044d87ed1878ed35a18ae6a6c40eeb3d2",
+      "source_archive_sha256": "99718d2a36036772149083c9a1e1bd44bb0a78e9eed1f9bcd1a0b1bc0591a47e"
+    },
+    {
+      "label": "source-grid-height-border-capacity-Red-v1",
+      "head": "a1d0cdb5d10917a25e4f8944dfcbe2d1056ee8e8",
+      "Rust_files": 831,
+      "receipt_sha256": "0f6b840b27856a44e5d89e05e252028fb10e09cbeb079f6528acf9e387c20ff2",
+      "log_sha256": "b2127d4843be2380d42016a7fb2222e807bc58503ad72f81becf20d7093417da",
+      "source_archive_sha256": "03ea8c284afa2968c12006e98932e323817f990dc11ca348d88dd498114ce279"
+    },
+    {
+      "label": "source-grid-height-nested-parent-Red-v2",
+      "head": "58276bf592fb4479e5cd637ac2cd4658830d96e3",
+      "Rust_files": 831,
+      "receipt_sha256": "ee0c1aa502357777272baf0ad3c34a27c8b20415d5d2bf622bdcdd80621ee7f7",
+      "log_sha256": "e3db9a3d13355d7d3a9d1a9b58c56481af8c7a28f440280a15cb7fa3a30b7dd4",
+      "source_archive_sha256": "34353190238369644a946fcd0f55363416633f12a41d613451078cd0d7e4ec5a"
+    },
+    {
+      "label": "source-grid-height-standalone-frame-Red-v1",
+      "head": "03a0ecea9f8957b27256680d23d6f7af9263ef59",
+      "Rust_files": 831,
+      "receipt_sha256": "2d514ce571434bf45c5ed580888f468a1f43a45ca943eca3357139ab2d8f9c16",
+      "log_sha256": "2c9eff332bbf47476b0725f5f1a12531778c286e034c3dd69057fabaec5e8bf8",
+      "source_archive_sha256": "f0f2f1ee5775537454c144d0c85c66e0e32390c60839ada3e457e3fcde45936a"
+    }
+  ],
+  "Green_control_tests": 10,
+  "source_coordinate_properties": 32,
+  "standalone_frame_and_band_negative_profiles": 3,
+  "source_archive_sha256": "1748a0026e548c4fdfb3ce81d2a83ff7ccb6371dd36b694efd5c0606b03ccbc7",
+  "base_qualified_manifest_sha256": "0473b9e6b32406eff222510a2bac2a3647f4a4d041341925fe22339de53349a6",
+  "base_all3283_files_rehashed": true,
+  "prior_original_gold_manifests": 90,
+  "prior_original_gold_file_checks": 94063,
+  "unique_prior_files_rehashed": 93285,
+  "NTA_original16files_rehashed": true,
+  "owned_original_gold_sets": 2,
+  "total_outcomes": 772,
+  "successful_outputs": 666,
+  "expected_rejections": 106,
+  "statuses_preserved": 772,
+  "RAW_exact_parent": 714,
+  "changed_outputs": 58,
+  "unique_changed_DOCX_payloads": 8,
+  "only_document_rowheight_XML_changes": true,
+  "all18_changed_payload_pages_RAW_bound_to_individual_reviews": true,
+  "all260_browser_inspections_RAW_exact_parent": true,
+  "NTA_all6_outcomes_RAW_exact_qualified_parent": true,
+  "NTA_native2_RAW_exact_first_genuine_failed_payload": true,
+  "held_broader_candidate_NOT_published_or_relabelled": true,
+  "owned_source_pitch_tolerance_pt": 0.05,
+  "owned_source_pitch_gaps_pt": [
+    60,
+    60
+  ],
+  "owned_source_total_span_pt": 120,
+  "owned96_glyphs_per_source_and2x2_grids_retained": true,
+  "original_source_baseline_tolerance_pt": 0.05,
+  "original_source_baseline_tolerance_NOT_met_or_loosened": true,
+  "product_signed_baseline_error_range_pt": [
+    1.906,
+    2.506
+  ],
+  "lower_row_absolute_baseline_error_increased_pt": 0.5,
+  "private_LibreOffice80pct_causal_control_residual_pt": 0.106,
+  "private_control_NOT_product_or_Word_validation": true,
+  "private_causal_control_proof_sha256": "93cd82f8d68cc4a8613db2ee29326ae0a9bbc885acd906aeea530983c7875ee3",
+  "reviewed_runtime_proof_sha256": "a5e72f9ada12cd41e36892a6279c6586accfdf5e53479880db914897aadb7608",
+  "original_gold_gate_sha256": "f1787a28c332535a844f56a05c6a7794ff139575dbddfb4703191200ee4ed4a3",
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "limitations": [
+    "Original baseline0.05pt remains unmet; physical row-pitch accuracy is a separate limited scope.",
+    "Standalone frames and single-axis bands, merged or nested parent tables, ambiguous axes and unknown or insufficient source/font/capacity proof retain fallback.",
+    "NTA first6/62,Kanpo40/52,CPI26/107,Labour36/57 remain unchanged by RAW payload identity.",
+    "Positive cell diagonals remain absent in LibreOffice display although source OOXML ownership is retained.",
+    "Word rendering is unverified. Pinned LibreOffice exact-line causal control is private; its0.106pt residual still exceeds0.05pt.",
+    "No public API,CLI,dependency or tracked PDF/font fixture added."
+  ],
+  "guide": "docs/verified_source_grid_heights.md"
+}

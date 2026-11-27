@@ -10,4 +10,11 @@ PDFのvector罫線の中心間隔に、rasterの境界用の薄罫線補正を�
 
 既存の所有4ページPDF二種類では、原本の60pt・60pt・全高120ptを0.05pt以内で保持し、96文字と2列2行の構造も残る。ただし基線の誤差は+1.906〜+2.506ptで、原本の0.05pt条件を満たさない。下段の誤差は旧候補から0.5pt増える。罫線間隔の改善を文書全体の表示合格へ読み替えない。段落末尾や段落styleのfont継承を変える所有資料の診断でも、全ページのPNGと基線が変わらず、この仮説は否定された。
 
-二次元gridへ限定した候補は全体テスト・native/WASM追試の再検証中である。既知資料の追試をインターネットの新規・未見資料の精度として数えない。Microsoft Wordの表示、基線、NTA本表、官報・CPI・労働力調査に残る問題は未解決で、文書全体のproduction readinessは未達である。
+二次元gridへ限定した候補は全体検査2,819成功・失敗0・42ignored、177グループで確認した。831個のRustファイルを全検査・native/WASM build・追試の前後で照合している。既知資料の追試をインターネットの新規・未見資料の精度として数えない。Microsoft Wordの表示、基線、NTA本表、官報・CPI・労働力調査に残る問題は未解決で、文書全体のproduction readinessは未達である。
+
+
+native252、Chromium260、WebKit260の計772結果は666成功出力・106想定どおりの拒否。714結果は出力または拒否までRAW一致し、変わる58出力は8個の一意なDOCXへまとまる。全て行高XMLだけの変化で、58出力は目視済み候補のDOCXとRAW一致するため、全18ページをその既存描画へ対応付けた。両ブラウザの260件の解析結果は従来と一致する。NTAの6結果は元へ戻り、nativeの2出力は最初の不合格DOCXともRAW一致する。広い適用条件の候補は引き続き保留し、NTA6/62などの元の結果を合格へ変更しない。
+
+原本90 manifestの94,063項目・93,285個の一意なファイル、NTA原本16ファイル、二つの所有原本セットを再hashした。検証のhashと範囲は[`corpus/validation-verified-source-grid-heights.json`](../corpus/validation-verified-source-grid-heights.json)に記録する。`component_qualified=true`は上記の行間の範囲であり、`whole_document_accepted=false`、`production_ready=false`を維持する。
+
+基線ずれの別診断では、使用中の[LibreOfficeの固定行高処理](https://github.com/LibreOffice/core/blob/2c87e51eeaa2b413ff4ae097b2705eea1995d8e5/sw/source/core/text/itrform2.cxx#L2227)から予測した0.2emだけ各セルの最初の段落を下げると、全96字の誤差が予測どおり0.106ptになった。全4ページを目視したが、原本の0.05ptは未達で、紙の高さ・表の上辺のずれも残る。この診断による基線変更は製品に含まない。
