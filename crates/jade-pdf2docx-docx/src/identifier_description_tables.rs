@@ -116,6 +116,7 @@ pub(super) fn infer(parsed: &ParsedDocument, page: usize) -> Option<PositionedTa
         column_widths_twips: widths,
         source_rule_grid: None,
         row_heights_twips: heights,
+        legacy_source_grid_row_heights: None,
         table: OcrTable::new(rows.iter().map(|row| row.text.clone()).collect()),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),

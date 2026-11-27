@@ -64,7 +64,7 @@ fn checksum(bytes: &[u8]) -> u32 {
 }
 
 /// 全四セルに二つの表示行がある、原本の2列2行の完成罫線表を作る。
-fn source() -> ParsedDocument {
+pub(super) fn source() -> ParsedDocument {
     let mut graphics = Vec::new();
     for x in [0., 80., 160.] {
         graphics.push(ParsedGraphicElement {

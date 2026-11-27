@@ -181,6 +181,7 @@ pub(super) fn infer(
         column_widths_twips: table_column_widths_twips(&xs),
         source_rule_grid: None,
         row_heights_twips: native_table_rows::heights(&ys, 0.),
+        legacy_source_grid_row_heights: None,
         table: OcrTable::new(cells),
         cell_underlines: vec![vec![false; width]; height],
         cell_alignments: vec![vec![ParagraphAlignment::Left; width]; height],
