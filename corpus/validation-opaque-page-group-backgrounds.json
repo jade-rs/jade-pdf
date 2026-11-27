@@ -1,0 +1,83 @@
+{
+  "time_utc": "2026-11-27T10:43:20.906000+00:00",
+  "head": "3e69a78ee8909f7abc2d3f1f5a96eb7a2c736259",
+  "Rust_files": 834,
+  "full_default": {
+    "passed": 2829,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 179,
+    "log_sha256": "cbf4ae6fe7a0a5e8ce03b9cf48bec8d3c6cc33679acf6677547f3ffbfbbd172d",
+    "receipt_sha256": "26e518640e59c1679bfa05b30aa7872cf4aa5e37de47f27ff84be91b44f6b6e5"
+  },
+  "native": {
+    "outcomes": 252,
+    "success": 222,
+    "rejected": 30,
+    "all_RAW_exact_qualified293": true,
+    "receipt_sha256": "be2722be5c8711bc9b2e2ed9e9723e4c680cb079b9cd8086882d1031cd1c1591",
+    "binary_sha256": "a4f88e2ab8c7081c33bd37a1666417a58d24e41a01daae0abec987c44adb42a3"
+  },
+  "browsers": [
+    {
+      "engine": "chromium",
+      "receipt_sha256": "77d68756218ea68bcc5e0c6f16385d1436d8906480ec2c96489b211eeee4e10b",
+      "success": 222,
+      "rejected": 38,
+      "all260_RAW_exact_qualified293": true,
+      "all130_inspections_exact_qualified293": true
+    },
+    {
+      "engine": "webkit",
+      "receipt_sha256": "8320d7275c8681344526defa87d7c1c22feaab0646a05dcce1ca0623456f90ac",
+      "success": 222,
+      "rejected": 38,
+      "all260_RAW_exact_qualified293": true,
+      "all130_inspections_exact_qualified293": true
+    }
+  ],
+  "fixed772": {
+    "success": 666,
+    "rejected": 106,
+    "all772_RAW_exact_qualified293": true,
+    "all_original_failures_NOT_relabelled": true
+  },
+  "separate_W3C6": {
+    "all6_success": true,
+    "all6_DOCX_RAW_identical": true,
+    "DOCX_sha256": "5252dc4da7d0cb9824e5aa88c7b545e48d183540add5c8c29fc37408b435bf42",
+    "RAW_exact_individually_reviewed_early_candidate": true,
+    "source_sha256": "c0bd0fc65103f2528e2fd6ece4c2529cce9dbbbdc0d333dc0d7e538550cd46c7",
+    "gold_sha256": "e662774f77d13eae4c9eb8fdb19fe6be6fb3328960800b03f2caecfc0843d4b6",
+    "initial_unseen_pass181_unmet12_of193": true,
+    "initial_receipt_sha256": "09552bc0bebeca029e7527f50985dc82fdcef73c02e88e0e52558b3b4cfeb54d",
+    "known_qualified293_control_pass184_unmet9": true,
+    "known_candidate_pass191_unmet2": true,
+    "only7_blue_background_conditions_improved": true,
+    "source_font_and_text_and_merge_structure_preserved": true,
+    "remaining_source_rule_errors_pt": [
+      -0.75,
+      -0.65
+    ],
+    "unchanged_original_rule_tolerance_pt": 0.5,
+    "first_unseen_result_NOT_relabelled": true,
+    "not_part_of_fixed772": true,
+    "receipt_sha256": "0bdf08bbd67038524274ce7612eb0556e7692a0091c809051d8fb06dc90d8f6c",
+    "reviewed_proof_sha256": "5631e2ed1a6990919a6d08dd8881889f48088b27e7434bad031ca0d1731190ab",
+    "known_audit_sha256": "e588a7b83010bce54d460cac29a5998ef30fcb4be132217a700baa0b6e3e9f21"
+  },
+  "post_full_original_gold_gate_sha256": "3ae33e8b921d61c36b3f30fec6a8f02f854271619d6673ecb3982569467fcb0f",
+  "original_manifest_count": 90,
+  "original_file_checks": 94063,
+  "unique_original_files_rehashed": 93285,
+  "all_original_golds_unchanged": true,
+  "prior_unqualified_sources_NOT_promoted": true,
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "component_qualified": true,
+  "component_scope": "Opaque original full-cell fills in verified default DeviceRGB page groups only; same-page unique complete attributes, I/K absent or false, existing opaque Normal/no-mask/native-device-color paint and rectangular ownership checks remain required. No source row, text, font, page geometry or dependencies changed.",
+  "whole_document_accepted": false,
+  "MS_Word_verified": false,
+  "production_ready": false,
+  "root_goal_NOT_narrowed": true
+}
