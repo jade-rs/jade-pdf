@@ -20,6 +20,8 @@ pub(crate) struct ImagePaint {
     pub(super) color: Option<[u8; 3]>,
     /// 非stroke alpha。未解決・未対応の描画状態ではNone。
     pub(super) opacity: Option<f64>,
+    /// 未確認の状態変更や他の描画より前にあるトップレベルの画像か。
+    pub(super) first_unclipped_draw: bool,
 }
 
 impl Default for ImagePaint {
@@ -28,6 +30,7 @@ impl Default for ImagePaint {
         Self {
             color: Some([0; 3]),
             opacity: Some(1.0),
+            first_unclipped_draw: false,
         }
     }
 }
@@ -62,6 +65,8 @@ struct State<'a> {
     depth: usize,
     /// inline image以降の不確定なbinary境界を走査しない。
     stopped: bool,
+    /// 最初の描画までに、クリップや未確認の描画状態がなかったか。
+    initial_graphics: bool,
 }
 
 impl Default for State<'_> {
@@ -77,6 +82,7 @@ impl Default for State<'_> {
             name: None,
             depth: 0,
             stopped: false,
+            initial_graphics: true,
         }
     }
 }
@@ -156,6 +162,7 @@ fn scan<'a>(
         }
         match token {
             Token::Open(_) => {
+                state.initial_graphics = false;
                 state.depth += 1;
                 state.name = None;
                 state.numbers.clear();
@@ -197,6 +204,8 @@ fn scan<'a>(
                     b"Q" => {
                         if let Some(previous) = state.saved.pop() {
                             state.graphics = previous;
+                        } else {
+                            state.initial_graphics = false;
                         }
                     }
                     b"cm" if state.numbers.len() == 6 => {
@@ -206,20 +215,27 @@ fn scan<'a>(
                         );
                     }
                     b"Do" => {
+                        let first_unclipped_draw = std::mem::take(&mut state.initial_graphics)
+                            && budget.omit_white_page_images;
                         if let Some(name) = state.name {
-                            draw(name, state.graphics.matrix, state.graphics.paint.snapshot())?;
+                            let paint = ImagePaint {
+                                first_unclipped_draw,
+                                ..state.graphics.paint.snapshot()
+                            };
+                            draw(name, state.graphics.matrix, paint)?;
                         }
                     }
                     b"BI" => {
                         state.stopped = true;
                         break;
                     }
-                    _ => {}
+                    _ => state.initial_graphics = false,
                 }
                 state.name = None;
                 state.numbers.clear();
             }
             _ => {
+                state.initial_graphics = false;
                 state.name = None;
                 state.numbers.clear();
             }

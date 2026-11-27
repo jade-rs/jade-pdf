@@ -69,6 +69,26 @@ pub fn source_image_pdf_with_dimensions(
     ))
 }
 
+/// 一つのImage XObjectを、複数のContentsに分けた描画順で検証する原本を作る。
+#[allow(dead_code)]
+pub fn rgb_image_with_two_contents(samples: &[u8], first: &[u8], second: &[u8]) -> Vec<u8> {
+    let mut objects = image_objects(
+        "/ColorSpace /DeviceRGB /Filter /FlateDecode",
+        &compressed(samples),
+        "",
+        8,
+        first,
+        2,
+        1,
+    );
+    let continuation = objects.len() + 1;
+    objects[2] = format!(
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 100 100] /Resources << /XObject << /Im 4 0 R >> /Font << /F1 7 0 R >> >> /Contents [6 0 R {continuation} 0 R] >>"
+    ).into_bytes();
+    objects.push(stream("", second));
+    assemble(&objects)
+}
+
 /// 画像・本文・参照scalarのobjectを作り、xref構築と分離する。
 fn image_objects(
     attributes: &str,

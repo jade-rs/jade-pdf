@@ -39,6 +39,7 @@ impl Paint {
         super::ImagePaint {
             color: self.rgb,
             opacity: self.opacity,
+            first_unclipped_draw: false,
         }
     }
 

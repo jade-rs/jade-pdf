@@ -17,6 +17,10 @@
 
 開発方針は [AGENTS.md](../AGENTS.md) を参照してください。
 
+## Word出力用の画像抽出
+
+`parse_pdf_for_word` と `parse_pdf_bytes_for_word` は、可視本文のあるページで、他の描画より先に紙全域へ描いた完全に白く不透明な画像を省きます。ページの描画順と色を確認できた画像に適用し、通常の `parse_pdf_with_options` と `parse_pdf_bytes_with_options` では画像も抽出します。
+
 ## ビルド・テスト
 
 Rust stable（rustfmt・Clippy）とPython 3.11以上を使用します。以下はリポジトリのルートで実行します。

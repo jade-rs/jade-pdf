@@ -78,7 +78,7 @@ fn convert(
     }
     let mut parsing = options.clone();
     parsing.strict = false;
-    let mut parsed = parse_pdf_with_options(&request.input_pdf_path, &parsing)?;
+    let mut parsed = parse_pdf_for_word(&request.input_pdf_path, &parsing)?;
     word_page_fit::assess(&mut parsed, false)?;
     let pages: BTreeSet<_> = parsed
         .quality

@@ -172,6 +172,8 @@ mod image_png;
 mod image_predictor;
 #[path = "image_sample_decode.rs"]
 mod image_sample_decode;
+#[path = "white_page_image.rs"]
+mod white_page_image;
 
 #[path = "compressed_objects.rs"]
 mod compressed_objects;
@@ -236,7 +238,26 @@ pub fn parse_pdf_with_options(
     path: &Path,
     options: &ParseOptions,
 ) -> Result<ParsedDocument, ParseError> {
-    let budget = DecodeBudget::with_cancellation(&options.limits, options.cancellation.as_ref());
+    parse_file(path, options, false)
+}
+
+/// ファイルをWord用に解析し、可視本文の後ろにあると確認済みの白い紙画像を除く。
+pub fn parse_pdf_for_word(
+    path: &Path,
+    options: &ParseOptions,
+) -> Result<ParsedDocument, ParseError> {
+    parse_file(path, options, true)
+}
+
+/// ファイル経路で品質判定と、Word専用の画像省略設定を共有する。
+fn parse_file(
+    path: &Path,
+    options: &ParseOptions,
+    omit_white_page_images: bool,
+) -> Result<ParsedDocument, ParseError> {
+    let mut budget =
+        DecodeBudget::with_cancellation(&options.limits, options.cancellation.as_ref());
+    budget.omit_white_page_images = omit_white_page_images;
     budget.check()?;
     let bytes = crate::input::read(fs::File::open(path)?, &options.limits, &budget)?;
     #[cfg(not(target_arch = "wasm32"))]
@@ -254,8 +275,29 @@ pub fn parse_pdf_bytes_with_options(
     bytes: &[u8],
     options: &ParseOptions,
 ) -> Result<ParsedDocument, ParseError> {
-    let budget = DecodeBudget::with_cancellation(&options.limits, options.cancellation.as_ref());
-    let parsed = parse_pdf_bytes_pure_with_budget(path.into(), bytes, &options.limits, &budget)?;
+    parse_bytes(path.into(), bytes, options, false)
+}
+
+/// メモリ入力をWord用に解析し、可視本文の後ろにあると確認済みの白い紙画像を除く。
+pub fn parse_pdf_bytes_for_word(
+    path: impl Into<PathBuf>,
+    bytes: &[u8],
+    options: &ParseOptions,
+) -> Result<ParsedDocument, ParseError> {
+    parse_bytes(path.into(), bytes, options, true)
+}
+
+/// byte経路で品質判定と、Word専用の画像省略設定を共有する。
+fn parse_bytes(
+    path: PathBuf,
+    bytes: &[u8],
+    options: &ParseOptions,
+    omit_white_page_images: bool,
+) -> Result<ParsedDocument, ParseError> {
+    let mut budget =
+        DecodeBudget::with_cancellation(&options.limits, options.cancellation.as_ref());
+    budget.omit_white_page_images = omit_white_page_images;
+    let parsed = parse_pdf_bytes_pure_with_budget(path, bytes, &options.limits, &budget)?;
     budget.check()?;
     check_quality(parsed, options.strict)
 }
@@ -394,8 +436,14 @@ pub(crate) fn parse_pdf_bytes_pure_with_budget(
     decode_budget.check()?;
     crate::unsupported_content::collect(decode_budget, bytes, &mut quality);
     decode_budget.check()?;
-    let mut image_elements =
-        extract_image_elements_from_pdf_bytes(decode_budget, &bytes, &streams, &mut quality);
+    let mut image_elements = extract_image_elements_for_layout(
+        decode_budget,
+        &bytes,
+        &streams,
+        &page_viewports,
+        &text_elements,
+        &mut quality,
+    );
     decode_budget.check()?;
     normalize_elements_to_page_viewports(
         &page_viewports,
@@ -1228,16 +1276,38 @@ fn content_stream_has_text_showing_operator(content: &[u8]) -> bool {
 }
 
 /// PDF バイト列から最小 Image XObject 情報を抽出する。
+#[cfg(test)]
 fn extract_image_elements_from_pdf_bytes(
     decode_budget: &DecodeBudget,
     bytes: &[u8],
     streams: &[crate::structure::StreamSpan<'_>],
     quality: &mut QualityReport,
 ) -> Vec<ParsedImageElement> {
+    extract_image_elements_for_layout(decode_budget, bytes, streams, &[], &[], quality)
+}
+
+/// 画像と描画位置を復号し、Word用では可視本文の後ろにある白い紙画像を省く。
+fn extract_image_elements_for_layout(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    streams: &[crate::structure::StreamSpan<'_>],
+    viewports: &[ParsedPageViewport],
+    texts: &[ParsedTextElement],
+    quality: &mut QualityReport,
+) -> Vec<ParsedImageElement> {
     let mut placements = extract_image_placements_from_pdf_bytes(decode_budget, bytes);
     if form_images::append(decode_budget, bytes, streams, quality, &mut placements).is_none() {
         return Vec::new();
     }
+    let visible_text_pages = if placements.iter().any(|p| p.paint.first_unclipped_draw) {
+        let Some(pages) = white_page_image::visible_text_pages(decode_budget, viewports, texts)
+        else {
+            return Vec::new();
+        };
+        pages
+    } else {
+        Vec::new()
+    };
     let mut placed_object_numbers = crate::metadata_workspace::Set::default();
     for placement in &placements {
         if placed_object_numbers
@@ -1278,7 +1348,7 @@ fn extract_image_elements_from_pdf_bytes(
         let filter = ImageFilter::read(dict).or_else(|| image_filter_chain::terminal_filter(dict));
         let mut stencil = false;
         // 枚数や旧400万画素閾値では代替せず、decoderの明示的な資源予算で制限する。
-        let png_bytes = {
+        let (png_bytes, decoded) = {
             let repaired_before = decode_budget.ccitt_repaired_rows();
             let decoded = decode_image_stream_as_png(
                 decode_budget,
@@ -1308,7 +1378,7 @@ fn extract_image_elements_from_pdf_bytes(
                     {
                         return Vec::new();
                     }
-                    png_bytes
+                    (png_bytes, damaged_rows == 0)
                 }
                 None => {
                     if crate::metadata_workspace::try_push(
@@ -1330,7 +1400,7 @@ fn extract_image_elements_from_pdf_bytes(
                     let Some(png) = fallback_image_png_bytes(decode_budget, width, height) else {
                         return Vec::new();
                     };
-                    png
+                    (png, false)
                 }
             }
         };
@@ -1343,6 +1413,7 @@ fn extract_image_elements_from_pdf_bytes(
                 width,
                 height,
                 stencil,
+                decoded,
             },
         )
         .is_none()
@@ -1360,6 +1431,7 @@ fn extract_image_elements_from_pdf_bytes(
             .iter()
             .filter(|placement| Some(placement.object_number) == stream.object_number)
             .peekable();
+        let mut opaque_white = None;
         if matching_placements.peek().is_none() {
             if placements.is_empty() {
                 let placement = ImagePlacement {
@@ -1397,11 +1469,21 @@ fn extract_image_elements_from_pdf_bytes(
             {
                 return Vec::new();
             }
-            let Some(image) = stream.to_element(decode_budget, placement) else {
-                return Vec::new();
-            };
-            if crate::metadata_workspace::try_push(decode_budget, &mut images, image).is_none() {
-                return Vec::new();
+            let redundant = placement.paint.first_unclipped_draw
+                && stream.decoded
+                && !stream.stencil
+                && visible_text_pages.get(placement.page) == Some(&true)
+                && *opaque_white.get_or_insert_with(|| {
+                    white_page_image::is_opaque_white(decode_budget, &stream.png_bytes)
+                });
+            if !redundant {
+                let Some(image) = stream.to_element(decode_budget, placement) else {
+                    return Vec::new();
+                };
+                if crate::metadata_workspace::try_push(decode_budget, &mut images, image).is_none()
+                {
+                    return Vec::new();
+                }
             }
             if let Err(index) = painted_pages.binary_search(&placement.page) {
                 if crate::metadata_workspace::try_push(
@@ -1526,6 +1608,8 @@ fn unpainted_xobject_image_object_numbers(
 struct ImageStreamEntry {
     /// 成功復号したstencilは配置ごとの塗り色が必要。
     stencil: bool,
+    /// 代替画像ではなく参照元から復号したか。
+    decoded: bool,
     /// image object number。
     object_number: Option<u32>,
     /// DOCX に埋め込む PNG バイト列。
@@ -1808,7 +1892,17 @@ fn extract_image_placements_from_pdf_bytes(
 ) -> Vec<ImagePlacement> {
     let structural_source = parser_source_with_compressed_objects(decode_budget, bytes);
     let xobject_refs = page_xobject_refs_from_source(decode_budget, &structural_source);
-    let contents = extract_page_content_streams_with_page(decode_budget, bytes);
+    let (references, contents) = if decode_budget.omit_white_page_images {
+        let references =
+            parse_page_content_object_refs_with_page(decode_budget, &structural_source);
+        let contents = load_page_content_streams(decode_budget, bytes, &references);
+        (references, contents)
+    } else {
+        (
+            Vec::new(),
+            extract_page_content_streams_with_page(decode_budget, bytes),
+        )
+    };
     if decode_budget.is_stopped() {
         return Vec::new();
     }
@@ -1817,7 +1911,7 @@ fn extract_image_placements_from_pdf_bytes(
         decode_budget,
         &structural_source,
         &contents,
-        |page, name, matrix, paint| {
+        |page, name, matrix, mut paint| {
             if !matrix.iter().all(|value| value.is_finite()) {
                 return Some(());
             }
@@ -1829,6 +1923,11 @@ fn extract_image_placements_from_pdf_bytes(
             else {
                 return Some(());
             };
+            paint.first_unclipped_draw = decode_budget.omit_white_page_images
+                && paint.first_unclipped_draw
+                && paint.opacity == Some(1.0)
+                && white_page_image::covers_media_box(decode_budget, page, matrix)
+                && white_page_image::has_all_contents(page, &references, &contents);
             crate::metadata_workspace::try_push(
                 decode_budget,
                 &mut placements,
@@ -1848,6 +1947,12 @@ fn extract_image_placements_from_pdf_bytes(
     .is_none()
     {
         return Vec::new();
+    }
+    if placements
+        .iter()
+        .any(|placement| placement.paint.first_unclipped_draw)
+    {
+        white_page_image::check_device_spaces(decode_budget, &structural_source, &mut placements);
     }
     placements
 }
@@ -3345,11 +3450,20 @@ pub(crate) fn extract_page_content_streams_with_page(
 ) -> Vec<(usize, Vec<u8>)> {
     let page_ref_source = parser_source_with_compressed_objects(decode_budget, bytes);
     let references = parse_page_content_object_refs_with_page(decode_budget, &page_ref_source);
+    load_page_content_streams(decode_budget, bytes, &references)
+}
+
+/// 確認済みContentsの参照順を保って、復号できるstreamを組み立てる。
+fn load_page_content_streams(
+    decode_budget: &DecodeBudget,
+    bytes: &[u8],
+    references: &[(usize, u32)],
+) -> Vec<(usize, Vec<u8>)> {
     let Some(mut streams) = decode_budget.metadata_vector(references.len()) else {
         return Vec::new();
     };
     let stream_offsets = stream_object_offsets(decode_budget, bytes);
-    for (page, object_number) in references {
+    for &(page, object_number) in references {
         if let Some(stream) =
             stream_payload_for_object_number(decode_budget, bytes, object_number, &stream_offsets)
         {

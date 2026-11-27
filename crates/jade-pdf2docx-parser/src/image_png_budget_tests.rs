@@ -145,6 +145,7 @@ fn budget(capacity: u64) -> DecodeBudget {
 /// 画像コピーに使う既存PNGを持つstream情報を作る。
 fn entry() -> ImageStreamEntry {
     ImageStreamEntry {
+        decoded: true,
         stencil: false,
         object_number: Some(100),
         png_bytes: one_pixel_png_bytes().to_vec(),
