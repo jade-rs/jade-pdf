@@ -235,7 +235,7 @@ fn widths_agree(
         let syntax::Token::Word(raw) = lexer.next()? else {
             return None;
         };
-        let width: f64 = std::str::from_utf8(raw).ok()?.parse().ok()?;
+        let width = pdf_width(raw)?;
         if !width.is_finite() || width < 0. {
             return None;
         }
@@ -261,4 +261,23 @@ fn widths_agree(
         }
     }
     Some(())
+}
+
+/// PDF realの符号・十進小数だけを読み、指数・非有限値・空の数を拒否する。
+fn pdf_width(raw: &[u8]) -> Option<f64> {
+    let digits = if matches!(raw.first(), Some(b'+' | b'-')) {
+        &raw[1..]
+    } else {
+        raw
+    };
+    if !digits.iter().any(u8::is_ascii_digit)
+        || digits.iter().filter(|&&byte| byte == b'.').count() > 1
+        || !digits
+            .iter()
+            .all(|byte| byte.is_ascii_digit() || *byte == b'.')
+    {
+        return None;
+    }
+    let width: f64 = std::str::from_utf8(raw).ok()?.parse().ok()?;
+    width.is_finite().then_some(width)
 }

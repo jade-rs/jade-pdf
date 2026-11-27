@@ -148,3 +148,27 @@ fn scientific_notation_is_not_a_verified_pdf_width() {
         .replace("[1000]", "[1e3]");
     assert!(reuse(&owned_mac_font(), source.as_bytes(), MAPPING).is_empty());
 }
+
+/// 二つの原本codeを、.notdefと実字形の異なる同じUnicodeへ曖昧に結ばない。
+#[test]
+fn notdef_and_visible_glyph_cannot_alias_the_same_unicode() {
+    let mut font = owned_mac_font();
+    let cmap = table_offset(&font, b"cmap");
+    for (at, value) in [(14, 14u16), (18, 0), (20, 2), (22, 0), (24, 1)] {
+        font[cmap + at..cmap + at + 2].copy_from_slice(&value.to_be_bytes());
+    }
+    let count = usize::from(u16::from_be_bytes(font[4..6].try_into().unwrap()));
+    for index in 0..count {
+        let entry = 12 + 16 * index;
+        if &font[entry..entry + 4] == b"cmap" {
+            font[entry + 12..entry + 16].copy_from_slice(&26u32.to_be_bytes());
+        }
+    }
+    checksums(&mut font);
+    let source = String::from_utf8(SOURCE.to_vec())
+        .unwrap()
+        .replace("/FirstChar 1", "/FirstChar 0")
+        .replace("[1000]", "[500 1000]");
+    let mapping = b"1 begincodespacerange <00> <FF> endcodespacerange\n2 beginbfchar <00> <0041> <01> <0041> endbfchar";
+    assert!(reuse(&font, source.as_bytes(), mapping).is_empty());
+}
