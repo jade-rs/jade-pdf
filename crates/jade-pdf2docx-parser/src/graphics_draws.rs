@@ -13,6 +13,8 @@ struct State {
     matrix: [f32; 6],
     /// 現在の線幅。
     width: f32,
+    /// 有効なPDF dash配列で描かれる線か。
+    dashed: bool,
     /// Device色で確認した非strokeの白。未知の色命令で解除する。
     white_fill: bool,
 }
@@ -27,6 +29,7 @@ impl Default for State {
         Self {
             matrix: [1.0, 0.0, 0.0, 1.0, 0.0, 0.0],
             width: 1.0,
+            dashed: false,
             white_fill: false,
         }
     }
@@ -54,6 +57,7 @@ fn emit(
     page: usize,
     bounds: ParsedBounds,
     width: f32,
+    dashed: bool,
 ) -> Option<()> {
     if [bounds.x0, bounds.y0, bounds.x1, bounds.y1, width]
         .iter()
@@ -63,6 +67,7 @@ fn emit(
             budget,
             output,
             ParsedGraphicElement {
+                dashed,
                 page,
                 bounds,
                 stroke_width: width,
@@ -70,6 +75,30 @@ fn emit(
         )?;
     }
     Some(())
+}
+
+/// 可視のstrokeと隙間を両方持つdash配列かを検証する。奇数長の配列は2回繰り返される。
+fn has_dash_gaps(raw: &[u8]) -> bool {
+    let Some(entries) = crate::metadata::array_entries(raw, usize::MAX) else {
+        return false;
+    };
+    let mut positive = [false; 2];
+    let mut count = 0usize;
+    for entry in entries {
+        let Some(value) = entry.and_then(crate::page_attributes::number_value) else {
+            return false;
+        };
+        if !value.is_finite() || value < 0.0 {
+            return false;
+        }
+        positive[count % 2] |= value > 0.0;
+        count += 1;
+    }
+    if count.is_multiple_of(2) {
+        positive[0] && positive[1]
+    } else {
+        positive[0] || positive[1]
+    }
 }
 
 /// ページをまたぐ結果配列へ追記する。失敗時は呼び出し元が全結果を破棄する。
@@ -101,6 +130,8 @@ pub(super) fn append_filtered(
     let mut operands = [0.0f32; 6];
     let mut count = 0usize;
     let mut depth = 0usize;
+    let mut array_start = None;
+    let mut dash_operand = None;
     let mut state = State::default();
     let mut saved = Vec::new();
     let mut point = None;
@@ -110,13 +141,23 @@ pub(super) fn append_filtered(
     let mut curved = false;
     while let Some(token) = lexer.next() {
         match token {
-            Token::Open(_) => {
+            Token::Open(dictionary) => {
+                if depth == 0 {
+                    array_start = (!dictionary).then_some(lexer.cursor - 1);
+                    dash_operand = None;
+                }
                 depth = depth.saturating_add(1);
                 count = 0;
                 continue;
             }
-            Token::Close(_) => {
+            Token::Close(dictionary) => {
                 depth = depth.saturating_sub(1);
+                if depth == 0 {
+                    dash_operand = array_start
+                        .take()
+                        .filter(|_| !dictionary)
+                        .map(|start| &content[start..lexer.cursor]);
+                }
                 count = 0;
                 continue;
             }
@@ -125,6 +166,7 @@ pub(super) fn append_filtered(
         }
         let Token::Word(word) = token else {
             count = 0;
+            dash_operand = None;
             continue;
         };
         if let Some(number) = crate::page_attributes::number_value(word) {
@@ -191,6 +233,14 @@ pub(super) fn append_filtered(
             b"w" if count > 0 => {
                 state.width = args[count - 1];
             }
+            b"d" => {
+                state.dashed = count == 1
+                    && args[0].is_finite()
+                    && args[0] >= 0.0
+                    && dash_operand.is_some_and(has_dash_gaps);
+            }
+            // ExtGStateの /D が現在のdashを上書きする可能性がある。
+            b"gs" => state.dashed = false,
             b"S" => {
                 for segment in segments.drain(..) {
                     if !curved && is_axis_aligned(segment) {
@@ -200,6 +250,7 @@ pub(super) fn append_filtered(
                             page,
                             normalized_bounds(segment),
                             state.width,
+                            state.dashed,
                         )?;
                     }
                 }
@@ -211,7 +262,7 @@ pub(super) fn append_filtered(
                 for [x, y, w, h] in rectangles.drain(..) {
                     if !curved && let Some((bounds, width)) = thin_rect_to_line(x, y, w, h) {
                         if !(state.white_fill && confirmed_white(lexer.cursor)) {
-                            emit(budget, output, page, bounds, width)?;
+                            emit(budget, output, page, bounds, width, false)?;
                         }
                         if budget.is_stopped() {
                             return None;
@@ -220,7 +271,7 @@ pub(super) fn append_filtered(
                 }
                 if !curved && let Some((bounds, width)) = thin_path_segments_to_line(&segments) {
                     if !(state.white_fill && confirmed_white(lexer.cursor)) {
-                        emit(budget, output, page, bounds, width)?;
+                        emit(budget, output, page, bounds, width, false)?;
                     }
                     if budget.is_stopped() {
                         return None;
@@ -241,6 +292,7 @@ pub(super) fn append_filtered(
             _ => {}
         }
         count = 0;
+        dash_operand = None;
     }
     Some(())
 }

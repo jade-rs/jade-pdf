@@ -41,6 +41,7 @@ fn boxed_source(
                 (left + width, y, left + width, y + 24.),
             ] {
                 parsed.graphics.push(ParsedGraphicElement {
+                    dashed: false,
                     page: 0,
                     bounds: ParsedBounds {
                         x0: a,

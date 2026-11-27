@@ -97,6 +97,7 @@ mod tests {
         ]
         .into_iter()
         .map(|(x0, y0, x1, y1)| ParsedGraphicElement {
+            dashed: false,
             page,
             bounds: ParsedBounds { x0, y0, x1, y1 },
             stroke_width: 1.,
@@ -143,6 +144,7 @@ mod tests {
         source[3].bounds.x1 += 2.;
         assert!(!closed(0, b, &source));
         let line = ParsedGraphicElement {
+            dashed: false,
             page: 0,
             bounds: ParsedBounds {
                 x0: 20.,
@@ -196,7 +198,7 @@ mod tests {
         #[test]
         fn closed_frame_proof_is_covariant(x in -100_f32..100.,y in -100_f32..100.,width in 10_f32..300.,height in 10_f32..200.,page in 0_usize..10) {
             let b=ParsedBounds{x0:x,y0:y,x1:x+width,y1:y+height};let mut source=frame(page,b);
-            prop_assert!(closed(page,b,&source));source.push(ParsedGraphicElement{page,bounds:ParsedBounds{x0:x+2.,y0:y+height+3.,x1:x+width-2.,y1:y+height+3.},stroke_width:1.});
+            prop_assert!(closed(page,b,&source));source.push(ParsedGraphicElement{page,bounds:ParsedBounds{x0:x+2.,y0:y+height+3.,x1:x+width-2.,y1:y+height+3.},stroke_width:1.,dashed:false});
             prop_assert!(closed(page,b,&source));prop_assert!(!horizontal_edge(source.last().unwrap(),page,&b,b.y1));
         }
     }

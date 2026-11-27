@@ -1,7 +1,7 @@
 #![allow(dead_code)]
 
 /// 正確な Length・xref offset を持つ単一ページ PDF を作る。
-fn pdf(contents: &str, font: bool) -> String {
+pub fn pdf(contents: &str, font: bool) -> String {
     let mut objects = vec![
         "<< /Type /Catalog /Pages 2 0 R >>".to_owned(),
         "<< /Type /Pages /Kids [3 0 R] /Count 1 >>".to_owned(),

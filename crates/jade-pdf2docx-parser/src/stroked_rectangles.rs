@@ -181,6 +181,7 @@ fn emit(
                 budget,
                 output,
                 ParsedGraphicElement {
+                    dashed: false,
                     page,
                     bounds,
                     stroke_width: width,

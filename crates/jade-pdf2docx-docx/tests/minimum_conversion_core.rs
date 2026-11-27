@@ -2561,6 +2561,7 @@ fn inferred_table_exposes_spans_from_missing_graphic_rules() {
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2614,6 +2615,7 @@ fn inferred_table_keeps_non_empty_cells_split_when_middle_rule_is_missing() {
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2668,6 +2670,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
             horizontal(100.0),
             vertical(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2678,6 +2681,7 @@ fn inferred_table_keeps_cells_split_when_vertical_rule_stops_near_row_boundary()
                 stroke_width: 0.5,
             },
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -2825,6 +2829,7 @@ fn inferred_table_exposes_rowspans_from_missing_horizontal_rules() {
         graphics: vec![
             horizontal(0.0),
             ParsedGraphicElement {
+                dashed: false,
                 page: 0,
                 bounds: ParsedBounds {
                     x0: 80.0,
@@ -3724,6 +3729,7 @@ fn flate_pdf_with_page_contents_base_fonts_page_sizes_rotations_and_crop_boxes(
 
 fn horizontal(y: f32) -> ParsedGraphicElement {
     ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: 0.0,
@@ -3737,6 +3743,7 @@ fn horizontal(y: f32) -> ParsedGraphicElement {
 
 fn vertical(x: f32) -> ParsedGraphicElement {
     ParsedGraphicElement {
+        dashed: false,
         page: 0,
         bounds: ParsedBounds {
             x0: x,

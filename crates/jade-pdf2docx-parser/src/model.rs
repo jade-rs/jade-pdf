@@ -65,6 +65,8 @@ pub struct ParsedGraphicElement {
     pub bounds: ParsedBounds,
     /// stroke 幅。filled rectangle 由来の場合は推定幅。
     pub stroke_width: f32,
+    /// 可視の線と隙間を持つdash配列を確認したstroke。
+    pub dashed: bool,
 }
 
 /// dash・stroke alpha・clip内の中心線矩形を確認した、方向を失わない黒い対角線。
