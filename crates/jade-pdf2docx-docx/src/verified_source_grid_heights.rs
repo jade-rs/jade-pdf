@@ -47,6 +47,21 @@ pub(super) fn apply(
                     .all(|cell| native_table_text::fits_height_twips(cell, *height - border_twips))
             })
     {
-        table.row_heights_twips = heights;
+        if heights != table.row_heights_twips {
+            let previous = std::mem::replace(&mut table.row_heights_twips, heights);
+            table.legacy_source_grid_row_heights.get_or_insert(previous);
+        }
+    }
+}
+
+/// 子表の容量は文字行の証明に含まれないため、親だけ精密化前の高さへ戻す。
+pub(super) fn finish_nested(tables: &mut [PositionedTable]) {
+    for table in tables {
+        finish_nested(&mut table.nested_tables);
+        if let Some(previous) = table.legacy_source_grid_row_heights.take() {
+            if !table.nested_tables.is_empty() {
+                table.row_heights_twips = previous;
+            }
+        }
     }
 }

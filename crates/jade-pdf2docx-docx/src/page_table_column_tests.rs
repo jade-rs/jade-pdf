@@ -24,6 +24,7 @@ fn positioned_table(page: usize) -> PositionedTable {
         column_widths_twips: vec![2000; 2],
         source_rule_grid: None,
         row_heights_twips: vec![600.; 2],
+        legacy_source_grid_row_heights: None,
         table: OcrTable::new(
             (0..2)
                 .map(|row| {
