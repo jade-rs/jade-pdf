@@ -50,6 +50,7 @@ mod graphic_table_free_ends;
 mod graphic_table_merge_tests;
 mod graphic_table_outer_edges;
 mod graphic_table_ownership;
+mod horizontal_rule_table;
 mod identifier_description_tables;
 mod layout_space;
 mod normal_weight_package;
@@ -4667,7 +4668,8 @@ fn infer_positioned_table_from_graphics(
         .map(|graphic| normalized_bounds(graphic.bounds))
         .filter(is_vertical_line)
         .collect::<Vec<_>>();
-    if horizontal.is_empty() || vertical.is_empty() {
+    let horizontal_only = vertical.is_empty();
+    if horizontal.is_empty() || (horizontal_only && horizontal.len() < 3) {
         return None;
     }
 
@@ -4701,7 +4703,9 @@ fn infer_positioned_table_from_graphics(
     xs.dedup();
     ys.sort();
     ys.dedup();
-    if xs.len() < 2
+    if horizontal_only {
+        xs = horizontal_rule_table::columns(parsed, page, &full_horizontal, &ys)?;
+    } else if xs.len() < 2
         && let Some(augmented_xs) =
             synthesize_xs_from_text_columns_and_graphics(parsed, page, &page_graphics)
     {
@@ -4715,13 +4719,18 @@ fn infer_positioned_table_from_graphics(
     }
     xs = graphic_table_outer_edges::augment(&xs, &ys, &vertical, &horizontal);
     xs = augment_xs_from_partial_verticals(&xs, &ys, &vertical);
-    ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    let augmented_ys = augment_ys_from_partial_horizontals(&xs, &ys, &horizontal);
+    if horizontal_only && augmented_ys != ys {
+        return None;
+    }
+    ys = augmented_ys;
     let side_framed_top = side_framed_table_top(&xs, &ys, &vertical, &horizontal);
     if let Some(top) = side_framed_top {
         ys.push(top);
     }
     let mut text_augmented_columns = false;
-    if xs.len() >= 2
+    if !horizontal_only
+        && xs.len() >= 2
         && ys.len() >= 2
         && side_framed_top.is_none()
         // 内側罫線が全行を分ける完成グリッドは、セル内の折返しアンカーで置き換えない。
@@ -4731,12 +4740,14 @@ fn infer_positioned_table_from_graphics(
         text_augmented_columns = augmented_xs != xs;
         xs = augmented_xs;
     }
-    let allow_top_origin_text_y = grid_accepts_top_origin_text_y(parsed, page, &ys)
+    let allow_top_origin_text_y = !horizontal_only
+        && grid_accepts_top_origin_text_y(parsed, page, &ys)
         && !text_directly_intersects_grid(parsed, page, &xs, &ys);
     if xs.len() < 2
         || ys.len() < 2
         || graphic_table_free_ends::has_unanchored_column(&xs, &ys, &vertical, &horizontal)
-        || (!has_grid_lines(&page_graphics, &xs, &ys)
+        || (!horizontal_only
+            && !has_grid_lines(&page_graphics, &xs, &ys)
             && !has_partial_grid_lines(&page_graphics, &xs, &ys))
             && !has_span_grid_lines(&page_graphics, &xs, &ys)
             && !has_relaxed_span_grid_lines(&page_graphics, &xs, &ys)
@@ -4817,15 +4828,22 @@ fn infer_positioned_table_from_graphics(
     let docx_table = if text_augmented_columns {
         None
     } else {
-        docx_table_model_from_grid(&page_graphics, &xs, &ys, &cells, &cell_underlines)
-            .filter(|model| model_preserves_grid_cell_texts(model, &cells))
+        graphic_table_cells::model(
+            page_graphics,
+            &xs,
+            &ys,
+            &cells,
+            &cell_underlines,
+            !horizontal_only,
+        )
+        .filter(|model| model_preserves_grid_cell_texts(model, &cells))
     };
     let table = if let Some(model) = docx_table.as_ref() {
         OcrTable::with_spans(cells, ocr_spans_from_docx_table_model(model, rows, cols))
     } else {
         OcrTable::new(cells)
     };
-    let mut geometry = (!text_augmented_columns && !allow_top_origin_text_y)
+    let mut geometry = (!horizontal_only && !text_augmented_columns && !allow_top_origin_text_y)
         .then(|| fractional_table_rules::grid(&parsed.graphics, &xs, &ys, Some(page)))
         .flatten();
     let model = docx_table
@@ -4908,7 +4926,9 @@ fn infer_positioned_table_from_graphics(
         nested_tables: Vec::new(),
     };
     verified_source_grid_heights::apply(&mut positioned, page_graphics, &xs, &ys);
-    Some(positioned)
+    (!horizontal_only
+        || (positioned.docx_table.is_some() && text_grid_ownership::preserves(parsed, &positioned)))
+    .then_some(positioned)
 }
 
 /// text bbox が grid 座標へ直接入るか判定する。
@@ -5336,6 +5356,7 @@ fn augment_xs_from_partial_verticals(
 }
 
 /// 罫線の欠損から横結合を反映した DOCX 表モデルを作る。
+#[cfg(test)]
 fn docx_table_model_from_grid(
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
@@ -5343,7 +5364,7 @@ fn docx_table_model_from_grid(
     cells: &[Vec<String>],
     cell_underlines: &[Vec<bool>],
 ) -> Option<DocxTableModel> {
-    graphic_table_cells::model(graphics, xs, ys, cells, cell_underlines)
+    graphic_table_cells::model(graphics, xs, ys, cells, cell_underlines, true)
 }
 
 /// 欠けた縦罫線を結合として扱ってよいか判定する。
@@ -5672,6 +5693,9 @@ fn text_grid_page_is_dense_article_like(text_count: usize, row_count: usize) -> 
     text_count >= 120 || row_count >= 25
 }
 
+/// 行内の別セルとして扱う最小の字面間隔（pt）。
+const TEXT_CELL_GAP_POINTS: f32 = 24.0;
+
 /// 1 行分の text element を大きな x gap でセル候補にまとめる。
 fn merge_text_row_into_cells<'a>(row: &[&'a ParsedTextElement]) -> Option<Vec<TextGridCell<'a>>> {
     let first = row.first()?;
@@ -5683,7 +5707,7 @@ fn merge_text_row_into_cells<'a>(row: &[&'a ParsedTextElement]) -> Option<Vec<Te
 
     for text in row.iter().skip(1) {
         let gap = text.bounds.x0 - current_x1;
-        if gap > 24.0 {
+        if gap > TEXT_CELL_GAP_POINTS {
             cells.push(TextGridCell {
                 x0: current_x0,
                 y0: row

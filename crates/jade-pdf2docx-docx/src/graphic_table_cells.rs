@@ -1,13 +1,14 @@
 //! 欠けた辺を補わず、部分罫線を表現できる矩形のセル所有へ分割する。
 use super::*;
 
-/// 元の各行の矩形範囲を作り、同じ横幅を保つ縦結合だけを組み立てる。
+/// 元の行の矩形範囲を作り、本文から列を確認した場合は空欄も列単位で保つ。
 pub(super) fn model(
     graphics: &[ParsedGraphicElement],
     xs: &[i32],
     ys: &[i32],
     cells: &[Vec<String>],
     underlines: &[Vec<bool>],
+    allow_horizontal_merges: bool,
 ) -> Option<DocxTableModel> {
     if cells.is_empty()
         || cells.len().checked_add(1)? != ys.len()
@@ -36,7 +37,8 @@ pub(super) fn model(
                 .and_then(|r| r.get(col))
                 .copied()
                 .unwrap_or(false);
-            while col + span < row.len()
+            while allow_horizontal_merges
+                && col + span < row.len()
                 && !has_vertical_boundary_in_band(graphics, xs[col + span], bottom, top)
                 && should_merge_across_missing_vertical_boundary(row, col, span)
                 && uniform_horizontal(graphics, xs, top, col, span + 1)
