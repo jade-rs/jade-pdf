@@ -1,0 +1,274 @@
+{
+  "time_utc": "2026-11-26T15:19:00.085311+00:00",
+  "head": "166b5cacbf5be0516924a9c5393e5fb54fb633a3",
+  "source_tree": "c3db0207eedeadce324baeedc43bfa495845decb",
+  "parent": "1e60ea5428e67f88bc3d76148b51f7205952ce64",
+  "Rust_files": 823,
+  "full_default": {
+    "passed": 2791,
+    "failed": 0,
+    "ignored": 42,
+    "groups": 176,
+    "label": "source-cell-rule-widths-CI-default-full-v3",
+    "log_sha256": "a84427e4af9fde76fc4d3f6bdc255ee215b59bb02509f6847567b068329d1d5f"
+  },
+  "fmt_passed": true,
+  "fixture_hygiene_tests": 2,
+  "distribution_tests": 10,
+  "public_parser_file_tests": 7,
+  "new_public_parser_regressions": 3,
+  "new_public_Word_tests": 9,
+  "new_private_pitch_tests": 1,
+  "new_signed_zero_tests": 1,
+  "graphics_budget_controls": 14,
+  "new_or_updated_PBT_cases_each": 32,
+  "actual_unit_Red_executions": 7,
+  "source_Red_proofs": [
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/three-real-Red-source-proof-v1/receipt.json",
+      "sha256": "9e3f241f5d2d141a235c7e5f143d0a7fb1865b963134d7b2049e4ccfaa09e571",
+      "records": [
+        {
+          "label": "source-cell-rule-width-public-Red-v1",
+          "head": "9e3a61fb5794c3d1883dea894b1d4b3b9fcbbaf1",
+          "exit": 101,
+          "all821_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/three-real-Red-source-proof-v1/source-cell-rule-width-public-Red-v1-all821-Rust.tar.gz",
+          "source_archive_sha256": "f50f9a789d37077e9242b2021f97ffaeeb92a64b5f939ffb21c9cd528b468f71",
+          "receipt_sha256": "48d419cf6d46fbb3ec2254a98633af4af347ce20cc2fc8bdb83114cf8d5ec30a",
+          "log_sha256": "25016d6dbb94e02cb1ed2de36646114dc77d64fdedb23fc023c20d414090419d"
+        },
+        {
+          "label": "source-cell-rule-width-parser-Red-v1",
+          "head": "f669e867be8217a3c5ad01a3be94b91fbe261164",
+          "exit": 101,
+          "all821_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/three-real-Red-source-proof-v1/source-cell-rule-width-parser-Red-v1-all821-Rust.tar.gz",
+          "source_archive_sha256": "9053e717b6aecbd384e1541ebde0abfce01e37c24f44b7476334093501ac7078",
+          "receipt_sha256": "9ef516124fb44ca4b57abb4f9f66d3812a56a32f0803c133cf76325388f8e5f7",
+          "log_sha256": "f6417b0a4c3d9d649a73bf1ac2eaf24c2019a32fc64f24b97b329c2625fc725f"
+        },
+        {
+          "label": "source-cell-rule-gap-parser-Red-v1",
+          "head": "de7550e8533f0de737a08cf257806b66a93e4c78",
+          "exit": 101,
+          "all821_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/three-real-Red-source-proof-v1/source-cell-rule-gap-parser-Red-v1-all821-Rust.tar.gz",
+          "source_archive_sha256": "c2fc1e57e1b23ee97ad8c8b7209fa190304ce7a0cfbe832b56906ff05d683812",
+          "receipt_sha256": "237bee992db2bfdb483c5afa99fc0b057d50c411cc85fd06d5e18c1bc4a26341",
+          "log_sha256": "a4e314b6cac623a479d0284d042c53404d3e7e8d61834c2152b6992e34bd820a"
+        }
+      ]
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/pitch-and-outer-neighbor-Red-source-proof-v1/receipt.json",
+      "sha256": "372c5732eee9495a034d89d8d2a50d64a3dedcd79e999fd98a5f52336f3dfa41",
+      "records": [
+        {
+          "label": "source-cell-rule-width-row-pitch-public-Red-v1",
+          "head": "ffe35f9124328f7272965f2bf7f430394ccbd357",
+          "Rust_files": 822,
+          "exit": 101,
+          "all_executed_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/pitch-and-outer-neighbor-Red-source-proof-v1/source-cell-rule-width-row-pitch-public-Red-v1-all822-Rust.tar.gz",
+          "source_archive_sha256": "b943cd0d20903905c673cdb43f37729b73a5417084b507ada36ba2a0268562d9",
+          "receipt_sha256": "8707555785cdf8086d7cae6030fcd17ec57991f880762804c130a53440b9f121",
+          "log_sha256": "fb404ea2a3226b235d62ca05054f3947fe2504db97bed1cddba54cd2eb7e2874"
+        },
+        {
+          "label": "source-cell-rule-width-outer-neighbor-private-Red-v1",
+          "head": "6a0d4111938407fd9f6b34d0a3f79fb7d380b7b5",
+          "Rust_files": 823,
+          "exit": 101,
+          "all_executed_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/pitch-and-outer-neighbor-Red-source-proof-v1/source-cell-rule-width-outer-neighbor-private-Red-v1-all823-Rust.tar.gz",
+          "source_archive_sha256": "73ad8278012561eec054f7892fd89348adfbb4dcc4e6d6ce98edc97051694041",
+          "receipt_sha256": "7d698b683140bc6cb95fe7a3532966e14be469d000ea5b22ec6654a3ea127949",
+          "log_sha256": "a8243c4e6f358132800520ad993815224c5af06af6444a86346e4bea4c58f746"
+        }
+      ]
+    },
+    {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/order-and-signed-zero-Red-source-proof-v1/receipt.json",
+      "sha256": "7beaf712c9870d53d7d798cd747aba07913fb2cf26c5f0ed20e1525420af7f81",
+      "records": [
+        {
+          "label": "source-cell-rule-width-order-public-Red-v1",
+          "head": "90fc99c60693e227e515a5514b4721420f23fe6b",
+          "Rust_files": 823,
+          "exit": 101,
+          "all_executed_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/order-and-signed-zero-Red-source-proof-v1/source-cell-rule-width-order-public-Red-v1-all823-Rust.tar.gz",
+          "source_archive_sha256": "aca309bdc2d68a011c504769a0204dd703ccfd2d56612fbff2b9f7d643871665",
+          "receipt_sha256": "16e19ca95f3bb202c846cd6aa3a9bfc7a73eca72075c02394fcc1c8271a437b9",
+          "log_sha256": "5f39ab6d7154ef793bac0a2387856f5164397e767d3dd17ec0d7ce75ad201fb9"
+        },
+        {
+          "label": "source-cell-rule-width-signed-zero-private-Red-v1",
+          "head": "914d1fffa34c3abc7938dd9b6d3b61135bdc33bb",
+          "Rust_files": 823,
+          "exit": 101,
+          "all_executed_Rust_exact": true,
+          "source_archive": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/order-and-signed-zero-Red-source-proof-v1/source-cell-rule-width-signed-zero-private-Red-v1-all823-Rust.tar.gz",
+          "source_archive_sha256": "b9207392099ca31964c49ff07b86c86f4f12ec32f1a131460f91f3656d0a5267",
+          "receipt_sha256": "9da4fccdb4a17f6fb8fe922540c43e3c7beec031ca49c9eab395a46bd5ab4b23",
+          "log_sha256": "f1c47661acab704bed5d759c817b980e8a023d27b300a827cd1f76abe16ab5e7"
+        }
+      ]
+    }
+  ],
+  "failed_full_v2": {
+    "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/failed-default-full-v2-source-proof/receipt.json",
+    "sha256": "a67ef50d6cdaa1f8c5056b9987bb2049d46bf8ac7e591542309e5d554c114e58",
+    "partial_counts": [
+      1915,
+      1,
+      35
+    ],
+    "not_accepted": true
+  },
+  "held_MHLW_prototype_v1": {
+    "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/MHLW-prototype-v1-HELD-row-boundaries-source-proof/receipt.json",
+    "sha256": "2b5094e39eb51e78b3135738a03ed7d90710a8b6ffd3288c3e2b22582e434cd8",
+    "row_boundary_error": 1.0892000000000053,
+    "fixed_tolerance": 0.75,
+    "not_accepted": true
+  },
+  "obsolete_full_v1_was_NEVER_invoked": true,
+  "total_outcomes": 754,
+  "all754_statuses_exact_qualified_parent": true,
+  "RAW_exact_qualified_parent": 748,
+  "changed6_outcomes_only_MHLW_normal_strict_each_runtime": true,
+  "new_unseen_sources": 0,
+  "statuses_NOT_an_accuracy_rate": true,
+  "native_outcomes": 246,
+  "native_success": 216,
+  "native_rejected": 30,
+  "browser_each_inputs": 127,
+  "browser_each_outcomes": 254,
+  "browser_each_success": 218,
+  "browser_each_rejected": 36,
+  "cross_engine254_payloads127_inspections_exact": true,
+  "all96_input_groups_RAW_and_order_preserved": true,
+  "qualified_native_pool": "qualified-native246-v2/receipt.json",
+  "qualified_browser_pool_template": "qualified-browser127-v2-{engine}/receipt.json",
+  "inspection_changes_ONLY_graphics_count": [
+    {
+      "id": "EfficientNet",
+      "parent_graphics_count": 138,
+      "candidate_graphics_count": 202
+    },
+    {
+      "id": "BERT",
+      "parent_graphics_count": 77,
+      "candidate_graphics_count": 97
+    },
+    {
+      "id": "BatchNorm",
+      "parent_graphics_count": 79,
+      "candidate_graphics_count": 82
+    },
+    {
+      "id": "NAOJ-calendar-2026",
+      "parent_graphics_count": 198,
+      "candidate_graphics_count": 317
+    },
+    {
+      "id": "NAOJ-page1-excerpt",
+      "parent_graphics_count": 29,
+      "candidate_graphics_count": 38
+    },
+    {
+      "id": "Statistics-Japan-CPI-2026-10",
+      "parent_graphics_count": 513,
+      "candidate_graphics_count": 696
+    },
+    {
+      "id": "Statistics-Japan-Labour-Recent-Trends-2026-09",
+      "parent_graphics_count": 368,
+      "candidate_graphics_count": 389
+    },
+    {
+      "id": "owned-source-diagonal-cell-clip-black-overpaint",
+      "parent_graphics_count": 6,
+      "candidate_graphics_count": 7
+    },
+    {
+      "id": "MHLW-regional-minimum-wages-2026-11-26",
+      "parent_graphics_count": 64,
+      "candidate_graphics_count": 212
+    }
+  ],
+  "all6_MHLW_outputs_RAW_identical_and_bound_to_one_individually_viewed_page": true,
+  "MHLW_original69_verified": 69,
+  "MHLW_original69_unmet": 0,
+  "MHLW_original69_unverified": 0,
+  "MHLW_first_genuine_unseen68of69_NOT_modified": true,
+  "MHLW_supplemental4_verified": 3,
+  "MHLW_supplemental4_unmet": 1,
+  "MHLW_supplemental4_unverified": 0,
+  "MHLW_all1474_characters_and48_five_field_body_owners_preserved": true,
+  "MHLW_all48_new_amounts_bold_and48_old_amounts_regular": true,
+  "MHLW_original69_all610_relevant_side_width_instances_pass_Word_and_renderer": true,
+  "MHLW_392_inner_vertical_and128_heavy_side_widths_verified": true,
+  "MHLW_370_source012_horizontal_side_samples_still_unmet": true,
+  "MHLW_max_column_anchor_error": 0.7400000000000091,
+  "MHLW_max_row_boundary_error": 0.5492000000000417,
+  "MHLW_fixed_anchor_tolerance": 0.75,
+  "MHLW_only852_side_width_and20_row_height_attributes_changed": true,
+  "MHLW_total_row_height_twips": 12120,
+  "MHLW_other_ZIP_parts_body_text_cell_owners_and_paragraph_order_exact_parent": true,
+  "source_short_geometry_addendum_NOT_new_prospective_gold": true,
+  "all_original_golds_unchanged": true,
+  "parent_original_gold_manifest_count": 88,
+  "parent_original_gold_file_checks": 89441,
+  "Kanpo_original52_stays40pass9unmet3unverified_by_RAW_identity": true,
+  "CPI_original107_stays26pass81unmet_by_RAW_identity": true,
+  "labour_original57_stays36pass21unmet_by_RAW_identity": true,
+  "NTA_stamp_selected30_and_separate_bonus30_inherited_by_RAW_identity": true,
+  "runtime_aggregate": {
+    "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/native246-browser127-runtime-aggregate-v1.json",
+    "sha256": "65be96b15dd88acd729f846c99fcf535e90b7aeba5f3e4307139b33ead1d97c5"
+  },
+  "audits": {
+    "structure_profile": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/MHLW-parent-versus-current-structure-binding-v1.json",
+      "sha256": "45ef299657d4f57176e5cc255340320da01a2ef722594ff0091c44c204a5c6c0"
+    },
+    "render_receipt": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/MHLW-known-six-one-distinct-reviewed-render-v1/receipt.json",
+      "sha256": "bf8bacacc8f717ec0158bb5a8db284e547d3a12b2e7fbee1367043859301c317"
+    },
+    "original69_audit": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/MHLW-original69-known-followup-six-runtime-audit-v1/receipt.json",
+      "sha256": "a955fe140195a1a98137943ae902636d8611f138eb3504fb54aaaf5d837f467b"
+    },
+    "supplemental4_audit": {
+      "path": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification/MHLW-supplemental4-known-followup-audit-v1.json",
+      "sha256": "be0cafc5e3300da1fd3b8e83f340e0512a5e334de44993ce1ec277a4355acc25"
+    }
+  },
+  "native_binary_sha256": "16906a02c2ee39bccfeb48bcc567dc6b8cb3885d05ba2b118457c0fbcb3b818d",
+  "raw_release_WASM_sha256": "56f31484f7b47904a108dbb182e4921f2ab46b46710bd098371943a8c67a5c5e",
+  "browser_generated_WASM_sha256": "cec5db2d2d98b868886c4e9ce010d5b85e1219f4dce76b58b1c2bd69afc332fc",
+  "public_Rust_API_value_changes": [
+    "ParsedGraphicElement intervals retain physical gaps and distinct source widths; graphics_count can increase.",
+    "Only touching/overlapping intervals of the same numeric axis and width merge; output order is canonical, including signed zero axes."
+  ],
+  "no_new_CLI_parameters_or_dependencies": true,
+  "no_external_assets_added_to_tracked_fixtures": true,
+  "component_qualified": true,
+  "component_scope": "Physical source rule fragments, verified per-side Word widths and compatible row-center/text-capacity preservation in eligible simple tables.",
+  "Microsoft_Word_actual_rendering_NOT_verified": true,
+  "whole_document_accepted": false,
+  "production_ready": false,
+  "remaining": [
+    "MHLW0.12pt horizontal rules become0.25pt; supplemental tolerance remains unmet.",
+    "New/old amount spacing still differs.",
+    "Kanpo diagonal display and exact font/anchors.",
+    "CPI graphs, clipping and12-to16-page expansion.",
+    "Labour graphs and2-to3-page expansion."
+  ],
+  "qualification_receipt_sha256": "65784eeb09ab299027a8a897fd18cc5eba2cb17a02d71719eb24241518bed692",
+  "evidence_root": "/Users/bokuweb/.codex/worktrees/pdf-source-cell-rule-widths/jade-pdf/corpus/wasm-runtime/source-cell-rule-widths-qualification"
+}

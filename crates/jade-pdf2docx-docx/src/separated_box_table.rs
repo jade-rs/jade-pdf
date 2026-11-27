@@ -294,5 +294,6 @@ fn borders(cell: ParsedBounds, graphics: &[ParsedGraphicElement], stroke: f32) -
         bottom: horizontal(cell.y0),
         right: vertical(cell.x1),
         size_eighths_pt: table_border_size_for_pdf_rule(stroke),
+        source_side_sizes: [None; 4],
     }
 }

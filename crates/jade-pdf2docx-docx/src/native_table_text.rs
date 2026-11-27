@@ -567,9 +567,25 @@ pub(super) fn background(cell: &Cell) -> Option<[u8; 3]> {
 /// 容量検査と累積丸めを、段落IDを生成しない遅延iteratorとして実際のbuilderと共有する。
 fn line_spacings(cell: &Cell) -> Option<impl Iterator<Item = Option<LineSpacing>> + '_> {
     let capacity = u64::try_from(pdf_points_to_twips(cell.top - cell.bottom)?).ok()?;
+    Some(line_spacings_with_capacity(cell, capacity))
+}
+
+/// 罫線中心の補正後も原本段落が収まるか、実際の出力と同じ累積丸めで確認する。
+pub(super) fn fits_height_twips(cell: &Cell, height: f32) -> bool {
+    height.is_finite()
+        && height > 0.
+        && height <= i32::MAX as f32
+        && line_spacings_with_capacity(cell, height as u64).all(|spacing| spacing.is_some())
+}
+
+/// セルの原点を保ち、呼出元が確認した容量で行間iteratorを作る。
+fn line_spacings_with_capacity(
+    cell: &Cell,
+    capacity: u64,
+) -> impl Iterator<Item = Option<LineSpacing>> + '_ {
     let mut rounding = cell_line_rounding::Accumulator::default();
     let mut previous_bottom = cell.top;
-    Some(cell.lines.iter().map(move |line| {
+    cell.lines.iter().map(move |line| {
         let before = (previous_bottom - line.top_y).max(0.0);
         let height = structured_line_max_font_size(line);
         let (before, line_twips, used) = rounding.line(before, height)?;
@@ -578,7 +594,7 @@ fn line_spacings(cell: &Cell) -> Option<impl Iterator<Item = Option<LineSpacing>
         }
         previous_bottom = line.top_y - height;
         native_line_pitch::spacing_twips(line_twips, before, 0)
-    }))
+    })
 }
 
 /// style対応を確認済みの一行だけ、既存段落を作り直さず水平原点の相対量を返す。

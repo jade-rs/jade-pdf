@@ -34,6 +34,7 @@ mod rotated_body_digit;
 mod rotated_text_fallback;
 mod source_cell_background;
 mod source_cell_diagonals;
+mod source_cell_rule_widths;
 mod visible_source_content;
 use prepared_docx::PreparedDocx;
 mod adjacent_source_tables;
@@ -3072,6 +3073,8 @@ struct DocxCellBorders {
     diagonal_tr2bl: Option<usize>,
     /// DOCX の border size（1/8pt 単位）。
     size_eighths_pt: usize,
+    /// 原本coverageを確認した上・左・下・右の個別線幅。未確認は代表幅を使う。
+    source_side_sizes: [Option<usize>; 4],
 }
 
 impl DocxCellBorders {
@@ -3090,6 +3093,7 @@ impl DocxCellBorders {
             diagonal_tl2br: None,
             diagonal_tr2bl: None,
             size_eighths_pt,
+            source_side_sizes: [None; 4],
         }
     }
 }
@@ -3796,22 +3800,22 @@ fn table_cell_borders(borders: DocxCellBorders) -> TableCellBorders {
     out = out.set(table_cell_border_with_size(
         TableCellBorderPosition::Top,
         borders.top,
-        borders.size_eighths_pt,
+        borders.source_side_sizes[0].unwrap_or(borders.size_eighths_pt),
     ));
     out = out.set(table_cell_border_with_size(
         TableCellBorderPosition::Left,
         borders.left,
-        borders.size_eighths_pt,
+        borders.source_side_sizes[1].unwrap_or(borders.size_eighths_pt),
     ));
     out = out.set(table_cell_border_with_size(
         TableCellBorderPosition::Bottom,
         borders.bottom,
-        borders.size_eighths_pt,
+        borders.source_side_sizes[2].unwrap_or(borders.size_eighths_pt),
     ));
     out = out.set(table_cell_border_with_size(
         TableCellBorderPosition::Right,
         borders.right,
-        borders.size_eighths_pt,
+        borders.source_side_sizes[3].unwrap_or(borders.size_eighths_pt),
     ));
     if let Some(size) = borders.diagonal_tl2br {
         out = out.set(
@@ -3899,6 +3903,7 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
         .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
     source_cell_diagonals::apply(parsed, &mut tables);
+    source_cell_rule_widths::apply(parsed, &mut tables);
     tables.sort_by(|a, b| {
         a.page
             .cmp(&b.page)

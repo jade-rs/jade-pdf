@@ -107,6 +107,43 @@ fn graphics_merge_handles_extreme_endpoints() {
     );
 }
 
+/// 正負のゼロは同じ軸であり、別の線幅が間にあっても連続する各幅の区間を分断しない。
+#[test]
+fn zero_axis_signs_do_not_fragment_width_groups() {
+    let lines = [
+        (-0.0, 1., 0., 3.),
+        (-0.0, 2., 0., 3.),
+        (0.0, 1., 3., 4.),
+        (0.0, 2., 3., 4.),
+    ]
+    .into_iter()
+    .map(|(y, width, start, end)| ParsedGraphicElement {
+        page: 0,
+        bounds: ParsedBounds {
+            x0: start,
+            x1: end,
+            y0: y,
+            y1: y,
+        },
+        stroke_width: width,
+    })
+    .collect();
+    let merged = merge_axis_aligned_segments(lines);
+    assert_eq!(merged.len(), 2);
+    assert!(
+        merged
+            .iter()
+            .all(|line| line.bounds.x0 == 0. && line.bounds.x1 == 4.)
+    );
+    assert_eq!(
+        merged
+            .iter()
+            .map(|line| line.stroke_width)
+            .collect::<Vec<_>>(),
+        vec![1., 2.]
+    );
+}
+
 /// 小さいPDFのq保存増幅を公開APIでも資源超過として返す。
 #[test]
 fn public_graphics_state_amplification_is_limited() {
@@ -186,9 +223,9 @@ proptest! {
         }
     }
 
-    /// 整列結合は入力順に依存せず、再実行しても被覆と線幅を変えない。
+    /// 物理的な各線幅の連続被覆を保ち、入力順と再実行で同じ最小区間列を返す。
     #[test]
-    fn graphics_merge_matches_discrete_coverage(intervals in prop::collection::vec((0i32..32, 1i32..8, 1u8..5), 1..40)) {
+    fn graphics_merge_preserves_physical_coverage_and_widths(intervals in prop::collection::vec((0i32..32, 1i32..8, 1u8..5), 1..40)) {
         let lines: Vec<_> = intervals.iter().map(|&(start, length, width)| ParsedGraphicElement {
             page: 2,
             bounds: ParsedBounds { x0: start as f32, y0: 3.0, x1: (start + length) as f32, y1: 3.0 },
@@ -200,13 +237,16 @@ proptest! {
         prop_assert_eq!(&merged, &merge_axis_aligned_segments(merged.clone()));
         for &(start, length, width) in &intervals {
             prop_assert!(merged.iter().any(|line| line.bounds.x0 <= start as f32
-                && line.bounds.x1 >= (start + length) as f32 && line.stroke_width >= f32::from(width)));
+                && line.bounds.x1 >= (start + length) as f32 && line.stroke_width == f32::from(width)));
         }
-        for pair in merged.windows(2) { prop_assert!(pair[0].bounds.x1 + 1.0 < pair[1].bounds.x0); }
-        for line in merged {
-            for cell in line.bounds.x0 as i32..line.bounds.x1 as i32 {
-                // 1座標の間隔を連結する既存仕様を含む被覆を検査する。
-                prop_assert!(intervals.iter().any(|&(start, length, _)| start <= cell + 1 && start + length >= cell));
+        for width in 1u8..5 {
+            let parts: Vec<_> = merged.iter().filter(|line| line.stroke_width == f32::from(width)).collect();
+            for pair in parts.windows(2) { prop_assert!(pair[0].bounds.x1 < pair[1].bounds.x0); }
+            for cell in 0i32..40 {
+                // 整数端点間の全単位区間を比較し、1ptの空隙や別の太さで補わない。
+                let expected=intervals.iter().any(|&(start,length,w)| w==width && start<=cell && start+length>=cell+1);
+                let actual=parts.iter().any(|line| line.bounds.x0<=cell as f32 && line.bounds.x1>=(cell+1)as f32);
+                prop_assert_eq!(actual,expected,"physical unit interval and exact source width must agree");
             }
         }
     }
