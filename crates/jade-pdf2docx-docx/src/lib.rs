@@ -3988,6 +3988,7 @@ fn infer_positioned_tables_for_page(
                 && !has_verified_graphic_cells
                 && best_text_cols <= max_graphic_cols
                 && text_gain > 2
+                && text_grid_ownership::covers_text_of(parsed, &best_text_table, &graphic_tables[0])
             {
                 return vec![best_text_table];
             }

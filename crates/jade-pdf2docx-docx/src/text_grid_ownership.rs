@@ -13,6 +13,19 @@ pub(super) fn preserves(parsed: &ParsedDocument, table: &PositionedTable) -> boo
     characters(source) == characters(output)
 }
 
+/// 罫線表を置き換える際は、罫線表が所有していた文字を全て候補の範囲に含める。
+pub(super) fn covers_text_of(
+    parsed: &ParsedDocument,
+    replacement: &PositionedTable,
+    original: &PositionedTable,
+) -> bool {
+    parsed.text_elements.iter().all(|text| {
+        text.text.trim().is_empty()
+            || !text_element_is_in_table(parsed, text, original)
+            || text_element_is_in_table(parsed, text, replacement)
+    })
+}
+
 /// 断片間の空白補間だけを許し、文字の種類・個数を正規化せず照合する。
 fn characters<'a>(parts: impl IntoIterator<Item = &'a str>) -> BTreeMap<char, usize> {
     let mut counts = BTreeMap::new();

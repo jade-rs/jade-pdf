@@ -7,6 +7,10 @@ use std::io::{Cursor, Read};
 #[path = "support/pdf_builders.rs"]
 mod pdf_builders;
 
+#[allow(dead_code)]
+#[path = "../../jade-pdf2docx-parser/tests/support/page_attribute_pdf.rs"]
+mod page_attribute_pdf;
+
 #[path = "support/page_local_source_style_cases.rs"]
 mod source_style_cases;
 
@@ -307,6 +311,41 @@ fn borderless_table_keeps_interleaved_notes_in_the_body() {
             assert_eq!(xml.matches(&format!("R{row}C{col}")).count(), 1);
         }
     }
+}
+
+/// 枠内の見出しを置き去りにする反復列候補で、原本の罫線表を上書きしない。
+#[test]
+fn a_text_grid_cannot_replace_a_frame_by_leaving_its_header_outside() {
+    let mut content = String::from(
+        "0.5 w 20 180 m 220 180 l S 20 165 m 220 165 l S 20 80 m 220 80 l S \
+         20 80 m 20 180 l S 120 80 m 120 180 l S 220 80 m 220 180 l S \
+         BT /F1 10 Tf 25 169 Td (Item) Tj ET BT /F1 10 Tf 125 169 Td (Amount) Tj ET",
+    );
+    for (y, label, amount) in [
+        (150, "Cash", "9,000"),
+        (132, "Loans", "7,000"),
+        (114, "Bonds", "5,000"),
+        (96, "Other", "3,000"),
+    ] {
+        content.push_str(&format!(
+            " BT /F1 10 Tf 25 {y} Td ({label}) Tj ET BT /F1 10 Tf 160 {y} Td ({amount}) Tj ET"
+        ));
+    }
+    let pdf = page_attribute_pdf::pdf(&[
+        "<< /Type /Catalog /Pages 2 0 R >>".into(),
+        "<< /Type /Pages /Count 1 /Kids [3 0 R] >>".into(),
+        "<< /Type /Page /Parent 2 0 R /MediaBox [0 0 300 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>".into(),
+        page_attribute_pdf::stream(&content),
+        "<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>".into(),
+    ]);
+    let xml = document_xml(&pdf);
+    let tables = tables_in_xml(&xml);
+    assert_eq!(tables.len(), 1);
+    assert_eq!(tables[0][0], ["Item", "Amount"]);
+    assert!(tables[0][1][0].contains("Cash"));
+    assert!(tables[0][1][0].contains("Other"));
+    assert_eq!(xml.matches(">Item</w:t>").count(), 1);
+    assert!(xml.contains(r#"<w:top w:val="single""#));
 }
 
 proptest! {
