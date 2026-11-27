@@ -67,6 +67,9 @@ mod source_table_pagination_tests;
 mod source_typography_tests;
 mod table_opening;
 mod text_grid_cell_styles;
+#[cfg(test)]
+mod verified_source_grid_height_tests;
+mod verified_source_grid_heights;
 
 mod bare_page_footers;
 mod cell_line_rounding;
@@ -3009,6 +3012,8 @@ struct PositionedTable {
     source_rule_grid: Option<fractional_table_rules::Grid>,
     /// 原本gridの表示順の行高（twips）。未確定の表は従来の平均高を使う。
     row_heights_twips: Vec<f32>,
+    /// 子表の割当が決まるまで保持する、精密化前の行高。
+    legacy_source_grid_row_heights: Option<Vec<f32>>,
     /// 表セル。
     table: OcrTable,
     /// セル内テキストへ DOCX 下線を付けるか。
@@ -3904,6 +3909,10 @@ fn infer_positioned_tables_from_pdf_graphics(parsed: &ParsedDocument) -> Vec<Pos
                 has_graphic_tables,
             )
         })
+        .collect::<Vec<_>>();
+    verified_source_grid_heights::finish_nested(&mut tables);
+    let mut tables = tables
+        .into_iter()
         .map(native_table_text::refine_logical_rows)
         .collect::<Vec<_>>();
     source_cell_diagonals::apply(parsed, &mut tables);
@@ -4380,6 +4389,7 @@ fn parent_container_table_from_component(table: &PositionedTable) -> PositionedT
         column_widths_twips: width_twips,
         source_rule_grid: None,
         row_heights_twips: Vec::new(),
+        legacy_source_grid_row_heights: None,
         table: OcrTable::new(vec![vec![String::new()]]),
         cell_underlines: vec![vec![false]],
         cell_alignments: vec![vec![ParagraphAlignment::Left]],
@@ -4819,7 +4829,7 @@ fn infer_positioned_table_from_graphics(
     });
     let font_embedded = embedded_font.is_some();
     let embedded_face = embedded_font.and_then(|font| embedded_face::Face::read(&font.bytes));
-    Some(PositionedTable {
+    let mut positioned = PositionedTable {
         page,
         bounds: ParsedBounds {
             x0: *xs.first().expect("xs is not empty") as f32,
@@ -4857,6 +4867,7 @@ fn infer_positioned_table_from_graphics(
                 )
             }),
         source_rule_grid: geometry,
+        legacy_source_grid_row_heights: None,
         table,
         cell_underlines,
         cell_alignments,
@@ -4864,7 +4875,9 @@ fn infer_positioned_table_from_graphics(
         native_cells,
         source_cell_runs: Vec::new(),
         nested_tables: Vec::new(),
-    })
+    };
+    verified_source_grid_heights::apply(&mut positioned, page_graphics, &xs, &ys);
+    Some(positioned)
 }
 
 /// text bbox が grid 座標へ直接入るか判定する。
@@ -5561,6 +5574,7 @@ fn infer_positioned_table_from_text_grid_page(
         column_widths_twips,
         source_rule_grid: None,
         row_heights_twips,
+        legacy_source_grid_row_heights: None,
         table: OcrTable::new(table_rows),
         cell_underlines: Vec::new(),
         cell_alignments: Vec::new(),
