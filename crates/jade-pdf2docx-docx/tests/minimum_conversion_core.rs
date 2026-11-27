@@ -2775,6 +2775,37 @@ fn byte_conversion_preserves_nested_tables_inside_outer_cells() {
     let _ = fs::remove_file(output_docx);
 }
 
+/// 子表の上と下の本文を、そのセル内で原本と同じ順序に保つ。
+#[test]
+fn byte_conversion_orders_outer_cell_text_around_a_nested_table() {
+    let content = b"0 180 m 280 180 l S 0 100 m 280 100 l S 0 0 m 280 0 l S
+        0 0 m 0 180 l S 140 0 m 140 180 l S 280 0 m 280 180 l S
+        BT /F1 10 Tf 1 0 0 1 52 150 Tm (Before) Tj ET
+        BT /F1 10 Tf 1 0 0 1 192 150 Tm (After) Tj ET
+        BT /F1 10 Tf 1 0 0 1 12 84 Tm (Left note) Tj ET
+        BT /F1 10 Tf 1 0 0 1 152 84 Tm (Right note) Tj ET
+        10 74 m 130 74 l S 10 52 m 130 52 l S 10 30 m 130 30 l S
+        10 30 m 10 74 l S 70 30 m 70 74 l S 130 30 m 130 74 l S
+        BT /F1 10 Tf 1 0 0 1 22 60 Tm (L1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 82 60 Tm (L2) Tj ET
+        BT /F1 10 Tf 1 0 0 1 12 12 Tm (Below) Tj ET
+        150 74 m 270 74 l S 150 52 m 270 52 l S 150 30 m 270 30 l S
+        150 30 m 150 74 l S 210 30 m 210 74 l S 270 30 m 270 74 l S
+        BT /F1 10 Tf 1 0 0 1 162 60 Tm (R1) Tj ET
+        BT /F1 10 Tf 1 0 0 1 222 60 Tm (R2) Tj ET";
+    let pdf = flate_pdf_with_page_contents(&[content]);
+    let docx = convert_minimum_pdf_bytes_to_docx_bytes("nested-order.pdf", &pdf).unwrap();
+    let output = temp_file_path("minimum_conversion_nested_order", "docx");
+    fs::write(&output, docx).unwrap();
+    let xml = read_document_xml(&output);
+    let _ = fs::remove_file(output);
+    assert_eq!(xml.matches("L1</w:t>").count(), 1, "{xml}");
+    let above = xml.find("Left note").expect("caption");
+    let table = xml.find(">L1</w:t>").expect("nested table content");
+    let below = xml.find(">Below</w:t>").expect("paragraph below the table");
+    assert!(above < table && table < below, "{xml}");
+}
+
 /// 装飾線がある長文ページも、列位置の反復だけで巨大な表にしない。
 #[test]
 fn dense_article_with_a_decorative_line_is_not_a_text_grid_table() {
